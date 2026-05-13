@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SL5 Explorable — Attack Chain",
+  "description": "A multi-block failure scenario showing cascading exploitation",
+  "type": "object",
+  "required": ["id", "name", "theme", "adversary", "blocks_exploited", "narrative", "stoppers", "defense_in_depth_lesson"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier, e.g., CHAIN-01",
+      "pattern": "^CHAIN-[0-9]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Evocative short name (e.g., 'The Quiet Tap')"
+    },
+    "theme": {
+      "type": "string",
+      "description": "One-line theme (e.g., 'Physical access + unencrypted hardware + weak personnel')"
+    },
+    "adversary": {
+      "type": "object",
+      "properties": {
+        "oc_level": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "type": {
+          "type": "string",
+          "enum": ["state_sponsored", "criminal_syndicate", "insider", "ai_self", "competitor", "terrorist"],
+          "description": "Abstract adversary type"
+        },
+        "duration_months": {
+          "type": "number",
+          "description": "Operation timeline"
+        },
+        "budget_millions": {
+          "type": "number"
+        },
+        "ai_assisted": {
+          "type": "boolean",
+          "description": "Whether the adversary uses AI capabilities in this chain"
+        }
+      },
+      "required": ["oc_level", "type", "duration_months"]
+    },
+    "blocks_exploited": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Block IDs that must be ABSENT for this chain to succeed"
+    },
+    "narrative": {
+      "type": "object",
+      "description": "The attack story at two levels of detail",
+      "properties": {
+        "brief": {
+          "type": "string",
+          "description": "2-3 sentence summary (Option B level)"
+        },
+        "detailed": {
+          "type": "object",
+          "description": "Step-by-step narrative (Option C level)",
+          "properties": {
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "phase": { "type": "string" },
+                  "description": { "type": "string" },
+                  "block_gap_used": {
+                    "type": "string",
+                    "description": "Which absent block this step exploits"
+                  }
+                },
+                "required": ["phase", "description"]
+              }
+            }
+          },
+          "required": ["steps"]
+        }
+      },
+      "required": ["brief"]
+    },
+    "stoppers": {
+      "type": "array",
+      "description": "Blocks that would individually break this chain if deployed",
+      "items": {
+        "type": "object",
+        "properties": {
+          "block_id": { "type": "string" },
+          "how_it_stops": { "type": "string", "description": "Brief explanation of why this block breaks the chain" }
+        },
+        "required": ["block_id", "how_it_stops"]
+      }
+    },
+    "defense_in_depth_lesson": {
+      "type": "string",
+      "description": "The key takeaway about layered security this chain illustrates"
+    },
+    "real_world_parallel": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "source": { "type": "string" },
+        "year": { "type": "number" }
+      }
+    },
+    "probability_model": {
+      "type": "object",
+      "description": "Parameters for calculating breach probability of this chain",
+      "properties": {
+        "base_probability_if_all_absent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "P(success) if all exploited blocks are absent and adversary is at stated OC"
+        },
+        "time_to_execute_months": {
+          "type": "number",
+          "description": "How long the adversary needs if all goes well"
+        },
+        "detection_probability_per_month": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Chance of being detected per month of operation (by residual controls not in blocks_exploited)"
+        }
+      }
+    }
+  }
+}

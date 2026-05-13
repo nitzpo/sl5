@@ -1,0 +1,593 @@
+[
+  {
+    "id": "PER-01",
+    "name": "Sensitivity Levels Framework (SenL-1 through SenL-5)",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "Five-tier framework for categorizing positions by access to covered models and critical infrastructure. Each tier has corresponding vetting depth, monitoring intensity, and access obligations. Private-sector adaptation of government clearance tiers.",
+    "current_state": {
+      "summary": "No AI lab has implemented a formal tiered sensitivity framework. Most have basic access control groups but not graduated vetting or monitoring intensity. The SenL Framework Document (SL5 Task Force) provides the blueprint.",
+      "deployed_by": ["government_clearance_system"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 85,
+        "notes": "Framework is well-defined conceptually. Challenge is legal implementation in private sector (privacy laws, employment law, jurisdictional variation) and the inherent limitation that private-sector vetting cannot match government clearance depth.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Policy design, legal review, HR integration, IT access control integration, initial vetting pipeline build-out. Lower tiers faster; SenL-5 takes longest to establish."
+      },
+      "cost": {
+        "upfront_millions": { "min": 10, "max": 40 },
+        "annual_ongoing_millions": { "min": 15, "max": 50 },
+        "notes": "Program design + vetting infrastructure + ongoing rescreening. Cost scales with headcount. Each SenL-5 vetting may cost $50-100K per person."
+      },
+      "vendor_dependency": {
+        "value": 25,
+        "key_vendors": ["background_investigation_firm", "legal_counsel"],
+        "notes": "Background investigation firms exist (used for government clearances). Legal counsel needed for private-sector adaptation."
+      },
+      "supply_scarcity": {
+        "value": 45,
+        "bottleneck": "Personnel security professionals who understand both private sector constraints and government clearance standards",
+        "notes": "Most expertise is in government. Private-sector equivalents are rare."
+      },
+      "organizational_readiness": {
+        "value": 20,
+        "barriers": ["employee_privacy_expectations", "hiring_competitiveness", "legal_complexity", "cultural_resistance"],
+        "notes": "Tech workers expect minimal background scrutiny. Intensive vetting will deter some candidates. Legal risk in California/EU privacy regimes. Union/labor issues possible."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without tiered sensitivity levels, all employees effectively have the same (low) vetting standard regardless of access level. A planted agent or recruited insider faces minimal scrutiny even when given access to the most sensitive systems. AI assists adversaries in creating deeper cover identities and manipulating vetting processes."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["PER-02", "PER-03", "PER-04", "PER-05", "PER-06"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["personnel_trust", "access_control"],
+      "shared_dependencies": ["hr_systems", "legal_framework"]
+    },
+    "open_questions": [
+      {
+        "question": "Is private-sector vetting sufficient for SL5, or does it require government involvement (classified contract pathways, information sharing)?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "SL5 personnel security may be fundamentally infeasible without government partnership — a major dependency"
+      },
+      {
+        "question": "Can intensive vetting coexist with competitive hiring in the AI talent market?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Labs may face talent loss to competitors without equivalent vetting requirements — collective action problem"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "The US government clearance system (Confidential → Secret → Top Secret → TS/SCI) takes 249 days for TS processing on average. The SenL framework attempts to achieve similar assurance faster and without citizenship constraints.",
+        "source": "ODNI clearance processing statistics",
+        "year": 2024
+      }
+    ]
+  },
+  {
+    "id": "PER-02",
+    "name": "Two-Person Integrity (TPI)",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "All maintenance and critical operations on Weight Enclave systems require two authorized personnel present simultaneously. Pair assignments unpredictable to prevent collusion. Eliminates single-actor insider threat for physical operations.",
+    "current_state": {
+      "summary": "Standard in nuclear weapons programs and financial vaults. No AI lab implements TPI. Organizational culture in tech strongly resists this level of constraint.",
+      "deployed_by": ["nuclear_weapons_programs", "financial_vaults", "military"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 99,
+        "notes": "Zero technical challenge. It's a policy: two people must be present. The challenge is entirely organizational and operational.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Policy + hiring + scheduling + training. Need to roughly double maintenance staff. Also need unpredictable pair assignment system."
+      },
+      "cost": {
+        "upfront_millions": { "min": 2, "max": 10 },
+        "annual_ongoing_millions": { "min": 5, "max": 15 },
+        "notes": "Roughly doubles maintenance staffing cost. Scheduling overhead. Maintenance windows may take longer (coordination). Per-facility cost."
+      },
+      "vendor_dependency": {
+        "value": 5,
+        "key_vendors": [],
+        "notes": "No vendor dependency. Internal policy and staffing."
+      },
+      "supply_scarcity": {
+        "value": 30,
+        "bottleneck": "Vetted datacenter maintenance staff willing to work under TPI constraints",
+        "notes": "Need to hire additional staff who are both technically skilled and willing to accept the operational constraints."
+      },
+      "organizational_readiness": {
+        "value": 25,
+        "barriers": ["cultural_resistance", "maintenance_velocity_impact", "scheduling_complexity", "employee_perception"],
+        "notes": "Viewed as extreme distrust of employees. Researchers and engineers who grew up in open-culture tech companies will find this alienating. But it's non-negotiable for insider threat mitigation."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without TPI, a single recruited or compromised maintenance worker can install hardware implants, tap cables, or modify systems during solo maintenance windows. TPI requires the adversary to compromise TWO people simultaneously, which is dramatically harder."
+    },
+    "dependencies": {
+      "requires": ["PER-01"],
+      "enhances": ["PHY-07", "HW-03"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["personnel_trust"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Nuclear missile launch requires two-person control (two keys turned simultaneously). This has been the gold standard for preventing single-actor catastrophic actions since the Cold War.",
+        "source": "US nuclear launch procedures",
+        "year": 1962
+      }
+    ]
+  },
+  {
+    "id": "PER-03",
+    "name": "Continuous Behavioral Monitoring",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "Ongoing monitoring of personnel behavior scaled by sensitivity level. From periodic account auditing (SenL-1/2) through intensive monitoring of compartmented system interactions (SenL-5). Combines rule-based detection, AI-assisted pattern analysis, and human oversight.",
+    "current_state": {
+      "summary": "Some AI labs have basic DLP and access logging. None have the graduated monitoring intensity tied to sensitivity levels, AI-assisted behavioral analytics, or the insider threat detection capabilities described in SL5 standards.",
+      "deployed_by": ["government_insider_threat_programs", "financial_institutions"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 75,
+        "notes": "UEBA (User and Entity Behavior Analytics) products exist. Challenge: applying to AI research workflows where 'normal' behavior is hard to define (researchers explore unexpected directions constantly).",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 18,
+        "notes": "Tooling deployment + baselining period + tuning to reduce false positives + staffing the monitoring team + legal/privacy review."
+      },
+      "cost": {
+        "upfront_millions": { "min": 10, "max": 30 },
+        "annual_ongoing_millions": { "min": 8, "max": 25 },
+        "notes": "UEBA tooling + security analytics team + legal counsel + investigation capacity. Ongoing cost scales with org size."
+      },
+      "vendor_dependency": {
+        "value": 35,
+        "key_vendors": ["ueba_vendor", "siem_vendor"],
+        "notes": "Multiple vendors in this space. May build custom for AI-specific behavioral patterns."
+      },
+      "supply_scarcity": {
+        "value": 45,
+        "bottleneck": "Insider threat analysts who understand AI research behavior patterns",
+        "notes": "Most insider threat expertise is in government/defense. Understanding what 'suspicious AI research behavior' looks like is novel."
+      },
+      "organizational_readiness": {
+        "value": 30,
+        "barriers": ["privacy_concerns", "trust_erosion", "false_positive_fatigue", "legal_risk"],
+        "notes": "Monitoring employees is legally and culturally fraught in tech. California CPRA/ICRAA may restrict certain monitoring. Employees may leave if they feel surveilled."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without behavioral monitoring, a recruited insider operates freely — accessing weight systems, exfiltrating data, or installing backdoors with no detection mechanism beyond after-the-fact audit. Changes in behavior (new foreign contacts, financial stress, unusual access patterns) go unnoticed."
+    },
+    "dependencies": {
+      "requires": ["PER-01"],
+      "enhances": ["PER-04", "AI-01"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["monitoring_detection", "personnel_trust"],
+      "shared_dependencies": ["monitoring_infrastructure"]
+    },
+    "open_questions": [
+      {
+        "question": "Monitoring feasibility in high-restriction privacy states (California CPRA/ICRAA, Illinois BIPA)?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "May need to locate monitored roles in jurisdictions with fewer privacy restrictions"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "The Snowden case (2013) demonstrated failure of insider threat monitoring — NSA's systems were insufficient to detect a system administrator copying classified material over months. This drove Executive Order 13587 mandating insider threat programs.",
+        "source": "Post-Snowden reforms",
+        "year": 2013
+      }
+    ]
+  },
+  {
+    "id": "PER-04",
+    "name": "Private SF-86 Equivalent Vetting",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "Comprehensive background disclosure form modeled on the government SF-86 (Standard Form 86). Covers personal history, foreign contacts, financial status, drug use, mental health. Higher tiers (SenL-4/5) add verified subject and reference interviews.",
+    "current_state": {
+      "summary": "No AI lab performs SF-86-equivalent background checks. Standard tech hiring involves basic criminal check and maybe reference calls. The gulf between tech hiring standards and government clearance standards is enormous.",
+      "deployed_by": ["government_clearance_system"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 80,
+        "notes": "Government SF-86 process works but has limitations in private sector: no subpoena power, no access to classified databases, no polygraph authority. 'Private SF-86' is inherently weaker but still far better than standard background checks.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Legal framework design + investigator hiring/contracting + process development + initial vetting pipeline. SenL-5 vetting takes 6-12 months per person once pipeline exists."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 20 },
+        "annual_ongoing_millions": { "min": 10, "max": 40 },
+        "notes": "Per-investigation cost: $10-30K (SenL-3), $50-100K (SenL-5). × headcount. Plus infrastructure for managing disclosures, adjudication, and reinvestigation."
+      },
+      "vendor_dependency": {
+        "value": 35,
+        "key_vendors": ["background_investigation_firm"],
+        "notes": "Can contract investigations to firms (some former DCSA contractors). Core adjudication should be internal."
+      },
+      "supply_scarcity": {
+        "value": 50,
+        "bottleneck": "Experienced personnel security adjudicators (most work for government)",
+        "notes": "The people who know how to evaluate SF-86 disclosures are mostly in DCSA/IC. Need to recruit from government or train new staff."
+      },
+      "organizational_readiness": {
+        "value": 15,
+        "barriers": ["employee_privacy_resistance", "hiring_competitive_disadvantage", "legal_complexity", "international_workforce", "cultural_alien"],
+        "notes": "Asking tech workers to disclose foreign contacts, financial history, and personal details is antithetical to Silicon Valley culture. International employees may have legal protections against such disclosure. Will lose candidates to competitors without equivalent programs."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without deep vetting, intelligence agencies can place agents through front companies, academic collaborations, or recruitment of existing employees whose vulnerabilities (debt, ideology, coercion material) are unknown to the employer. AI assists in creating deeper cover stories and identifying recruitable targets."
+    },
+    "dependencies": {
+      "requires": ["PER-01"],
+      "enhances": ["PER-03", "PER-05"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["personnel_trust"],
+      "shared_dependencies": ["legal_framework", "hr_systems"]
+    },
+    "open_questions": [
+      {
+        "question": "Screening equivalency standards for non-US citizens and international offices?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "May be unable to vet international workforce to SL5 standard — forces geographic concentration or excludes foreign nationals from sensitive roles"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Manhattan Project infiltration rate was ~0.5% despite wartime security measures (Klaus Fuchs, Ted Hall). The SenL framework aims to achieve similar or better detection in peacetime private sector — an unprecedented goal.",
+        "source": "Manhattan Project espionage history",
+        "year": 1945
+      }
+    ]
+  },
+  {
+    "id": "PER-05",
+    "name": "Post-Employment Restrictions",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "Obligations that continue after employment ends: non-compete for competitors, reporting requirements for foreign contacts, restrictions on sabbaticals at foreign-affiliated institutions. Scaled by SenL tier — SenL-5 has most restrictive post-employment obligations.",
+    "current_state": {
+      "summary": "Some labs have basic NDAs and non-competes (where legal). None have the graduated post-employment framework with foreign contact reporting or sabbatical restrictions. California has banned non-competes, complicating enforcement.",
+      "deployed_by": ["government_clearance_holders", "some_defense_contractors"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 70,
+        "notes": "Legal frameworks exist for non-competes and post-employment restrictions. Challenge: California ban on non-competes, FTC restrictions, enforceability across jurisdictions. 'Foreign contact reporting' post-employment is novel for private sector.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Legal framework development + employment agreement revision + enforcement mechanisms. Applies to new hires immediately; existing employees need renegotiation."
+      },
+      "cost": {
+        "upfront_millions": { "min": 2, "max": 8 },
+        "annual_ongoing_millions": { "min": 3, "max": 10 },
+        "notes": "Legal counsel + enforcement + exit process. Ongoing = monitoring compliance, legal actions against violators, garden-leave compensation."
+      },
+      "vendor_dependency": {
+        "value": 10,
+        "key_vendors": ["legal_counsel"],
+        "notes": "Primarily internal policy with external legal advice."
+      },
+      "supply_scarcity": {
+        "value": 20,
+        "bottleneck": "Employment lawyers experienced in security-cleared workforce restrictions",
+        "notes": "Exists in defense contractor legal community. Adapting to tech sector is novel."
+      },
+      "organizational_readiness": {
+        "value": 30,
+        "barriers": ["legal_enforceability", "talent_retention_impact", "california_law", "cultural_resistance"],
+        "notes": "AI researchers value mobility and academic collaboration. Post-employment restrictions conflict with this deeply. May need to compensate with higher salaries (garden leave)."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without post-employment restrictions, intelligence agencies recruit former employees who retain knowledge of security architecture, access procedures, and potentially residual access. Sabbaticals at foreign-affiliated institutions provide recruitment opportunities. Former employees aren't monitored for foreign contacts."
+    },
+    "dependencies": {
+      "requires": ["PER-01"],
+      "enhances": ["PER-04"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["personnel_trust"],
+      "shared_dependencies": ["legal_framework"]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Multiple Thousand Talents Program cases (2018-2023) involved researchers taking sabbaticals at Chinese institutions while retaining access to sensitive US research. Post-employment restrictions specifically target this vector.",
+        "source": "DOJ China Initiative cases",
+        "year": 2020
+      }
+    ]
+  },
+  {
+    "id": "PER-06",
+    "name": "Dual Authorization for Critical Operations",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "Two authorized individuals required to execute privileged commands involving covered models or their cryptographic keys. Technical enforcement via cryptographic split-knowledge or multi-party authorization workflows. At least one SenL-5 custodian must participate.",
+    "current_state": {
+      "summary": "Some labs require approval for production deployments (PR review, deploy approval). None have cryptographically-enforced dual authorization for weight operations. Code review is a soft equivalent but not the same as mandatory dual-key operations.",
+      "deployed_by": ["nuclear_launch", "banking_wire_transfers", "some_cloud_providers_root_access"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 90,
+        "notes": "Well-understood crypto (secret sharing, multi-sig). Challenge is applying to ML operations (training launch, checkpoint save, weight export) where the 'critical operation' set is larger and less well-defined than traditional dual-key scenarios.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 15,
+        "notes": "Crypto infrastructure + defining critical operations + workflow integration + training + testing. Must not block legitimate operations under normal conditions."
+      },
+      "cost": {
+        "upfront_millions": { "min": 3, "max": 12 },
+        "annual_ongoing_millions": { "min": 2, "max": 6 },
+        "notes": "Infrastructure + key management + operational overhead. Ongoing = managing authorization workflows, key ceremonies."
+      },
+      "vendor_dependency": {
+        "value": 20,
+        "key_vendors": ["hsm_vendor"],
+        "notes": "HSMs for key management. Otherwise mostly internal development."
+      },
+      "supply_scarcity": {
+        "value": 20,
+        "bottleneck": "Cryptographic engineers experienced in operational key management",
+        "notes": "Moderate pool of expertise in crypto/PKI community."
+      },
+      "organizational_readiness": {
+        "value": 45,
+        "barriers": ["operational_velocity_impact", "defining_critical_operations", "key_management_complexity"],
+        "notes": "Engineers understand the concept but resist it for day-to-day operations. Must carefully scope which operations require dual auth to avoid paralyzing routine work."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without dual authorization, a single compromised privileged account (via credential theft, insider, or escalation) can execute any operation on weights — export, copy, modify, destroy. Dual auth requires compromising two independent accounts simultaneously."
+    },
+    "dependencies": {
+      "requires": ["PER-01"],
+      "enhances": ["AI-06"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["access_control", "personnel_trust"],
+      "shared_dependencies": ["key_management_infrastructure"]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "SWIFT banking transfers above threshold require dual authorization — multiple officers must approve. This prevented numerous attempted bank heists (though Bangladesh Bank hack 2016 succeeded partly by circumventing dual controls).",
+        "source": "SWIFT security controls",
+        "year": 2016
+      }
+    ]
+  },
+  {
+    "id": "PER-07",
+    "name": "Body-Worn Cameras with Obstruction Detection",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "All personnel performing physical maintenance in non-SCIF areas wear cameras with tamper-evident features and automatic obstruction detection. Provides evidence trail and deters unauthorized physical actions. Prohibited inside SCIF-equivalent spaces due to EM constraints.",
+    "current_state": {
+      "summary": "Used in law enforcement and some industrial settings. Not deployed in tech/AI datacenter context. The intersection with SCIF EM restrictions creates a gap where cameras can't be used in the most sensitive areas.",
+      "deployed_by": ["law_enforcement", "some_industrial"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 85,
+        "notes": "Cameras exist. Obstruction detection AI exists. Challenge: cannot use wireless cameras in Red Zones (PHY-05 conflict). Must use hardwired or store-and-forward with shielded devices. Limited applicability in most sensitive areas.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 4,
+        "max": 9,
+        "notes": "Equipment procurement + policy + training. Fast to deploy technically. Legal review needed for employee recording consent."
+      },
+      "cost": {
+        "upfront_millions": { "min": 1, "max": 5 },
+        "annual_ongoing_millions": { "min": 1, "max": 3 },
+        "notes": "Camera hardware + storage + review infrastructure. Relatively low cost."
+      },
+      "vendor_dependency": {
+        "value": 25,
+        "key_vendors": ["body_camera_vendor"],
+        "notes": "Multiple vendors. May need custom shielded variants for near-SCIF use."
+      },
+      "supply_scarcity": {
+        "value": 10,
+        "bottleneck": "None — commodity equipment",
+        "notes": "No supply constraint"
+      },
+      "organizational_readiness": {
+        "value": 35,
+        "barriers": ["employee_surveillance_perception", "union_concerns", "legal_consent", "scif_incompatibility"],
+        "notes": "Being recorded constantly is uncomfortable. Plus the limitation that cameras can't be used in the most sensitive areas reduces the value."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without body cameras, a maintenance worker's physical actions during solo access are unobserved and unrecorded. Any claims about what happened during maintenance windows are unverifiable. An insider can deny installing an implant with no evidence either way."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["PER-02"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["monitoring_detection", "personnel_trust"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Nuclear facilities use CCTV monitoring of all maintenance activities in sensitive areas. Body cameras add the mobile/personal dimension that fixed CCTV misses.",
+        "source": "Nuclear facility security",
+        "year": 2010
+      }
+    ]
+  },
+  {
+    "id": "PER-08",
+    "name": "No Remote Access / No Out-of-Facility Maintenance",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "Complete elimination of remote management interfaces (BMC/IPMI/Redfish/AMT), remote access VPNs, and vendor remote support. All maintenance performed on-site by vetted personnel. 24/7 on-site maintenance staff required.",
+    "current_state": {
+      "summary": "Every modern datacenter relies heavily on remote management (BMC/IPMI for lights-out ops, remote hands, vendor remote support). Eliminating this is operationally radical. No AI lab has done it.",
+      "deployed_by": ["some_air_gapped_government_systems"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 90,
+        "notes": "Technically straightforward — disable/remove BMC network interfaces, remove remote management tools. Challenge is operational: need 24/7 on-site staff capable of handling any issue that previously would have been handled remotely.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 18,
+        "notes": "Hiring 24/7 on-site team + removing remote access + building operational procedures for on-site-only maintenance + testing that nothing breaks when remote access is removed."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 15 },
+        "annual_ongoing_millions": { "min": 10, "max": 30 },
+        "notes": "24/7 on-site maintenance team (multiple shifts, multiple skill sets). Higher salary to attract talent to potentially remote locations. Plus operational inefficiency vs remote management."
+      },
+      "vendor_dependency": {
+        "value": 10,
+        "key_vendors": [],
+        "notes": "No vendor dependency. Internal staffing and operational decision."
+      },
+      "supply_scarcity": {
+        "value": 40,
+        "bottleneck": "Skilled datacenter technicians willing to work on-site 24/7 at potentially remote facility locations",
+        "notes": "Talent pool exists but competition for skilled ops staff is high."
+      },
+      "organizational_readiness": {
+        "value": 20,
+        "barriers": ["operational_efficiency_loss", "response_time_increase", "staffing_challenge", "vendor_support_loss"],
+        "notes": "Modern datacenter ops assumes remote management. Losing it means slower incident response, higher staffing costs, no vendor remote diagnosis. Major operational philosophy change."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "BMCs are 'god mode' by design — they can read/write system memory, power cycle servers, access consoles, all independent of the main OS. A compromised BMC gives complete control below the OS level. Multiple BMC vulnerabilities are discovered annually. Remote management interfaces are a massive attack surface that no amount of patching makes secure against state actors."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["HW-09", "NET-01"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["host_security", "network_boundary"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "CVE-2019-6260 (Pantsdown) — BMC vulnerability allowing arbitrary read/write of BMC flash affecting multiple vendors. AMT vulnerabilities (CVE-2017-5689) allowed remote unauthenticated access to Intel management engine. These are recurring, structural vulnerabilities in remote management.",
+        "source": "BMC/AMT vulnerability history",
+        "year": 2019
+      }
+    ]
+  }
+]

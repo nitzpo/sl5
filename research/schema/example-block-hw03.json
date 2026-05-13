@@ -1,0 +1,87 @@
+{
+  "id": "HW-03",
+  "name": "Accelerator Interconnect Encryption",
+  "category": "machine",
+  "summary_group": "hardware_security",
+  "description": "Hardware-level encryption on chip-to-chip interconnects (NVLink, NeuronLink, custom fabrics) so model weights in transit between accelerators are ciphertext, not plaintext.",
+  "current_state": {
+    "summary": "NVIDIA Blackwell supports it. Google TPU v4 and AWS Trainium do not. Chip design cycles mean 2-3 year lag from commitment to availability.",
+    "deployed_by": ["nvidia_blackwell_users"],
+    "baseline_state": "partially_deployed"
+  },
+  "dimensions": {
+    "technical_feasibility": {
+      "value": 90,
+      "notes": "Proven on Blackwell; the engineering is solved, just needs broader adoption across vendors",
+      "trajectory": "improving"
+    },
+    "time_to_deploy_months": {
+      "min": 30,
+      "max": 48,
+      "notes": "Chip design cycle from commitment to tape-out to volume production. If vendor already has it, deployment is just procurement (6-12 months)."
+    },
+    "cost": {
+      "upfront_millions": { "min": 50, "max": 200 },
+      "annual_ongoing_millions": { "min": 0, "max": 5 },
+      "notes": "Cost is borne by chip vendor in R&D. Customer pays via chip price premium (negligible per unit at scale). Upfront = vendor investment to add feature."
+    },
+    "vendor_dependency": {
+      "value": 95,
+      "key_vendors": ["accelerator_manufacturer"],
+      "notes": "Almost entirely in vendor hands. Customer can only influence via procurement requirements and market pressure."
+    },
+    "supply_scarcity": {
+      "value": 70,
+      "bottleneck": "Only 1 of 3 major AI accelerator vendors ships interconnect encryption today",
+      "notes": "Constrained by vendor roadmap decisions, not physical scarcity"
+    },
+    "organizational_readiness": {
+      "value": 80,
+      "barriers": ["vendor_selection_constraints", "possible_performance_overhead"],
+      "notes": "Once the chip exists, consuming it is straightforward. Barrier is vendor availability, not org capability."
+    }
+  },
+  "defense_type": "hard_stop",
+  "sl_requirement": {
+    "first_recommended": 4,
+    "first_required": 5
+  },
+  "adversary_exploitation": {
+    "oc_threshold_to_exploit": 3,
+    "ai_oc_shift": 0.5,
+    "exploit_narrative": "An adversary with physical access to the datacenter (via insider, intrusion, or supply chain compromise of network hardware) can tap interconnect cables between accelerators and passively record model weights transmitted in plaintext during training or inference."
+  },
+  "dependencies": {
+    "requires": [],
+    "enhances": ["PHY-01", "PER-02"],
+    "enabled_by": []
+  },
+  "defense_in_depth": {
+    "layer_contributions": ["accelerator_security"],
+    "shared_dependencies": ["accelerator_manufacturer_firmware"]
+  },
+  "open_questions": [
+    {
+      "question": "Performance overhead of interconnect encryption at training scale?",
+      "uncertainty_level": "low",
+      "impact_if_resolved_negatively": "Training throughput reduction 5-15% — significant at frontier scale but manageable"
+    },
+    {
+      "question": "Will all major accelerator vendors ship this by 2028?",
+      "uncertainty_level": "medium",
+      "impact_if_resolved_negatively": "Orgs locked to non-compliant vendors cannot achieve SL5 hardware security"
+    }
+  ],
+  "real_world_parallels": [
+    {
+      "description": "NSA ANT catalog (2013) included FIREWALK — hardware implant disguised as RJ45 jack that passively intercepts network traffic. Same technique applies to high-bandwidth interconnects.",
+      "source": "Der Spiegel / Snowden documents",
+      "year": 2013
+    },
+    {
+      "description": "Link encryption has been standard for classified WAN connections for decades (NSA Type 1 encryptors). Extending to chip interconnects is the same principle at shorter distances and higher bandwidth.",
+      "source": "NSA CSfC Program",
+      "year": 2020
+    }
+  ]
+}

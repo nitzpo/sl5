@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SL5 Explorable — Building Block",
+  "description": "A single security capability building block in the SL5 framework",
+  "type": "object",
+  "required": ["id", "name", "category", "description", "current_state", "dimensions", "defense_type", "sl_requirement", "dependencies"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier, e.g., NET-01, HW-03, PER-02",
+      "pattern": "^[A-Z]+-[0-9]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["network", "machine", "physical", "personnel", "supply_chain", "ai_specific"]
+    },
+    "summary_group": {
+      "type": "string",
+      "description": "Group name for summary mode (10 groups). Blocks sharing a group collapse into one toggle in summary view.",
+      "enum": [
+        "network_isolation",
+        "bandwidth_control",
+        "hardware_security",
+        "confidential_computing",
+        "physical_facility",
+        "hardware_inspection",
+        "personnel_program",
+        "supply_chain_integrity",
+        "ai_controls",
+        "inference_channel_defense"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "description": "Plain-language explanation (1-3 sentences)"
+    },
+    "current_state": {
+      "type": "object",
+      "description": "State of this block as of the document's reference year (2026)",
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "Brief text: who has it, what's the gap"
+        },
+        "deployed_by": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Abstract actors who have deployed this (e.g., 'government_scif', 'some_frontier_labs', 'none')"
+        },
+        "baseline_state": {
+          "type": "string",
+          "enum": ["not_started", "researching", "proven_not_deployed", "partially_deployed", "widely_deployed", "mature"],
+          "description": "Default starting state for a typical frontier AI lab in 2026"
+        }
+      },
+      "required": ["summary", "baseline_state"]
+    },
+    "dimensions": {
+      "type": "object",
+      "description": "Quantitative dimensions (all 0-100 scale unless otherwise noted)",
+      "properties": {
+        "technical_feasibility": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number", "minimum": 0, "maximum": 100 },
+            "notes": { "type": "string" },
+            "trajectory": {
+              "type": "string",
+              "enum": ["stable", "improving", "uncertain", "degrading"],
+              "description": "How this value changes over time without intervention"
+            }
+          },
+          "required": ["value", "trajectory"]
+        },
+        "time_to_deploy_months": {
+          "type": "object",
+          "description": "Months from commitment to operational",
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" },
+            "notes": { "type": "string" }
+          },
+          "required": ["min", "max"]
+        },
+        "cost": {
+          "type": "object",
+          "properties": {
+            "upfront_millions": {
+              "type": "object",
+              "properties": {
+                "min": { "type": "number" },
+                "max": { "type": "number" }
+              },
+              "required": ["min", "max"]
+            },
+            "annual_ongoing_millions": {
+              "type": "object",
+              "properties": {
+                "min": { "type": "number" },
+                "max": { "type": "number" }
+              },
+              "required": ["min", "max"]
+            },
+            "notes": { "type": "string" }
+          },
+          "required": ["upfront_millions", "annual_ongoing_millions"]
+        },
+        "vendor_dependency": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number", "minimum": 0, "maximum": 100 },
+            "key_vendors": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Abstract vendor types (e.g., 'accelerator_manufacturer', 'scif_contractor')"
+            },
+            "notes": { "type": "string" }
+          },
+          "required": ["value"]
+        },
+        "supply_scarcity": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number", "minimum": 0, "maximum": 100 },
+            "bottleneck": { "type": "string", "description": "What specifically is scarce" },
+            "notes": { "type": "string" }
+          },
+          "required": ["value"]
+        },
+        "organizational_readiness": {
+          "type": "object",
+          "description": "How ready a typical frontier AI lab is to implement this (culturally, operationally)",
+          "properties": {
+            "value": { "type": "number", "minimum": 0, "maximum": 100 },
+            "barriers": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Key cultural/operational barriers"
+            },
+            "notes": { "type": "string" }
+          },
+          "required": ["value"]
+        }
+      },
+      "required": ["technical_feasibility", "time_to_deploy_months", "cost", "vendor_dependency", "supply_scarcity", "organizational_readiness"]
+    },
+    "defense_type": {
+      "type": "string",
+      "enum": ["hard_stop", "probabilistic", "hybrid"],
+      "description": "hard_stop = deterministic (if present, attack is physically impossible); probabilistic = reduces likelihood but doesn't eliminate; hybrid = has elements of both"
+    },
+    "sl_requirement": {
+      "type": "object",
+      "properties": {
+        "first_required": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "SL level where this block first becomes required"
+        },
+        "first_recommended": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "SL level where this block is first recommended (lower than required)"
+        }
+      },
+      "required": ["first_required"]
+    },
+    "adversary_exploitation": {
+      "type": "object",
+      "description": "What happens when this block is absent",
+      "properties": {
+        "oc_threshold_to_exploit": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Minimum OC tier that can exploit this block's absence (baseline, pre-AI)"
+        },
+        "ai_oc_shift": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "How many effective OC levels AI capability adds to exploitation of this block's absence (at full AI capability = 1.0)"
+        },
+        "exploit_narrative": {
+          "type": "string",
+          "description": "Brief (2-3 sentence) description of what an adversary does if this block is absent"
+        }
+      },
+      "required": ["oc_threshold_to_exploit", "ai_oc_shift", "exploit_narrative"]
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "requires": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Block IDs this block depends on (must be deployed for this to function)"
+        },
+        "enhances": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Block IDs whose effectiveness this block improves (but not required)"
+        },
+        "enabled_by": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Block IDs that must be present for this block to be deployable at all"
+        }
+      },
+      "required": ["requires", "enhances", "enabled_by"]
+    },
+    "defense_in_depth": {
+      "type": "object",
+      "properties": {
+        "layer_contributions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["physical_perimeter", "network_boundary", "host_security", "accelerator_security", "access_control", "monitoring_detection", "personnel_trust", "supply_chain_integrity"]
+          },
+          "description": "Which independent defense layers this block contributes to"
+        },
+        "shared_dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Resources shared with other blocks that could cause correlated failure (e.g., 'vendor_X_firmware', 'scif_contractor')"
+        }
+      },
+      "required": ["layer_contributions"]
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": { "type": "string" },
+          "uncertainty_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "fundamental"]
+          },
+          "impact_if_resolved_negatively": {
+            "type": "string",
+            "description": "What happens if the answer is bad (e.g., 'block becomes infeasible')"
+          }
+        },
+        "required": ["question", "uncertainty_level"]
+      }
+    },
+    "real_world_parallels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "source": { "type": "string" },
+          "year": { "type": "number" }
+        },
+        "required": ["description"]
+      }
+    }
+  }
+}

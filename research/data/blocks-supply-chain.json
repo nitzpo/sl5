@@ -1,0 +1,517 @@
+[
+  {
+    "id": "SC-01",
+    "name": "Supplier Diversity (Min 2 Per Critical Component)",
+    "category": "supply_chain",
+    "summary_group": "supply_chain_integrity",
+    "description": "Maintain at least two independent trusted sources for every critical component. Eliminates single points of failure and enables cross-reference for detecting anomalies. Where market constraints limit diversity, apply compensating mitigations.",
+    "current_state": {
+      "summary": "For AI accelerators: market is NVIDIA-dominated. Google has TPUs (internal). AMD/Intel and AWS have alternatives but with significant capability gaps. True diversity at frontier scale is barely possible today.",
+      "deployed_by": ["military_procurement", "some_telcos"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 60,
+        "notes": "For most components (networking, storage, servers): feasible. For AI accelerators specifically: market structure makes true diversity very difficult. Training frameworks may not port cleanly between vendors.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 36,
+        "notes": "Qualifying second source, integration testing, framework porting, operational experience. For accelerators: may need to accept generation gap between primary and secondary supplier."
+      },
+      "cost": {
+        "upfront_millions": { "min": 100, "max": 500 },
+        "annual_ongoing_millions": { "min": 30, "max": 100 },
+        "notes": "Maintaining two parallel hardware stacks is very expensive. Different drivers, different frameworks, different debugging tools. Operational overhead is massive."
+      },
+      "vendor_dependency": {
+        "value": 90,
+        "key_vendors": ["accelerator_manufacturer_A", "accelerator_manufacturer_B"],
+        "notes": "Entirely depends on market offering viable alternatives. Can't create diversity where it doesn't exist."
+      },
+      "supply_scarcity": {
+        "value": 85,
+        "bottleneck": "Competitive AI accelerator alternatives at frontier scale",
+        "notes": "Market is consolidating, not diversifying. NVIDIA dominance may increase."
+      },
+      "organizational_readiness": {
+        "value": 40,
+        "barriers": ["engineering_overhead", "performance_parity_gap", "framework_portability"],
+        "notes": "Multi-vendor strategy is familiar conceptually but extremely expensive in practice for ML workloads."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without supplier diversity, a supply chain compromise of the single vendor affects ALL deployed hardware simultaneously. No behavioral cross-reference is possible — compromised hardware behaves the same as legitimate hardware because there's no baseline from an independent source."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["SC-02", "PHY-07"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["supply_chain_integrity"],
+      "shared_dependencies": []
+    },
+    "open_questions": [
+      {
+        "question": "Is meaningful accelerator diversity achievable given market concentration?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Must accept single-vendor risk for accelerators and rely on compensating controls (inspection, attestation)"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "The US military requires at least two qualified suppliers for critical munitions components (DFARS requirements). When sole-source situations arise, additional inspection and testing compensates.",
+        "source": "DoD supply chain policy",
+        "year": 2010
+      }
+    ]
+  },
+  {
+    "id": "SC-02",
+    "name": "Hardware Inspection Pipeline (X-ray, IR, Destructive)",
+    "category": "supply_chain",
+    "summary_group": "hardware_inspection",
+    "description": "Systematic multi-modal inspection of hardware before deployment: X-ray imaging, infrared thermography, computer vision comparison against golden reference, and random destructive evaluation (decapping chips for die-level analysis).",
+    "current_state": {
+      "summary": "Same as PHY-07 — these overlap significantly. PHY-07 covers the facility-level pipeline; SC-02 focuses on the supply chain verification aspect before components enter the facility.",
+      "deployed_by": ["government_dmea", "military_supply_chain"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 75,
+        "notes": "Same as PHY-07. Individual techniques proven; scaling to volume and automating detection is the challenge.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Same as PHY-07."
+      },
+      "cost": {
+        "upfront_millions": { "min": 15, "max": 50 },
+        "annual_ongoing_millions": { "min": 5, "max": 20 },
+        "notes": "Same as PHY-07. Destructive evaluation means accepting loss of some expensive components."
+      },
+      "vendor_dependency": {
+        "value": 40,
+        "key_vendors": ["xray_equipment_vendor", "inspection_services"],
+        "notes": "Same as PHY-07."
+      },
+      "supply_scarcity": {
+        "value": 55,
+        "bottleneck": "Hardware inspection specialists for modern semiconductors",
+        "notes": "Same as PHY-07."
+      },
+      "organizational_readiness": {
+        "value": 30,
+        "barriers": ["procurement_delay", "cost_of_destruction", "expertise_gap"],
+        "notes": "Same as PHY-07."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Same as PHY-07 — without inspection, supply chain compromises (hardware implants) go undetected."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["SC-01", "SC-05"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["supply_chain_integrity"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Same as PHY-07 (DMEA Trusted Foundry).",
+        "source": "DMEA Trusted Foundry",
+        "year": 2004
+      }
+    ]
+  },
+  {
+    "id": "SC-03",
+    "name": "Adversarial Content Screening for Training Data",
+    "category": "supply_chain",
+    "summary_group": "supply_chain_integrity",
+    "description": "All external data entering the SL5 environment screened for adversarial content: poisoning attacks in training data, jailbreak attempts, adversarial examples, malicious code. Mandatory staging isolation until screening completes. Human review of flagged content.",
+    "current_state": {
+      "summary": "Active research problem. Best-available defenses are insufficient against sophisticated adversaries. No robust detection for data poisoning at web-scale training data volumes exists. The SL5 Standard explicitly marks this as an open question.",
+      "deployed_by": [],
+      "baseline_state": "researching"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 25,
+        "notes": "Fundamental research problem. Adversarial robustness remains unsolved. Best-effort detection catches unsophisticated attacks but sophisticated adversaries can bypass current detectors. The SL5 Standard acknowledges breakthroughs are needed.",
+        "trajectory": "uncertain"
+      },
+      "time_to_deploy_months": {
+        "min": 24,
+        "max": 999,
+        "notes": "Basic staging isolation: 6 months. Effective detection against sophisticated adversaries: unknown timeline, research-dependent."
+      },
+      "cost": {
+        "upfront_millions": { "min": 20, "max": 100 },
+        "annual_ongoing_millions": { "min": 10, "max": 50 },
+        "notes": "Research investment + detection infrastructure + staging environment + human review team. The research component has uncertain ROI."
+      },
+      "vendor_dependency": {
+        "value": 30,
+        "key_vendors": ["adversarial_ml_research_community"],
+        "notes": "Depends on broader research community progress. Can invest internally but problem may require field-wide breakthroughs."
+      },
+      "supply_scarcity": {
+        "value": 80,
+        "bottleneck": "Researchers at the frontier of adversarial robustness",
+        "notes": "Very small research community. Most work is academic. Translating to operational detection is additional gap."
+      },
+      "organizational_readiness": {
+        "value": 45,
+        "barriers": ["research_uncertainty", "training_data_volume_challenge", "false_positive_management"],
+        "notes": "AI labs have ML research capability. But the security research needed is different from capability research. Also: screening terabytes of training data is operationally challenging."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without adversarial content screening, an adversary can poison training data to install backdoors (model behaves normally except on adversary-chosen triggers), degrade model performance subtly, or cause the model to assist in its own exfiltration. Web-scale training data makes this especially easy — inject poisoned content into crawled web pages."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["AI-01", "AI-03"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["supply_chain_integrity"],
+      "shared_dependencies": ["adversarial_detection_research"]
+    },
+    "open_questions": [
+      {
+        "question": "Is robust adversarial content detection achievable against sophisticated adversaries?",
+        "uncertainty_level": "fundamental",
+        "impact_if_resolved_negatively": "SL5 cannot fully protect against training data poisoning — must limit to known-good data sources (dramatically restricting training data availability)"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Antivirus/malware detection has been an arms race for 30+ years with no complete solution. Adversarial content detection for ML is the same problem in a new domain — and the attackers have a structural advantage because detection is harder than evasion.",
+        "source": "Antivirus industry history",
+        "year": 1990
+      }
+    ]
+  },
+  {
+    "id": "SC-04",
+    "name": "Sub-Tier Flow-Down of Security Requirements",
+    "category": "supply_chain",
+    "summary_group": "supply_chain_integrity",
+    "description": "Security requirements contractually flow from prime contractors to all sub-tier suppliers (2nd, 3rd, 4th tier). Due diligence on upstream dependencies ensures that a vulnerability in a sub-contractor doesn't compromise the primary supply chain.",
+    "current_state": {
+      "summary": "NIST SP 800-161 Rev 1 provides guidance. Some defense contractors implement flow-down. AI labs typically have no visibility beyond tier-1 suppliers. The depth of modern supply chains (hundreds of transitive dependencies) makes full flow-down extremely challenging.",
+      "deployed_by": ["defense_contractors", "some_government_agencies"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 65,
+        "notes": "Contractually feasible for tier-1 and tier-2. Practical visibility into tier-3+ is very difficult. Transitive dependencies in hardware (hundreds of components from dozens of countries) make complete flow-down arguably infeasible.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Contract renegotiation + supplier assessment + audit capability + ongoing monitoring. Existing supplier relationships may resist new requirements."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 20 },
+        "annual_ongoing_millions": { "min": 5, "max": 15 },
+        "notes": "Legal/procurement staff + supplier assessment team + audit program. Cost scales with supplier count."
+      },
+      "vendor_dependency": {
+        "value": 60,
+        "key_vendors": ["all_tier1_suppliers"],
+        "notes": "Requires cooperation from all major suppliers. They must agree to flow-down requirements in contracts and permit audits."
+      },
+      "supply_scarcity": {
+        "value": 35,
+        "bottleneck": "Supply chain security auditors with semiconductor industry knowledge",
+        "notes": "SCRM professionals exist in defense space. Semiconductor-specific expertise rarer."
+      },
+      "organizational_readiness": {
+        "value": 35,
+        "barriers": ["supplier_resistance", "visibility_limitations", "cost_pass_through", "global_complexity"],
+        "notes": "Suppliers may resist requirements (especially transparency about their own sub-suppliers). Global supply chains cross jurisdictions where enforcement is limited."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without flow-down, the weakest link in the supply chain is an unvetted sub-tier supplier. A firmware contractor three levels deep may have no security requirements at all — but their compromised code runs on your servers with full privilege. See Chain 6 (Remote Ghost)."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["SC-01", "SC-02", "SC-05"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["supply_chain_integrity"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "SolarWinds (2020): compromise of a build system at a single software vendor cascaded to 18,000+ organizations. The attack exploited exactly the sub-tier visibility gap — most victims had no relationship with or visibility into SolarWinds' build infrastructure.",
+        "source": "SolarWinds supply chain attack",
+        "year": 2020
+      }
+    ]
+  },
+  {
+    "id": "SC-05",
+    "name": "Counterfeit Detection (QBL/QML)",
+    "category": "supply_chain",
+    "summary_group": "hardware_inspection",
+    "description": "Anti-counterfeit program using Qualified Bidders Lists (QBL) and Qualified Manufacturers Lists (QML). Only procure from pre-qualified suppliers. Detect counterfeits via electrical testing, marking verification, and provenance tracking.",
+    "current_state": {
+      "summary": "Government uses QBL/QML for defense procurement. Trusted Foundry program available for government contractors. AI labs procure from distributors with basic authenticity checks but no formal QBL/QML program.",
+      "deployed_by": ["government_defense_procurement"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 82,
+        "notes": "QBL/QML process is well-defined. Challenge for AI labs: Trusted Foundry requires government contracts (not available to private sector without government cooperation). Private equivalent must be built.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 18,
+        "notes": "Supplier qualification process + testing infrastructure + procurement policy changes. Government cooperation accelerates if available."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 15 },
+        "annual_ongoing_millions": { "min": 3, "max": 10 },
+        "notes": "Supplier qualification + testing + procurement team expansion. Moderate cost."
+      },
+      "vendor_dependency": {
+        "value": 40,
+        "key_vendors": ["testing_laboratories", "government_trusted_foundry"],
+        "notes": "Testing labs exist. Trusted Foundry access requires government relationship."
+      },
+      "supply_scarcity": {
+        "value": 30,
+        "bottleneck": "Counterfeit detection capability for advanced semiconductors",
+        "notes": "Testing labs exist. Expertise for detecting sophisticated counterfeits (vs obvious fakes) is rarer."
+      },
+      "organizational_readiness": {
+        "value": 45,
+        "barriers": ["procurement_speed_impact", "limited_supplier_pool", "government_access"],
+        "notes": "Restricting to qualified suppliers may limit procurement speed and options. Manageable with planning."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without counterfeit detection, an adversary can substitute compromised components that appear identical to legitimate ones. Counterfeit chips may have modified functionality (backdoors) or simply fail at critical moments (denial of service)."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["SC-02", "SC-04"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["supply_chain_integrity"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Counterfeit electronic parts have been found in US military systems multiple times. A 2012 Senate Armed Services Committee investigation found 1,800+ cases of counterfeit parts in DoD supply chains.",
+        "source": "Senate Armed Services Committee report",
+        "year": 2012
+      }
+    ]
+  },
+  {
+    "id": "SC-06",
+    "name": "Component Provenance / Authenticity Tracking",
+    "category": "supply_chain",
+    "summary_group": "hardware_inspection",
+    "description": "Cryptographic attestation of component origin and chain of custody. Software Bill of Materials (SBOM), Model Cards, Datasheets with cryptographic signatures. Enables verification that each component is what it claims to be and has traveled through expected supply chain path.",
+    "current_state": {
+      "summary": "SBOM requirements emerging (US executive order). Hardware provenance tracking is much less mature. Cryptographic attestation of physical components is cutting-edge. Some chip vendors provide basic provenance but not cryptographic verification of supply chain path.",
+      "deployed_by": ["partial_some_software_sbom"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 70,
+        "notes": "Software SBOM: maturing. Hardware provenance with cryptographic guarantees: early-stage. Requires chip-level identity (ties to HW-01 root-of-trust) plus supply chain tracking infrastructure.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Software side faster (SBOM tooling exists). Hardware side requires vendor cooperation for cryptographic provenance features."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 20 },
+        "annual_ongoing_millions": { "min": 3, "max": 10 },
+        "notes": "Tracking infrastructure + integration with procurement + ongoing verification. Moderate."
+      },
+      "vendor_dependency": {
+        "value": 65,
+        "key_vendors": ["chip_vendors_for_hardware_provenance", "sbom_tooling_vendors"],
+        "notes": "Hardware provenance requires vendor embedding cryptographic identity at manufacture time."
+      },
+      "supply_scarcity": {
+        "value": 40,
+        "bottleneck": "Hardware provenance standards and tooling are still emerging",
+        "notes": "Standards bodies working on this but not yet mature."
+      },
+      "organizational_readiness": {
+        "value": 50,
+        "barriers": ["standards_immaturity", "integration_complexity"],
+        "notes": "Conceptually understood. Practical implementation depends on ecosystem maturity."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without provenance tracking, a substituted or tampered component cannot be distinguished from a legitimate one by provenance alone. The supply chain becomes a trust-on-first-use system where compromise is undetectable unless caught by physical inspection."
+    },
+    "dependencies": {
+      "requires": ["HW-01"],
+      "enhances": ["SC-02", "SC-05"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["supply_chain_integrity"],
+      "shared_dependencies": ["provenance_infrastructure"]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Pharmaceutical supply chain uses track-and-trace (DSCSA in US) with cryptographic verification to prevent counterfeit drugs. Same concept applied to hardware components.",
+        "source": "Drug Supply Chain Security Act",
+        "year": 2013
+      }
+    ]
+  },
+  {
+    "id": "SC-07",
+    "name": "Custom Development of Critical Components",
+    "category": "supply_chain",
+    "summary_group": "supply_chain_integrity",
+    "description": "Reimplement or custom-develop critical system components when supply chain risk from external sources is unacceptable. Maintain source code, build scripts, and tests internally. Reduces dependency on external vendors for security-critical paths.",
+    "current_state": {
+      "summary": "Google designs custom TPUs. Some labs build custom training frameworks. But custom silicon design capability is limited to a few organizations globally. Most labs rely entirely on external vendors for hardware and much of their software stack.",
+      "deployed_by": ["google_tpu", "some_large_tech_custom_silicon"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 50,
+        "notes": "For software: feasible (rewrite critical dependencies internally). For hardware: requires billion-dollar investment and world-class chip design team. Few organizations can do this. For firmware: intermediate difficulty.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 24,
+        "max": 60,
+        "notes": "Software rewrites: 6-18 months. Custom firmware: 12-24 months. Custom silicon: 36-60 months. Highly variable by component."
+      },
+      "cost": {
+        "upfront_millions": { "min": 50, "max": 2000 },
+        "annual_ongoing_millions": { "min": 20, "max": 200 },
+        "notes": "Custom silicon: $1-2B. Custom firmware: $50-200M. Custom security-critical software: $50-100M. Ongoing = maintaining all custom code/hardware through lifecycle."
+      },
+      "vendor_dependency": {
+        "value": 20,
+        "key_vendors": ["fab_foundry"],
+        "notes": "Reduces vendor dependency (that's the point). Still depends on foundry for manufacturing custom silicon."
+      },
+      "supply_scarcity": {
+        "value": 70,
+        "bottleneck": "Chip designers, security firmware engineers, formal verification experts",
+        "notes": "World-class chip design talent is extremely scarce and expensive."
+      },
+      "organizational_readiness": {
+        "value": 25,
+        "barriers": ["massive_investment", "talent_acquisition", "maintenance_burden", "time_to_market"],
+        "notes": "Only viable for the largest AI labs. Creates enormous ongoing maintenance burden. But provides the ultimate supply chain control."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "When using external components, an OC5 adversary can compromise the vendor's design or manufacturing process. Custom development eliminates this vector — the adversary must compromise your internal development instead, which is a fundamentally different (and often harder) attack."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["SC-01", "HW-01", "HW-04"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["supply_chain_integrity", "accelerator_security"],
+      "shared_dependencies": []
+    },
+    "open_questions": [
+      {
+        "question": "Is custom silicon development realistic for any organization other than the very largest?",
+        "uncertainty_level": "low",
+        "impact_if_resolved_negatively": "Most labs cannot implement this block — must rely on commercial vendors with strong inspection/attestation instead"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "The US DoD maintains custom ASIC design capability (DMEA) for exactly this reason — when you can't trust commercial supply chains for the most critical components, you build them yourself.",
+        "source": "DMEA custom microelectronics",
+        "year": 2000
+      }
+    ]
+  }
+]

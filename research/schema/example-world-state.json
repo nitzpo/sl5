@@ -1,0 +1,227 @@
+{
+  "timeline": {
+    "start_year": 2024,
+    "end_year": 2030,
+    "reference_year": 2026
+  },
+  "ai_capability_curve": {
+    "default_curve": [
+      { "year": 2024, "capability": 0.0 },
+      { "year": 2025, "capability": 0.15 },
+      { "year": 2026, "capability": 0.35 },
+      { "year": 2027, "capability": 0.65 },
+      { "year": 2028, "capability": 0.82 },
+      { "year": 2029, "capability": 0.93 },
+      { "year": 2030, "capability": 1.0 }
+    ],
+    "optimistic_multiplier": 0.7,
+    "pessimistic_multiplier": 1.5
+  },
+  "oc_definitions": [
+    {
+      "level": 1,
+      "name": "Hobbyist / Opportunistic",
+      "budget_millions": 0.001,
+      "team_size": 1,
+      "time_horizon_months": 0.25,
+      "description": "Single individual with limited expertise, spray-and-pray attacks",
+      "typical_actors": ["hobbyist_hackers", "script_kiddies"],
+      "key_capabilities": ["public_exploits", "common_passwords", "basic_social_engineering"]
+    },
+    {
+      "level": 2,
+      "name": "Professional Opportunistic",
+      "budget_millions": 0.01,
+      "team_size": 1,
+      "time_horizon_months": 1,
+      "description": "Single professional with broad security capabilities, personal infrastructure",
+      "typical_actors": ["professional_hackers", "low_priority_criminal_groups"],
+      "key_capabilities": ["custom_exploits", "targeted_phishing", "personal_cyber_infrastructure"]
+    },
+    {
+      "level": 3,
+      "name": "Criminal Syndicates / Insider Threats",
+      "budget_millions": 1,
+      "team_size": 10,
+      "time_horizon_months": 6,
+      "description": "Well-resourced criminal groups, disgruntled employees, industrial espionage",
+      "typical_actors": ["criminal_syndicates", "disgruntled_employees", "corporate_espionage", "terrorist_organizations"],
+      "key_capabilities": ["zero_day_purchase", "insider_recruitment", "major_attack_infrastructure", "bribery"]
+    },
+    {
+      "level": 4,
+      "name": "Leading Cyber-Capable Nation-States",
+      "budget_millions": 10,
+      "team_size": 100,
+      "time_horizon_months": 12,
+      "description": "Foreign intelligence agencies, state-sponsored groups executing 100+ operations annually",
+      "typical_actors": ["state_cyber_units", "intelligence_agencies"],
+      "key_capabilities": ["multiple_zero_days", "supply_chain_compromise", "long_term_agent_placement", "infrastructure_interception", "legal_cover"]
+    },
+    {
+      "level": 5,
+      "name": "Top-Priority State Operations",
+      "budget_millions": 1000,
+      "team_size": 1000,
+      "time_horizon_months": 60,
+      "description": "Highest-priority operations by world's most capable nations, years-ahead-of-public expertise",
+      "typical_actors": ["top_state_priority_operations"],
+      "key_capabilities": ["50_plus_zero_days_simultaneously", "hardware_backdoor_insertion", "decades_developed_infrastructure", "agent_networks", "capabilities_years_ahead_of_public"]
+    }
+  ],
+  "sl_definitions": [
+    {
+      "level": 1,
+      "name": "Basic Controls",
+      "defends_against": "OC1 — Hobbyist/Opportunistic",
+      "required_independent_layers": 1,
+      "description": "Sensitive data internal, basic access control, cloud provider defaults",
+      "achievable": true
+    },
+    {
+      "level": 2,
+      "name": "Professional Best Practices",
+      "defends_against": "OC2 — Professional Opportunistic",
+      "required_independent_layers": 1,
+      "description": "Centralized weight storage, encrypted transit, FIDO keys, red-teaming, bug bounty",
+      "achievable": true
+    },
+    {
+      "level": 3,
+      "name": "Aggressive Attack Surface Reduction",
+      "defends_against": "OC3 — Criminal Syndicates / Insiders",
+      "required_independent_layers": 2,
+      "description": "Copy-resistant interfaces, multiparty auth, insider threat program, advanced red-teaming",
+      "achievable": true
+    },
+    {
+      "level": 4,
+      "name": "Nation-State Defense",
+      "defends_against": "OC4 — Leading Cyber-Capable Nation-States",
+      "required_independent_layers": 4,
+      "description": "Hardware-enforced controls, confidential computing, TEMPEST isolation, zero-day search capability",
+      "achievable": true
+    },
+    {
+      "level": 5,
+      "name": "Top-Priority State Operations Defense",
+      "defends_against": "OC5 — Top-Priority State Operations",
+      "required_independent_layers": 8,
+      "description": "Complete isolation, formal hardware verification, supervised access, 8 independent layers",
+      "achievable": false
+    }
+  ],
+  "defense_layers": [
+    {
+      "id": "physical_perimeter",
+      "name": "Physical Perimeter",
+      "description": "SCIF construction, mantraps, intrusion detection, armed response",
+      "independence_notes": "Independent from digital layers; correlates with personnel if same guards manage both"
+    },
+    {
+      "id": "network_boundary",
+      "name": "Network Boundary",
+      "description": "Air gap, encryptors, bandwidth limits, data diodes, PDS",
+      "independence_notes": "Independent from physical if network hardware is distinct from perimeter systems"
+    },
+    {
+      "id": "host_security",
+      "name": "Host/OS Security",
+      "description": "Secure boot, signed code, patch management, endpoint monitoring",
+      "independence_notes": "Correlates with network_boundary if same vendor provides both; correlates with accelerator_security via driver"
+    },
+    {
+      "id": "accelerator_security",
+      "name": "Accelerator Hardware Security",
+      "description": "Root-of-trust, memory isolation, interconnect encryption, TEE, tamper protection",
+      "independence_notes": "Independent from host if accelerator denies host access (device-controlled isolation). Correlates with host via firmware update path."
+    },
+    {
+      "id": "access_control",
+      "name": "Access Control & Authorization",
+      "description": "SenL framework, dual authorization, least privilege, key management",
+      "independence_notes": "Correlates with personnel_trust (same people being vetted and authorized)"
+    },
+    {
+      "id": "monitoring_detection",
+      "name": "Monitoring & Detection",
+      "description": "Behavioral analytics, anomaly detection, audit logs, SOC",
+      "independence_notes": "Independent from preventive layers; correlates if monitoring system runs on same infrastructure being monitored"
+    },
+    {
+      "id": "personnel_trust",
+      "name": "Personnel Trust & Integrity",
+      "description": "Vetting, TPI, post-employment controls, insider threat program",
+      "independence_notes": "Independent from technical layers; correlates with access_control (same people)"
+    },
+    {
+      "id": "supply_chain_integrity",
+      "name": "Supply Chain Integrity",
+      "description": "Vendor diversity, inspection, provenance, sub-tier flow-down",
+      "independence_notes": "Independent from operational layers; correlates with accelerator_security if same vendor for both chip and inspection"
+    }
+  ],
+  "global_sliders": {
+    "ai_advancement_timeline": {
+      "label": "AI Advancement Timeline",
+      "min_label": "Pessimistic (slower)",
+      "max_label": "Optimistic (faster)",
+      "default_value": 0.5,
+      "effect": "Shifts the AI capability curve earlier (optimistic) or later (pessimistic). At 0: pessimistic_multiplier applied. At 1: optimistic_multiplier applied. At 0.5: default curve."
+    },
+    "government_cooperation": {
+      "label": "Government Cooperation",
+      "min_label": "None",
+      "max_label": "Full (classified partnership)",
+      "default_value": 0.2,
+      "effect": "Increases feasibility and reduces time_to_deploy for blocks requiring government involvement. Unlocks certain blocks entirely at high values.",
+      "affects_blocks": ["PER-04", "PHY-01", "SC-05", "NET-03", "PER-01"]
+    },
+    "vendor_cooperation": {
+      "label": "Vendor Cooperation",
+      "min_label": "None (market-driven only)",
+      "max_label": "Full (security-first roadmap)",
+      "default_value": 0.3,
+      "effect": "Reduces time_to_deploy and increases availability of vendor-dependent hardware blocks.",
+      "affects_blocks": ["HW-01", "HW-02", "HW-03", "HW-04", "HW-06", "HW-07", "HW-10"]
+    },
+    "annual_security_budget": {
+      "label": "Annual Security Budget",
+      "min_millions": 50,
+      "max_millions": 2000,
+      "default_millions": 200,
+      "effect": "Constrains how many blocks can be invested in simultaneously. Higher budget = more parallel investment. Low budget forces sequencing."
+    },
+    "organizational_transformation": {
+      "label": "Organizational Transformation Willingness",
+      "min_label": "Reluctant (Silicon Valley culture)",
+      "max_label": "Committed (national security culture)",
+      "default_value": 0.3,
+      "effect": "Modifies organizational_readiness scores for all blocks. Low = blocks with cultural barriers take longer and cost more. High = faster cultural adoption.",
+      "affects_blocks": ["NET-01", "PER-02", "PER-08", "PHY-01", "PER-01", "PER-04", "PER-05"]
+    },
+    "risk_tolerance": {
+      "label": "Risk Tolerance",
+      "min_label": "Conservative (assume worst case)",
+      "max_label": "Aggressive (assume best case)",
+      "default_value": 0.5,
+      "effect": "Shifts uncertainty ranges. Conservative: use worst-case estimates for feasibility, time, cost. Aggressive: use best-case."
+    }
+  },
+  "stakes": {
+    "exfiltration_consequences": [
+      "Safety guardrails removed — unrestricted dangerous capabilities released",
+      "Fine-tuning for offensive cyber, biological/chemical weapon design, mass manipulation",
+      "Years of R&D ($1-10B+) captured instantly by adversary",
+      "Military/intelligence applications: autonomous systems, strategic planning",
+      "Recursive improvement: stolen model used to accelerate stealing next model"
+    ],
+    "sabotage_consequences": [
+      "Corrupted research outputs — months of wasted R&D and wrong conclusions",
+      "Poisoned model deployed to customers — cascading trust failure",
+      "Subtle backdoors in model behavior — undetectable degradation",
+      "Destruction of safety alignment work — undermining entire field"
+    ],
+    "recursive_risk": "If automated AI R&D is compromised, an adversary gains recursive self-improvement capability outside any safety framework — potentially the highest-stakes scenario in the threat model."
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SL5 Explorable — Simulation Configuration",
+  "description": "Formulas and parameters that drive the simulation engine",
+  "type": "object",
+  "required": ["scoring", "breach_probability", "block_maturation", "distillation_model"],
+  "properties": {
+    "scoring": {
+      "type": "object",
+      "description": "How the overall SL score is computed",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["weakest_link", "weighted_harmonic", "hybrid"],
+          "default": "hybrid",
+          "description": "hybrid = 0.6 × min(category_scores) + 0.4 × harmonic_mean(category_scores)"
+        },
+        "hybrid_weights": {
+          "type": "object",
+          "properties": {
+            "weakest_link_weight": { "type": "number", "default": 0.6 },
+            "harmonic_mean_weight": { "type": "number", "default": 0.4 }
+          }
+        },
+        "category_weights": {
+          "type": "object",
+          "description": "Relative importance of each category in harmonic mean (must sum to 1.0)",
+          "properties": {
+            "network": { "type": "number", "default": 0.2 },
+            "machine": { "type": "number", "default": 0.2 },
+            "physical": { "type": "number", "default": 0.15 },
+            "personnel": { "type": "number", "default": 0.2 },
+            "supply_chain": { "type": "number", "default": 0.1 },
+            "ai_specific": { "type": "number", "default": 0.15 }
+          }
+        },
+        "sl_scale_mapping": {
+          "type": "array",
+          "description": "Maps raw score (0-100) to SL equivalent (1.0-5.0)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "raw_score_threshold": { "type": "number" },
+              "sl_equivalent": { "type": "number" }
+            },
+            "required": ["raw_score_threshold", "sl_equivalent"]
+          }
+        }
+      },
+      "required": ["method"]
+    },
+    "breach_probability": {
+      "type": "object",
+      "description": "How breach probability is calculated per adversary per chain",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": ["chain_max", "chain_aggregate"],
+          "default": "chain_max",
+          "description": "chain_max: P(breach) = max P(chain) across all viable chains. chain_aggregate: 1 - product(1 - P(chain))"
+        },
+        "effective_oc_formula": {
+          "type": "string",
+          "default": "base_oc + ai_oc_shift * ai_capability_at_year",
+          "description": "How effective OC is computed for a given block and year"
+        },
+        "oc_to_success_probability": {
+          "type": "object",
+          "description": "Maps (effective_oc - block_oc_threshold) delta to exploitation probability",
+          "properties": {
+            "curve_type": {
+              "type": "string",
+              "enum": ["sigmoid", "linear_clamp", "step"],
+              "default": "sigmoid"
+            },
+            "sigmoid_steepness": { "type": "number", "default": 2.0 },
+            "sigmoid_midpoint": {
+              "type": "number",
+              "default": 0,
+              "description": "At delta=0 (adversary exactly at threshold), probability is 50%"
+            }
+          }
+        },
+        "defense_in_depth_discount": {
+          "type": "object",
+          "description": "How multiple layers reduce breach probability",
+          "properties": {
+            "per_additional_layer_factor": {
+              "type": "number",
+              "default": 0.6,
+              "description": "Each additional independent layer multiplies breach probability by this factor"
+            },
+            "correlation_penalty": {
+              "type": "number",
+              "default": 0.2,
+              "description": "Shared dependencies between layers reduce the discount by this amount per shared dependency"
+            }
+          }
+        }
+      },
+      "required": ["model", "effective_oc_formula"]
+    },
+    "block_maturation": {
+      "type": "object",
+      "description": "How blocks progress from decision to deployment over time",
+      "properties": {
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["not_started", "investing", "implementing", "deployed", "mature"]
+          },
+          "default": ["not_started", "investing", "implementing", "deployed", "mature"]
+        },
+        "investing_to_implementing_fraction": {
+          "type": "number",
+          "default": 0.3,
+          "description": "First 30% of time_to_deploy is 'investing' phase"
+        },
+        "implementing_to_deployed_fraction": {
+          "type": "number",
+          "default": 0.7,
+          "description": "Remaining 70% of time_to_deploy is 'implementing' phase"
+        },
+        "deployed_to_mature_months": {
+          "type": "number",
+          "default": 12,
+          "description": "Additional months after deployment to reach full maturity/effectiveness"
+        },
+        "partial_effectiveness": {
+          "type": "object",
+          "description": "Block effectiveness while not yet fully deployed",
+          "properties": {
+            "not_started": { "type": "number", "default": 0.0 },
+            "investing": { "type": "number", "default": 0.1 },
+            "implementing": { "type": "number", "default": 0.4 },
+            "deployed": { "type": "number", "default": 0.85 },
+            "mature": { "type": "number", "default": 1.0 }
+          }
+        }
+      }
+    },
+    "distillation_model": {
+      "type": "object",
+      "description": "Continuous extraction accumulator for models served externally",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the model is served externally (false = air-gapped = no extraction risk)"
+        },
+        "base_extraction_rate_per_month": {
+          "type": "number",
+          "default": 0.02,
+          "description": "Fraction of model capability extractable per month with basic distillation (2026 baseline)"
+        },
+        "ai_efficiency_multiplier_at_full": {
+          "type": "number",
+          "default": 5.0,
+          "description": "How much AI capability multiplies extraction rate (at AI capability = 1.0)"
+        },
+        "defense_effectiveness": {
+          "type": "object",
+          "description": "How deployed inference-channel blocks reduce extraction rate",
+          "properties": {
+            "rate_limiting_reduction": { "type": "number", "default": 0.5 },
+            "output_perturbation_reduction": { "type": "number", "default": 0.3 },
+            "pattern_detection_reduction": { "type": "number", "default": 0.2 },
+            "restricted_output_format_reduction": { "type": "number", "default": 0.4 }
+          }
+        },
+        "compromise_threshold": {
+          "type": "number",
+          "default": 0.8,
+          "description": "Extraction fraction at which model is considered effectively stolen"
+        }
+      }
+    },
+    "inbound_attack_model": {
+      "type": "object",
+      "description": "Risk accumulator for attacks THROUGH the inference channel (inbound)",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the model accepts external input (false = air-gapped)"
+        },
+        "base_exploitation_probability_per_month": {
+          "type": "number",
+          "default": 0.005,
+          "description": "Monthly probability of successful exploitation via inference channel (2026 baseline)"
+        },
+        "ai_amplification_at_full": {
+          "type": "number",
+          "default": 4.0,
+          "description": "How much AI capability multiplies inbound attack success rate"
+        },
+        "defense_effectiveness": {
+          "type": "object",
+          "properties": {
+            "input_sanitization_reduction": { "type": "number", "default": 0.4 },
+            "capability_restriction_reduction": { "type": "number", "default": 0.6 },
+            "monitoring_reduction": { "type": "number", "default": 0.3 }
+          }
+        }
+      }
+    }
+  }
+}

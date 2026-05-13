@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SL5 Explorable — World State Configuration",
+  "description": "Global parameters that define the simulation environment",
+  "type": "object",
+  "required": ["timeline", "ai_capability_curve", "oc_definitions", "sl_definitions", "defense_layers", "global_sliders"],
+  "properties": {
+    "timeline": {
+      "type": "object",
+      "properties": {
+        "start_year": { "type": "number", "default": 2024 },
+        "end_year": { "type": "number", "default": 2030 },
+        "reference_year": {
+          "type": "number",
+          "default": 2026,
+          "description": "The year all 'current_state' values in blocks refer to"
+        }
+      },
+      "required": ["start_year", "end_year", "reference_year"]
+    },
+    "ai_capability_curve": {
+      "type": "object",
+      "description": "AI capability as OC multiplier, modeled as curve from 0.0 to 1.0",
+      "properties": {
+        "default_curve": {
+          "type": "array",
+          "description": "Year → capability pairs defining the default trajectory",
+          "items": {
+            "type": "object",
+            "properties": {
+              "year": { "type": "number" },
+              "capability": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "required": ["year", "capability"]
+          }
+        },
+        "optimistic_multiplier": {
+          "type": "number",
+          "default": 0.7,
+          "description": "Time compression factor for optimistic AI timeline (reaches milestones faster)"
+        },
+        "pessimistic_multiplier": {
+          "type": "number",
+          "default": 1.5,
+          "description": "Time stretch factor for pessimistic AI timeline (reaches milestones slower)"
+        }
+      },
+      "required": ["default_curve"]
+    },
+    "oc_definitions": {
+      "type": "array",
+      "description": "Operational Capacity tiers (from RAND)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level": { "type": "number", "minimum": 1, "maximum": 5 },
+          "name": { "type": "string" },
+          "budget_millions": { "type": "number" },
+          "team_size": { "type": "number" },
+          "time_horizon_months": { "type": "number" },
+          "description": { "type": "string" },
+          "typical_actors": { "type": "array", "items": { "type": "string" } },
+          "key_capabilities": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["level", "name", "budget_millions", "team_size", "description"]
+      }
+    },
+    "sl_definitions": {
+      "type": "array",
+      "description": "Security Level definitions (from RAND, extended)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level": { "type": "number", "minimum": 1, "maximum": 5 },
+          "name": { "type": "string" },
+          "defends_against": { "type": "string", "description": "Which OC tier this SL is designed to thwart" },
+          "required_independent_layers": { "type": "number" },
+          "description": { "type": "string" },
+          "achievable": {
+            "type": "boolean",
+            "description": "Whether this SL is currently achievable (SL5 = false per RAND)"
+          }
+        },
+        "required": ["level", "name", "defends_against", "required_independent_layers", "achievable"]
+      }
+    },
+    "defense_layers": {
+      "type": "array",
+      "description": "The independent defense layers that blocks contribute to",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "independence_notes": {
+            "type": "string",
+            "description": "What makes this layer independent (or what could correlate it with others)"
+          }
+        },
+        "required": ["id", "name"]
+      }
+    },
+    "global_sliders": {
+      "type": "object",
+      "description": "User-adjustable world parameters",
+      "properties": {
+        "ai_advancement_timeline": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string", "default": "AI Advancement Timeline" },
+            "min_label": { "type": "string", "default": "Pessimistic (slower)" },
+            "max_label": { "type": "string", "default": "Optimistic (faster)" },
+            "default_value": { "type": "number", "default": 0.5, "minimum": 0, "maximum": 1 },
+            "effect": { "type": "string", "description": "How this slider modifies the AI capability curve" }
+          }
+        },
+        "government_cooperation": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string", "default": "Government Cooperation" },
+            "min_label": { "type": "string", "default": "None" },
+            "max_label": { "type": "string", "default": "Full" },
+            "default_value": { "type": "number", "default": 0.2, "minimum": 0, "maximum": 1 },
+            "effect": { "type": "string" },
+            "affects_blocks": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Block IDs whose feasibility/availability is modified by this slider"
+            }
+          }
+        },
+        "vendor_cooperation": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string", "default": "Vendor Cooperation" },
+            "min_label": { "type": "string", "default": "None" },
+            "max_label": { "type": "string", "default": "Full" },
+            "default_value": { "type": "number", "default": 0.3, "minimum": 0, "maximum": 1 },
+            "effect": { "type": "string" },
+            "affects_blocks": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "annual_security_budget": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string", "default": "Annual Security Budget" },
+            "min_millions": { "type": "number", "default": 50 },
+            "max_millions": { "type": "number", "default": 2000 },
+            "default_millions": { "type": "number", "default": 200 },
+            "effect": { "type": "string" }
+          }
+        },
+        "organizational_transformation": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string", "default": "Organizational Transformation Willingness" },
+            "min_label": { "type": "string", "default": "Reluctant (Silicon Valley culture)" },
+            "max_label": { "type": "string", "default": "Committed (national security culture)" },
+            "default_value": { "type": "number", "default": 0.3, "minimum": 0, "maximum": 1 },
+            "effect": { "type": "string" },
+            "affects_blocks": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "risk_tolerance": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string", "default": "Risk Tolerance" },
+            "min_label": { "type": "string", "default": "Conservative" },
+            "max_label": { "type": "string", "default": "Aggressive" },
+            "default_value": { "type": "number", "default": 0.5, "minimum": 0, "maximum": 1 },
+            "effect": { "type": "string", "description": "Affects which SL score is 'acceptable' for the org" }
+          }
+        }
+      }
+    },
+    "stakes": {
+      "type": "object",
+      "description": "What's at risk if security fails — brief framing",
+      "properties": {
+        "exfiltration_consequences": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sabotage_consequences": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "recursive_risk": {
+          "type": "string",
+          "description": "The recursive improvement / automated R&D special case"
+        }
+      }
+    }
+  }
+}

@@ -24,12 +24,12 @@ function App() {
 
       const blocks: Block[] = [];
       for (const file of blockFiles) {
-        const resp = await fetch(`/data/${file}`);
+        const resp = await fetch(`${import.meta.env.BASE_URL}data/${file}`);
         const data = await resp.json();
         blocks.push(...data);
       }
 
-      const chainsResp = await fetch("/data/attack-chains.json");
+      const chainsResp = await fetch(`${import.meta.env.BASE_URL}data/attack-chains.json`);
       const chains = await chainsResp.json();
 
       loadData(blocks, chains);

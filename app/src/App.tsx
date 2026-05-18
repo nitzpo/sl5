@@ -57,15 +57,9 @@ function App() {
               Click for details | Right-click to cycle state
             </span>
             <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-sm bg-blue-600" /> Hard stop
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-sm bg-amber-600" /> Probabilistic
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-sm bg-teal-600" /> Hybrid
-              </span>
+              <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
+              <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
+              <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
             </div>
           </div>
           <BlockGrid onSelectBlock={setSelectedBlock} />
@@ -82,6 +76,17 @@ function App() {
 
       <BottomPanel />
     </div>
+  );
+}
+
+function LegendItem({ color, label, tip }: { color: string; label: string; tip: string }) {
+  return (
+    <span className="relative flex items-center gap-1 group cursor-default">
+      <span className={`w-2 h-2 rounded-sm ${color}`} /> {label}
+      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+        {tip}
+      </span>
+    </span>
   );
 }
 

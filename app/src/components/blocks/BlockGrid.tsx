@@ -3,6 +3,7 @@ import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
+import { ChainOverlay } from "./ChainOverlay";
 import {
   CATEGORY_ORDER,
   CATEGORY_LABELS,
@@ -95,6 +96,9 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
             </g>
           );
         })}
+
+        {/* Attack chain overlay */}
+        <ChainOverlay blocks={blocks} hexSize={hexSize} />
       </svg>
 
       {/* HTML tooltip rendered outside SVG — never clipped */}

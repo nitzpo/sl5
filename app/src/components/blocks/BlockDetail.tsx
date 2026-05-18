@@ -28,7 +28,7 @@ export function BlockDetail({ block, onClose }: BlockDetailProps) {
   const color = DEFENSE_COLORS[block.defense_type];
 
   return (
-    <div className="p-4 text-sm space-y-3 overflow-y-auto max-h-full">
+    <div className="p-2.5 text-sm space-y-2.5 overflow-y-auto max-h-full">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-semibold text-gray-100">
@@ -63,7 +63,7 @@ export function BlockDetail({ block, onClose }: BlockDetailProps) {
       {/* State selector */}
       <div>
         <label className="text-xs text-gray-500 block mb-1">State</label>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {(Object.keys(STATE_LABELS) as BlockState[]).map((s) => (
             <button
               key={s}

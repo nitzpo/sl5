@@ -3,6 +3,7 @@ import type { Block, BlockState } from "../../engine/types";
 import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { DEFENSE_COLORS } from "../../utils/colors";
 import { aiDegradation } from "../../engine/scoring";
+import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
 
 interface BlockCellProps {
@@ -42,10 +43,15 @@ export function BlockCell({
 }: BlockCellProps) {
   const hexRef = useRef<SVGPolygonElement>(null);
   const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
+  const adversaryOc = useSimulationStore((s) => s.adversaryOc);
 
   const color = DEFENSE_COLORS[block.defense_type];
   const fillFraction = STATE_FILL[state];
   const degradation = aiDegradation(block, year, aiTimelineSlider);
+
+  const aiCap = getAiCapability(year, aiTimelineSlider);
+  const effectiveOc = adversaryOc + block.adversary_exploitation.ai_oc_shift * aiCap;
+  const beyondAdversary = block.adversary_exploitation.oc_threshold_to_exploit > effectiveOc;
 
   const points = hexPoints(cx, cy, size);
   const clipId = `clip-${block.id}`;
@@ -79,6 +85,7 @@ export function BlockCell({
   return (
     <g
       className="cursor-pointer select-none"
+      opacity={beyondAdversary && state === "not_started" ? 0.35 : 1}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={onHoverEnd}
       onClick={() => onSelect(block)}

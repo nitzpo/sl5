@@ -20,6 +20,8 @@ export function AttackerView() {
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const year = useSimulationStore((s) => s.year);
   const aiTimeline = useSimulationStore((s) => s.sliders.ai_timeline);
+  const selectedChainId = useSimulationStore((s) => s.selectedChainId);
+  const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
   const { breachProbabilities } = useSimulationResults();
 
   const aiCap = getAiCapability(year, aiTimeline);
@@ -81,6 +83,10 @@ export function AttackerView() {
                 probability={probability}
                 blockStates={blockStates}
                 rank={i + 1}
+                selected={selectedChainId === chain.id}
+                onSelect={() =>
+                  setSelectedChain(selectedChainId === chain.id ? null : chain.id)
+                }
               />
             ))}
           </div>
@@ -94,18 +100,32 @@ export function AttackerView() {
             Blocked Chains
           </h3>
           <div className="space-y-1">
-            {blockedChains.map(({ chain }) => (
-              <div
-                key={chain.id}
-                className="flex items-center gap-2 text-xs text-gray-500"
-              >
-                <span className="text-emerald-600">■</span>
-                <span>{chain.name}</span>
-                <span className="text-gray-700 ml-auto">
-                  stopped by {chain.stoppers[0]}
-                </span>
-              </div>
-            ))}
+            {blockedChains.map(({ chain }) => {
+              const deployedStopper = chain.stoppers.find((id) => {
+                const s = blockStates[id] ?? "not_started";
+                return s === "deployed" || s === "mature" || s === "implementing";
+              });
+              const reason = deployedStopper
+                ? `stopped by ${deployedStopper}`
+                : `too complex for OC${adversaryOc}`;
+              return (
+                <button
+                  key={chain.id}
+                  onClick={() =>
+                    setSelectedChain(selectedChainId === chain.id ? null : chain.id)
+                  }
+                  className={`flex items-center gap-2 text-xs w-full text-left rounded px-1.5 py-0.5 transition-colors ${
+                    selectedChainId === chain.id
+                      ? "bg-gray-800 text-gray-300"
+                      : "text-gray-500 hover:bg-gray-900"
+                  }`}
+                >
+                  <span className="text-emerald-600">■</span>
+                  <span>{chain.name}</span>
+                  <span className="text-gray-700 ml-auto">{reason}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -118,14 +138,23 @@ function ChainCard({
   probability,
   blockStates,
   rank,
+  selected,
+  onSelect,
 }: {
   chain: AttackChain;
   probability: number;
   blockStates: Record<string, BlockState | string>;
   rank: number;
+  selected: boolean;
+  onSelect: () => void;
 }) {
   return (
-    <div className="bg-gray-900 rounded p-2.5">
+    <button
+      onClick={onSelect}
+      className={`bg-gray-900 rounded p-2.5 w-full text-left transition-colors ${
+        selected ? "ring-1 ring-red-500/60" : "hover:bg-gray-800/60"
+      }`}
+    >
       <div className="flex items-start justify-between">
         <div>
           <span className="text-xs text-red-500 font-bold mr-1.5">#{rank}</span>
@@ -150,9 +179,9 @@ function ChainCard({
         {chain.narrative.brief}
       </p>
 
-      {/* Blocks exploited with their states */}
+      {/* Stopper blocks with their states */}
       <div className="flex flex-wrap gap-1.5 mt-1.5">
-        {chain.blocks_exploited.map((blockId) => {
+        {chain.stoppers.map((blockId) => {
           const state = (blockStates[blockId] ?? "not_started") as string;
           const icon = STATE_ICONS[state] ?? "?";
           const isAbsent = state === "not_started" || state === "investing";
@@ -170,6 +199,6 @@ function ChainCard({
           );
         })}
       </div>
-    </div>
+    </button>
   );
 }

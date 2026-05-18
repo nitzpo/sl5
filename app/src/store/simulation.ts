@@ -21,6 +21,7 @@ interface SimulationStore {
   sliders: Sliders;
   modelServedExternally: boolean;
   expertMode: boolean;
+  selectedChainId: string | null;
 
   // Actions
   loadData: (blocks: Block[], chains: AttackChain[]) => void;
@@ -32,6 +33,7 @@ interface SimulationStore {
   setSlider: (key: keyof Sliders, value: number) => void;
   setModelServed: (served: boolean) => void;
   setExpertMode: (expert: boolean) => void;
+  setSelectedChain: (chainId: string | null) => void;
   resetToBaseline: () => void;
 }
 
@@ -63,6 +65,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   sliders: DEFAULT_SLIDERS,
   modelServedExternally: true,
   expertMode: false,
+  selectedChainId: null,
 
   loadData: (blocks, chains) => {
     const baselineStates: Record<string, BlockState> = {};
@@ -96,6 +99,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
   setModelServed: (served) => set({ modelServedExternally: served }),
   setExpertMode: (expert) => set({ expertMode: expert }),
+  setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
 
   resetToBaseline: () => {
     const { blocks } = get();

@@ -33,7 +33,7 @@ export function RightPanels({ selectedBlock, onCloseBlock }: RightPanelsProps) {
     <div className="flex h-full shadow-xl">
       {/* Perspective panel (wider, left of score panel) */}
       {perspectiveOpen ? (
-        <div className="w-72 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
+        <div className="w-80 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
           {/* Tabs at top */}
           <div className="flex items-center border-b border-gray-800 px-2 py-1.5 shrink-0">
             {PERSPECTIVES.map(({ key, label }) => (
@@ -79,7 +79,7 @@ export function RightPanels({ selectedBlock, onCloseBlock }: RightPanelsProps) {
 
       {/* Score panel (narrow, right side) */}
       {scoreOpen ? (
-        <div className="w-64 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
+        <div className="w-80 border-l border-gray-800 bg-gray-950 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b border-gray-800 px-3 py-1.5 shrink-0">
             <span className="text-xs text-gray-500 font-medium">
               {showBlockDetail ? "Block Detail" : "Security Posture"}

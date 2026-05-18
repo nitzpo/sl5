@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { useSimulationStore } from "./store/simulation";
 import { Header } from "./components/layout/Header";
 import { BottomPanel } from "./components/layout/BottomPanel";
+import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
-import { BlockDetail } from "./components/blocks/BlockDetail";
-import { ScoreCard } from "./components/analysis/ScoreCard";
 import type { Block } from "./engine/types";
 
 function App() {
@@ -50,9 +49,9 @@ function App() {
     <div className="flex flex-col h-screen">
       <Header />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left panel: Block Grid */}
-        <div className="flex-1 overflow-auto p-4">
+      <div className="relative flex-1 overflow-hidden">
+        {/* Block Grid — full area, scrollable */}
+        <div className="absolute inset-0 overflow-auto p-4">
           <div className="mb-2 flex items-center gap-4">
             <span className="text-xs text-gray-600">
               Click for details | Right-click to cycle state
@@ -72,18 +71,12 @@ function App() {
           <BlockGrid onSelectBlock={setSelectedBlock} />
         </div>
 
-        {/* Right panel: Analysis / Detail */}
-        <div className="w-80 border-l border-gray-800 overflow-y-auto bg-gray-950">
-          {selectedBlock ? (
-            <BlockDetail
-              block={selectedBlock}
-              onClose={() => setSelectedBlock(null)}
-            />
-          ) : (
-            <div className="p-4">
-              <ScoreCard />
-            </div>
-          )}
+        {/* Right panels — overlay on top of grid */}
+        <div className="absolute top-0 right-0 h-full z-10">
+          <RightPanels
+            selectedBlock={selectedBlock}
+            onCloseBlock={() => setSelectedBlock(null)}
+          />
         </div>
       </div>
 

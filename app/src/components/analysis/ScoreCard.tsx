@@ -95,7 +95,7 @@ export function ScoreCard() {
           {(Object.entries(categoryScores) as [Category, number][]).map(
             ([cat, score]) => (
               <div key={cat} className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 w-20 truncate">
+                <span className="text-xs text-gray-400 w-20 shrink-0">
                   {CATEGORY_LABELS[cat]}
                 </span>
                 <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">

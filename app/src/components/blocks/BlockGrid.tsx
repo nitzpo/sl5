@@ -44,9 +44,9 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
   return (
     <div className="relative">
       <svg
-        width="100%"
         viewBox={`0 0 ${width} ${height}`}
         className="select-none"
+        style={{ width: "100%", maxWidth: `${Math.round(width * 1.4)}px` }}
       >
         {CATEGORY_ORDER.map((category) => {
           const catBlocks = blocksByCategory[category] ?? [];

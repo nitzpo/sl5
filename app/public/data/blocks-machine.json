@@ -1,0 +1,775 @@
+[
+  {
+    "id": "HW-01",
+    "name": "Accelerator Hardware Root-of-Trust",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "Integrated root-of-trust in AI accelerators with hardware-provisioned identity (e-fuse keys), secure key storage, and remote attestation capability. The accelerator can cryptographically prove its identity and configuration state to remote parties without trusting the host.",
+    "current_state": {
+      "summary": "NVIDIA Hopper/Blackwell have partial implementation (dependent on CPU TEE). Huawei Ascend-CC research demonstrates accelerator-controlled variant. No fully SL5-compliant accelerator exists commercially.",
+      "deployed_by": ["partial_nvidia_hopper_blackwell"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 80,
+        "notes": "Concept proven in research (Ascend-CC) and partially in commercial products. Full SL5 requirement (accelerator-controlled, excluding CPU from TCB) not yet in production silicon.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 30,
+        "max": 48,
+        "notes": "Chip design cycle. If vendor already has it in roadmap, faster. If not, requires influencing vendor roadmap + full design cycle."
+      },
+      "cost": {
+        "upfront_millions": { "min": 100, "max": 500 },
+        "annual_ongoing_millions": { "min": 0, "max": 5 },
+        "notes": "R&D cost borne by chip vendor. Customer pays via chip premium. Massive if custom silicon needed."
+      },
+      "vendor_dependency": {
+        "value": 98,
+        "key_vendors": ["accelerator_manufacturer"],
+        "notes": "Almost entirely vendor-controlled. Customer can only influence via procurement requirements and market pressure. Must engage during architecture phase — cannot retrofit."
+      },
+      "supply_scarcity": {
+        "value": 75,
+        "bottleneck": "Only 3-4 entities globally can design and fab AI accelerators at frontier scale",
+        "notes": "NVIDIA, Google, AMD/Intel, AWS — very few options"
+      },
+      "organizational_readiness": {
+        "value": 75,
+        "barriers": ["vendor_negotiation_complexity"],
+        "notes": "Easy to consume once in silicon. The challenge is getting it into silicon — requires vendor cooperation."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without hardware root-of-trust, a compromised host system can impersonate the accelerator, load unauthorized firmware, or access weight data without detection. The accelerator cannot prove it is genuine or running authorized code."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["HW-02", "HW-03", "HW-06", "HW-09"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["accelerator_security"],
+      "shared_dependencies": ["accelerator_manufacturer_firmware"]
+    },
+    "open_questions": [
+      {
+        "question": "Will vendors prioritize SL5-grade root-of-trust (excluding CPU from TCB) in their roadmaps by 2027-2028?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Must rely on CPU TEE (weaker model) or wait additional chip generation"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "TPM (Trusted Platform Module) chips provide hardware root-of-trust for PCs — same concept extended to AI accelerators. The difference: TPMs protect general-purpose computing; this protects model weights specifically.",
+        "source": "TCG TPM specification",
+        "year": 2003
+      }
+    ]
+  },
+  {
+    "id": "HW-02",
+    "name": "Device-Controlled Memory Isolation",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "AI accelerators deny host system access to memory regions containing model weights via DMA or other mechanism. This isolation is controlled by the accelerator itself — the host cannot override it even with root/kernel privileges.",
+    "current_state": {
+      "summary": "NVIDIA Blackwell has partial implementation (dependent on CPU TEE controlling access). True device-controlled isolation (accelerator denies host independently of host software) demonstrated in Ascend-CC research but not in commercial products.",
+      "deployed_by": ["partial_nvidia_blackwell"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 75,
+        "notes": "Research demonstrates feasibility. Commercial implementation requires silicon changes — memory controller must be under accelerator control, not host control.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 30,
+        "max": 48,
+        "notes": "Same chip design cycle constraint as HW-01. These are co-designed features."
+      },
+      "cost": {
+        "upfront_millions": { "min": 100, "max": 500 },
+        "annual_ongoing_millions": { "min": 0, "max": 5 },
+        "notes": "Bundled with HW-01 — same silicon investment. Marginal cost over root-of-trust is low."
+      },
+      "vendor_dependency": {
+        "value": 98,
+        "key_vendors": ["accelerator_manufacturer"],
+        "notes": "Entirely vendor-controlled. Fundamental to chip memory architecture."
+      },
+      "supply_scarcity": {
+        "value": 80,
+        "bottleneck": "No commercially available accelerator provides true device-controlled isolation today",
+        "notes": "Must wait for next-gen silicon or influence vendor roadmap"
+      },
+      "organizational_readiness": {
+        "value": 70,
+        "barriers": ["driver_compatibility", "workload_adaptation"],
+        "notes": "Once available, adoption requires driver/framework updates but not cultural change."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without memory isolation, any process that achieves kernel-level access on the host (via zero-day, driver vulnerability, or BMC compromise) can directly read model weights from GPU/accelerator memory. Full host compromise = full weight access."
+    },
+    "dependencies": {
+      "requires": ["HW-01"],
+      "enhances": ["HW-07"],
+      "enabled_by": ["HW-01"]
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["accelerator_security", "host_security"],
+      "shared_dependencies": ["accelerator_manufacturer_firmware"]
+    },
+    "open_questions": [
+      {
+        "question": "Performance impact of device-controlled memory isolation on training throughput?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "5-20% training slowdown — significant at frontier scale but potentially acceptable for security"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Intel SGX enclaves provide CPU-controlled memory isolation where even the OS cannot read enclave memory. Same principle extended from CPU to accelerator domain.",
+        "source": "Intel SGX architecture",
+        "year": 2015
+      }
+    ]
+  },
+  {
+    "id": "HW-03",
+    "name": "Accelerator Interconnect Encryption",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "Hardware-level encryption on chip-to-chip interconnects (NVLink, NeuronLink, custom fabrics) so model weights in transit between accelerators are ciphertext, not plaintext.",
+    "current_state": {
+      "summary": "NVIDIA Blackwell supports it. Google TPU v4 and AWS Trainium do not. Chip design cycles mean 2-3 year lag from commitment to availability.",
+      "deployed_by": ["nvidia_blackwell_users"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 90,
+        "notes": "Proven on Blackwell; the engineering is solved, just needs broader adoption across vendors.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 30,
+        "max": 48,
+        "notes": "Chip design cycle from commitment to tape-out to volume production. If vendor already has it, deployment is just procurement (6-12 months)."
+      },
+      "cost": {
+        "upfront_millions": { "min": 50, "max": 200 },
+        "annual_ongoing_millions": { "min": 0, "max": 5 },
+        "notes": "Cost is borne by chip vendor in R&D. Customer pays via chip price premium. Upfront = vendor investment to add feature."
+      },
+      "vendor_dependency": {
+        "value": 95,
+        "key_vendors": ["accelerator_manufacturer"],
+        "notes": "Almost entirely in vendor hands. Customer can only influence via procurement requirements and market pressure."
+      },
+      "supply_scarcity": {
+        "value": 70,
+        "bottleneck": "Only 1 of 3 major AI accelerator vendors ships interconnect encryption today",
+        "notes": "Constrained by vendor roadmap decisions, not physical scarcity"
+      },
+      "organizational_readiness": {
+        "value": 80,
+        "barriers": ["vendor_selection_constraints", "possible_performance_overhead"],
+        "notes": "Once the chip exists, consuming it is straightforward. Barrier is vendor availability, not org capability."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "An adversary with physical access to the datacenter can tap interconnect cables between accelerators and passively record model weights transmitted in plaintext during training or inference."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["PHY-01", "PER-02"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["accelerator_security"],
+      "shared_dependencies": ["accelerator_manufacturer_firmware"]
+    },
+    "open_questions": [
+      {
+        "question": "Performance overhead of interconnect encryption at training scale?",
+        "uncertainty_level": "low",
+        "impact_if_resolved_negatively": "Training throughput reduction 5-15% — significant at frontier scale but manageable"
+      },
+      {
+        "question": "Will all major accelerator vendors ship this by 2028?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Orgs locked to non-compliant vendors cannot achieve SL5 hardware security"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "NSA ANT catalog included FIREWALK — hardware implant disguised as RJ45 jack that passively intercepts network traffic. Same technique applies to high-bandwidth interconnects.",
+        "source": "Der Spiegel / Snowden documents",
+        "year": 2013
+      }
+    ]
+  },
+  {
+    "id": "HW-04",
+    "name": "Tamper Protection (Chip-Level)",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "Physical tamper protection for AI accelerator compute cores and memory where model weights exist unencrypted during computation. Detection mechanisms identify physical attacks; response mechanisms may zeroize sensitive data.",
+    "current_state": {
+      "summary": "Only 4 FIPS 140-2 Level 4 HSMs exist worldwide (all IBM). No AI accelerator has equivalent tamper protection. Tamper-evident seals exist but true tamper-resistant silicon for AI workloads does not.",
+      "deployed_by": ["hsm_manufacturers"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 55,
+        "notes": "HSMs prove concept at small scale. Scaling tamper protection to AI accelerator chips (with massive die sizes, high power, liquid cooling) is an unsolved engineering challenge.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 48,
+        "max": 72,
+        "notes": "Requires fundamental chip packaging innovation. Beyond normal chip design cycle — needs new materials science and manufacturing processes."
+      },
+      "cost": {
+        "upfront_millions": { "min": 200, "max": 1000 },
+        "annual_ongoing_millions": { "min": 10, "max": 50 },
+        "notes": "Massive R&D. New packaging, new fab processes, new testing. Per-chip cost increase unknown but likely significant."
+      },
+      "vendor_dependency": {
+        "value": 99,
+        "key_vendors": ["accelerator_manufacturer", "advanced_packaging_vendor"],
+        "notes": "Completely in vendor hands. No customer can add tamper protection post-manufacture."
+      },
+      "supply_scarcity": {
+        "value": 90,
+        "bottleneck": "No AI accelerator with chip-level tamper protection exists. Zero supply.",
+        "notes": "First-of-kind product needed. Could be 5+ years from availability."
+      },
+      "organizational_readiness": {
+        "value": 85,
+        "barriers": ["procurement_only"],
+        "notes": "Once available, it's just buying the right chip. No org change needed to consume."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "An OC5 adversary with physical access and advanced laboratory equipment could decap chips, probe memory cells, or use focused ion beams to extract model weights during computation. Without tamper protection, the chip has no defense against physical attack."
+    },
+    "dependencies": {
+      "requires": ["HW-01"],
+      "enhances": ["HW-05"],
+      "enabled_by": ["HW-01"]
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["accelerator_security", "physical_perimeter"],
+      "shared_dependencies": ["accelerator_manufacturer_firmware"]
+    },
+    "open_questions": [
+      {
+        "question": "Can tamper protection scale to AI accelerator form factors (large dies, high TDP, liquid cooling)?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Chip-level tamper protection for AI accelerators may be infeasible — must rely on rack/room-level physical protection instead"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "IBM HSMs (FIPS 140-2 Level 4) use multiple tamper-detection layers: temperature sensors, voltage monitors, physical mesh, chemical reactive coatings. On tamper detection, all keys are zeroized instantly.",
+        "source": "IBM 4770 Cryptographic Coprocessor",
+        "year": 2012
+      }
+    ]
+  },
+  {
+    "id": "HW-05",
+    "name": "Tamper-Evident Enclosures (Rack/Room Scale)",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "Shielded rack enclosures meeting NSA 94-106 specifications (100dB attenuation from 1kHz to 10GHz). Provide physical protection at rack or room scale when chip-level tamper protection is unavailable. Also provides EM shielding against TEMPEST attacks.",
+    "current_state": {
+      "summary": "NSA 94-106 shielded racks exist commercially. Used in government facilities. Not deployed in AI datacenter context. Products available from multiple vendors.",
+      "deployed_by": ["government_scif", "military_facilities"],
+      "baseline_state": "proven_not_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 92,
+        "notes": "Products exist meeting spec. Challenge is adapting for AI datacenter thermal requirements — shielded racks impede cooling. Liquid cooling may complicate shielding integrity.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 24,
+        "notes": "Procurement, installation, integration with cooling. Longer if facility wasn't designed for them (weight, power, cooling constraints)."
+      },
+      "cost": {
+        "upfront_millions": { "min": 10, "max": 60 },
+        "annual_ongoing_millions": { "min": 2, "max": 10 },
+        "notes": "Per-rack cost is high ($50-200K per shielded rack × hundreds of racks). Ongoing = maintenance of shielding integrity, cooling management."
+      },
+      "vendor_dependency": {
+        "value": 55,
+        "key_vendors": ["shielded_enclosure_manufacturer"],
+        "notes": "Multiple vendors produce NSA 94-106 compliant enclosures. May need customization for AI datacenter thermal profiles."
+      },
+      "supply_scarcity": {
+        "value": 45,
+        "bottleneck": "Shielded rack manufacturers with capacity for datacenter-scale orders + AI thermal requirements",
+        "notes": "Small market suddenly needing to scale if multiple AI labs require this simultaneously"
+      },
+      "organizational_readiness": {
+        "value": 50,
+        "barriers": ["datacenter_design_impact", "cooling_complexity", "maintenance_access"],
+        "notes": "Shielded racks complicate physical maintenance access and thermal management. Not a cultural barrier but an engineering one."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without shielded enclosures, an adversary can use TEMPEST techniques to capture electromagnetic emissions from computing hardware and reconstruct processed data. Advanced models could potentially modulate EM emissions deliberately as a covert exfiltration channel."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["PHY-02", "HW-04"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["physical_perimeter", "accelerator_security"],
+      "shared_dependencies": []
+    },
+    "open_questions": [
+      {
+        "question": "Required attenuation level for Weight Enclave racks: full NSA 94-106 or reduced spec acceptable?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Full spec is significantly more expensive and limits cooling options"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "TEMPEST-rated equipment has been required for classified computing since the 1960s. Van Eck phreaking (1985) demonstrated reconstruction of CRT display contents from EM emissions at distance.",
+        "source": "TEMPEST program history",
+        "year": 1985
+      }
+    ]
+  },
+  {
+    "id": "HW-06",
+    "name": "Execution Integrity Verification",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "AI accelerators verify that code is cryptographically signed before execution — extending beyond firmware to all operator binaries and workloads. Prevents unauthorized code from running on accelerators that have access to model weights.",
+    "current_state": {
+      "summary": "Firmware signing is standard on modern accelerators. Extending to workload/operator signing is not. The full SL5 requirement (all code on accelerator must be signed, no exceptions) requires new verification mechanisms.",
+      "deployed_by": ["partial_firmware_only"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 78,
+        "notes": "Firmware signing exists. Extending to arbitrary workloads requires either fused-kernel verification or task-sequence attestation — research-stage approaches.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 24,
+        "max": 42,
+        "notes": "Requires both silicon features (hardware verification of workload signatures) and software ecosystem (signing all ML kernels/operators)."
+      },
+      "cost": {
+        "upfront_millions": { "min": 30, "max": 150 },
+        "annual_ongoing_millions": { "min": 5, "max": 20 },
+        "notes": "Silicon cost + building signing infrastructure + ongoing workload certification pipeline."
+      },
+      "vendor_dependency": {
+        "value": 85,
+        "key_vendors": ["accelerator_manufacturer", "ml_framework_vendor"],
+        "notes": "Needs both hardware support (verification logic in silicon) and software ecosystem cooperation (signed kernels in PyTorch/JAX/etc)."
+      },
+      "supply_scarcity": {
+        "value": 65,
+        "bottleneck": "No complete ecosystem for signed ML workloads exists",
+        "notes": "Requires building new toolchain from scratch"
+      },
+      "organizational_readiness": {
+        "value": 35,
+        "barriers": ["ml_workflow_disruption", "kernel_signing_overhead", "custom_kernel_prohibition"],
+        "notes": "ML researchers write custom CUDA kernels. Signed-only execution means all custom code must go through a certification pipeline — major friction."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without execution integrity verification, an adversary who compromises the host can load malicious code onto the accelerator — code designed to read model weights from memory and exfiltrate them. AI capability makes crafting such exploits significantly easier."
+    },
+    "dependencies": {
+      "requires": ["HW-01"],
+      "enhances": ["HW-10", "NET-02"],
+      "enabled_by": ["HW-01"]
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["accelerator_security", "host_security"],
+      "shared_dependencies": ["code_signing_infrastructure", "accelerator_manufacturer_firmware"]
+    },
+    "open_questions": [
+      {
+        "question": "Can composition attacks be prevented — where individually-signed operations are sequenced to exfiltrate data?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Signing individual operations is insufficient; need task-sequence verification or fused-kernel-only execution"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "iOS requires all code to be signed by Apple before execution on the device. This has been the single most effective defense against iPhone malware — despite billions of attack attempts.",
+        "source": "Apple iOS code signing",
+        "year": 2008
+      }
+    ]
+  },
+  {
+    "id": "HW-07",
+    "name": "Confidential Computing / TEE",
+    "category": "machine",
+    "summary_group": "confidential_computing",
+    "description": "Trusted Execution Environments that protect model weights during computation. Even with full host/OS compromise, the TEE keeps data encrypted and inaccessible. For AI accelerators, this means the GPU/TPU processes weights inside a hardware-protected enclave.",
+    "current_state": {
+      "summary": "NVIDIA H100/Blackwell have GPU TEE (CC mode) but depend on CPU TEE and exclude physical attacks from threat model. Research (Ascend-CC) shows accelerator-only TEE is possible. No product meets full SL5 requirements.",
+      "deployed_by": ["partial_nvidia_h100_cc_mode"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 70,
+        "notes": "Partial solutions exist commercially. Full SL5 requirement (excluding CPU from TCB, defending against physical attacks) is research-stage. Significant performance overhead currently.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 24,
+        "max": 48,
+        "notes": "Current partial solutions deployable now. Full SL5-grade confidential computing: 2-4 years pending silicon advances."
+      },
+      "cost": {
+        "upfront_millions": { "min": 50, "max": 300 },
+        "annual_ongoing_millions": { "min": 10, "max": 40 },
+        "notes": "Performance overhead means more hardware needed for same training throughput. 10-30% overhead = 10-30% more GPU spend."
+      },
+      "vendor_dependency": {
+        "value": 95,
+        "key_vendors": ["accelerator_manufacturer", "cpu_tee_vendor"],
+        "notes": "Entirely vendor-dependent for the hardware TEE implementation."
+      },
+      "supply_scarcity": {
+        "value": 60,
+        "bottleneck": "GPUs with CC mode are same SKU but feature must be enabled; full SL5-grade doesn't exist yet",
+        "notes": "Current CC mode available on existing hardware. Future versions need new silicon."
+      },
+      "organizational_readiness": {
+        "value": 55,
+        "barriers": ["performance_overhead", "workload_compatibility", "attestation_infrastructure"],
+        "notes": "Requires building attestation verification infrastructure and accepting performance loss."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without confidential computing, any adversary who achieves host-level compromise (root/kernel access via zero-day chain) can read model weights directly from accelerator memory. TEE makes this impossible even with full host compromise."
+    },
+    "dependencies": {
+      "requires": ["HW-01"],
+      "enhances": ["HW-02", "NET-01"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["accelerator_security"],
+      "shared_dependencies": ["accelerator_manufacturer_firmware", "tee_implementation"]
+    },
+    "open_questions": [
+      {
+        "question": "Performance overhead at frontier training scale — is 10-30% acceptable or prohibitive?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "May need to choose between frontier-scale training and confidential computing"
+      },
+      {
+        "question": "Can CC mode defend against physical attacks (not just software compromise)?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "CC alone insufficient for SL5 — still need physical tamper protection (HW-04/05)"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Intel SGX enabled confidential computing for CPUs since 2015. Despite being broken multiple times by side-channel attacks (Spectre, Meltdown, Plundervolt), it raised the bar significantly — attacks required months of research rather than standard exploitation.",
+        "source": "Intel SGX and attacks history",
+        "year": 2015
+      }
+    ]
+  },
+  {
+    "id": "HW-08",
+    "name": "Shielded Rack Enclosures (NSA 94-106)",
+    "category": "machine",
+    "summary_group": "confidential_computing",
+    "description": "RF-shielded enclosures meeting NSA 94-106 specifications for Weight Enclave systems. Provides 100dB attenuation from 1kHz to 10GHz, preventing electromagnetic signal egress that could leak information about model weights being processed.",
+    "current_state": {
+      "summary": "Duplicate of HW-05 — merged into HW-05 (Tamper-Evident Enclosures). This entry represents the TEMPEST-specific aspect at facility level rather than rack level.",
+      "deployed_by": ["government_scif"],
+      "baseline_state": "proven_not_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 92,
+        "notes": "Same as HW-05. Mature technology with AI datacenter thermal adaptation needed.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 24,
+        "notes": "Same as HW-05."
+      },
+      "cost": {
+        "upfront_millions": { "min": 10, "max": 60 },
+        "annual_ongoing_millions": { "min": 2, "max": 10 },
+        "notes": "Same as HW-05."
+      },
+      "vendor_dependency": {
+        "value": 55,
+        "key_vendors": ["shielded_enclosure_manufacturer"],
+        "notes": "Same as HW-05."
+      },
+      "supply_scarcity": {
+        "value": 45,
+        "bottleneck": "Same as HW-05",
+        "notes": "Same as HW-05"
+      },
+      "organizational_readiness": {
+        "value": 50,
+        "barriers": ["datacenter_design_impact", "cooling_complexity"],
+        "notes": "Same as HW-05"
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Advanced AI models could potentially modulate electromagnetic emissions deliberately as a covert exfiltration channel — using computation patterns to encode data into EM leakage readable from outside the facility. Shielded enclosures attenuate this to undetectable levels."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["PHY-02"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["physical_perimeter"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "TEMPEST shielding has protected classified computing since Cold War era. Modern AI adds a twist: the model itself might deliberately modulate emissions, unlike passive EM leakage from traditional computing.",
+        "source": "TEMPEST program",
+        "year": 1960
+      }
+    ]
+  },
+  {
+    "id": "HW-09",
+    "name": "Verified/Measured Boot",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "All devices boot only from verified firmware/software, with measurements stored for remote attestation. Prevents rootkits, firmware-level malware, and unauthorized OS modifications from persisting across reboots.",
+    "current_state": {
+      "summary": "Secure Boot is available on modern servers (UEFI Secure Boot). GPU/accelerator firmware signing exists partially. Full measured boot with attestation for AI accelerators is limited to NVIDIA CC mode.",
+      "deployed_by": ["partial_most_modern_servers", "partial_nvidia_cc"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 88,
+        "notes": "Server secure boot is mature. Extending measured boot to accelerators (full boot chain attestation) is partially available and improving with each generation.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 18,
+        "notes": "For server-level: mostly configuration and policy. For accelerator-level: depends on vendor feature availability. For BMC/management controllers: may need firmware updates or hardware replacement."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 20 },
+        "annual_ongoing_millions": { "min": 2, "max": 8 },
+        "notes": "Low hardware cost (features exist in silicon). Ongoing = attestation verification infrastructure, key management, boot policy management."
+      },
+      "vendor_dependency": {
+        "value": 60,
+        "key_vendors": ["server_manufacturer", "accelerator_manufacturer", "bmc_vendor"],
+        "notes": "Multiple vendors involved in full boot chain. Each must support verified boot for their component."
+      },
+      "supply_scarcity": {
+        "value": 30,
+        "bottleneck": "BMC/management controllers with verified boot are less common than server CPUs",
+        "notes": "Weakest link is often the BMC — the component that has most privilege and least security"
+      },
+      "organizational_readiness": {
+        "value": 60,
+        "barriers": ["boot_policy_management", "attestation_infrastructure", "key_management"],
+        "notes": "Familiar concept to security teams. Implementation is operational, not cultural."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without verified boot, an adversary who achieves firmware-level access (via supply chain, BMC vulnerability, or physical access) can install persistent rootkits that survive reboots and OS reinstalls. These rootkits operate below the OS and are invisible to all software-based security."
+    },
+    "dependencies": {
+      "requires": ["HW-01"],
+      "enhances": ["HW-06", "HW-07"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["host_security", "accelerator_security"],
+      "shared_dependencies": ["boot_key_management"]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Google's Titan security chip (2017) provides hardware-verified boot for all Google Cloud servers — ensuring no server boots compromised firmware even if supply chain is attacked.",
+        "source": "Google Cloud Titan chip",
+        "year": 2017
+      }
+    ]
+  },
+  {
+    "id": "HW-10",
+    "name": "Composition Attack Prevention",
+    "category": "machine",
+    "summary_group": "hardware_security",
+    "description": "Mechanisms preventing individually-authorized operations from being sequenced to exfiltrate data. Two approaches: task-sequence attestation (firmware validates operation ordering) or restricting to fused kernels verified not to leak individually or through composition.",
+    "current_state": {
+      "summary": "Research-stage. Ascend-CC paper (2024) proposes firmware-level task sequence attestation. Fused kernel approach requires verifying all possible compositions — combinatorially hard. No commercial implementation.",
+      "deployed_by": [],
+      "baseline_state": "researching"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 45,
+        "notes": "Conceptually understood but practically very challenging. Verifying no-exfiltration properties across all possible operation sequences is computationally hard. May require severely restricting allowed workloads.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 36,
+        "max": 60,
+        "notes": "Requires both research breakthroughs and silicon implementation. Longest lead-time hardware block."
+      },
+      "cost": {
+        "upfront_millions": { "min": 50, "max": 300 },
+        "annual_ongoing_millions": { "min": 10, "max": 30 },
+        "notes": "Significant research investment with uncertain payoff. If fused-kernel approach: ongoing cost of verifying all new kernels."
+      },
+      "vendor_dependency": {
+        "value": 90,
+        "key_vendors": ["accelerator_manufacturer"],
+        "notes": "Requires firmware-level changes in the accelerator. Cannot be implemented by customer alone."
+      },
+      "supply_scarcity": {
+        "value": 85,
+        "bottleneck": "Researchers at intersection of hardware security, formal verification, and ML systems",
+        "notes": "Extremely rare expertise combination"
+      },
+      "organizational_readiness": {
+        "value": 40,
+        "barriers": ["workload_restriction", "kernel_verification_pipeline", "research_dependency"],
+        "notes": "Even once available, may severely restrict what operations are allowed — impacting ML research flexibility."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without composition attack prevention, an adversary who can submit workloads to the accelerator (via compromised host) can construct a sequence of individually-innocent operations that together extract model weights — even if each operation is signed and authorized."
+    },
+    "dependencies": {
+      "requires": ["HW-01", "HW-06"],
+      "enhances": ["HW-02"],
+      "enabled_by": ["HW-01", "HW-06"]
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["accelerator_security"],
+      "shared_dependencies": ["accelerator_manufacturer_firmware", "formal_verification_toolchain"]
+    },
+    "open_questions": [
+      {
+        "question": "Is composition attack prevention computationally tractable for real ML workloads?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "May be fundamentally infeasible for general workloads — must rely on restrictive allow-lists instead of general verification"
+      },
+      {
+        "question": "Does fused-kernel restriction prevent meaningful ML research?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Choice between security and research capability — may force all experimental work outside the enclave"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Return-oriented programming (ROP) in CPU exploitation chains individually-authorized CPU instructions into malicious behavior. Composition attack prevention for accelerators is the hardware equivalent of defeating ROP.",
+        "source": "ROP / code-reuse attack literature",
+        "year": 2007
+      }
+    ]
+  }
+]

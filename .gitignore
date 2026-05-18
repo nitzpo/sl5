@@ -219,3 +219,7 @@ __marimo__/
 
 # PDFs
 *.pdf
+
+# Node
+node_modules/
+dist/

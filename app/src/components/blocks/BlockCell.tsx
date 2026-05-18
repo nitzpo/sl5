@@ -1,0 +1,190 @@
+import { useMemo, useRef } from "react";
+import type { Block, BlockState } from "../../engine/types";
+import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
+import { DEFENSE_COLORS } from "../../utils/colors";
+import { aiDegradation } from "../../engine/scoring";
+import { useSimulationStore } from "../../store/simulation";
+
+interface BlockCellProps {
+  block: Block;
+  cx: number;
+  cy: number;
+  size: number;
+  state: BlockState;
+  year: number;
+  aiTimelineSlider: number;
+  onSelect: (block: Block) => void;
+  onHover: (block: Block, rect: DOMRect) => void;
+  onHoverEnd: () => void;
+}
+
+const STATE_FILL: Record<BlockState, number> = {
+  not_started: 0,
+  investing: 0.25,
+  implementing: 0.55,
+  deployed: 1.0,
+  mature: 1.0,
+};
+
+const BG_FILL = "#1a1d24";
+
+export function BlockCell({
+  block,
+  cx,
+  cy,
+  size,
+  state,
+  year,
+  aiTimelineSlider,
+  onSelect,
+  onHover,
+  onHoverEnd,
+}: BlockCellProps) {
+  const hexRef = useRef<SVGPolygonElement>(null);
+  const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
+
+  const color = DEFENSE_COLORS[block.defense_type];
+  const fillFraction = STATE_FILL[state];
+  const degradation = aiDegradation(block, year, aiTimelineSlider);
+
+  const points = hexPoints(cx, cy, size);
+  const clipId = `clip-${block.id}`;
+  const erosionClipId = `erosion-${block.id}`;
+
+  const fillTop = cy + size - fillFraction * size * 2;
+
+  const borderWidth = useMemo(() => {
+    switch (state) {
+      case "not_started": return 1;
+      case "investing": return 1.5;
+      case "implementing": return 1.5;
+      case "deployed": return 2;
+      case "mature": return 2.5;
+    }
+  }, [state]);
+
+  const borderDash = state === "not_started" ? "3 3" : state === "investing" ? "5 3" : "none";
+  const shortLabel = BLOCK_SHORT_LABELS[block.id] ?? block.id;
+
+  const showErosion = degradation > 0.02 && fillFraction > 0 && block.defense_type !== "hard_stop";
+  const erosionHeight = degradation * size * 2 * fillFraction;
+
+  function handleMouseEnter() {
+    if (hexRef.current) {
+      const rect = hexRef.current.getBoundingClientRect();
+      onHover(block, rect);
+    }
+  }
+
+  return (
+    <g
+      className="cursor-pointer select-none"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={onHoverEnd}
+      onClick={() => onSelect(block)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        cycleBlockState(block.id);
+      }}
+    >
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={cx - size} y={fillTop} width={size * 2} height={size * 2} />
+        </clipPath>
+        {showErosion && (
+          <clipPath id={erosionClipId}>
+            <rect x={cx - size} y={fillTop} width={size * 2} height={erosionHeight} />
+          </clipPath>
+        )}
+      </defs>
+
+      {/* Dark background */}
+      <polygon ref={hexRef} points={points} fill={BG_FILL} />
+
+      {/* Colored fill from bottom */}
+      {fillFraction > 0 && (
+        <polygon
+          points={points}
+          fill={color}
+          opacity={0.6}
+          clipPath={`url(#${clipId})`}
+        />
+      )}
+
+      {/* Red erosion from top of fill */}
+      {showErosion && (
+        <polygon
+          points={points}
+          fill="#dc2626"
+          opacity={0.35}
+          clipPath={`url(#${erosionClipId})`}
+        />
+      )}
+
+      {/* Border */}
+      <polygon
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth={borderWidth}
+        strokeDasharray={borderDash}
+        opacity={state === "not_started" ? 0.5 : 1}
+      />
+
+      {/* Mature glow ring */}
+      {state === "mature" && (
+        <polygon
+          points={hexPoints(cx, cy, size + 3)}
+          fill="none"
+          stroke={color}
+          strokeWidth={1}
+          opacity={0.5}
+        />
+      )}
+
+      {/* Block ID inside hex */}
+      <text
+        x={cx}
+        y={cy}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={9}
+        fontWeight={600}
+        fill="#e5e7eb"
+        className="pointer-events-none"
+      >
+        {block.id}
+      </text>
+
+      {/* Short label below hex */}
+      <text
+        x={cx}
+        y={cy + size + 10}
+        textAnchor="middle"
+        fontSize={8}
+        fill="#9ca3af"
+        className="pointer-events-none"
+      >
+        {shortLabel}
+      </text>
+
+      {/* Erosion badge */}
+      {showErosion && degradation > 0.1 && (
+        <g>
+          <circle cx={cx + size - 4} cy={cy - size + 4} r={5} fill="#991b1b" />
+          <text
+            x={cx + size - 4}
+            y={cy - size + 5}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={6}
+            fill="#fca5a5"
+            className="pointer-events-none"
+          >
+            ↓
+          </text>
+        </g>
+      )}
+    </g>
+  );
+}

@@ -1,0 +1,51 @@
+{
+  "scoring": {
+    "method": "hybrid",
+    "hybrid_weights": {
+      "weakest_link_weight": 0.6,
+      "harmonic_mean_weight": 0.4
+    },
+    "category_weights": {
+      "network": 0.2,
+      "machine": 0.2,
+      "physical": 0.15,
+      "personnel": 0.2,
+      "supply_chain": 0.1,
+      "ai_specific": 0.15
+    },
+    "baseline_floor": 1.0
+  },
+  "breach_probability": {
+    "model": "chain_max",
+    "sigmoid_steepness": 1.5,
+    "hard_stop_bypass_when_deployed": 0.02,
+    "probabilistic_bypass_when_deployed": 0.15,
+    "implementing_bypass": 0.5,
+    "defense_in_depth_discount": {
+      "per_additional_layer_factor": 0.6,
+      "correlation_penalty": 0.2
+    }
+  },
+  "block_maturation": {
+    "states": ["not_started", "investing", "implementing", "deployed", "mature"],
+    "partial_effectiveness": {
+      "not_started": 0.0,
+      "investing": 0.1,
+      "implementing": 0.4,
+      "deployed": 0.85,
+      "mature": 1.0
+    },
+    "deployed_to_mature_months": 12
+  },
+  "distillation_model": {
+    "base_extraction_rate_per_month": 0.005,
+    "ai_efficiency_multiplier_at_full": 4.0,
+    "defense_effectiveness": {
+      "rate_limiting_reduction": 0.5,
+      "output_perturbation_reduction": 0.3,
+      "pattern_detection_reduction": 0.2,
+      "restricted_output_format_reduction": 0.4
+    },
+    "compromise_threshold": 0.8
+  }
+}

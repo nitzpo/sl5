@@ -1,0 +1,555 @@
+[
+  {
+    "id": "NET-01",
+    "name": "Air-Gapped SL5 Network",
+    "category": "network",
+    "summary_group": "network_isolation",
+    "description": "Complete network isolation from external networks. The SL5 Network has zero external connections — no internet, no VPN, no cloud. All model development, training, and deployment happens within this closed boundary.",
+    "current_state": {
+      "summary": "No frontier AI lab operates a fully air-gapped network for ML workloads. Some have isolated training clusters but with controlled external connectivity. Government/military SCIFs are air-gapped but not at AI-datacenter scale.",
+      "deployed_by": ["government_scif", "nuclear_facilities"],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 95,
+        "notes": "Proven concept in government/defense. Challenge is adapting AI R&D workflows to work without external connectivity.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Network redesign, workflow adaptation, cultural change, infrastructure build-out. Not blocked by research — blocked by organizational transformation."
+      },
+      "cost": {
+        "upfront_millions": { "min": 50, "max": 150 },
+        "annual_ongoing_millions": { "min": 20, "max": 60 },
+        "notes": "Infrastructure cost plus significant hidden cost: productivity loss from researchers working in air-gapped environment. Ongoing = maintaining parallel internal systems that replace internet-connected tools."
+      },
+      "vendor_dependency": {
+        "value": 20,
+        "key_vendors": ["network_equipment"],
+        "notes": "Mostly internal engineering. Standard network equipment suffices for isolation."
+      },
+      "supply_scarcity": {
+        "value": 20,
+        "bottleneck": "Air-gapped network architects with AI workload experience are rare",
+        "notes": "Government network engineers exist but may lack AI/ML context"
+      },
+      "organizational_readiness": {
+        "value": 10,
+        "barriers": ["researcher_productivity_impact", "cultural_resistance", "tooling_rebuild", "collaboration_disruption"],
+        "notes": "Fundamentally conflicts with how AI labs operate. Researchers expect internet access, package managers, collaboration tools. Everything must be rebuilt internally."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 2,
+      "ai_oc_shift": 2.0,
+      "exploit_narrative": "Without air-gapping, any remote attacker can attempt exploitation of internet-facing services. State actors can chain zero-days to traverse from external surface to internal training infrastructure. AI massively amplifies remote exploitation capability."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["NET-02", "NET-04", "HW-07"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["network_boundary"],
+      "shared_dependencies": []
+    },
+    "open_questions": [
+      {
+        "question": "Can frontier AI R&D operate effectively inside an air-gapped environment?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "SL5 becomes incompatible with competitive AI research — fundamental tension between security and speed"
+      },
+      {
+        "question": "How to handle model serving to customers if training network is air-gapped?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Must serve via weaker distilled model on separate infrastructure — business model impact"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "NSA/DoD classified networks (SIPRNet, JWICS) operate completely air-gapped from the internet. Millions of users work on these networks daily for intelligence and military operations.",
+        "source": "US Government classified network architecture",
+        "year": 2000
+      },
+      {
+        "description": "Iran's Natanz nuclear facility was air-gapped — Stuxnet had to bridge this gap via USB drives carried by unwitting personnel, demonstrating both the effectiveness of air gaps and that they're not absolute.",
+        "source": "Stuxnet analysis",
+        "year": 2010
+      }
+    ]
+  },
+  {
+    "id": "NET-02",
+    "name": "Weight Enclave Isolation",
+    "category": "network",
+    "summary_group": "network_isolation",
+    "description": "Additional network isolation within the SL5 Network specifically for systems with direct access to covered model weights. Weight Enclaves are sub-networks under stricter controls: allow-by-exception code execution, no interactive coding, single-facility restriction.",
+    "current_state": {
+      "summary": "Some labs have partial weight segmentation (separate VLANs for training clusters). No lab has the full enclave concept with allow-by-exception code execution and single-facility restriction.",
+      "deployed_by": ["partial_some_frontier_labs"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 85,
+        "notes": "Network segmentation is well-understood. Challenge is the code execution restriction — all code must be tested and signed before enclave deployment, which changes ML research workflows significantly.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 18,
+        "notes": "Requires defining enclave boundaries, building code signing infrastructure, redesigning CI/CD for signed-only deployment, and migrating workloads."
+      },
+      "cost": {
+        "upfront_millions": { "min": 20, "max": 80 },
+        "annual_ongoing_millions": { "min": 10, "max": 30 },
+        "notes": "Infrastructure cost lower than full air gap. Main cost is workflow tooling and developer experience investment."
+      },
+      "vendor_dependency": {
+        "value": 15,
+        "key_vendors": ["code_signing_infrastructure"],
+        "notes": "Mostly internal engineering and policy"
+      },
+      "supply_scarcity": {
+        "value": 25,
+        "bottleneck": "Security engineers who understand ML training workflows at scale",
+        "notes": "Need intersection of ML systems and security architecture expertise"
+      },
+      "organizational_readiness": {
+        "value": 30,
+        "barriers": ["researcher_iteration_speed", "code_signing_overhead", "no_interactive_notebooks"],
+        "notes": "ML researchers live in interactive environments (Jupyter, REPL). Signed-code-only kills this workflow inside the enclave. Research experiments must run outside the enclave in confined environments."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without enclave isolation, compromising any system on the broader network could provide lateral movement to weight-storing systems. The enclave boundary forces adversaries to breach a second, stricter perimeter."
+    },
+    "dependencies": {
+      "requires": ["NET-01"],
+      "enhances": ["HW-06", "NET-04"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["network_boundary", "access_control"],
+      "shared_dependencies": ["code_signing_infrastructure"]
+    },
+    "open_questions": [
+      {
+        "question": "Can mechanistic interpretability research operate within signed-code-only constraints?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Interpretability work must happen outside enclave with only inference API access to weights — limits research scope"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Nuclear weapons design networks separate 'design' environments (where physicists run simulations) from 'production' environments (where weapon designs are stored), with controlled interfaces between them.",
+        "source": "DOE/NNSA network architecture principles",
+        "year": 2015
+      }
+    ]
+  },
+  {
+    "id": "NET-03",
+    "name": "Dual Inline Network Encryptors (Rule of Two)",
+    "category": "network",
+    "summary_group": "bandwidth_control",
+    "description": "Two inline network encryptors from different vendors deployed in series at each inter-facility connection. Implements NSA 'Rule of Two' — heterogeneous encryption ensures that a vulnerability in one vendor's implementation doesn't compromise the entire link.",
+    "current_state": {
+      "summary": "Standard practice for government classified networks (CSfC program). Not deployed by any known AI lab. Products exist (multiple NSA-certified and FIPS 140-3 Level 3 validated encryptors available).",
+      "deployed_by": ["government_classified_networks"],
+      "baseline_state": "proven_not_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 92,
+        "notes": "Products exist and are validated. Challenge is bandwidth — current encryptors handle 100-400 Gbps. Frontier AI training interconnects may need 100x this in coming years.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 18,
+        "notes": "Procurement and installation is straightforward. Longer end if needing government approval pathway for Type 1 devices, or if bandwidth requirements exceed current product capabilities."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 30 },
+        "annual_ongoing_millions": { "min": 2, "max": 8 },
+        "notes": "Hardware cost per encryptor is moderate. Doubled because Rule of Two. Ongoing = key management, maintenance, vendor support contracts."
+      },
+      "vendor_dependency": {
+        "value": 70,
+        "key_vendors": ["network_encryptor_vendor_A", "network_encryptor_vendor_B"],
+        "notes": "Requires products from at least two different vendors. Vendor pool is limited but exists (multiple certified products on market)."
+      },
+      "supply_scarcity": {
+        "value": 40,
+        "bottleneck": "Encryptors validated to FIPS 140-3 Level 3+ at sufficient bandwidth for AI workloads",
+        "notes": "Current products may not scale to future AI interconnect bandwidth needs. NSA Type 1 requires government relationship."
+      },
+      "organizational_readiness": {
+        "value": 50,
+        "barriers": ["unfamiliarity_with_inline_encryption", "key_management_complexity", "government_relationship_needed_for_type1"],
+        "notes": "AI labs don't typically operate inline encryptors. Need new operational expertise. But it's a procure-and-deploy block, not a cultural transformation."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without encrypted inter-facility links, an adversary who compromises the fiber path between data centers (via wiretap on dark fiber, compromised ISP equipment, or physical cable access) can intercept weight data in transit."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["NET-01", "NET-07"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["network_boundary"],
+      "shared_dependencies": []
+    },
+    "open_questions": [
+      {
+        "question": "Can inline encryptors scale to the bandwidth needs of distributed frontier AI training (potentially 10-100 Tbps)?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Geographically distributed training may be infeasible at SL5, forcing single-site architectures"
+      },
+      {
+        "question": "Is FIPS 140-3 Level 3 sufficient against the stated threat model, or is NSA Type 1 required?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Type 1 requires government cooperation — availability constraint for private sector"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "NSA Commercial Solutions for Classified (CSfC) program certifies layered commercial encryption products for protecting classified data in transit — the Rule of Two is its core architectural principle.",
+        "source": "NSA CSfC Customer Handbook",
+        "year": 2021
+      }
+    ]
+  },
+  {
+    "id": "NET-04",
+    "name": "Physical Bandwidth Limitation on Enclave Boundaries",
+    "category": "network",
+    "summary_group": "bandwidth_control",
+    "description": "Hardware-enforced cap on total data throughput leaving the Weight Enclave. Calibrated so that model weights (e.g., 3.4TB) cannot be exfiltrated within any acceptable time window, even if all software controls are bypassed. The hard physics backstop.",
+    "current_state": {
+      "summary": "Conceptually simple but not deployed by any known AI lab. The idea is novel to the AI security context. Rate limiting at network layer is common; physical bandwidth caps enforced at hardware level are rare outside classified environments.",
+      "deployed_by": ["some_classified_environments"],
+      "baseline_state": "proven_not_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 88,
+        "notes": "Technically straightforward — use physically limited interfaces (slower links, hardware rate limiters). Challenge is calibrating the limit: tight enough to prevent exfiltration, loose enough for legitimate operations.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Primarily an architecture decision and hardware procurement. No research needed. Requires defining what legitimate outbound traffic looks like and sizing the pipe accordingly."
+      },
+      "cost": {
+        "upfront_millions": { "min": 2, "max": 10 },
+        "annual_ongoing_millions": { "min": 1, "max": 3 },
+        "notes": "Low hardware cost. Operational cost comes from managing the constraint — ensuring legitimate workloads work within the bandwidth cap."
+      },
+      "vendor_dependency": {
+        "value": 10,
+        "key_vendors": [],
+        "notes": "Standard network hardware. The innovation is in the architecture decision, not the technology."
+      },
+      "supply_scarcity": {
+        "value": 10,
+        "bottleneck": "None — uses commodity hardware",
+        "notes": "No scarcity constraint"
+      },
+      "organizational_readiness": {
+        "value": 35,
+        "barriers": ["legitimate_workflow_impact", "calibration_difficulty", "resistance_from_engineering_teams"],
+        "notes": "Engineers will resist any cap on their data movement capabilities. Need to demonstrate that legitimate workflows fit within the cap."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without bandwidth limitation, a successful breach of the enclave (by any means) allows rapid bulk exfiltration of multi-TB model weights. With the limit, even a fully compromised internal system cannot exfiltrate weights faster than the physical cap allows — buying time for detection."
+    },
+    "dependencies": {
+      "requires": ["NET-02"],
+      "enhances": ["NET-05", "AI-07"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["network_boundary"],
+      "shared_dependencies": []
+    },
+    "open_questions": [
+      {
+        "question": "What is the right bandwidth threshold? Depends on model size, legitimate output volume, and acceptable exfiltration time window.",
+        "uncertainty_level": "low",
+        "impact_if_resolved_negatively": "If legitimate outputs approach model size (e.g., large-scale inference responses), the cap becomes hard to calibrate"
+      },
+      {
+        "question": "Can an adversary exfiltrate meaningful capability (distillation) within the bandwidth cap over a long time period?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "Bandwidth cap prevents bulk exfiltration but may not prevent slow distillation-style extraction"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Air-gapped classified networks that allow one-way data diodes (e.g., from SECRET to UNCLASS) use hardware-enforced bandwidth caps and content filters. The principle: even if software is compromised, physics limits data flow.",
+        "source": "Cross-domain solution architectures",
+        "year": 2010
+      }
+    ]
+  },
+  {
+    "id": "NET-05",
+    "name": "Cross-Domain Solutions / Data Diodes",
+    "category": "network",
+    "summary_group": "bandwidth_control",
+    "description": "Hardware-enforced one-way data flow between security domains. Data diodes physically prevent data from flowing in the reverse direction. Used at boundaries between Weight Enclaves and broader SL5 Network, with AI-enhanced monitoring of permitted flows.",
+    "current_state": {
+      "summary": "Well-established technology in government/military. Multiple commercial products available. Not deployed in AI lab context. The 'AI-enhanced monitoring' of cross-domain flows is a novel concept.",
+      "deployed_by": ["government_networks", "critical_infrastructure"],
+      "baseline_state": "proven_not_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 85,
+        "notes": "Hardware data diodes are proven. Challenge is the 'AI-enhanced monitoring' component — using AI to inspect data crossing domain boundaries for hidden exfiltration (steganography, encoded weights).",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 18,
+        "notes": "Hardware procurement is fast. Integration with AI monitoring and workflow adaptation takes longer. Need to define precisely what data is allowed to cross."
+      },
+      "cost": {
+        "upfront_millions": { "min": 10, "max": 40 },
+        "annual_ongoing_millions": { "min": 5, "max": 15 },
+        "notes": "Hardware diodes + monitoring infrastructure + ongoing operation of cross-domain review processes"
+      },
+      "vendor_dependency": {
+        "value": 45,
+        "key_vendors": ["data_diode_manufacturer", "cross_domain_solution_vendor"],
+        "notes": "Established vendor market for data diodes. AI monitoring component likely needs custom development."
+      },
+      "supply_scarcity": {
+        "value": 35,
+        "bottleneck": "Engineers experienced in cross-domain solutions for AI workloads",
+        "notes": "Government CDS engineers exist but lack AI/ML context"
+      },
+      "organizational_readiness": {
+        "value": 30,
+        "barriers": ["workflow_disruption", "cross_domain_review_overhead", "defining_allowed_flows"],
+        "notes": "Every data transfer between domains must be defined and approved. This slows research iteration significantly."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without data diodes, a compromised system inside the enclave can freely communicate with systems outside it — enabling exfiltration via any network protocol. Data diodes reduce this to one-way flows under monitored conditions."
+    },
+    "dependencies": {
+      "requires": ["NET-02"],
+      "enhances": ["NET-04", "AI-01"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["network_boundary", "monitoring_detection"],
+      "shared_dependencies": ["cross_domain_monitoring_ai"]
+    },
+    "open_questions": [
+      {
+        "question": "Can AI monitoring of cross-domain flows detect steganographic encoding of weight information in legitimate outputs?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "A compromised model could slowly exfiltrate weights encoded in seemingly normal research outputs"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "The US Intelligence Community uses Cross Domain Solutions (e.g., ISSE Guard, Radiant Mercury) to transfer data between classification levels with automated content inspection.",
+        "source": "NSA Cross Domain Solution capabilities",
+        "year": 2015
+      }
+    ]
+  },
+  {
+    "id": "NET-06",
+    "name": "Protected Distribution Systems (PDS)",
+    "category": "network",
+    "summary_group": "bandwidth_control",
+    "description": "Physically hardened conduit for network cables (per CNSSI 7003). Includes alarmed carriers, hardened conduit, and continuous monitoring to detect physical tampering with cables carrying sensitive data between buildings or rooms.",
+    "current_state": {
+      "summary": "Standard requirement for government classified facilities. Well-specified (CNSSI 7003). Not used by any known AI lab. Specialized contractors available.",
+      "deployed_by": ["government_classified_facilities"],
+      "baseline_state": "proven_not_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 97,
+        "notes": "Mature technology. Hardened conduit, alarmed carriers, tamper-evident seals. No research needed.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 18,
+        "notes": "Construction/installation time. Depends on facility size and cable run lengths. Must be planned during facility construction for optimal deployment."
+      },
+      "cost": {
+        "upfront_millions": { "min": 5, "max": 25 },
+        "annual_ongoing_millions": { "min": 1, "max": 5 },
+        "notes": "Physical construction cost. Significantly cheaper if planned into new facility vs retrofitted."
+      },
+      "vendor_dependency": {
+        "value": 40,
+        "key_vendors": ["pds_contractor", "alarm_system_vendor"],
+        "notes": "Specialized contractors exist in government space. Need to find/engage them for AI lab context."
+      },
+      "supply_scarcity": {
+        "value": 30,
+        "bottleneck": "CNSSI 7003-certified PDS contractors (small pool, mostly government-focused)",
+        "notes": "Contractors exist but pipeline may be limited if many AI labs need them simultaneously"
+      },
+      "organizational_readiness": {
+        "value": 55,
+        "barriers": ["construction_disruption", "unfamiliarity"],
+        "notes": "Relatively easy to adopt — it's physical infrastructure, not a cultural change. Main barrier is knowing it exists and planning it into facility design."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without PDS, an adversary with physical access to cable runs (between buildings, through ceilings/floors) can install passive taps on fiber or copper cables carrying weight data. PDS makes this physically impossible without triggering alarms."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["NET-03", "HW-03"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["physical_perimeter", "network_boundary"],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Every SCIF facility uses PDS for cable runs between secure areas. The technology and standards have been refined over decades of classified facility construction.",
+        "source": "CNSSI 7003",
+        "year": 2015
+      }
+    ]
+  },
+  {
+    "id": "NET-07",
+    "name": "Inter-Facility Encrypted Links",
+    "category": "network",
+    "summary_group": "network_isolation",
+    "description": "Cryptographic protection for all network traffic between SL5 facilities using inline encryptors validated to FIPS 140-3 Level 3 minimum. This is the base encryption layer (NET-03 adds the Rule of Two redundancy on top).",
+    "current_state": {
+      "summary": "Standard enterprise VPN/TLS exists but doesn't meet FIPS 140-3 Level 3 validation for inline encryptors. Government uses NSA Type 1 or CSfC-approved solutions. AI labs typically use standard TLS/IPsec without hardware validation.",
+      "deployed_by": ["government_networks", "some_financial_institutions"],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 95,
+        "notes": "Products exist. FIPS 140-3 Level 3 validated encryptors are commercially available. Just need to procure and deploy.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 4,
+        "max": 12,
+        "notes": "Procurement and installation. Faster end if using commercial FIPS products. Slower if pursuing NSA Type 1 (requires government relationship)."
+      },
+      "cost": {
+        "upfront_millions": { "min": 3, "max": 15 },
+        "annual_ongoing_millions": { "min": 1, "max": 5 },
+        "notes": "Per-link encryptor cost × number of inter-facility links. Key management infrastructure ongoing."
+      },
+      "vendor_dependency": {
+        "value": 60,
+        "key_vendors": ["fips_encryptor_vendor"],
+        "notes": "Dependent on validated product availability. Multiple vendors exist."
+      },
+      "supply_scarcity": {
+        "value": 25,
+        "bottleneck": "FIPS 140-3 Level 3 validated products at sufficient bandwidth",
+        "notes": "Market exists but not large. Bandwidth constraints may limit options."
+      },
+      "organizational_readiness": {
+        "value": 60,
+        "barriers": ["key_management_expertise", "validation_bureaucracy"],
+        "notes": "AI labs understand encryption. The hardware validation aspect is less familiar but manageable."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without validated encryption on inter-facility links, an adversary who taps the fiber between data centers reads all traffic in plaintext (or breaks weak/misconfigured encryption). State actors routinely tap submarine cables and long-haul fiber."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": ["NET-03"],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": ["network_boundary"],
+      "shared_dependencies": ["encryptor_vendor_firmware"]
+    },
+    "open_questions": [
+      {
+        "question": "Long-distance connections may be fundamentally insecure against top-tier actors even with dual encryption — implementation vulnerabilities in encryptors are exploitable by OC5.",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Geographically distributed SL5 facilities may be infeasible — must co-locate or use physical media transfer"
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "NSA/GCHQ MUSCULAR program (2013) tapped unencrypted links between Google and Yahoo data centers — demonstrating that inter-DC traffic without validated encryption is trivially intercepted by state actors.",
+        "source": "Snowden documents / Washington Post",
+        "year": 2013
+      }
+    ]
+  }
+]

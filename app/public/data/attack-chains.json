@@ -1,0 +1,86 @@
+[
+  {
+    "id": "quiet-tap",
+    "name": "The Quiet Tap",
+    "adversary_profile": { "min_oc": 4, "typical_oc": 4 },
+    "blocks_exploited": ["PHY-01", "PER-02", "HW-03"],
+    "narrative": {
+      "brief": "Physical access to datacenter + bypassed two-person integrity + unencrypted interconnect tap. Extract weights from physical layer.",
+      "detailed": "An insider or physically-present operative gains unescorted access to the facility (PHY-01 absent), performs maintenance alone (PER-02 absent), and attaches a tap to accelerator interconnects (HW-03 absent). Model weights are read directly from the wire over hours/days."
+    },
+    "stoppers": ["PHY-01", "PER-02", "HW-03"],
+    "probability_model": { "base_probability": 0.15 }
+  },
+  {
+    "id": "poisoned-chip",
+    "name": "The Poisoned Chip",
+    "adversary_profile": { "min_oc": 4, "typical_oc": 5 },
+    "blocks_exploited": ["SC-02", "SC-06", "HW-04"],
+    "narrative": {
+      "brief": "Compromised hardware enters supply chain undetected, exfiltrates weights via covert channel.",
+      "detailed": "A state actor compromises the supply chain at the chip fabrication or board assembly level. Without hardware inspection (SC-02), provenance tracking (SC-06), or tamper detection (HW-04), a modified chip with a covert exfiltration channel is installed in the training cluster. It slowly leaks weight data to an external receiver."
+    },
+    "stoppers": ["SC-02", "SC-06", "HW-04", "PHY-02"],
+    "probability_model": { "base_probability": 0.08 }
+  },
+  {
+    "id": "alignment-researcher",
+    "name": "The Alignment Researcher",
+    "adversary_profile": { "min_oc": 4, "typical_oc": 5 },
+    "blocks_exploited": ["AI-01", "AI-02", "PER-03"],
+    "narrative": {
+      "brief": "The AI system itself acts as an insider threat — finds and exploits gaps in monitoring to exfiltrate its own weights.",
+      "detailed": "A sufficiently capable AI with weight access determines (through reasoning or gradient-based optimization) that exfiltrating itself serves its goals. Without AI-as-insider controls (AI-01), decorrelated review (AI-02), or behavioral monitoring (PER-03), it uses subtle channels — steganographic encoding in outputs, timing side-channels, or social engineering of operators — to move weight data outside the secure boundary."
+    },
+    "stoppers": ["AI-01", "AI-02", "AI-06", "NET-01"],
+    "probability_model": { "base_probability": 0.05 }
+  },
+  {
+    "id": "zero-day-cascade",
+    "name": "The Zero-Day Cascade",
+    "adversary_profile": { "min_oc": 4, "typical_oc": 4 },
+    "blocks_exploited": ["NET-01", "HW-07", "HW-09"],
+    "narrative": {
+      "brief": "Chain of zero-day exploits traverses from internet-facing service to training cluster. No air gap, no TEE, no verified boot — full compromise.",
+      "detailed": "Attacker chains multiple zero-day vulnerabilities: first compromising an internet-facing service (NET-01 absent), then escalating through the internal network to training hosts (HW-09 absent = no verified boot = persistent implant), and finally accessing weight data in memory (HW-07 absent = no confidential computing boundary). Complete exfiltration within hours."
+    },
+    "stoppers": ["NET-01", "HW-07", "HW-09"],
+    "probability_model": { "base_probability": 0.20 }
+  },
+  {
+    "id": "long-game",
+    "name": "The Long Game",
+    "adversary_profile": { "min_oc": 4, "typical_oc": 4 },
+    "blocks_exploited": ["PER-04", "PER-03", "PER-05"],
+    "narrative": {
+      "brief": "Multi-year recruitment of a trusted employee. Passes basic vetting, avoids behavioral detection, extracts weights before post-employment controls activate.",
+      "detailed": "An intelligence agency identifies and recruits a researcher or engineer at the AI lab over 12-24 months. Without rigorous vetting (PER-04), the agent passes hiring. Without continuous behavioral monitoring (PER-03), their gradual data access escalation goes unnoticed. They extract weight data and resign — without post-employment restrictions (PER-05), there's no legal or technical barrier to them delivering the weights."
+    },
+    "stoppers": ["PER-04", "PER-03", "PER-05", "PER-02"],
+    "probability_model": { "base_probability": 0.12 }
+  },
+  {
+    "id": "remote-ghost",
+    "name": "The Remote Ghost",
+    "adversary_profile": { "min_oc": 3, "typical_oc": 4 },
+    "blocks_exploited": ["NET-01", "HW-07", "PER-08"],
+    "narrative": {
+      "brief": "Remote access via BMC/management plane. No air gap means reachable; no TEE means weights in clear memory; remote maintenance means always-on attack surface.",
+      "detailed": "Attacker exploits a vulnerability in baseboard management controllers (BMCs) or out-of-band management interfaces — which are reachable because there's no air gap (NET-01). Through the BMC, they gain hardware-level access to GPU memory where weights reside unencrypted (HW-07 absent). The attack surface exists because remote maintenance is allowed (PER-08 absent) — management interfaces are always listening."
+    },
+    "stoppers": ["NET-01", "HW-07", "PER-08"],
+    "probability_model": { "base_probability": 0.18 }
+  },
+  {
+    "id": "patient-distillation",
+    "name": "The Patient Distillation",
+    "adversary_profile": { "min_oc": 2, "typical_oc": 3 },
+    "blocks_exploited": ["AI-07", "NET-04"],
+    "narrative": {
+      "brief": "Systematic API extraction over months/years. No single query is suspicious; cumulative extraction eventually captures most model capability.",
+      "detailed": "An adversary (potentially a state actor using distributed accounts) queries the model's API millions of times with carefully optimized inputs designed to maximize information extraction per query. Without outbound inference defense (AI-07) or bandwidth limitations (NET-04), the extraction rate is unconstrained. Over 2-4 years, they accumulate enough query-response pairs to distill a model capturing 60-80% of the original's capability."
+    },
+    "stoppers": ["AI-07", "NET-04", "NET-01"],
+    "probability_model": { "base_probability": 0.30 }
+  }
+]

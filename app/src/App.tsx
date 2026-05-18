@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSimulationStore } from "./store/simulation";
 import { Header } from "./components/layout/Header";
+import { BottomPanel } from "./components/layout/BottomPanel";
 import { BlockGrid } from "./components/blocks/BlockGrid";
 import { BlockDetail } from "./components/blocks/BlockDetail";
 import { ScoreCard } from "./components/analysis/ScoreCard";
@@ -85,6 +86,8 @@ function App() {
           )}
         </div>
       </div>
+
+      <BottomPanel />
     </div>
   );
 }

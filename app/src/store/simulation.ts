@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 import type {
   Block,
   BlockState,
@@ -6,6 +7,15 @@ import type {
   Sliders,
   AttackChain,
 } from "../engine/types";
+import {
+  saveToLocalStorage,
+  loadFromLocalStorage,
+  loadFromUrlHash,
+  clearUrlHash,
+  stateToShareUrl,
+  clearLocalStorage,
+  type PersistedState,
+} from "./persistence";
 
 interface SimulationStore {
   // Data (loaded once)
@@ -22,6 +32,7 @@ interface SimulationStore {
   modelServedExternally: boolean;
   expertMode: boolean;
   selectedChainId: string | null;
+  viewingShared: boolean;
 
   // Actions
   loadData: (blocks: Block[], chains: AttackChain[]) => void;
@@ -34,6 +45,9 @@ interface SimulationStore {
   setModelServed: (served: boolean) => void;
   setExpertMode: (expert: boolean) => void;
   setSelectedChain: (chainId: string | null) => void;
+  copyShareUrl: () => void;
+  saveShared: () => void;
+  restoreMine: () => void;
   resetToBaseline: () => void;
 }
 
@@ -54,7 +68,7 @@ const DEFAULT_SLIDERS: Sliders = {
   risk_tolerance: 0.5,
 };
 
-export const useSimulationStore = create<SimulationStore>((set, get) => ({
+export const useSimulationStore = create<SimulationStore>()(subscribeWithSelector((set, get) => ({
   blocks: [],
   attackChains: [],
   dataLoaded: false,
@@ -66,8 +80,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   modelServedExternally: true,
   expertMode: false,
   selectedChainId: null,
+  viewingShared: false,
 
   loadData: (blocks, chains) => {
+    if (get().dataLoaded) return;
+
     const baselineStates: Record<string, BlockState> = {};
     for (const b of blocks) {
       const bs = b.current_state.baseline_state;
@@ -75,7 +92,44 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         ? (bs as BlockState)
         : "not_started";
     }
-    set({ blocks, attackChains: chains, blockStates: baselineStates, dataLoaded: true });
+
+    // Restore: URL hash takes priority (shared link), then localStorage
+    const fromUrl = loadFromUrlHash();
+    if (fromUrl) {
+      clearUrlHash();
+      set({
+        blocks,
+        attackChains: chains,
+        blockStates: fromUrl.blockStates,
+        year: fromUrl.year,
+        perspective: fromUrl.perspective,
+        adversaryOc: fromUrl.adversaryOc,
+        sliders: fromUrl.sliders,
+        modelServedExternally: fromUrl.modelServedExternally,
+        expertMode: fromUrl.expertMode,
+        viewingShared: true,
+        dataLoaded: true,
+      });
+      return;
+    }
+
+    const fromStorage = loadFromLocalStorage();
+    if (fromStorage) {
+      set({
+        blocks,
+        attackChains: chains,
+        blockStates: fromStorage.blockStates,
+        year: fromStorage.year,
+        perspective: fromStorage.perspective,
+        adversaryOc: fromStorage.adversaryOc,
+        sliders: fromStorage.sliders,
+        modelServedExternally: fromStorage.modelServedExternally,
+        expertMode: fromStorage.expertMode,
+        dataLoaded: true,
+      });
+    } else {
+      set({ blocks, attackChains: chains, blockStates: baselineStates, dataLoaded: true });
+    }
   },
 
   setBlockState: (blockId, state) => {
@@ -101,6 +155,55 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setExpertMode: (expert) => set({ expertMode: expert }),
   setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
 
+  copyShareUrl: () => {
+    const s = get();
+    const persisted: PersistedState = {
+      blockStates: s.blockStates,
+      year: s.year,
+      perspective: s.perspective,
+      adversaryOc: s.adversaryOc,
+      sliders: s.sliders,
+      modelServedExternally: s.modelServedExternally,
+      expertMode: s.expertMode,
+    };
+    const url = stateToShareUrl(persisted);
+    navigator.clipboard.writeText(url);
+  },
+
+  saveShared: () => {
+    // Save current (shared) state to localStorage and dismiss banner
+    const s = get();
+    saveToLocalStorage({
+      blockStates: s.blockStates,
+      year: s.year,
+      perspective: s.perspective,
+      adversaryOc: s.adversaryOc,
+      sliders: s.sliders,
+      modelServedExternally: s.modelServedExternally,
+      expertMode: s.expertMode,
+    });
+    set({ viewingShared: false });
+  },
+
+  restoreMine: () => {
+    // Restore from localStorage (user's own saved state)
+    const saved = loadFromLocalStorage();
+    if (saved) {
+      set({
+        blockStates: saved.blockStates,
+        year: saved.year,
+        perspective: saved.perspective,
+        adversaryOc: saved.adversaryOc,
+        sliders: saved.sliders,
+        modelServedExternally: saved.modelServedExternally,
+        expertMode: saved.expertMode,
+        viewingShared: false,
+      });
+    } else {
+      get().resetToBaseline();
+    }
+  },
+
   resetToBaseline: () => {
     const { blocks } = get();
     const baselineStates: Record<string, BlockState> = {};
@@ -110,6 +213,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         ? (bs as BlockState)
         : "not_started";
     }
+    clearLocalStorage();
     set({
       blockStates: baselineStates,
       year: 2026,
@@ -118,4 +222,24 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       modelServedExternally: true,
     });
   },
-}));
+})));
+
+// Auto-save to localStorage on state changes (skip when viewing shared)
+useSimulationStore.subscribe(
+  (s) => ({
+    blockStates: s.blockStates,
+    year: s.year,
+    perspective: s.perspective,
+    adversaryOc: s.adversaryOc,
+    sliders: s.sliders,
+    modelServedExternally: s.modelServedExternally,
+    expertMode: s.expertMode,
+  }),
+  (persisted) => {
+    const { dataLoaded, viewingShared } = useSimulationStore.getState();
+    if (dataLoaded && !viewingShared) {
+      saveToLocalStorage(persisted);
+    }
+  },
+  { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
+);

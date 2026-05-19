@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSimulationStore } from "./store/simulation";
+import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
 import { Header } from "./components/layout/Header";
+import { SharedBanner } from "./components/layout/SharedBanner";
 import { BottomPanel } from "./components/layout/BottomPanel";
 import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
@@ -37,6 +39,29 @@ function App() {
     load();
   }, [loadData]);
 
+  // Listen for hash changes (paste URL in same tab)
+  const applyHash = useCallback(() => {
+    const state = loadFromUrlHashLive();
+    if (state) {
+      clearUrlHash();
+      useSimulationStore.setState({
+        blockStates: state.blockStates,
+        year: state.year,
+        perspective: state.perspective,
+        adversaryOc: state.adversaryOc,
+        sliders: state.sliders,
+        modelServedExternally: state.modelServedExternally,
+        expertMode: state.expertMode,
+        viewingShared: true,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, [applyHash]);
+
   if (!dataLoaded) {
     return (
       <div className="flex items-center justify-center h-screen text-gray-500">
@@ -48,6 +73,7 @@ function App() {
   return (
     <div className="flex flex-col h-screen">
       <Header />
+      <SharedBanner />
 
       <div className="relative flex-1 overflow-hidden">
         {/* Block Grid — full area, scrollable */}

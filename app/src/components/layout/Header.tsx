@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
 
 export function Header() {
@@ -6,6 +7,8 @@ export function Header() {
   const expertMode = useSimulationStore((s) => s.expertMode);
   const setExpertMode = useSimulationStore((s) => s.setExpertMode);
   const resetToBaseline = useSimulationStore((s) => s.resetToBaseline);
+  const copyShareUrl = useSimulationStore((s) => s.copyShareUrl);
+  const [copied, setCopied] = useState(false);
 
   return (
     <header className="flex items-center gap-4 px-4 py-2 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
@@ -34,6 +37,18 @@ export function Header() {
         className="ml-auto text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
       >
         {expertMode ? "Summary" : "Expert"}
+      </button>
+
+      {/* Share */}
+      <button
+        onClick={() => {
+          copyShareUrl();
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }}
+        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+      >
+        {copied ? "Copied!" : "Share"}
       </button>
 
       {/* Reset */}

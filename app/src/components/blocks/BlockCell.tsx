@@ -29,6 +29,9 @@ const STATE_FILL: Record<BlockState, number> = {
 
 const BG_FILL = "#1a1d24";
 
+// Blocks only relevant when model is served externally (API/inference)
+const SERVING_ONLY_BLOCKS = new Set(["AI-07", "AI-08", "AI-04", "NET-04"]);
+
 export function BlockCell({
   block,
   cx,
@@ -44,6 +47,7 @@ export function BlockCell({
   const hexRef = useRef<SVGPolygonElement>(null);
   const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
+  const modelServed = useSimulationStore((s) => s.modelServedExternally);
 
   const color = DEFENSE_COLORS[block.defense_type];
   const fillFraction = STATE_FILL[state];
@@ -52,6 +56,7 @@ export function BlockCell({
   const aiCap = getAiCapability(year, aiTimelineSlider);
   const effectiveOc = adversaryOc + block.adversary_exploitation.ai_oc_shift * aiCap;
   const beyondAdversary = block.adversary_exploitation.oc_threshold_to_exploit > effectiveOc;
+  const irrelevantWhenAirgapped = !modelServed && SERVING_ONLY_BLOCKS.has(block.id);
 
   const points = hexPoints(cx, cy, size);
   const clipId = `clip-${block.id}`;
@@ -85,7 +90,7 @@ export function BlockCell({
   return (
     <g
       className="cursor-pointer select-none"
-      opacity={beyondAdversary && state === "not_started" ? 0.35 : 1}
+      opacity={beyondAdversary && state === "not_started" ? 0.35 : irrelevantWhenAirgapped ? 0.3 : 1}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={onHoverEnd}
       onClick={() => onSelect(block)}

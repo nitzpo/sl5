@@ -28,7 +28,7 @@ export function BlockDetail({ block, onClose }: BlockDetailProps) {
   const color = DEFENSE_COLORS[block.defense_type];
 
   return (
-    <div className="p-2.5 text-sm space-y-2.5 overflow-y-auto max-h-full">
+    <div className="p-2.5 text-sm space-y-2.5">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-semibold text-gray-100">

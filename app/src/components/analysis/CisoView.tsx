@@ -66,7 +66,7 @@ export function CisoView() {
     return recs.sort((a, b) => b.impact - a.impact).slice(0, 6);
   }, [blocks, blockStates, year, aiTimeline, weakestCat]);
 
-  // Decision windows: blocks with long deploy times that must start soon
+  // Decision windows: blocks that must start within 2 years to be ready by 2030
   const closingWindows = useMemo(() => {
     return blocks
       .filter((b) => {
@@ -74,14 +74,13 @@ export function CisoView() {
         if (state !== "not_started") return false;
         const deployMonths = b.dimensions.time_to_deploy_months.max;
         const latestStart = 2030 - deployMonths / 12;
-        return latestStart <= year + 1;
+        return latestStart <= year + 2;
       })
       .map((b) => ({
         block: b,
         mustStartBy: Math.round((2030 - b.dimensions.time_to_deploy_months.max / 12) * 10) / 10,
       }))
-      .sort((a, b) => a.mustStartBy - b.mustStartBy)
-      .slice(0, 4);
+      .sort((a, b) => a.mustStartBy - b.mustStartBy);
   }, [blocks, blockStates, year]);
 
   // Budget estimate for top recommendations
@@ -146,13 +145,14 @@ export function CisoView() {
       {closingWindows.length > 0 && (
         <div>
           <h3 className="text-xs font-semibold text-amber-500 uppercase tracking-wide mb-2">
-            Decision Windows Closing
+            Decision Windows (2yr)
           </h3>
           <div className="space-y-1.5">
             {closingWindows.map(({ block, mustStartBy }) => (
               <div
                 key={block.id}
-                className="bg-amber-950/30 border border-amber-900/50 rounded px-2.5 py-1.5"
+                id={`dw-${block.id}`}
+                className="bg-amber-950/30 border border-amber-900/50 rounded px-2.5 py-1.5 transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-xs text-gray-300">

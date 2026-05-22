@@ -6,7 +6,7 @@ export function BottomPanel() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="border-t border-gray-800 bg-gray-950/95 backdrop-blur-sm">
+    <div className="relative z-20 border-t border-gray-800 bg-gray-950/95 backdrop-blur-sm">
       {/* Toggle bar */}
       <button
         onClick={() => setCollapsed(!collapsed)}

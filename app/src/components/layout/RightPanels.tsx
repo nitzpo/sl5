@@ -58,7 +58,7 @@ export function RightPanels({ selectedBlock, onCloseBlock }: RightPanelsProps) {
             </button>
           </div>
           {/* Perspective content */}
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto no-scrollbar p-3">
             {perspective === "ciso" && <CisoView />}
             {perspective === "attacker" && <AttackerView />}
             {perspective === "policymaker" && <PolicyView />}
@@ -92,7 +92,7 @@ export function RightPanels({ selectedBlock, onCloseBlock }: RightPanelsProps) {
               →
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto no-scrollbar p-3">
             {showBlockDetail ? (
               <BlockDetail block={selectedBlock!} onClose={onCloseBlock} />
             ) : (

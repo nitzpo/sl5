@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
 
-export function Header() {
+interface HeaderProps {
+  onShowIntro: () => void;
+}
+
+export function Header({ onShowIntro }: HeaderProps) {
   const year = useSimulationStore((s) => s.year);
   const setYear = useSimulationStore((s) => s.setYear);
   const expertMode = useSimulationStore((s) => s.expertMode);
@@ -57,6 +61,15 @@ export function Header() {
         className="text-xs text-gray-600 hover:text-gray-400 px-2 py-1 rounded hover:bg-gray-800"
       >
         Reset
+      </button>
+
+      {/* Help */}
+      <button
+        onClick={onShowIntro}
+        className="text-xs text-gray-600 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        title="How to use"
+      >
+        ?
       </button>
     </header>
   );

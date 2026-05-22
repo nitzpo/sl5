@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSimulationStore } from "./store/simulation";
 import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
 import { Header } from "./components/layout/Header";
+import { IntroOverlay } from "./components/overlays/IntroOverlay";
 import { SharedBanner } from "./components/layout/SharedBanner";
 import { BottomPanel } from "./components/layout/BottomPanel";
 import { RightPanels } from "./components/layout/RightPanels";
@@ -12,6 +13,7 @@ function App() {
   const loadData = useSimulationStore((s) => s.loadData);
   const dataLoaded = useSimulationStore((s) => s.dataLoaded);
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
+  const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("sl5_intro_seen"));
 
   useEffect(() => {
     async function load() {
@@ -72,8 +74,9 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header />
+      <Header onShowIntro={() => setShowIntro(true)} />
       <SharedBanner />
+      {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
 
       <div className="relative flex-1 overflow-hidden">
         {/* Block Grid — full area, scrollable */}

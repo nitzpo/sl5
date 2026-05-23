@@ -1,6 +1,7 @@
 import type { BlockState, Perspective, Sliders } from "../engine/types";
 
 const STORAGE_KEY = "sl5-state";
+const SCENARIOS_KEY = "sl5-scenarios";
 
 export interface PersistedState {
   blockStates: Record<string, BlockState>;
@@ -10,6 +11,28 @@ export interface PersistedState {
   sliders: Sliders;
   modelServedExternally: boolean;
   expertMode: boolean;
+}
+
+export interface SavedScenario {
+  name: string;
+  savedAt: number;
+  state: PersistedState;
+}
+
+export function loadScenarios(): SavedScenario[] {
+  try {
+    const raw = localStorage.getItem(SCENARIOS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as SavedScenario[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveScenarios(scenarios: SavedScenario[]): void {
+  try {
+    localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+  } catch {}
 }
 
 export function saveToLocalStorage(state: PersistedState): void {
@@ -44,38 +67,52 @@ function fromUrlSafeBase64(str: string): string {
   return atob(s);
 }
 
-export function stateToShareUrl(state: PersistedState): string {
-  const json = JSON.stringify(state);
+export function stateToShareUrl(state: PersistedState, name?: string): string {
+  const payload = name ? { s: state, n: name } : state;
+  const json = JSON.stringify(payload);
   const encoded = toUrlSafeBase64(json);
   return `${window.location.origin}${window.location.pathname}#state=${encoded}`;
 }
 
+export interface ParsedHashState {
+  state: PersistedState;
+  name?: string;
+}
+
+function parseHashPayload(json: string): ParsedHashState | null {
+  const parsed = JSON.parse(json);
+  if (parsed && typeof parsed === "object" && "s" in parsed) {
+    return { state: parsed.s as PersistedState, name: parsed.n };
+  }
+  return { state: parsed as PersistedState };
+}
+
 // Capture hash at module load time (before React StrictMode double-mounts)
-let capturedHashState: PersistedState | null = null;
+let capturedHashState: ParsedHashState | null = null;
 try {
   const hash = window.location.hash;
   if (hash.startsWith("#state=")) {
     const encoded = hash.slice(7);
     const json = fromUrlSafeBase64(encoded);
-    capturedHashState = JSON.parse(json) as PersistedState;
+    capturedHashState = parseHashPayload(json);
   }
 } catch {
   // invalid hash — ignore
 }
 
-export function loadFromUrlHash(): PersistedState | null {
+export function loadFromUrlHash(): ParsedHashState | null {
   const result = capturedHashState;
   capturedHashState = null;
   return result;
 }
 
-export function loadFromUrlHashLive(): PersistedState | null {
+export function loadFromUrlHashLive(): ParsedHashState | null {
   try {
     const hash = window.location.hash;
     if (!hash.startsWith("#state=")) return null;
     const encoded = hash.slice(7);
     const json = fromUrlSafeBase64(encoded);
-    return JSON.parse(json) as PersistedState;
+    return parseHashPayload(json);
   } catch {
     return null;
   }

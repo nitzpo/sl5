@@ -44,6 +44,8 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
           <p><span className="text-gray-200 font-medium">Advance the year</span> to watch AI erode probabilistic defenses</p>
           <p><span className="text-gray-200 font-medium">Switch perspectives</span> (CISO, Attacker, Policy, Observer) for different analysis</p>
           <p><span className="text-gray-200 font-medium">Adjust sliders</span> to change world parameters (budget, cooperation, AI timeline)</p>
+          <p><span className="text-gray-200 font-medium">Save scenarios</span> to bookmark configurations and compare strategies</p>
+          <p><span className="text-gray-200 font-medium">Share</span> your scenario as a URL — recipients can save it as their own</p>
         </div>
 
         <button

@@ -14,6 +14,8 @@ import {
   clearUrlHash,
   stateToShareUrl,
   clearLocalStorage,
+  loadScenarios,
+  saveScenarios,
   type PersistedState,
 } from "./persistence";
 
@@ -33,6 +35,7 @@ interface SimulationStore {
   expertMode: boolean;
   selectedChainId: string | null;
   viewingShared: boolean;
+  scenarioName: string | null;
 
   // Actions
   loadData: (blocks: Block[], chains: AttackChain[]) => void;
@@ -49,6 +52,9 @@ interface SimulationStore {
   saveShared: () => void;
   restoreMine: () => void;
   resetToBaseline: () => void;
+  saveScenario: (name: string) => void;
+  loadScenario: (index: number) => void;
+  deleteScenario: (index: number) => void;
 }
 
 const STATE_CYCLE: BlockState[] = [
@@ -81,6 +87,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   expertMode: false,
   selectedChainId: null,
   viewingShared: false,
+  scenarioName: null,
 
   loadData: (blocks, chains) => {
     if (get().dataLoaded) return;
@@ -100,13 +107,14 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       set({
         blocks,
         attackChains: chains,
-        blockStates: fromUrl.blockStates,
-        year: fromUrl.year,
-        perspective: fromUrl.perspective,
-        adversaryOc: fromUrl.adversaryOc,
-        sliders: fromUrl.sliders,
-        modelServedExternally: fromUrl.modelServedExternally,
-        expertMode: fromUrl.expertMode,
+        blockStates: fromUrl.state.blockStates,
+        year: fromUrl.state.year,
+        perspective: fromUrl.state.perspective,
+        adversaryOc: fromUrl.state.adversaryOc,
+        sliders: fromUrl.state.sliders,
+        modelServedExternally: fromUrl.state.modelServedExternally,
+        expertMode: fromUrl.state.expertMode,
+        scenarioName: fromUrl.name ?? null,
         viewingShared: true,
         dataLoaded: true,
       });
@@ -133,25 +141,25 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 
   setBlockState: (blockId, state) => {
-    set((s) => ({ blockStates: { ...s.blockStates, [blockId]: state } }));
+    set((s) => ({ blockStates: { ...s.blockStates, [blockId]: state }, scenarioName: null }));
   },
 
   cycleBlockState: (blockId) => {
     const current = get().blockStates[blockId] ?? "not_started";
     const idx = STATE_CYCLE.indexOf(current);
     const next = STATE_CYCLE[(idx + 1) % STATE_CYCLE.length];
-    set((s) => ({ blockStates: { ...s.blockStates, [blockId]: next } }));
+    set((s) => ({ blockStates: { ...s.blockStates, [blockId]: next }, scenarioName: null }));
   },
 
-  setYear: (year) => set({ year }),
+  setYear: (year) => set({ year, scenarioName: null }),
   setPerspective: (perspective) => set({ perspective }),
-  setAdversaryOc: (oc) => set({ adversaryOc: oc }),
+  setAdversaryOc: (oc) => set({ adversaryOc: oc, scenarioName: null }),
 
   setSlider: (key, value) => {
-    set((s) => ({ sliders: { ...s.sliders, [key]: value } }));
+    set((s) => ({ sliders: { ...s.sliders, [key]: value }, scenarioName: null }));
   },
 
-  setModelServed: (served) => set({ modelServedExternally: served }),
+  setModelServed: (served) => set({ modelServedExternally: served, scenarioName: null }),
   setExpertMode: (expert) => set({ expertMode: expert }),
   setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
 
@@ -166,14 +174,13 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       modelServedExternally: s.modelServedExternally,
       expertMode: s.expertMode,
     };
-    const url = stateToShareUrl(persisted);
+    const url = stateToShareUrl(persisted, s.scenarioName ?? undefined);
     navigator.clipboard.writeText(url);
   },
 
   saveShared: () => {
-    // Save current (shared) state to localStorage and dismiss banner
     const s = get();
-    saveToLocalStorage({
+    const persisted: PersistedState = {
       blockStates: s.blockStates,
       year: s.year,
       perspective: s.perspective,
@@ -181,7 +188,13 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       sliders: s.sliders,
       modelServedExternally: s.modelServedExternally,
       expertMode: s.expertMode,
-    });
+    };
+    saveToLocalStorage(persisted);
+    if (s.scenarioName) {
+      const scenarios = loadScenarios();
+      scenarios.push({ name: s.scenarioName, savedAt: Date.now(), state: persisted });
+      saveScenarios(scenarios);
+    }
     set({ viewingShared: false });
   },
 
@@ -220,7 +233,57 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       sliders: DEFAULT_SLIDERS,
       adversaryOc: 4,
       modelServedExternally: true,
+      scenarioName: null,
     });
+  },
+
+  saveScenario: (name) => {
+    const s = get();
+    const scenarios = loadScenarios();
+    const entry = {
+      name,
+      savedAt: Date.now(),
+      state: {
+        blockStates: s.blockStates,
+        year: s.year,
+        perspective: s.perspective,
+        adversaryOc: s.adversaryOc,
+        sliders: s.sliders,
+        modelServedExternally: s.modelServedExternally,
+        expertMode: s.expertMode,
+      },
+    };
+    const existing = scenarios.findIndex((sc) => sc.name === name);
+    if (existing >= 0) {
+      scenarios[existing] = entry;
+    } else {
+      scenarios.push(entry);
+    }
+    saveScenarios(scenarios);
+    set({ scenarioName: name });
+  },
+
+  loadScenario: (index) => {
+    const scenarios = loadScenarios();
+    const scenario = scenarios[index];
+    if (!scenario) return;
+    set({
+      blockStates: scenario.state.blockStates,
+      year: scenario.state.year,
+      perspective: scenario.state.perspective,
+      adversaryOc: scenario.state.adversaryOc,
+      sliders: scenario.state.sliders,
+      modelServedExternally: scenario.state.modelServedExternally,
+      expertMode: scenario.state.expertMode,
+      scenarioName: scenario.name,
+      viewingShared: false,
+    });
+  },
+
+  deleteScenario: (index) => {
+    const scenarios = loadScenarios();
+    scenarios.splice(index, 1);
+    saveScenarios(scenarios);
   },
 })));
 

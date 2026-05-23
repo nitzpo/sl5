@@ -43,17 +43,18 @@ function App() {
 
   // Listen for hash changes (paste URL in same tab)
   const applyHash = useCallback(() => {
-    const state = loadFromUrlHashLive();
-    if (state) {
+    const parsed = loadFromUrlHashLive();
+    if (parsed) {
       clearUrlHash();
       useSimulationStore.setState({
-        blockStates: state.blockStates,
-        year: state.year,
-        perspective: state.perspective,
-        adversaryOc: state.adversaryOc,
-        sliders: state.sliders,
-        modelServedExternally: state.modelServedExternally,
-        expertMode: state.expertMode,
+        blockStates: parsed.state.blockStates,
+        year: parsed.state.year,
+        perspective: parsed.state.perspective,
+        adversaryOc: parsed.state.adversaryOc,
+        sliders: parsed.state.sliders,
+        modelServedExternally: parsed.state.modelServedExternally,
+        expertMode: parsed.state.expertMode,
+        scenarioName: parsed.name ?? null,
         viewingShared: true,
       });
     }

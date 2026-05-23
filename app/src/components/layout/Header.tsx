@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
+import { ScenariosDropdown } from "./ScenariosDropdown";
 
 interface HeaderProps {
   onShowIntro: () => void;
@@ -8,6 +9,7 @@ interface HeaderProps {
 export function Header({ onShowIntro }: HeaderProps) {
   const year = useSimulationStore((s) => s.year);
   const setYear = useSimulationStore((s) => s.setYear);
+  const scenarioName = useSimulationStore((s) => s.scenarioName);
   const expertMode = useSimulationStore((s) => s.expertMode);
   const setExpertMode = useSimulationStore((s) => s.setExpertMode);
   const resetToBaseline = useSimulationStore((s) => s.resetToBaseline);
@@ -35,13 +37,21 @@ export function Header({ onShowIntro }: HeaderProps) {
         <span className="text-xs font-mono text-gray-300 w-8">{year}</span>
       </div>
 
+      {scenarioName && (
+        <span className="text-xs text-violet-400 truncate max-w-[150px]">{scenarioName}</span>
+      )}
+
+      <div className="ml-auto flex items-center gap-0.5">
       {/* Expert/Summary toggle */}
       <button
         onClick={() => setExpertMode(!expertMode)}
-        className="ml-auto text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
       >
         {expertMode ? "Summary" : "Expert"}
       </button>
+
+      {/* Scenarios */}
+      <ScenariosDropdown />
 
       {/* Share */}
       <button
@@ -58,7 +68,7 @@ export function Header({ onShowIntro }: HeaderProps) {
       {/* Reset */}
       <button
         onClick={resetToBaseline}
-        className="text-xs text-gray-600 hover:text-gray-400 px-2 py-1 rounded hover:bg-gray-800"
+        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
       >
         Reset
       </button>
@@ -66,11 +76,12 @@ export function Header({ onShowIntro }: HeaderProps) {
       {/* Help */}
       <button
         onClick={onShowIntro}
-        className="text-xs text-gray-600 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
         title="How to use"
       >
         ?
       </button>
+      </div>
     </header>
   );
 }

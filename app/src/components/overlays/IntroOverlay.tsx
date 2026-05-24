@@ -48,6 +48,17 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
           <p><span className="text-gray-200 font-medium">Share</span> your scenario as a URL — recipients can save it as their own</p>
         </div>
 
+        <div className="text-[10px] text-gray-500 mb-5">
+          <span className="text-gray-600">Based on:</span>{" "}
+          <a href="https://www.rand.org/pubs/research_reports/RRA2849-1.html" target="_blank" rel="noopener" className="text-violet-400 hover:underline">RAND Securing AI Model Weights (2024)</a>
+          {" · "}
+          <a href="https://sl5.org/sl5-standard" target="_blank" rel="noopener" className="text-violet-400 hover:underline">SL5 Standard v0.1</a>
+          {" · "}
+          <a href="https://sl5.org/projects/sl5-novel-recommendations" target="_blank" rel="noopener" className="text-violet-400 hover:underline">SL5 Novel Recommendations</a>
+          {" · "}
+          <a href="https://ai-2027.com" target="_blank" rel="noopener" className="text-violet-400 hover:underline">AI 2027</a>
+        </div>
+
         <button
           onClick={dismiss}
           className="w-full bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"

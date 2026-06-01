@@ -1,4 +1,4 @@
-import type { Block, BlockState, Category, SimulationConfig } from "./types";
+import type { Block, BlockState, Category, Sliders, SimulationConfig } from "./types";
 import { getAiCapability } from "./ai-curve";
 
 const DEFAULT_CONFIG: SimulationConfig["scoring"] = {
@@ -43,18 +43,46 @@ export function aiDegradation(
   return aiShift * aiCap * 0.1;
 }
 
+function orgTransformMultiplier(block: Block, orgTransformation: number): number {
+  const readiness = block.dimensions.organizational_readiness.value;
+  if (readiness >= 50) return 1.0;
+  const penalty = (1 - orgTransformation) * (1 - readiness / 100) * 0.3;
+  return 1 - penalty;
+}
+
+function vendorCoopMultiplier(block: Block, vendorCooperation: number): number {
+  const dep = block.dimensions.vendor_dependency.value;
+  if (dep <= 50) return 1.0;
+  const penalty = (1 - vendorCooperation) * (dep / 100) * 0.3;
+  return 1 - penalty;
+}
+
+function govCoopMultiplier(block: Block, govCooperation: number): number {
+  if (block.category !== "supply_chain" && block.category !== "personnel") return 1.0;
+  const penalty = (1 - govCooperation) * 0.25;
+  return 1 - penalty;
+}
+
 /**
- * Effective defense contribution of a block given its state, year, and AI curve.
+ * Effective defense contribution of a block given its state, year, and sliders.
  */
 export function blockEffectiveness(
   block: Block,
   state: BlockState | string,
   year: number,
-  aiTimelineSlider: number = 0.5
+  sliders: Sliders | number = 0.5
 ): number {
+  // Backward compat: accept bare ai_timeline number
+  const s: Sliders = typeof sliders === "number"
+    ? { ai_timeline: sliders, gov_cooperation: 1, vendor_cooperation: 1, budget_millions: 2000, org_transformation: 1, risk_tolerance: 0.5 }
+    : sliders;
+
   const base = getStateEffectiveness(state);
-  const degradation = aiDegradation(block, year, aiTimelineSlider);
-  return Math.max(0, base * (1 - degradation));
+  const degradation = aiDegradation(block, year, s.ai_timeline);
+  const orgMult = orgTransformMultiplier(block, s.org_transformation);
+  const vendorMult = vendorCoopMultiplier(block, s.vendor_cooperation);
+  const govMult = govCoopMultiplier(block, s.gov_cooperation);
+  return Math.max(0, base * (1 - degradation) * orgMult * vendorMult * govMult);
 }
 
 /**
@@ -64,14 +92,14 @@ export function categoryScore(
   blocksInCategory: Block[],
   blockStates: Record<string, BlockState | string>,
   year: number,
-  aiTimelineSlider: number = 0.5,
+  sliders: Sliders | number = 0.5,
   baselineFloor: number = DEFAULT_CONFIG.baseline_floor
 ): number {
   if (blocksInCategory.length === 0) return baselineFloor;
 
   const total = blocksInCategory.reduce((sum, block) => {
     const state = blockStates[block.id] ?? "not_started";
-    return sum + blockEffectiveness(block, state, year, aiTimelineSlider);
+    return sum + blockEffectiveness(block, state, year, sliders);
   }, 0);
 
   const raw = total / blocksInCategory.length;
@@ -108,7 +136,7 @@ export function computeCategoryScores(
   blocks: Block[],
   blockStates: Record<string, BlockState | string>,
   year: number,
-  aiTimelineSlider: number = 0.5,
+  sliders: Sliders | number = 0.5,
   baselineFloor: number = DEFAULT_CONFIG.baseline_floor
 ): Record<Category, number> {
   const categories: Record<Category, Block[]> = {
@@ -132,7 +160,7 @@ export function computeCategoryScores(
       catBlocks,
       blockStates,
       year,
-      aiTimelineSlider,
+      sliders,
       baselineFloor
     );
   }

@@ -16,8 +16,8 @@ export function CisoView() {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
-  const aiTimeline = useSimulationStore((s) => s.sliders.ai_timeline);
-  const budget = useSimulationStore((s) => s.sliders.budget_millions);
+  const sliders = useSimulationStore((s) => s.sliders);
+  const budget = sliders.budget_millions;
   const { categoryScores, overallSl } = useSimulationResults();
 
   // Find weakest category
@@ -39,8 +39,8 @@ export function CisoView() {
       const state = blockStates[block.id] ?? "not_started";
       if (state === "deployed" || state === "mature") continue;
 
-      const currentEff = blockEffectiveness(block, state, year, aiTimeline);
-      const deployedEff = blockEffectiveness(block, "deployed", year, aiTimeline);
+      const currentEff = blockEffectiveness(block, state, year, sliders);
+      const deployedEff = blockEffectiveness(block, "deployed", year, sliders);
       const delta = deployedEff - currentEff;
 
       if (delta < 0.1) continue;
@@ -64,7 +64,7 @@ export function CisoView() {
     }
 
     return recs.sort((a, b) => b.impact - a.impact).slice(0, 6);
-  }, [blocks, blockStates, year, aiTimeline, weakestCat]);
+  }, [blocks, blockStates, year, sliders, weakestCat]);
 
   // Decision windows: blocks that must start within 2 years to be ready by 2030
   const closingWindows = useMemo(() => {

@@ -1,4 +1,4 @@
-import type { Block, BlockState } from "./types";
+import type { Block, BlockState, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
 import { blockEffectiveness } from "./scoring";
 
@@ -27,9 +27,10 @@ export function blockExploitProbability(
   state: BlockState | string,
   adversaryOc: number,
   year: number,
-  aiTimelineSlider: number = 0.5
+  sliders: Sliders | number = 0.5
 ): number {
-  const eff = blockEffectiveness(block, state, year, aiTimelineSlider);
+  const aiTimelineSlider = typeof sliders === "number" ? sliders : sliders.ai_timeline;
+  const eff = blockEffectiveness(block, state, year, sliders);
 
   if (eff >= 0.85) {
     // Block deployed — hard to bypass
@@ -63,7 +64,7 @@ export function chainBreachProbability(
   blockStates: Record<string, BlockState | string>,
   adversaryOc: number,
   year: number,
-  aiTimelineSlider: number = 0.5
+  sliders: Sliders | number = 0.5
 ): number {
   const blockMap = new Map(allBlocks.map((b) => [b.id, b]));
 
@@ -77,7 +78,7 @@ export function chainBreachProbability(
       state,
       adversaryOc,
       year,
-      aiTimelineSlider
+      sliders
     );
   }
 
@@ -94,7 +95,7 @@ export function computeBreachProbabilities(
   blockStates: Record<string, BlockState | string>,
   adversaryOc: number,
   year: number,
-  aiTimelineSlider: number = 0.5
+  sliders: Sliders | number = 0.5
 ): Record<string, number> {
   const result: Record<string, number> = {};
   for (const chain of chains) {
@@ -104,7 +105,7 @@ export function computeBreachProbabilities(
       blockStates,
       adversaryOc,
       year,
-      aiTimelineSlider
+      sliders
     );
   }
   return result;

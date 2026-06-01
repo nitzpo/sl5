@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { useSimulationResults } from "../../store/derived";
-import { formatSl, formatProbability, formatPercent } from "../../utils/format";
+import { useSimulationStore } from "../../store/simulation";
+import { formatSl, formatProbability, formatPercent, formatCost } from "../../utils/format";
 import { CATEGORY_LABELS } from "../../utils/geometry";
 import { DEFENSE_COLORS } from "../../utils/colors";
 import type { Category } from "../../engine/types";
@@ -12,6 +14,19 @@ export function ScoreCard() {
     extractionProgress,
     activeLayers,
   } = useSimulationResults();
+  const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
+  const budget = useSimulationStore((s) => s.sliders.budget_millions);
+  const blocks = useSimulationStore((s) => s.blocks);
+  const blockStates = useSimulationStore((s) => s.blockStates);
+  const requiredSl = 5.0 - riskTolerance * 2.0;
+
+  const totalCost = useMemo(() =>
+    blocks
+      .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
+      .reduce((sum, b) => sum + b.dimensions.cost.upfront_millions.min, 0),
+    [blocks, blockStates]
+  );
+  const overBudget = totalCost > budget;
 
   return (
     <div className="space-y-3">
@@ -23,19 +38,37 @@ export function ScoreCard() {
             SL {formatSl(overallSl)}
           </span>
         </div>
-        <div className="mt-2 h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div className="mt-2 relative">
+          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${(overallSl / 5) * 100}%`,
+                backgroundColor:
+                  overallSl >= requiredSl
+                    ? "#059669"
+                    : overallSl >= requiredSl - 0.5
+                      ? "#d97706"
+                      : "#dc2626",
+              }}
+            />
+          </div>
+          {/* Required SL marker */}
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${(overallSl / 5) * 100}%`,
-              backgroundColor:
-                overallSl >= 4
-                  ? "#059669"
-                  : overallSl >= 3
-                    ? "#d97706"
-                    : "#dc2626",
-            }}
+            className="absolute top-0 h-2 w-0.5 bg-gray-400"
+            style={{ left: `${(requiredSl / 5) * 100}%` }}
+            title={`Required: SL ${formatSl(requiredSl)}`}
           />
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-[10px] text-gray-600">
+            Target: SL {formatSl(requiredSl)}
+          </span>
+          <span className={`text-[10px] font-medium ${
+            overallSl >= requiredSl ? "text-emerald-500" : "text-red-400"
+          }`}>
+            {overallSl >= requiredSl ? "PASSING" : "BELOW TARGET"}
+          </span>
         </div>
       </div>
 
@@ -85,6 +118,19 @@ export function ScoreCard() {
             {formatPercent(extractionProgress)}
           </div>
           <div className="text-xs text-gray-500">distilled</div>
+        </div>
+      </div>
+
+      {/* Budget */}
+      <div className="bg-gray-900 rounded-lg p-3">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs text-gray-500">Budget</span>
+          <span className={`text-xs font-medium ${overBudget ? "text-red-400" : "text-emerald-400"}`}>
+            {overBudget ? "OVER" : "OK"}
+          </span>
+        </div>
+        <div className="text-sm font-mono text-gray-200 mt-1">
+          {formatCost(totalCost)} / {formatCost(budget)}
         </div>
       </div>
 

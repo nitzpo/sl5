@@ -26,7 +26,7 @@ export function useSimulationResults() {
     blocks,
     blockStates,
     year,
-    sliders.ai_timeline
+    sliders
   );
 
   const overall = overallSlScore(categoryScores);
@@ -37,7 +37,7 @@ export function useSimulationResults() {
     blockStates,
     adversaryOc,
     year,
-    sliders.ai_timeline
+    sliders
   );
 
   const bestChain = Object.entries(breachProbabilities).reduce<{
@@ -66,7 +66,7 @@ export function useSimulationResults() {
       blockStates,
       oc,
       year,
-      sliders.ai_timeline
+      sliders
     );
     breachByOc[oc] = Math.max(...Object.values(probs), 0);
   }

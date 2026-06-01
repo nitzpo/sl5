@@ -20,10 +20,24 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
-  const aiTimeline = useSimulationStore((s) => s.sliders.ai_timeline);
+  const sliders = useSimulationStore((s) => s.sliders);
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
+
+  const budgetExceededIds = useMemo(() => {
+    const active = blocks
+      .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
+      .map((b) => ({ id: b.id, cost: b.dimensions.cost.upfront_millions.min }))
+      .sort((a, b) => a.cost - b.cost);
+    let total = 0;
+    const exceeded = new Set<string>();
+    for (const item of active) {
+      total += item.cost;
+      if (total > sliders.budget_millions) exceeded.add(item.id);
+    }
+    return exceeded;
+  }, [blocks, blockStates, sliders.budget_millions]);
 
   const blocksByCategory = useMemo(() => {
     const map: Record<string, Block[]> = {};
@@ -80,7 +94,8 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
                     size={hexSize}
                     state={state}
                     year={year}
-                    aiTimelineSlider={aiTimeline}
+                    sliders={sliders}
+                    budgetExceeded={budgetExceededIds.has(block.id)}
                     onSelect={onSelectBlock}
                     onHover={(b, rect) => {
                       setHoveredBlock(b);
@@ -107,7 +122,7 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
           block={hoveredBlock}
           state={(blockStates[hoveredBlock.id] ?? "not_started") as BlockState}
           year={year}
-          aiTimelineSlider={aiTimeline}
+          sliders={sliders}
           anchorRect={hoverRect}
         />
       )}

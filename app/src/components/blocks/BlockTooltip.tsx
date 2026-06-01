@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import type { Block, BlockState } from "../../engine/types";
+import type { Block, BlockState, Sliders } from "../../engine/types";
 import { blockEffectiveness, aiDegradation } from "../../engine/scoring";
+import { formatCost } from "../../utils/format";
 
 interface BlockTooltipProps {
   block: Block;
   state: BlockState;
   year: number;
-  aiTimelineSlider: number;
+  sliders: Sliders;
   anchorRect: DOMRect | null;
 }
 
@@ -14,14 +15,14 @@ export function BlockTooltip({
   block,
   state,
   year,
-  aiTimelineSlider,
+  sliders,
   anchorRect,
 }: BlockTooltipProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-  const effectiveness = blockEffectiveness(block, state, year, aiTimelineSlider);
-  const degradation = aiDegradation(block, year, aiTimelineSlider);
+  const effectiveness = blockEffectiveness(block, state, year, sliders);
+  const degradation = aiDegradation(block, year, sliders.ai_timeline);
   const showErosion = degradation > 0.02 && block.defense_type !== "hard_stop";
 
   useEffect(() => {
@@ -55,7 +56,9 @@ export function BlockTooltip({
         {block.id}: {block.name}
       </div>
       <div className="text-[11px] text-gray-400 mt-0.5">
-        {state} | effectiveness: {Math.round(effectiveness * 100)}%
+        {state} | effectiveness: {Math.round(effectiveness * 100)}% |{" "}
+        {formatCost(block.dimensions.cost.upfront_millions.min)}-
+        {formatCost(block.dimensions.cost.upfront_millions.max)}
         {showErosion && (
           <span className="text-red-400 ml-1">
             (AI erosion: -{Math.round(degradation * 100)}%)

@@ -1,5 +1,5 @@
 import { useMemo, useRef } from "react";
-import type { Block, BlockState } from "../../engine/types";
+import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { DEFENSE_COLORS } from "../../utils/colors";
 import { aiDegradation } from "../../engine/scoring";
@@ -13,7 +13,8 @@ interface BlockCellProps {
   size: number;
   state: BlockState;
   year: number;
-  aiTimelineSlider: number;
+  sliders: Sliders;
+  budgetExceeded: boolean;
   onSelect: (block: Block) => void;
   onHover: (block: Block, rect: DOMRect) => void;
   onHoverEnd: () => void;
@@ -39,7 +40,8 @@ export function BlockCell({
   size,
   state,
   year,
-  aiTimelineSlider,
+  sliders,
+  budgetExceeded,
   onSelect,
   onHover,
   onHoverEnd,
@@ -51,9 +53,9 @@ export function BlockCell({
 
   const color = DEFENSE_COLORS[block.defense_type];
   const fillFraction = STATE_FILL[state];
-  const degradation = aiDegradation(block, year, aiTimelineSlider);
+  const degradation = aiDegradation(block, year, sliders.ai_timeline);
 
-  const aiCap = getAiCapability(year, aiTimelineSlider);
+  const aiCap = getAiCapability(year, sliders.ai_timeline);
   const effectiveOc = adversaryOc + block.adversary_exploitation.ai_oc_shift * aiCap;
   const beyondAdversary = block.adversary_exploitation.oc_threshold_to_exploit > effectiveOc;
   const irrelevantWhenAirgapped = !modelServed && SERVING_ONLY_BLOCKS.has(block.id);
@@ -151,6 +153,18 @@ export function BlockCell({
           stroke={color}
           strokeWidth={1}
           opacity={0.5}
+        />
+      )}
+
+      {/* Budget exceeded indicator */}
+      {budgetExceeded && (
+        <polygon
+          points={hexPoints(cx, cy, size + 3)}
+          fill="none"
+          stroke="#f59e0b"
+          strokeWidth={1.5}
+          strokeDasharray="4 3"
+          opacity={0.7}
         />
       )}
 

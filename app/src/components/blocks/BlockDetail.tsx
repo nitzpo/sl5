@@ -21,10 +21,10 @@ export function BlockDetail({ block, onClose }: BlockDetailProps) {
   const blockStates = useSimulationStore((s) => s.blockStates);
   const setBlockState = useSimulationStore((s) => s.setBlockState);
   const year = useSimulationStore((s) => s.year);
-  const aiTimeline = useSimulationStore((s) => s.sliders.ai_timeline);
+  const sliders = useSimulationStore((s) => s.sliders);
 
   const state = (blockStates[block.id] ?? "not_started") as BlockState;
-  const eff = blockEffectiveness(block, state, year, aiTimeline);
+  const eff = blockEffectiveness(block, state, year, sliders);
   const color = DEFENSE_COLORS[block.defense_type];
 
   return (

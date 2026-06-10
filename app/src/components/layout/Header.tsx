@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
+import { usePlaybackStore } from "../../timelapse/playback-store";
 import { ScenariosDropdown } from "./ScenariosDropdown";
 
 interface HeaderProps {
@@ -10,10 +11,9 @@ export function Header({ onShowIntro }: HeaderProps) {
   const year = useSimulationStore((s) => s.year);
   const setYear = useSimulationStore((s) => s.setYear);
   const scenarioName = useSimulationStore((s) => s.scenarioName);
-  const expertMode = useSimulationStore((s) => s.expertMode);
-  const setExpertMode = useSimulationStore((s) => s.setExpertMode);
   const resetToBaseline = useSimulationStore((s) => s.resetToBaseline);
   const copyShareUrl = useSimulationStore((s) => s.copyShareUrl);
+  const playbackActive = usePlaybackStore((s) => s.state !== "idle");
   const [copied, setCopied] = useState(false);
 
   return (
@@ -33,6 +33,7 @@ export function Header({ onShowIntro }: HeaderProps) {
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
           className="w-28 accent-violet-500"
+          disabled={playbackActive}
         />
         <span className="text-xs font-mono text-gray-300 w-8">{year}</span>
       </div>
@@ -42,14 +43,6 @@ export function Header({ onShowIntro }: HeaderProps) {
       )}
 
       <div className="ml-auto flex items-center gap-0.5">
-      {/* Expert/Summary toggle */}
-      <button
-        onClick={() => setExpertMode(!expertMode)}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
-      >
-        {expertMode ? "Summary" : "Expert"}
-      </button>
-
       {/* Scenarios */}
       <ScenariosDropdown />
 

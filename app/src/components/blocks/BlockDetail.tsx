@@ -44,7 +44,7 @@ export function BlockDetail({ block, onClose }: BlockDetailProps) {
             </span>
             <span className="text-xs text-gray-500">|</span>
             <span className="text-xs text-gray-400">
-              SL{block.sl_requirement.first_required} required
+              Rec. SL{block.sl_requirement.first_recommended} | Req. SL{block.sl_requirement.first_required}
             </span>
           </div>
         </div>

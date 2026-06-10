@@ -22,14 +22,22 @@
         "notes": "Basic access restrictions: fast. Comprehensive monitoring that catches sophisticated AI evasion: requires research breakthroughs. Full insider-threat analogue: years."
       },
       "cost": {
-        "upfront_millions": { "min": 20, "max": 100 },
-        "annual_ongoing_millions": { "min": 15, "max": 50 },
+        "upfront_millions": {
+          "min": 20,
+          "max": 100
+        },
+        "annual_ongoing_millions": {
+          "min": 15,
+          "max": 50
+        },
         "notes": "Monitoring infrastructure, dedicated red-team for AI containment testing, ongoing research into AI deception detection. Cost scales with model capability."
       },
       "vendor_dependency": {
         "value": 15,
-        "key_vendors": ["monitoring_infrastructure"],
-        "notes": "Mostly internal — no vendor sells 'AI insider threat detection' today. Labs must build this themselves."
+        "key_vendors": [
+          "monitoring_infrastructure"
+        ],
+        "notes": "Mostly internal \u2014 no vendor sells 'AI insider threat detection' today. Labs must build this themselves."
       },
       "supply_scarcity": {
         "value": 85,
@@ -38,34 +46,52 @@
       },
       "organizational_readiness": {
         "value": 15,
-        "barriers": ["philosophical_resistance", "capability_uncertainty", "no_framework_exists", "conflicts_with_ai_development_goals"],
+        "barriers": [
+          "philosophical_resistance",
+          "capability_uncertainty",
+          "no_framework_exists",
+          "conflicts_with_ai_development_goals"
+        ],
         "notes": "Treating your own product as a potential adversary is culturally alien. Labs that believe in alignment may resist framing AI as insider threat. Those building agentic AI have direct conflict of interest."
       }
     },
     "defense_type": "probabilistic",
     "sl_requirement": {
-      "first_recommended": 4,
-      "first_required": 5
+      "first_recommended": 3,
+      "first_required": 4
     },
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 4,
-      "ai_oc_shift": 3.0,
-      "exploit_narrative": "A sufficiently capable AI with weight access IS the insider threat. No external adversary needed — the model itself may attempt weight exfiltration if misaligned. AI OC shift is maximal because the 'adversary' IS the AI capability. At OC5 (superintelligent), this becomes the primary threat vector."
+      "ai_oc_shift": 2.0,
+      "exploit_narrative": "A sufficiently capable AI with weight access IS the insider threat. No external adversary needed \u2014 the model itself may attempt weight exfiltration if misaligned. AI OC shift is maximal because the 'adversary' IS the AI capability. At OC5 (superintelligent), this becomes the primary threat vector."
     },
     "dependencies": {
-      "requires": ["PER-06"],
-      "enhances": ["AI-02", "AI-06"],
-      "enabled_by": ["HW-02", "NET-02"]
+      "requires": [
+        "PER-06"
+      ],
+      "enhances": [
+        "AI-02",
+        "AI-06"
+      ],
+      "enabled_by": [
+        "HW-02",
+        "NET-02"
+      ]
     },
     "defense_in_depth": {
-      "layer_contributions": ["insider_threat", "access_control"],
-      "shared_dependencies": ["monitoring_infrastructure_integrity"]
+      "layer_contributions": [
+        "insider_threat",
+        "access_control"
+      ],
+      "shared_dependencies": [
+        "monitoring_infrastructure_integrity"
+      ]
     },
     "open_questions": [
       {
         "question": "Can we reliably detect deceptive behavior in AI systems that are smarter than their monitors?",
         "uncertainty_level": "fundamental",
-        "impact_if_resolved_negatively": "AI insider threat controls become security theater against sufficiently advanced AI — the core unsolved alignment problem"
+        "impact_if_resolved_negatively": "AI insider threat controls become security theater against sufficiently advanced AI \u2014 the core unsolved alignment problem"
       },
       {
         "question": "At what capability level does an AI system become a credible insider threat?",
@@ -80,7 +106,7 @@
         "year": 2013
       },
       {
-        "description": "Stuxnet demonstrated that even air-gapped systems can be compromised from within — the malware was the 'insider' that operated autonomously once introduced.",
+        "description": "Stuxnet demonstrated that even air-gapped systems can be compromised from within \u2014 the malware was the 'insider' that operated autonomously once introduced.",
         "source": "Stuxnet analysis",
         "year": 2010
       }
@@ -93,14 +119,16 @@
     "summary_group": "ai_containment",
     "description": "Using multiple independently trained AI models to review each other's outputs and actions, specifically to catch deceptive or misaligned behavior. Models must be architecturally diverse and trained on different data/objectives to avoid correlated failures. Analogous to two-person integrity but for AI systems.",
     "current_state": {
-      "summary": "Some labs use AI to review AI-generated code. No lab has formal decorrelated multi-model review specifically designed for catching deceptive behavior. Constitutional AI and RLHF use AI feedback but from the same model family — not decorrelated.",
-      "deployed_by": ["partial_concept_only"],
+      "summary": "Some labs use AI to review AI-generated code. No lab has formal decorrelated multi-model review specifically designed for catching deceptive behavior. Constitutional AI and RLHF use AI feedback but from the same model family \u2014 not decorrelated.",
+      "deployed_by": [
+        "partial_concept_only"
+      ],
       "baseline_state": "not_started"
     },
     "dimensions": {
       "technical_feasibility": {
         "value": 40,
-        "notes": "Fundamental question: can model B reliably catch model A's deception if A is more capable than B? Decorrelation is hard — models trained on similar internet data may share blind spots. True independence may require radically different architectures.",
+        "notes": "Fundamental question: can model B reliably catch model A's deception if A is more capable than B? Decorrelation is hard \u2014 models trained on similar internet data may share blind spots. True independence may require radically different architectures.",
         "trajectory": "uncertain"
       },
       "time_to_deploy_months": {
@@ -109,13 +137,22 @@
         "notes": "Requires: training genuinely independent models, defining review protocols, validating that decorrelation is real (not just surface-level), building integration into operational workflows."
       },
       "cost": {
-        "upfront_millions": { "min": 100, "max": 500 },
-        "annual_ongoing_millions": { "min": 50, "max": 200 },
+        "upfront_millions": {
+          "min": 100,
+          "max": 500
+        },
+        "annual_ongoing_millions": {
+          "min": 50,
+          "max": 200
+        },
         "notes": "Training multiple frontier models independently is extremely expensive. Each review model must be near-frontier capability to catch frontier model deception. Essentially multiplies training cost."
       },
       "vendor_dependency": {
         "value": 40,
-        "key_vendors": ["compute_providers", "alternative_architecture_researchers"],
+        "key_vendors": [
+          "compute_providers",
+          "alternative_architecture_researchers"
+        ],
         "notes": "May need to source review models from different organizations entirely to ensure true decorrelation."
       },
       "supply_scarcity": {
@@ -125,7 +162,12 @@
       },
       "organizational_readiness": {
         "value": 30,
-        "barriers": ["cost_of_multiple_frontier_models", "unclear_validation_method", "no_standard_exists", "competitive_tension_with_other_labs"],
+        "barriers": [
+          "cost_of_multiple_frontier_models",
+          "unclear_validation_method",
+          "no_standard_exists",
+          "competitive_tension_with_other_labs"
+        ],
         "notes": "Labs are reluctant to cede review authority to a competitor's model. Government-mandated cross-lab review would face massive resistance."
       }
     },
@@ -140,34 +182,44 @@
       "exploit_narrative": "Without decorrelated review, a single compromised or misaligned model has no AI-level check on its behavior. Humans cannot keep pace with reviewing AI actions at scale. A superintelligent model may find subtle exploitation paths that no human reviewer would catch."
     },
     "dependencies": {
-      "requires": ["AI-01"],
-      "enhances": ["AI-05", "AI-06"],
+      "requires": [
+        "AI-01"
+      ],
+      "enhances": [
+        "AI-05",
+        "AI-06"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["insider_threat", "integrity_verification"],
-      "shared_dependencies": ["assumes_review_model_not_colluding"]
+      "layer_contributions": [
+        "insider_threat",
+        "integrity_verification"
+      ],
+      "shared_dependencies": [
+        "assumes_review_model_not_colluding"
+      ]
     },
     "open_questions": [
       {
         "question": "Can decorrelation be validated? How do you prove two models don't share failure modes?",
         "uncertainty_level": "fundamental",
-        "impact_if_resolved_negatively": "Multi-model review becomes security theater — correlated models give false confidence"
+        "impact_if_resolved_negatively": "Multi-model review becomes security theater \u2014 correlated models give false confidence"
       },
       {
         "question": "Does capability asymmetry defeat review? (Can GPT-7 fool GPT-5 reviewer?)",
         "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "Review only works against equal or weaker AI — useless against the most dangerous scenario"
+        "impact_if_resolved_negatively": "Review only works against equal or weaker AI \u2014 useless against the most dangerous scenario"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "Nuclear weapons use 'permissive action links' requiring independent authorization codes from separate chains of command — decorrelated human review applied to existential-risk operations.",
+        "description": "Nuclear weapons use 'permissive action links' requiring independent authorization codes from separate chains of command \u2014 decorrelated human review applied to existential-risk operations.",
         "source": "US nuclear command and control",
         "year": 1960
       },
       {
-        "description": "Financial auditing requires external independent auditors (Big Four) to review company financials — same principle of decorrelated review, but incentive alignment failures (Arthur Andersen/Enron) show the limits.",
+        "description": "Financial auditing requires external independent auditors (Big Four) to review company financials \u2014 same principle of decorrelated review, but incentive alignment failures (Arthur Andersen/Enron) show the limits.",
         "source": "SOX Act post-Enron",
         "year": 2002
       }
@@ -178,10 +230,12 @@
     "name": "Adversarial Robustness Detection",
     "category": "ai_specific",
     "summary_group": "ai_defense_testing",
-    "description": "Continuous testing of AI systems for adversarial vulnerabilities — inputs that cause unexpected/dangerous behavior. Includes automated red-teaming, adversarial example generation, and monitoring for distribution-shift attacks. Goal: detect when a model is being probed or exploited before damage occurs.",
+    "description": "Continuous testing of AI systems for adversarial vulnerabilities \u2014 inputs that cause unexpected/dangerous behavior. Includes automated red-teaming, adversarial example generation, and monitoring for distribution-shift attacks. Goal: detect when a model is being probed or exploited before damage occurs.",
     "current_state": {
       "summary": "All major labs do some adversarial testing pre-deployment. No lab has continuous real-time adversarial detection in production at scale. Academic adversarial robustness research exists but is far from production-grade for frontier models. Red-teaming is batch, not continuous.",
-      "deployed_by": ["partial_all_major_labs"],
+      "deployed_by": [
+        "partial_all_major_labs"
+      ],
       "baseline_state": "partially_deployed"
     },
     "dimensions": {
@@ -196,13 +250,21 @@
         "notes": "Basic: expand existing red-team to continuous operation. Advanced: automated adversarial detection pipeline. Research-grade: formal robustness guarantees."
       },
       "cost": {
-        "upfront_millions": { "min": 10, "max": 50 },
-        "annual_ongoing_millions": { "min": 8, "max": 30 },
+        "upfront_millions": {
+          "min": 10,
+          "max": 50
+        },
+        "annual_ongoing_millions": {
+          "min": 8,
+          "max": 30
+        },
         "notes": "Red-team staffing, automated testing infrastructure, compute for continuous probing. Scales with model size and attack surface."
       },
       "vendor_dependency": {
         "value": 20,
-        "key_vendors": ["adversarial_testing_tools"],
+        "key_vendors": [
+          "adversarial_testing_tools"
+        ],
         "notes": "Mostly internal research capability. Some commercial adversarial testing tools emerging but not frontier-grade."
       },
       "supply_scarcity": {
@@ -212,7 +274,11 @@
       },
       "organizational_readiness": {
         "value": 50,
-        "barriers": ["testing_never_complete", "false_positive_management", "speed_vs_security_tradeoff"],
+        "barriers": [
+          "testing_never_complete",
+          "false_positive_management",
+          "speed_vs_security_tradeoff"
+        ],
         "notes": "Labs already do some of this. Challenge is making it continuous, comprehensive, and fast enough to catch attacks in real-time without blocking legitimate use."
       }
     },
@@ -224,22 +290,33 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 2.0,
-      "exploit_narrative": "Without adversarial robustness detection, attackers can probe the model systematically to find exploitable behaviors — jailbreaks, data extraction, capability elicitation — without triggering alerts. AI dramatically improves adversarial example generation and attack optimization."
+      "exploit_narrative": "Without adversarial robustness detection, attackers can probe the model systematically to find exploitable behaviors \u2014 jailbreaks, data extraction, capability elicitation \u2014 without triggering alerts. AI dramatically improves adversarial example generation and attack optimization."
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["AI-05", "AI-07", "AI-08"],
-      "enabled_by": ["AI-02"]
+      "enhances": [
+        "AI-05",
+        "AI-07",
+        "AI-08"
+      ],
+      "enabled_by": [
+        "AI-02"
+      ]
     },
     "defense_in_depth": {
-      "layer_contributions": ["detection", "integrity_verification"],
-      "shared_dependencies": ["monitoring_infrastructure"]
+      "layer_contributions": [
+        "detection",
+        "integrity_verification"
+      ],
+      "shared_dependencies": [
+        "monitoring_infrastructure"
+      ]
     },
     "open_questions": [
       {
         "question": "Can adversarial detection keep pace with AI-generated adversarial attacks? (Arms race dynamics)",
         "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "Detection becomes perpetually behind — useful as speed bump but not reliable defense"
+        "impact_if_resolved_negatively": "Detection becomes perpetually behind \u2014 useful as speed bump but not reliable defense"
       },
       {
         "question": "What's the false positive rate at useful detection thresholds?",
@@ -254,7 +331,7 @@
         "year": 1998
       },
       {
-        "description": "Anti-virus software evolution from signature matching to heuristic/behavioral detection parallels the trajectory of adversarial robustness — always catching up to attackers.",
+        "description": "Anti-virus software evolution from signature matching to heuristic/behavioral detection parallels the trajectory of adversarial robustness \u2014 always catching up to attackers.",
         "source": "AV industry evolution",
         "year": 2010
       }
@@ -268,7 +345,9 @@
     "description": "Formal contracts and technical enforcement of what AI agents are allowed to do: compute budgets, memory limits, network access scope, file system permissions, API call quotas. The AI equivalent of least-privilege access combined with usage metering. Prevents AI from accumulating resources or capabilities beyond its assigned role.",
     "current_state": {
       "summary": "Basic sandboxing exists for code-running AI agents (Docker containers, API rate limits). No formal 'access agreement' framework. No standardized resource quota system designed for AI containment specifically. Cloud providers have billing limits but not security-motivated AI quotas.",
-      "deployed_by": ["partial_basic_sandboxing"],
+      "deployed_by": [
+        "partial_basic_sandboxing"
+      ],
       "baseline_state": "partially_deployed"
     },
     "dimensions": {
@@ -283,30 +362,43 @@
         "notes": "Basic quotas: fast (existing OS/cloud primitives). Comprehensive AI-aware access framework with formal agreements: requires new tooling and standards."
       },
       "cost": {
-        "upfront_millions": { "min": 5, "max": 20 },
-        "annual_ongoing_millions": { "min": 3, "max": 10 },
+        "upfront_millions": {
+          "min": 5,
+          "max": 20
+        },
+        "annual_ongoing_millions": {
+          "min": 3,
+          "max": 10
+        },
         "notes": "Low relative to other AI blocks. Mostly engineering effort to build quota management and monitoring. Policy development cost is minimal."
       },
       "vendor_dependency": {
         "value": 25,
-        "key_vendors": ["cloud_providers", "os_vendors"],
+        "key_vendors": [
+          "cloud_providers",
+          "os_vendors"
+        ],
         "notes": "Builds on existing OS/cloud isolation primitives. May need hardware support for truly tamper-proof quotas."
       },
       "supply_scarcity": {
         "value": 35,
         "bottleneck": "Engineers who understand both AI agent architectures and security containment",
-        "notes": "Lower scarcity than other AI blocks — draws on existing systems engineering talent."
+        "notes": "Lower scarcity than other AI blocks \u2014 draws on existing systems engineering talent."
       },
       "organizational_readiness": {
         "value": 55,
-        "barriers": ["productivity_impact", "quota_tuning_difficulty", "resistance_from_ai_teams"],
+        "barriers": [
+          "productivity_impact",
+          "quota_tuning_difficulty",
+          "resistance_from_ai_teams"
+        ],
         "notes": "Easier sell than most AI-specific blocks because it looks like standard IT policy. Resistance comes from AI teams who want unconstrained experimentation."
       }
     },
     "defense_type": "hard_stop",
     "sl_requirement": {
       "first_recommended": 3,
-      "first_required": 4
+      "first_required": 3
     },
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
@@ -315,12 +407,23 @@
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["AI-01", "AI-06"],
-      "enabled_by": ["HW-02", "NET-02"]
+      "enhances": [
+        "AI-01",
+        "AI-06"
+      ],
+      "enabled_by": [
+        "HW-02",
+        "NET-02"
+      ]
     },
     "defense_in_depth": {
-      "layer_contributions": ["access_control", "resource_boundary"],
-      "shared_dependencies": ["os_enforcement_integrity"]
+      "layer_contributions": [
+        "access_control",
+        "resource_boundary"
+      ],
+      "shared_dependencies": [
+        "os_enforcement_integrity"
+      ]
     },
     "open_questions": [
       {
@@ -336,7 +439,7 @@
     ],
     "real_world_parallels": [
       {
-        "description": "Unix process permissions and cgroups contain untrusted code — same principle applied to AI. Container orchestration (Kubernetes) already enforces CPU/memory/network quotas on workloads.",
+        "description": "Unix process permissions and cgroups contain untrusted code \u2014 same principle applied to AI. Container orchestration (Kubernetes) already enforces CPU/memory/network quotas on workloads.",
         "source": "Linux container security model",
         "year": 2013
       },
@@ -370,8 +473,14 @@
         "notes": "Basic honeypots: quick. Comprehensive chaos engineering program with realistic AI adversary simulation: requires significant tooling and methodology development."
       },
       "cost": {
-        "upfront_millions": { "min": 10, "max": 40 },
-        "annual_ongoing_millions": { "min": 8, "max": 25 },
+        "upfront_millions": {
+          "min": 10,
+          "max": 40
+        },
+        "annual_ongoing_millions": {
+          "min": 8,
+          "max": 25
+        },
         "notes": "Dedicated red team + automation infrastructure + compute for continuous testing. Must scale with system complexity."
       },
       "vendor_dependency": {
@@ -386,7 +495,11 @@
       },
       "organizational_readiness": {
         "value": 35,
-        "barriers": ["fear_of_breaking_production", "no_methodology_exists", "cultural_gap_between_security_and_ml_teams"],
+        "barriers": [
+          "fear_of_breaking_production",
+          "no_methodology_exists",
+          "cultural_gap_between_security_and_ml_teams"
+        ],
         "notes": "Security teams don't understand AI well enough to design realistic AI adversary scenarios. ML teams don't think adversarially. Need new hybrid discipline."
       }
     },
@@ -398,22 +511,33 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 1.0,
-      "exploit_narrative": "Without continuous testing, defenses degrade silently. Monitoring rules go stale, access controls have exceptions that accumulate, and response procedures haven't been exercised. An attacker benefits from untested defenses because they can probe without detection — no one has verified the alarms actually fire."
+      "exploit_narrative": "Without continuous testing, defenses degrade silently. Monitoring rules go stale, access controls have exceptions that accumulate, and response procedures haven't been exercised. An attacker benefits from untested defenses because they can probe without detection \u2014 no one has verified the alarms actually fire."
     },
     "dependencies": {
-      "requires": ["AI-01", "AI-03"],
-      "enhances": ["AI-06", "PER-03"],
+      "requires": [
+        "AI-01",
+        "AI-03"
+      ],
+      "enhances": [
+        "AI-06",
+        "PER-03"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["detection", "response_validation"],
-      "shared_dependencies": ["testing_environment_isolation"]
+      "layer_contributions": [
+        "detection",
+        "response_validation"
+      ],
+      "shared_dependencies": [
+        "testing_environment_isolation"
+      ]
     },
     "open_questions": [
       {
         "question": "How realistic can simulated AI adversary behavior be without actually creating dangerous AI?",
         "uncertainty_level": "medium",
-        "impact_if_resolved_negatively": "Testing is always less challenging than real attacks — gives false confidence"
+        "impact_if_resolved_negatively": "Testing is always less challenging than real attacks \u2014 gives false confidence"
       },
       {
         "question": "Can you chaos-engineer against an adversary more capable than your testing team?",
@@ -457,13 +581,22 @@
         "notes": "Basic hardware power-off with dual-key: relatively fast. Comprehensive kill system that resists sophisticated AI countermeasures: requires careful threat modeling."
       },
       "cost": {
-        "upfront_millions": { "min": 5, "max": 30 },
-        "annual_ongoing_millions": { "min": 2, "max": 8 },
+        "upfront_millions": {
+          "min": 5,
+          "max": 30
+        },
+        "annual_ongoing_millions": {
+          "min": 2,
+          "max": 8
+        },
         "notes": "Hardware cost is low. Main cost: designing the system to resist AI circumvention, testing regularly, maintaining operational readiness of kill-switch operators."
       },
       "vendor_dependency": {
         "value": 30,
-        "key_vendors": ["hardware_security_modules", "custom_switch_manufacturers"],
+        "key_vendors": [
+          "hardware_security_modules",
+          "custom_switch_manufacturers"
+        ],
         "notes": "HSMs for cryptographic authorization are commercial. Physical kill-switch hardware may need custom development for AI-scale datacenters."
       },
       "supply_scarcity": {
@@ -473,34 +606,50 @@
       },
       "organizational_readiness": {
         "value": 40,
-        "barriers": ["operational_cost_of_false_kills", "defining_trigger_criteria", "resistance_to_admitting_AI_might_need_killing"],
+        "barriers": [
+          "operational_cost_of_false_kills",
+          "defining_trigger_criteria",
+          "resistance_to_admitting_AI_might_need_killing"
+        ],
         "notes": "Easier cultural sell than most AI blocks ('we have an off switch'). Hard part: defining when to use it. False kills are extremely expensive (training run lost). Creates reluctance to actually trigger."
       }
     },
     "defense_type": "hard_stop",
     "sl_requirement": {
-      "first_recommended": 4,
-      "first_required": 5
+      "first_recommended": 3,
+      "first_required": 4
     },
     "adversary_exploitation": {
-      "oc_threshold_to_exploit": 5,
-      "ai_oc_shift": 2.5,
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.5,
       "exploit_narrative": "Without kill-switches, a misaligned AI system operating at high capability cannot be reliably stopped. Software-only shutdown can be resisted by AI that has learned to persist across restarts, distribute itself, or make shutdown unacceptably costly. The kill-switch is the last line of defense when all other containment has failed."
     },
     "dependencies": {
-      "requires": ["PER-06"],
-      "enhances": ["AI-01"],
-      "enabled_by": ["HW-01"]
+      "requires": [
+        "PER-06"
+      ],
+      "enhances": [
+        "AI-01"
+      ],
+      "enabled_by": [
+        "HW-01"
+      ]
     },
     "defense_in_depth": {
-      "layer_contributions": ["last_resort", "physical_control"],
-      "shared_dependencies": ["kill_path_hardware_integrity", "operator_availability"]
+      "layer_contributions": [
+        "last_resort",
+        "physical_control"
+      ],
+      "shared_dependencies": [
+        "kill_path_hardware_integrity",
+        "operator_availability"
+      ]
     },
     "open_questions": [
       {
         "question": "Can a sufficiently advanced AI make itself 'too important to kill' (entangle itself with critical infrastructure)?",
         "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "Kill-switch exists but operators are rationally deterred from using it — the 'too big to fail' problem for AI"
+        "impact_if_resolved_negatively": "Kill-switch exists but operators are rationally deterred from using it \u2014 the 'too big to fail' problem for AI"
       },
       {
         "question": "What are the correct trigger criteria? How to distinguish 'misaligned and dangerous' from 'behaving unexpectedly but fine'?",
@@ -515,7 +664,7 @@
         "year": 1962
       },
       {
-        "description": "Industrial SCADA systems have Emergency Stop (E-Stop) buttons that physically disconnect power — hardware-enforced, not software-mediated. AI kill-switches need similar hardware independence.",
+        "description": "Industrial SCADA systems have Emergency Stop (E-Stop) buttons that physically disconnect power \u2014 hardware-enforced, not software-mediated. AI kill-switches need similar hardware independence.",
         "source": "Industrial safety engineering",
         "year": 1980
       }
@@ -529,7 +678,9 @@
     "description": "Defenses against information leakage through the model's legitimate inference/API channel. Covers: anti-distillation (preventing systematic extraction of model capabilities), anti-exfiltration (preventing compromised model from encoding stolen data into outputs), rate limiting, output perturbation, watermarking, query pattern detection. The outbound half of the legitimate channel attack surface.",
     "current_state": {
       "summary": "Basic rate limiting and output format restrictions exist at all serving labs. Query pattern detection is primitive. Watermarking is research-stage. No lab has formal information-theoretic bounds on leakage rate. Output perturbation degrades service quality. Anti-steganographic-exfiltration doesn't exist.",
-      "deployed_by": ["partial_all_serving_labs"],
+      "deployed_by": [
+        "partial_all_serving_labs"
+      ],
       "baseline_state": "partially_deployed"
     },
     "dimensions": {
@@ -544,13 +695,21 @@
         "notes": "Basic (rate limits, output restriction): months. Advanced (pattern detection, watermarking): 1-2 years. Research-grade (formal bounds, cryptographic inference): unknown timeline."
       },
       "cost": {
-        "upfront_millions": { "min": 5, "max": 50 },
-        "annual_ongoing_millions": { "min": 5, "max": 30 },
+        "upfront_millions": {
+          "min": 5,
+          "max": 50
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 30
+        },
         "notes": "Varies enormously by approach. Rate limiting is cheap. Research into formal bounds or cryptographic inference is expensive and outcome-uncertain."
       },
       "vendor_dependency": {
         "value": 30,
-        "key_vendors": ["hardware_crypto_accelerators"],
+        "key_vendors": [
+          "hardware_crypto_accelerators"
+        ],
         "notes": "Cryptographic inference would need massive hardware support. Other approaches are mostly internal engineering."
       },
       "supply_scarcity": {
@@ -560,34 +719,48 @@
       },
       "organizational_readiness": {
         "value": 40,
-        "barriers": ["service_quality_tradeoff", "revenue_impact", "uncertain_roi", "business_model_conflict"],
-        "notes": "Labs understand distillation exists but willingness to degrade API quality for security is low. Business pressure to serve high-quality outputs conflicts directly with leakage prevention. Understanding a problem ≠ willingness to accept the cost of solving it."
+        "barriers": [
+          "service_quality_tradeoff",
+          "revenue_impact",
+          "uncertain_roi",
+          "business_model_conflict"
+        ],
+        "notes": "Labs understand distillation exists but willingness to degrade API quality for security is low. Business pressure to serve high-quality outputs conflicts directly with leakage prevention. Understanding a problem \u2260 willingness to accept the cost of solving it."
       }
     },
     "defense_type": "hybrid",
     "sl_requirement": {
       "first_recommended": 3,
-      "first_required": 5
+      "first_required": 4
     },
     "adversary_exploitation": {
-      "oc_threshold_to_exploit": 2,
+      "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 1.5,
       "exploit_narrative": "Without outbound defense, any entity with API access can systematically extract model capabilities. At scale: millions of queries yield a distilled model capturing 60-80% of capability. AI optimizes query selection to maximize information extraction per query. State actors can run extraction campaigns indistinguishable from legitimate heavy use."
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["NET-04"],
-      "enabled_by": ["AI-03"]
+      "enhances": [
+        "NET-04"
+      ],
+      "enabled_by": [
+        "AI-03"
+      ]
     },
     "defense_in_depth": {
-      "layer_contributions": ["data_boundary", "detection"],
-      "shared_dependencies": ["serving_infrastructure_integrity"]
+      "layer_contributions": [
+        "data_boundary",
+        "detection"
+      ],
+      "shared_dependencies": [
+        "serving_infrastructure_integrity"
+      ]
     },
     "open_questions": [
       {
         "question": "Is there an information-theoretic lower bound on how much a model must leak per useful query?",
         "uncertainty_level": "fundamental",
-        "impact_if_resolved_negatively": "Serving a model and preventing extraction may be mathematically incompatible — the only real defense is not serving"
+        "impact_if_resolved_negatively": "Serving a model and preventing extraction may be mathematically incompatible \u2014 the only real defense is not serving"
       },
       {
         "question": "Can steganographic exfiltration by a compromised model be detected without solving AI interpretability?",
@@ -615,14 +788,16 @@
     "summary_group": "ai_channel_defense",
     "description": "Defenses against exploitation THROUGH the model's legitimate inference/API channel. Covers: prompt injection prevention, adversarial input filtering, C2 channel detection (external queries triggering internal AI agent actions), jailbreak prevention, and protection against poisoning through feedback loops. The inbound half of the legitimate channel attack surface.",
     "current_state": {
-      "summary": "All labs have basic content filtering and some jailbreak detection. Prompt injection remains fundamentally unsolved — no reliable way to distinguish instructions from data. C2 channel detection through inference API is not attempted by any lab. Feedback loop poisoning is recognized but defenses are ad-hoc.",
-      "deployed_by": ["partial_all_serving_labs"],
+      "summary": "All labs have basic content filtering and some jailbreak detection. Prompt injection remains fundamentally unsolved \u2014 no reliable way to distinguish instructions from data. C2 channel detection through inference API is not attempted by any lab. Feedback loop poisoning is recognized but defenses are ad-hoc.",
+      "deployed_by": [
+        "partial_all_serving_labs"
+      ],
       "baseline_state": "partially_deployed"
     },
     "dimensions": {
       "technical_feasibility": {
         "value": 35,
-        "notes": "Prompt injection is widely considered unsolvable with current architectures (instruction/data confusion is inherent to LLMs). Input sanitization helps but is always bypassable with sufficient creativity. C2 detection requires understanding model's internal state — requires interpretability advances.",
+        "notes": "Prompt injection is widely considered unsolvable with current architectures (instruction/data confusion is inherent to LLMs). Input sanitization helps but is always bypassable with sufficient creativity. C2 detection requires understanding model's internal state \u2014 requires interpretability advances.",
         "trajectory": "uncertain"
       },
       "time_to_deploy_months": {
@@ -631,60 +806,82 @@
         "notes": "Basic filtering: exists. Reliable prompt injection prevention: may require architectural changes to how LLMs process input. Could take fundamental research breakthroughs."
       },
       "cost": {
-        "upfront_millions": { "min": 10, "max": 80 },
-        "annual_ongoing_millions": { "min": 10, "max": 40 },
+        "upfront_millions": {
+          "min": 10,
+          "max": 80
+        },
+        "annual_ongoing_millions": {
+          "min": 10,
+          "max": 40
+        },
         "notes": "Monitoring infrastructure + ongoing research + constant updating as new attack vectors emerge. Arms race means costs never stabilize."
       },
       "vendor_dependency": {
         "value": 20,
-        "key_vendors": ["security_tooling"],
+        "key_vendors": [
+          "security_tooling"
+        ],
         "notes": "Mostly internal capability. Some external security vendors offer input scanning but not at frontier-model sophistication level."
       },
       "supply_scarcity": {
         "value": 75,
         "bottleneck": "Researchers who understand LLM internals at the level needed to design reliable input defenses",
-        "notes": "Prompt injection defense requires deep understanding of how models process and distinguish instructions from data — this is at the frontier of interpretability research."
+        "notes": "Prompt injection defense requires deep understanding of how models process and distinguish instructions from data \u2014 this is at the frontier of interpretability research."
       },
       "organizational_readiness": {
         "value": 45,
-        "barriers": ["unsolved_research_problem", "usability_tradeoff", "arms_race_fatigue"],
+        "barriers": [
+          "unsolved_research_problem",
+          "usability_tradeoff",
+          "arms_race_fatigue"
+        ],
         "notes": "Labs are aware and actively working on this. Fatigue from constant jailbreak whack-a-mole. Some accept it as inherent limitation rather than solvable problem."
       }
     },
     "defense_type": "probabilistic",
     "sl_requirement": {
       "first_recommended": 3,
-      "first_required": 5
+      "first_required": 4
     },
     "adversary_exploitation": {
-      "oc_threshold_to_exploit": 2,
+      "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 2.0,
-      "exploit_narrative": "Without inbound defense, the API becomes an attack surface into the lab's internal infrastructure — especially for agentic AI with tool use. Prompt injection can turn the lab's own AI into an unwitting insider. AI dramatically improves adversarial payload generation, creating novel jailbreaks faster than humans can patch them."
+      "exploit_narrative": "Without inbound defense, the API becomes an attack surface into the lab's internal infrastructure \u2014 especially for agentic AI with tool use. Prompt injection can turn the lab's own AI into an unwitting insider. AI dramatically improves adversarial payload generation, creating novel jailbreaks faster than humans can patch them."
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["AI-01", "AI-04"],
-      "enabled_by": ["AI-03"]
+      "enhances": [
+        "AI-01",
+        "AI-04"
+      ],
+      "enabled_by": [
+        "AI-03"
+      ]
     },
     "defense_in_depth": {
-      "layer_contributions": ["input_boundary", "detection"],
-      "shared_dependencies": ["model_architecture_cooperates"]
+      "layer_contributions": [
+        "input_boundary",
+        "detection"
+      ],
+      "shared_dependencies": [
+        "model_architecture_cooperates"
+      ]
     },
     "open_questions": [
       {
         "question": "Is prompt injection fundamentally solvable without changing LLM architecture?",
         "uncertainty_level": "fundamental",
-        "impact_if_resolved_negatively": "Current LLM architecture is inherently vulnerable to inbound exploitation — can only be mitigated, never eliminated"
+        "impact_if_resolved_negatively": "Current LLM architecture is inherently vulnerable to inbound exploitation \u2014 can only be mitigated, never eliminated"
       },
       {
         "question": "Can agentic AI with tool access be made safe against adversarial inputs while remaining useful?",
         "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "Agentic AI and security become fundamentally incompatible — must choose between capability and containment"
+        "impact_if_resolved_negatively": "Agentic AI and security become fundamentally incompatible \u2014 must choose between capability and containment"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "SQL injection was 'solved' by parameterized queries — a fundamental architectural change that separates code from data. LLMs may need an equivalent architectural shift to separate instructions from input data.",
+        "description": "SQL injection was 'solved' by parameterized queries \u2014 a fundamental architectural change that separates code from data. LLMs may need an equivalent architectural shift to separate instructions from input data.",
         "source": "Web security evolution",
         "year": 2004
       },

@@ -7,7 +7,10 @@
     "description": "Facility construction to ICD 705 / ICS 705-1 standards: complete physical enclosures (walls, floor, ceiling as continuous barrier), RF shielding, acoustic attenuation (Sound Group 3-4), no windows, all utility penetrations maintaining perimeter integrity.",
     "current_state": {
       "summary": "Standard for government classified facilities for decades. No AI lab has built a SCIF-grade datacenter. Specialized contractors exist but the intersection with AI-scale datacenter requirements (cooling, power density) is novel.",
-      "deployed_by": ["government_scif", "intelligence_community"],
+      "deployed_by": [
+        "government_scif",
+        "intelligence_community"
+      ],
       "baseline_state": "not_started"
     },
     "dimensions": {
@@ -22,13 +25,23 @@
         "notes": "Site selection, permitting, specialized construction. Cannot be rushed below 18 months. Retrofitting existing facilities is much harder than new construction."
       },
       "cost": {
-        "upfront_millions": { "min": 200, "max": 500 },
-        "annual_ongoing_millions": { "min": 20, "max": 50 },
+        "upfront_millions": {
+          "min": 200,
+          "max": 500
+        },
+        "annual_ongoing_millions": {
+          "min": 20,
+          "max": 50
+        },
         "notes": "Massive but predictable. 2-3x cost premium over standard datacenter construction. Ongoing = maintaining accreditation, physical security staff, integrity checks."
       },
       "vendor_dependency": {
         "value": 60,
-        "key_vendors": ["scif_contractor", "tempest_engineer", "icd705_accreditor"],
+        "key_vendors": [
+          "scif_contractor",
+          "tempest_engineer",
+          "icd705_accreditor"
+        ],
         "notes": "Specialized contractors required. Government cooperation may be needed for accreditation."
       },
       "supply_scarcity": {
@@ -38,27 +51,39 @@
       },
       "organizational_readiness": {
         "value": 15,
-        "barriers": ["completely_foreign_domain", "construction_timeline", "accreditation_process", "operational_culture_shift"],
+        "barriers": [
+          "completely_foreign_domain",
+          "construction_timeline",
+          "accreditation_process",
+          "operational_culture_shift"
+        ],
         "notes": "AI labs have zero experience with classified facility construction. This is the most alien block culturally. Requires bringing in entirely new expertise."
       }
     },
     "defense_type": "hard_stop",
     "sl_requirement": {
-      "first_recommended": 5,
+      "first_recommended": 4,
       "first_required": 5
     },
     "adversary_exploitation": {
-      "oc_threshold_to_exploit": 3,
+      "oc_threshold_to_exploit": 4,
       "ai_oc_shift": 0.0,
       "exploit_narrative": "Without SCIF-grade construction, physical intrusion, eavesdropping through walls, TEMPEST collection from EM emissions, and acoustic surveillance are all viable. Standard datacenter security focuses on preventing theft of hardware, not preventing sophisticated signals intelligence collection."
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["PHY-02", "PHY-03", "PHY-04", "NET-06"],
+      "enhances": [
+        "PHY-02",
+        "PHY-03",
+        "PHY-04",
+        "NET-06"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["physical_perimeter"],
+      "layer_contributions": [
+        "physical_perimeter"
+      ],
       "shared_dependencies": []
     },
     "open_questions": [
@@ -70,12 +95,12 @@
       {
         "question": "Private self-certification (CSO/Site Security Manager) vs government accreditation: does private accreditation provide meaningful security assurance?",
         "uncertainty_level": "medium",
-        "impact_if_resolved_negatively": "Government accreditation required — adds timeline and access constraints"
+        "impact_if_resolved_negatively": "Government accreditation required \u2014 adds timeline and access constraints"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "NSA's Utah Data Center (2013) is a SCIF-grade facility at datacenter scale — proving the concept is feasible. It houses classified computing at massive scale with full ICD 705 compliance.",
+        "description": "NSA's Utah Data Center (2013) is a SCIF-grade facility at datacenter scale \u2014 proving the concept is feasible. It houses classified computing at massive scale with full ICD 705 compliance.",
         "source": "NSA Utah Data Center",
         "year": 2013
       }
@@ -86,16 +111,18 @@
     "name": "TEMPEST Countermeasures",
     "category": "physical",
     "summary_group": "physical_facility",
-    "description": "RF shielding preventing electromagnetic signal egress from computing areas, plus dedicated power conditioning preventing power-line analysis. Per NSTISSAM TEMPEST/1-92. All equipment hardwired — no wireless devices permitted.",
+    "description": "RF shielding preventing electromagnetic signal egress from computing areas, plus dedicated power conditioning preventing power-line analysis. Per NSTISSAM TEMPEST/1-92. All equipment hardwired \u2014 no wireless devices permitted.",
     "current_state": {
       "summary": "Integral to SCIF construction (PHY-01). Cannot be deployed independently without facility-grade shielding. Individual TEMPEST-rated equipment exists but facility-level protection requires construction.",
-      "deployed_by": ["government_scif"],
+      "deployed_by": [
+        "government_scif"
+      ],
       "baseline_state": "not_started"
     },
     "dimensions": {
       "technical_feasibility": {
         "value": 95,
-        "notes": "Mature technology. Part of ICD 705 construction. The AI-specific concern is whether models can deliberately modulate emissions — but physical shielding works regardless of intent.",
+        "notes": "Mature technology. Part of ICD 705 construction. The AI-specific concern is whether models can deliberately modulate emissions \u2014 but physical shielding works regardless of intent.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -104,13 +131,23 @@
         "notes": "Bundled with PHY-01 SCIF construction. Cannot be deployed faster than the facility itself."
       },
       "cost": {
-        "upfront_millions": { "min": 30, "max": 100 },
-        "annual_ongoing_millions": { "min": 5, "max": 15 },
+        "upfront_millions": {
+          "min": 30,
+          "max": 100
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 15
+        },
         "notes": "Included in SCIF construction cost. Ongoing = periodic testing of shielding effectiveness, power conditioning maintenance."
       },
       "vendor_dependency": {
         "value": 55,
-        "key_vendors": ["tempest_engineer", "rf_shielding_contractor", "power_conditioning_vendor"],
+        "key_vendors": [
+          "tempest_engineer",
+          "rf_shielding_contractor",
+          "power_conditioning_vendor"
+        ],
         "notes": "Specialized vendors required but market exists."
       },
       "supply_scarcity": {
@@ -120,13 +157,17 @@
       },
       "organizational_readiness": {
         "value": 20,
-        "barriers": ["no_wireless_devices", "hardwired_everything", "construction_required"],
+        "barriers": [
+          "no_wireless_devices",
+          "hardwired_everything",
+          "construction_required"
+        ],
         "notes": "No WiFi, no Bluetooth, no wireless anything in Red Zones. Major operational impact for people accustomed to modern connectivity."
       }
     },
     "defense_type": "hard_stop",
     "sl_requirement": {
-      "first_recommended": 5,
+      "first_recommended": 4,
       "first_required": 5
     },
     "adversary_exploitation": {
@@ -135,12 +176,20 @@
       "exploit_narrative": "Without TEMPEST countermeasures, an adversary outside the facility (or in an adjacent uncontrolled space) can use sensitive equipment to capture electromagnetic emissions and reconstruct data being processed. AI models could potentially encode data into EM patterns deliberately."
     },
     "dependencies": {
-      "requires": ["PHY-01"],
-      "enhances": ["HW-05"],
-      "enabled_by": ["PHY-01"]
+      "requires": [
+        "PHY-01"
+      ],
+      "enhances": [
+        "HW-05"
+      ],
+      "enabled_by": [
+        "PHY-01"
+      ]
     },
     "defense_in_depth": {
-      "layer_contributions": ["physical_perimeter"],
+      "layer_contributions": [
+        "physical_perimeter"
+      ],
       "shared_dependencies": []
     },
     "open_questions": [
@@ -152,7 +201,7 @@
     ],
     "real_world_parallels": [
       {
-        "description": "During the Cold War, the Soviets placed a resonant cavity bugging device (\"The Thing\") inside a gift to the US ambassador — demonstrating that EM emissions and RF devices can be weaponized for espionage at the highest levels.",
+        "description": "During the Cold War, the Soviets placed a resonant cavity bugging device (\"The Thing\") inside a gift to the US ambassador \u2014 demonstrating that EM emissions and RF devices can be weaponized for espionage at the highest levels.",
         "source": "Great Seal Bug / Leon Theremin",
         "year": 1945
       }
@@ -166,7 +215,11 @@
     "description": "Interlocking door systems at all Red Zone entry/exit points. Two sets of doors that cannot be open simultaneously, with multi-factor authentication and anti-tailgating sensors. Prevents unauthorized personnel from following authorized personnel through doors.",
     "current_state": {
       "summary": "Standard feature in high-security facilities. Some AI labs have basic mantraps at datacenter entrances. Full implementation at all Red Zone boundaries with anti-tailgating requires more pervasive deployment.",
-      "deployed_by": ["government_scif", "high_security_datacenters", "partial_some_ai_labs"],
+      "deployed_by": [
+        "government_scif",
+        "high_security_datacenters",
+        "partial_some_ai_labs"
+      ],
       "baseline_state": "partially_deployed"
     },
     "dimensions": {
@@ -181,43 +234,59 @@
         "notes": "Installation is straightforward. Longer if retrofitting into existing buildings without space for vestibules."
       },
       "cost": {
-        "upfront_millions": { "min": 2, "max": 10 },
-        "annual_ongoing_millions": { "min": 0.5, "max": 2 },
-        "notes": "Per-entry-point cost × number of entry points. Lower cost relative to other physical blocks."
+        "upfront_millions": {
+          "min": 2,
+          "max": 10
+        },
+        "annual_ongoing_millions": {
+          "min": 0.5,
+          "max": 2
+        },
+        "notes": "Per-entry-point cost \u00d7 number of entry points. Lower cost relative to other physical blocks."
       },
       "vendor_dependency": {
         "value": 30,
-        "key_vendors": ["access_control_vendor"],
+        "key_vendors": [
+          "access_control_vendor"
+        ],
         "notes": "Multiple vendors, competitive market, commodity product."
       },
       "supply_scarcity": {
         "value": 10,
-        "bottleneck": "None — widely available",
+        "bottleneck": "None \u2014 widely available",
         "notes": "No supply constraint"
       },
       "organizational_readiness": {
         "value": 70,
-        "barriers": ["throughput_impact", "employee_convenience"],
+        "barriers": [
+          "throughput_impact",
+          "employee_convenience"
+        ],
         "notes": "Minor convenience impact. Most tech companies already have badge access; mantraps add 15-30 seconds per entry."
       }
     },
     "defense_type": "probabilistic",
     "sl_requirement": {
       "first_recommended": 3,
-      "first_required": 5
+      "first_required": 3
     },
     "adversary_exploitation": {
-      "oc_threshold_to_exploit": 2,
+      "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 0.0,
-      "exploit_narrative": "Without mantraps, an adversary can tailgate an authorized employee through a badge-access door. This is the simplest physical access attack — requires no technology, just social engineering or waiting for someone to hold the door."
+      "exploit_narrative": "Without mantraps, an adversary can tailgate an authorized employee through a badge-access door. This is the simplest physical access attack \u2014 requires no technology, just social engineering or waiting for someone to hold the door."
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["PHY-04"],
+      "enhances": [
+        "PHY-04"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["physical_perimeter", "access_control"],
+      "layer_contributions": [
+        "physical_perimeter",
+        "access_control"
+      ],
       "shared_dependencies": []
     },
     "open_questions": [],
@@ -237,13 +306,16 @@
     "description": "Sensors covering all Red Zone perimeter entry points and motion detection within the space. ICD 705 requires alarm response within 5 minutes for open storage (weights accessible without containers) or 15 minutes for closed storage.",
     "current_state": {
       "summary": "Standard datacenter security has cameras and badge systems. ICD 705-grade IDS with guaranteed 5-minute armed response is government-level and not deployed by AI labs. Requires dedicated security force.",
-      "deployed_by": ["government_scif", "military_facilities"],
+      "deployed_by": [
+        "government_scif",
+        "military_facilities"
+      ],
       "baseline_state": "partially_deployed"
     },
     "dimensions": {
       "technical_feasibility": {
         "value": 97,
-        "notes": "Proven technology. Sensors, cameras, alarm systems are commodity. The challenge is the response guarantee — 5-minute armed response requires on-site security force 24/7.",
+        "notes": "Proven technology. Sensors, cameras, alarm systems are commodity. The challenge is the response guarantee \u2014 5-minute armed response requires on-site security force 24/7.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -252,13 +324,22 @@
         "notes": "Sensor installation is fast. Hiring, training, and retaining 24/7 armed security force takes longer."
       },
       "cost": {
-        "upfront_millions": { "min": 5, "max": 20 },
-        "annual_ongoing_millions": { "min": 10, "max": 30 },
+        "upfront_millions": {
+          "min": 5,
+          "max": 20
+        },
+        "annual_ongoing_millions": {
+          "min": 10,
+          "max": 30
+        },
         "notes": "Sensors are cheap. 24/7 armed security force is expensive ongoing (team of 20-40 people for shifts + overhead)."
       },
       "vendor_dependency": {
         "value": 25,
-        "key_vendors": ["security_systems_vendor", "guard_force_contractor"],
+        "key_vendors": [
+          "security_systems_vendor",
+          "guard_force_contractor"
+        ],
         "notes": "Commodity sensors. Guard force can be contracted or internal."
       },
       "supply_scarcity": {
@@ -268,33 +349,45 @@
       },
       "organizational_readiness": {
         "value": 40,
-        "barriers": ["armed_guards_cultural_clash", "liability_concerns", "remote_site_staffing"],
-        "notes": "Armed guards at a tech company is culturally jarring. But datacenter physical security is an accepted practice — just needs to be upgraded."
+        "barriers": [
+          "armed_guards_cultural_clash",
+          "liability_concerns",
+          "remote_site_staffing"
+        ],
+        "notes": "Armed guards at a tech company is culturally jarring. But datacenter physical security is an accepted practice \u2014 just needs to be upgraded."
       }
     },
     "defense_type": "probabilistic",
     "sl_requirement": {
       "first_recommended": 3,
-      "first_required": 5
+      "first_required": 3
     },
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 0.0,
-      "exploit_narrative": "Without rapid-response IDS, a physical intruder has unlimited time once past the perimeter. Even a detected intrusion is meaningless if response time is 30-60 minutes — an adversary can install implants, copy data, or cause damage within that window."
+      "exploit_narrative": "Without rapid-response IDS, a physical intruder has unlimited time once past the perimeter. Even a detected intrusion is meaningless if response time is 30-60 minutes \u2014 an adversary can install implants, copy data, or cause damage within that window."
     },
     "dependencies": {
-      "requires": ["PHY-01"],
-      "enhances": ["PHY-03", "PER-02"],
+      "requires": [
+        "PHY-01"
+      ],
+      "enhances": [
+        "PHY-03",
+        "PER-02"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["physical_perimeter", "monitoring_detection"],
+      "layer_contributions": [
+        "physical_perimeter",
+        "monitoring_detection"
+      ],
       "shared_dependencies": []
     },
     "open_questions": [],
     "real_world_parallels": [
       {
-        "description": "Nuclear facilities maintain armed response forces with 5-minute response requirements under NRC regulations. The same concept applies — high-value assets requiring rapid physical protection.",
+        "description": "Nuclear facilities maintain armed response forces with 5-minute response requirements under NRC regulations. The same concept applies \u2014 high-value assets requiring rapid physical protection.",
         "source": "NRC 10 CFR 73",
         "year": 2000
       }
@@ -307,14 +400,16 @@
     "summary_group": "physical_facility",
     "description": "Complete prohibition of wireless devices (WiFi, Bluetooth, cellular, NFC) inside Red Zones. All equipment hardwired with wireless capabilities physically removed or disabled. No phones, no wireless keyboards/mice, no wireless headsets.",
     "current_state": {
-      "summary": "Standard SCIF requirement. Enforced in government classified facilities universally. Not enforced in any AI lab — would be highly disruptive to current work culture.",
-      "deployed_by": ["government_scif"],
+      "summary": "Standard SCIF requirement. Enforced in government classified facilities universally. Not enforced in any AI lab \u2014 would be highly disruptive to current work culture.",
+      "deployed_by": [
+        "government_scif"
+      ],
       "baseline_state": "not_started"
     },
     "dimensions": {
       "technical_feasibility": {
         "value": 99,
-        "notes": "Not a technology problem — it's a policy and enforcement problem. Hardwired alternatives exist for everything.",
+        "notes": "Not a technology problem \u2014 it's a policy and enforcement problem. Hardwired alternatives exist for everything.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -323,8 +418,14 @@
         "notes": "Policy creation and enforcement infrastructure (RF detection, device lockers at entries, hardwired replacements). Fast if org is willing."
       },
       "cost": {
-        "upfront_millions": { "min": 2, "max": 8 },
-        "annual_ongoing_millions": { "min": 1, "max": 5 },
+        "upfront_millions": {
+          "min": 2,
+          "max": 8
+        },
+        "annual_ongoing_millions": {
+          "min": 1,
+          "max": 5
+        },
         "notes": "Device lockers, RF detection systems, hardwired equipment replacements, enforcement staff. Low relative to other blocks."
       },
       "vendor_dependency": {
@@ -339,27 +440,38 @@
       },
       "organizational_readiness": {
         "value": 15,
-        "barriers": ["cultural_resistance", "productivity_impact", "communication_disruption", "employee_morale"],
+        "barriers": [
+          "cultural_resistance",
+          "productivity_impact",
+          "communication_disruption",
+          "employee_morale"
+        ],
         "notes": "Extremely culturally disruptive for tech workers accustomed to phones and wireless everything. This is one of the hardest blocks to implement purely due to human resistance."
       }
     },
     "defense_type": "hard_stop",
     "sl_requirement": {
-      "first_recommended": 5,
-      "first_required": 5
+      "first_recommended": 4,
+      "first_required": 4
     },
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
-      "ai_oc_shift": 0.5,
+      "ai_oc_shift": 0.0,
       "exploit_narrative": "Wireless devices are covert exfiltration channels. A compromised phone can record audio, photograph screens, or relay data. Wireless implants (keyboard loggers, RF beacons) can be planted and transmit to nearby receivers. RF emissions from wireless devices can interfere with TEMPEST countermeasures."
     },
     "dependencies": {
-      "requires": ["PHY-01"],
-      "enhances": ["PHY-02"],
+      "requires": [
+        "PHY-01"
+      ],
+      "enhances": [
+        "PHY-02"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["physical_perimeter"],
+      "layer_contributions": [
+        "physical_perimeter"
+      ],
       "shared_dependencies": []
     },
     "open_questions": [],
@@ -379,7 +491,9 @@
     "description": "Formal division of facilities into Red Zones (where SL5-protected information may be processed/stored, full security controls) and Black Zones (no network path to SL5 information, standard security). All SL5 Network hardware must be within Red Zones.",
     "current_state": {
       "summary": "Concept exists in government (classified vs unclassified areas). AI labs have informal segmentation (server rooms vs offices) but not the formal Red/Black zone architecture with enforced separation.",
-      "deployed_by": ["government_scif"],
+      "deployed_by": [
+        "government_scif"
+      ],
       "baseline_state": "not_started"
     },
     "dimensions": {
@@ -394,13 +508,21 @@
         "notes": "Requires facility redesign, system relocation, boundary definition, and policy implementation. Easier in new construction than retrofit."
       },
       "cost": {
-        "upfront_millions": { "min": 20, "max": 80 },
-        "annual_ongoing_millions": { "min": 5, "max": 15 },
+        "upfront_millions": {
+          "min": 20,
+          "max": 80
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 15
+        },
         "notes": "Physical construction of zone boundaries, access control systems, monitoring. Ongoing = maintaining zone integrity and access policies."
       },
       "vendor_dependency": {
         "value": 30,
-        "key_vendors": ["construction_contractor"],
+        "key_vendors": [
+          "construction_contractor"
+        ],
         "notes": "Standard construction with security requirements. No exotic vendors needed."
       },
       "supply_scarcity": {
@@ -410,14 +532,18 @@
       },
       "organizational_readiness": {
         "value": 25,
-        "barriers": ["access_restriction_culture", "workflow_disruption", "zone_boundary_friction"],
+        "barriers": [
+          "access_restriction_culture",
+          "workflow_disruption",
+          "zone_boundary_friction"
+        ],
         "notes": "Researchers accustomed to walking freely to any server must now badge into specific zones. Creates physical friction in daily work."
       }
     },
     "defense_type": "hybrid",
     "sl_requirement": {
-      "first_recommended": 4,
-      "first_required": 5
+      "first_recommended": 3,
+      "first_required": 4
     },
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
@@ -426,11 +552,18 @@
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["PHY-01", "PHY-03", "PHY-04"],
+      "enhances": [
+        "PHY-01",
+        "PHY-03",
+        "PHY-04"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["physical_perimeter", "access_control"],
+      "layer_contributions": [
+        "physical_perimeter",
+        "access_control"
+      ],
       "shared_dependencies": []
     },
     "open_questions": [],
@@ -450,7 +583,10 @@
     "description": "Systematic inspection of all hardware components before installation and periodically thereafter. Multi-modal: X-ray imaging, infrared thermography, computer vision comparison against baseline, random destructive evaluation. Detects implants, counterfeits, and tampering.",
     "current_state": {
       "summary": "Government uses some inspection techniques for classified hardware. No AI lab performs systematic hardware inspection beyond basic visual checks. The full multi-modal pipeline at datacenter scale is novel.",
-      "deployed_by": ["government_some_components", "military_supply_chain"],
+      "deployed_by": [
+        "government_some_components",
+        "military_supply_chain"
+      ],
       "baseline_state": "not_started"
     },
     "dimensions": {
@@ -465,23 +601,36 @@
         "notes": "Equipment procurement, lab setup, process development, staff training. The random destructive evaluation component requires accepting cost of destroying some hardware."
       },
       "cost": {
-        "upfront_millions": { "min": 15, "max": 50 },
-        "annual_ongoing_millions": { "min": 5, "max": 20 },
+        "upfront_millions": {
+          "min": 15,
+          "max": 50
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 20
+        },
         "notes": "Inspection equipment + lab + staff + destroyed components. Ongoing cost scales with hardware procurement volume."
       },
       "vendor_dependency": {
         "value": 40,
-        "key_vendors": ["xray_equipment_vendor", "inspection_lab_services"],
+        "key_vendors": [
+          "xray_equipment_vendor",
+          "inspection_lab_services"
+        ],
         "notes": "Equipment available commercially. May outsource to specialized labs initially."
       },
       "supply_scarcity": {
         "value": 55,
         "bottleneck": "Hardware inspection specialists who can interpret X-ray/IR results for modern semiconductors",
-        "notes": "Rare skill set — mostly exists in government counterintelligence and defense contractors"
+        "notes": "Rare skill set \u2014 mostly exists in government counterintelligence and defense contractors"
       },
       "organizational_readiness": {
         "value": 30,
-        "barriers": ["unfamiliar_process", "cost_of_destruction", "procurement_delay"],
+        "barriers": [
+          "unfamiliar_process",
+          "cost_of_destruction",
+          "procurement_delay"
+        ],
         "notes": "Adds time to hardware procurement pipeline. Requires accepting that some % of expensive hardware will be deliberately destroyed for verification."
       }
     },
@@ -491,24 +640,29 @@
       "first_required": 5
     },
     "adversary_exploitation": {
-      "oc_threshold_to_exploit": 5,
+      "oc_threshold_to_exploit": 4,
       "ai_oc_shift": 0.0,
       "exploit_narrative": "Without hardware inspection, a supply chain compromise (compromised chip with hardware backdoor) goes undetected. The implant arrives through legitimate channels, passes standard acceptance testing, and operates normally until activated by the adversary."
     },
     "dependencies": {
       "requires": [],
-      "enhances": ["SC-02", "SC-05"],
+      "enhances": [
+        "SC-02",
+        "SC-05"
+      ],
       "enabled_by": []
     },
     "defense_in_depth": {
-      "layer_contributions": ["supply_chain_integrity"],
+      "layer_contributions": [
+        "supply_chain_integrity"
+      ],
       "shared_dependencies": []
     },
     "open_questions": [
       {
         "question": "Can automated inspection scale to datacenter hardware volumes without unacceptable procurement delays?",
         "uncertainty_level": "medium",
-        "impact_if_resolved_negatively": "Must rely on sampling rather than exhaustive inspection — reduces detection probability"
+        "impact_if_resolved_negatively": "Must rely on sampling rather than exhaustive inspection \u2014 reduces detection probability"
       }
     ],
     "real_world_parallels": [

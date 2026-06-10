@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import type { Sliders } from "../../engine/types";
+import { formatCost } from "../../utils/format";
 
 interface SliderRowProps {
   label: string;
@@ -52,10 +54,18 @@ function SliderRow({
 export function GlobalSliders() {
   const sliders = useSimulationStore((s) => s.sliders);
   const setSlider = useSimulationStore((s) => s.setSlider);
+  const blocks = useSimulationStore((s) => s.blocks);
+  const blockStates = useSimulationStore((s) => s.blockStates);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
   const setModelServed = useSimulationStore((s) => s.setModelServed);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const setAdversaryOc = useSimulationStore((s) => s.setAdversaryOc);
+
+  const totalSpending = useMemo(() => {
+    return blocks
+      .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
+      .reduce((sum, b) => sum + b.dimensions.cost.upfront_millions.min, 0);
+  }, [blocks, blockStates]);
 
   return (
     <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
@@ -89,17 +99,35 @@ export function GlobalSliders() {
         step={0.05}
         onChange={(v) => setSlider("vendor_cooperation", v)}
       />
-      <SliderRow
-        label="Budget"
-        minLabel="$50M"
-        maxLabel="$2B"
-        value={sliders.budget_millions}
-        min={50}
-        max={2000}
-        step={50}
-        onChange={(v) => setSlider("budget_millions", v)}
-        formatValue={(v) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}B` : `$${v}M`)}
-      />
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-400 w-28 shrink-0">Budget</span>
+        <span className="text-[10px] text-gray-600 w-16 text-right shrink-0">$50M</span>
+        <div className="flex-1 relative">
+          <input
+            type="range"
+            min={50}
+            max={2000}
+            step={50}
+            value={sliders.budget_millions}
+            onChange={(e) => setSlider("budget_millions", Number(e.target.value))}
+            className="w-full accent-violet-500 h-1"
+          />
+          {/* Spending marker on the track */}
+          {totalSpending > 0 && (
+            <div
+              className="absolute top-1/2 -translate-y-1/2 h-2.5 w-0.5 rounded-full pointer-events-none"
+              style={{
+                left: `${Math.min((totalSpending - 50) / (2000 - 50) * 100, 100)}%`,
+                backgroundColor: totalSpending > sliders.budget_millions ? "#ef4444" : "#22c55e",
+              }}
+            />
+          )}
+        </div>
+        <span className="text-[10px] text-gray-600 w-16 shrink-0">$2B</span>
+        <span className={`text-xs font-mono w-20 text-right ${totalSpending > sliders.budget_millions ? "text-red-400" : "text-gray-300"}`}>
+          {formatCost(totalSpending)}/{formatCost(sliders.budget_millions)}
+        </span>
+      </div>
       <SliderRow
         label="Org Transform"
         minLabel="Reluctant"

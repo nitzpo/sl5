@@ -29,6 +29,7 @@ export function PlaybackBar() {
       <div className="relative flex items-center gap-2 px-2 py-1">
         <button
           onClick={() => setShowSelector(!showSelector)}
+          onMouseDown={(e) => e.stopPropagation()}
           className="text-xs text-violet-400 hover:text-violet-300 px-2 py-1 rounded hover:bg-gray-800 transition-colors"
         >
           ▶ Time-Lapse
@@ -51,6 +52,7 @@ export function PlaybackBar() {
         <div className="relative">
           <button
             onClick={() => setShowSelector(!showSelector)}
+            onMouseDown={(e) => e.stopPropagation()}
             className="text-[11px] text-violet-400 hover:text-violet-300 truncate max-w-[120px]"
             title="Switch scenario"
           >

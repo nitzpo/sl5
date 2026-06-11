@@ -4,13 +4,14 @@ import { useSimulationStore } from "../store/simulation";
 import { computeScriptBlockStates } from "./compute-script-state";
 
 const BASE_DURATION_SEC = 12;
-const UPDATE_INTERVAL_MS = 200;
+const UPDATE_INTERVAL_MS = 16;
 
 export function usePlaybackLoop() {
   const rafRef = useRef(0);
   const lastTimeRef = useRef(0);
   const lastUpdateRef = useRef(0);
   const lastAnnotationRef = useRef(-1);
+  const annotationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playbackState = usePlaybackStore((s) => s.state);
 
@@ -47,7 +48,6 @@ export function usePlaybackLoop() {
       const currentYear = startYear + newT;
       const intYear = Math.min(Math.floor(currentYear), endYear);
 
-      // Throttle store updates to avoid excessive re-renders
       if (timestamp - lastUpdateRef.current >= UPDATE_INTERVAL_MS) {
         lastUpdateRef.current = timestamp;
 
@@ -70,11 +70,27 @@ export function usePlaybackLoop() {
 
       // Check annotations
       if (script.annotations) {
+        // Reset annotation index if we jumped backwards
+        if (lastAnnotationRef.current >= 0 && lastAnnotationRef.current < script.annotations.length) {
+          if (currentYear < script.annotations[lastAnnotationRef.current].atYear) {
+            let newIdx = -1;
+            for (let i = 0; i < script.annotations.length; i++) {
+              if (currentYear >= script.annotations[i].atYear) {
+                newIdx = i;
+              }
+            }
+            lastAnnotationRef.current = newIdx;
+          }
+        }
+
         for (let i = script.annotations.length - 1; i >= 0; i--) {
           if (currentYear >= script.annotations[i].atYear && i > lastAnnotationRef.current) {
             lastAnnotationRef.current = i;
             store.setAnnotation(script.annotations[i].message);
-            setTimeout(() => {
+            if (annotationTimeoutRef.current) {
+              clearTimeout(annotationTimeoutRef.current);
+            }
+            annotationTimeoutRef.current = setTimeout(() => {
               usePlaybackStore.getState().setAnnotation(null);
             }, 8000);
             break;
@@ -107,6 +123,9 @@ export function usePlaybackLoop() {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      if (annotationTimeoutRef.current) {
+        clearTimeout(annotationTimeoutRef.current);
+      }
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [playbackState]);

@@ -50,16 +50,27 @@ export const usePlaybackStore = create<PlaybackStore>()(
     currentAnnotation: null,
 
     startScript: (script) => {
+      const currentState = get().state;
       const sim = useSimulationStore.getState();
-      const saved: PersistedState = {
-        blockStates: sim.blockStates,
-        year: sim.year,
-        perspective: sim.perspective,
-        adversaryOc: sim.adversaryOc,
-        sliders: sim.sliders,
-        modelServedExternally: sim.modelServedExternally,
-        expertMode: sim.expertMode,
-      };
+      const saved: PersistedState = currentState === "idle"
+        ? {
+            blockStates: sim.blockStates,
+            year: sim.year,
+            perspective: sim.perspective,
+            adversaryOc: sim.adversaryOc,
+            sliders: sim.sliders,
+            modelServedExternally: sim.modelServedExternally,
+            expertMode: sim.expertMode,
+          }
+        : get().savedUserState ?? {
+            blockStates: sim.blockStates,
+            year: sim.year,
+            perspective: sim.perspective,
+            adversaryOc: sim.adversaryOc,
+            sliders: sim.sliders,
+            modelServedExternally: sim.modelServedExternally,
+            expertMode: sim.expertMode,
+          };
 
       const startYear = script.startYear ?? 2024;
 

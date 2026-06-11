@@ -196,9 +196,7 @@ export function TimelineTrack() {
         />
 
         {/* Risk gap shading */}
-        {currentData.threat > currentData.defense && (
-          <polygon points={riskGapPoints} fill="#ef4444" opacity={0.08} />
-        )}
+        <polygon points={riskGapPoints} fill="#ef4444" opacity={0.08} />
 
         {/* Defense line (green) */}
         <polyline

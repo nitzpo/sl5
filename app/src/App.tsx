@@ -71,12 +71,13 @@ function App() {
   useEffect(() => {
     const el = rightPanelRef.current;
     if (!el) return;
-    const obs = new ResizeObserver((entries) => {
-      setRightPanelWidth(entries[0].contentRect.width);
+    setRightPanelWidth(el.offsetWidth);
+    const obs = new ResizeObserver(() => {
+      setRightPanelWidth(el.offsetWidth);
     });
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [dataLoaded]);
 
   if (!dataLoaded) {
     return (
@@ -118,7 +119,7 @@ function App() {
 
         {/* Zoom control — top right, shifts left with right panels */}
         <div
-          className="absolute top-3 z-20 flex items-center gap-1.5 bg-gray-900/90 border border-gray-700 rounded px-2 py-1 backdrop-blur-sm"
+          className="absolute top-3 z-20 flex items-center gap-1.5 bg-gray-900/90 border border-gray-700 rounded px-2 py-1 backdrop-blur-sm transition-[right] duration-200"
           style={{ right: rightPanelWidth + 12 }}
         >
           <button

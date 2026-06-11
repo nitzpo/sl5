@@ -357,7 +357,7 @@ export function TimelineTrack() {
           className="absolute z-[100] bg-gray-800 border border-gray-700 rounded shadow-lg p-2 text-[10px] max-w-[220px]"
           style={{
             left: `${(yearToX(buckets[hoveredBucket].center) / width) * 100}%`,
-            bottom: "55%",
+            bottom: "40%",
             transform: "translateX(-50%)",
           }}
           onMouseLeave={() => setHoveredBucket(null)}

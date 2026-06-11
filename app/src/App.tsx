@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSimulationStore } from "./store/simulation";
 import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
 import { Header } from "./components/layout/Header";
@@ -14,6 +14,9 @@ function App() {
   const dataLoaded = useSimulationStore((s) => s.dataLoaded);
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("sl5_intro_seen"));
+  const [zoom, setZoom] = useState(1);
+  const [rightPanelWidth, setRightPanelWidth] = useState(0);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -65,6 +68,17 @@ function App() {
     return () => window.removeEventListener("hashchange", applyHash);
   }, [applyHash]);
 
+  useEffect(() => {
+    const el = rightPanelRef.current;
+    if (!el) return;
+    setRightPanelWidth(el.offsetWidth);
+    const obs = new ResizeObserver(() => {
+      setRightPanelWidth(el.offsetWidth);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [dataLoaded]);
+
   if (!dataLoaded) {
     return (
       <div className="flex items-center justify-center h-screen text-gray-500">
@@ -98,11 +112,42 @@ function App() {
               </span>
             </div>
           </div>
-          <BlockGrid onSelectBlock={setSelectedBlock} />
+          <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
+            <BlockGrid onSelectBlock={setSelectedBlock} />
+          </div>
+        </div>
+
+        {/* Zoom control — top right, shifts left with right panels */}
+        <div
+          className="absolute top-3 z-20 flex items-center gap-1.5 bg-gray-900/90 border border-gray-700 rounded px-2 py-1 backdrop-blur-sm transition-[right] duration-200"
+          style={{ right: rightPanelWidth + 12 }}
+        >
+          <button
+            onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
+            className="text-xs text-gray-400 hover:text-gray-200 w-4 h-4 flex items-center justify-center"
+          >
+            −
+          </button>
+          <input
+            type="range"
+            min={0.5}
+            max={2}
+            step={0.1}
+            value={zoom}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            className="w-16 accent-violet-500 h-1"
+          />
+          <button
+            onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
+            className="text-xs text-gray-400 hover:text-gray-200 w-4 h-4 flex items-center justify-center"
+          >
+            +
+          </button>
+          <span className="text-[10px] text-gray-500 w-7 text-center">{Math.round(zoom * 100)}%</span>
         </div>
 
         {/* Right panels — overlay on top of grid */}
-        <div className="absolute top-0 right-0 h-full z-10">
+        <div ref={rightPanelRef} className="absolute top-0 right-0 h-full z-10">
           <RightPanels
             selectedBlock={selectedBlock}
             onCloseBlock={() => setSelectedBlock(null)}

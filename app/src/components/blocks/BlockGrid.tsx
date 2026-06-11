@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { BlockCell } from "./BlockCell";
@@ -116,15 +117,15 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
         <ChainOverlay blocks={blocks} hexSize={hexSize} />
       </svg>
 
-      {/* HTML tooltip rendered outside SVG — never clipped */}
-      {hoveredBlock && (
+      {hoveredBlock && createPortal(
         <BlockTooltip
           block={hoveredBlock}
           state={(blockStates[hoveredBlock.id] ?? "not_started") as BlockState}
           year={year}
           sliders={sliders}
           anchorRect={hoverRect}
-        />
+        />,
+        document.body
       )}
     </div>
   );

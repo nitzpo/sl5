@@ -76,7 +76,7 @@ export function BlockCell({
     }
   }, [state]);
 
-  const borderDash = state === "not_started" ? "3 3" : state === "investing" ? "5 3" : "none";
+  const borderDash = "none";
   const shortLabel = BLOCK_SHORT_LABELS[block.id] ?? block.id;
 
   const showErosion = degradation > 0.02 && fillFraction > 0 && block.defense_type !== "hard_stop";

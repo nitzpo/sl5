@@ -35,6 +35,7 @@ interface SimulationStore {
   expertMode: boolean;
   selectedChainId: string | null;
   viewingShared: boolean;
+  playbackActive: boolean;
   scenarioName: string | null;
 
   // Actions
@@ -47,6 +48,7 @@ interface SimulationStore {
   setSlider: (key: keyof Sliders, value: number) => void;
   setModelServed: (served: boolean) => void;
   setExpertMode: (expert: boolean) => void;
+  setPlaybackActive: (active: boolean) => void;
   setSelectedChain: (chainId: string | null) => void;
   copyShareUrl: () => void;
   saveShared: () => void;
@@ -87,6 +89,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   expertMode: false,
   selectedChainId: null,
   viewingShared: false,
+  playbackActive: false,
   scenarioName: null,
 
   loadData: (blocks, chains) => {
@@ -161,6 +164,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
 
   setModelServed: (served) => set({ modelServedExternally: served, scenarioName: null }),
   setExpertMode: (expert) => set({ expertMode: expert }),
+  setPlaybackActive: (active) => set({ playbackActive: active }),
   setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
 
   copyShareUrl: () => {
@@ -287,7 +291,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 })));
 
-// Auto-save to localStorage on state changes (skip when viewing shared)
+// Auto-save to localStorage on state changes (skip when viewing shared or during playback)
 useSimulationStore.subscribe(
   (s) => ({
     blockStates: s.blockStates,
@@ -299,8 +303,8 @@ useSimulationStore.subscribe(
     expertMode: s.expertMode,
   }),
   (persisted) => {
-    const { dataLoaded, viewingShared } = useSimulationStore.getState();
-    if (dataLoaded && !viewingShared) {
+    const { dataLoaded, viewingShared, playbackActive } = useSimulationStore.getState();
+    if (dataLoaded && !viewingShared && !playbackActive) {
       saveToLocalStorage(persisted);
     }
   },

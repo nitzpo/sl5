@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GlobalSliders } from "../sliders/GlobalSliders";
 import { TimelineTrack } from "../timeline/TimelineTrack";
+import { PlaybackBar } from "../timelapse/PlaybackBar";
 
 export function BottomPanel() {
   const [collapsed, setCollapsed] = useState(false);
@@ -22,6 +23,7 @@ export function BottomPanel() {
 
       {!collapsed && (
         <div className="px-4 pb-3 space-y-3">
+          <PlaybackBar />
           <TimelineTrack />
           <GlobalSliders />
         </div>

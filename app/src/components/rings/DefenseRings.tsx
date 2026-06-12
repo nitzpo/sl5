@@ -58,7 +58,7 @@ export function DefenseRings({ onSelectBlock }: DefenseRingsProps) {
           Weights
         </text>
 
-        {/* Rings */}
+        {/* Rings with blocks */}
         {LAYER_ORDER.map((layerId, idx) => {
           const layerStatus = defenseLayerStatus[layerId] ?? { active: false, strength: 0 };
           const layerBlocks = blocksByLayer[layerId] ?? [];

@@ -43,9 +43,8 @@ export function RingLayer({
   const strokeOpacity = 0.15 + strength * 0.6;
   const dashArray = active ? "none" : "6 4";
 
-  const labelAngle = -Math.PI / 2;
-  const labelX = RING_CENTER.x + radius * Math.cos(labelAngle);
-  const labelY = RING_CENTER.y + radius * Math.sin(labelAngle) - 6;
+  const labelX = RING_CENTER.x;
+  const labelY = RING_CENTER.y - radius - 6;
 
   return (
     <g>
@@ -60,31 +59,6 @@ export function RingLayer({
         strokeDasharray={dashArray}
         opacity={strokeOpacity}
       />
-
-      {/* Layer label at top */}
-      <text
-        x={labelX}
-        y={labelY}
-        textAnchor="middle"
-        fontSize={8}
-        fill={color}
-        opacity={0.7}
-        fontWeight={500}
-      >
-        {label}
-      </text>
-
-      {/* Strength indicator */}
-      <text
-        x={labelX}
-        y={labelY + 9}
-        textAnchor="middle"
-        fontSize={7}
-        fill={color}
-        opacity={0.4}
-      >
-        {Math.round(strength * 100)}%
-      </text>
 
       {/* Blocks on ring */}
       {blocks.map((block, idx) => {
@@ -106,6 +80,31 @@ export function RingLayer({
           />
         );
       })}
+
+      {/* Label at top (rendered last = on top of blocks) */}
+      <text
+        x={labelX}
+        y={labelY}
+        textAnchor="middle"
+        fontSize={8}
+        fill={color}
+        opacity={0.85}
+        fontWeight={600}
+        className="pointer-events-none"
+      >
+        {label}
+      </text>
+      <text
+        x={labelX}
+        y={labelY + 9}
+        textAnchor="middle"
+        fontSize={7}
+        fill={color}
+        opacity={0.5}
+        className="pointer-events-none"
+      >
+        {Math.round(strength * 100)}%
+      </text>
     </g>
   );
 }

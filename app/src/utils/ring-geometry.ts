@@ -58,9 +58,12 @@ export function resolveLayer(raw: string): LayerId | null {
 }
 
 export function blockAngle(index: number, total: number, ringIdx: number): number {
-  const base = (index / total) * Math.PI * 2;
-  const offset = (ringIdx * Math.PI) / 13;
-  return base + offset - Math.PI / 2;
+  const excludeHalf = Math.PI / 9;
+  const availableArc = Math.PI * 2 - excludeHalf * 2;
+  const startAngle = -Math.PI / 2 + excludeHalf;
+  const ringOffset = ringIdx * 0.35;
+  const pos = (((index + 0.5) / total) * availableArc + ringOffset) % availableArc;
+  return startAngle + pos;
 }
 
 export function blockPositionOnRing(

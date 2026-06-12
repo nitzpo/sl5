@@ -179,6 +179,21 @@ export function BlockDetail({ block, onClose, onNavigate }: BlockDetailProps) {
           ))}
         </div>
       )}
+
+      {/* Real-world parallels */}
+      {block.real_world_parallels.length > 0 && (
+        <div>
+          <div className="text-xs text-gray-500 mb-1">Real-World Parallels</div>
+          {block.real_world_parallels.map((p, i) => (
+            <div key={i} className="text-xs mb-1">
+              <span className="text-gray-400">{p.description}</span>
+              <span className="text-gray-600 ml-1">
+                — {p.source} · {p.year}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -20,6 +20,8 @@ function App() {
   const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
   const [zoom, setZoom] = useState(1);
   const [rightPanelWidth, setRightPanelWidth] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,20 +35,24 @@ function App() {
         "blocks-ai-specific.json",
       ];
 
-      const blocks: Block[] = [];
-      for (const file of blockFiles) {
+      const fetchJson = async (file: string) => {
         const resp = await fetch(`${import.meta.env.BASE_URL}data/${file}`);
-        const data = await resp.json();
-        blocks.push(...data);
-      }
+        if (!resp.ok) throw new Error(`${file}: HTTP ${resp.status}`);
+        return resp.json();
+      };
 
-      const chainsResp = await fetch(`${import.meta.env.BASE_URL}data/attack-chains.json`);
-      const chains = await chainsResp.json();
+      const [chains, ...blockArrays] = await Promise.all([
+        fetchJson("attack-chains.json"),
+        ...blockFiles.map(fetchJson),
+      ]);
+      const blocks: Block[] = blockArrays.flat();
 
       loadData(blocks, chains);
     }
-    load();
-  }, [loadData]);
+    load().catch((err: unknown) => {
+      setLoadError(err instanceof Error ? err.message : String(err));
+    });
+  }, [loadData, loadAttempt]);
 
   // Listen for hash changes (paste URL in same tab)
   const applyHash = useCallback(() => {
@@ -82,6 +88,24 @@ function App() {
     obs.observe(el);
     return () => obs.disconnect();
   }, [dataLoaded]);
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-3">
+        <span className="text-red-400 text-sm">Failed to load simulation data</span>
+        <span className="text-gray-500 text-xs font-mono">{loadError}</span>
+        <button
+          onClick={() => {
+            setLoadError(null);
+            setLoadAttempt((n) => n + 1);
+          }}
+          className="px-4 py-1.5 text-sm rounded bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (!dataLoaded) {
     return (
@@ -140,6 +164,12 @@ function App() {
                   <span className="w-2 h-2 rounded-full bg-red-500 text-[8px] leading-none text-white flex items-center justify-center font-bold">!</span> Start now
                   <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                     Deployment window closing — must start soon to be ready by 2030
+                  </span>
+                </span>
+                <span className="relative flex items-center gap-1 group cursor-default">
+                  <span className="w-2 h-2 rounded-full bg-violet-600 text-[8px] leading-none text-white flex items-center justify-center font-bold">?</span> Contested
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Experts disagree on feasibility — high or fundamental open questions
                   </span>
                 </span>
                 <span className="relative flex items-center gap-1 group cursor-default">

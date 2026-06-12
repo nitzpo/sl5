@@ -79,6 +79,13 @@ export function BlockCell({
   const showErosion = degradation > 0.02 && fillFraction > 0 && block.defense_type !== "hard_stop";
   const erosionHeight = degradation * size * 2 * fillFraction;
 
+  // Expert-disagreement badge for high/fundamental open questions
+  const uncertainty = block.open_questions.some((q) => q.uncertainty_level === "fundamental")
+    ? "fundamental"
+    : block.open_questions.some((q) => q.uncertainty_level === "high")
+      ? "high"
+      : null;
+
   function handleMouseEnter() {
     setHovered(true);
     if (hexRef.current) {
@@ -226,6 +233,31 @@ export function BlockCell({
             className="pointer-events-none"
           >
             !
+          </text>
+        </g>
+      )}
+
+      {/* Uncertainty badge — feasibility contested by experts */}
+      {uncertainty && (
+        <g>
+          <circle
+            cx={cx - size + 4}
+            cy={cy + size - 4}
+            r={4.5}
+            fill={uncertainty === "fundamental" ? "#7c3aed" : "#b45309"}
+            opacity={0.9}
+          />
+          <text
+            x={cx - size + 4}
+            y={cy + size - 3}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={6.5}
+            fontWeight={700}
+            fill="#fff"
+            className="pointer-events-none"
+          >
+            ?
           </text>
         </g>
       )}

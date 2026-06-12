@@ -151,7 +151,7 @@ function App() {
           </div>
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
             {viewMode === "grid" ? (
-              <BlockGrid onSelectBlock={setSelectedBlock} />
+              <BlockGrid onSelectBlock={setSelectedBlock} selectedBlock={selectedBlock} />
             ) : (
               <DefenseRings onSelectBlock={setSelectedBlock} />
             )}
@@ -192,6 +192,10 @@ function App() {
           <RightPanels
             selectedBlock={selectedBlock}
             onCloseBlock={() => setSelectedBlock(null)}
+            onNavigateBlock={(id) => {
+              const b = useSimulationStore.getState().blocks.find((x) => x.id === id);
+              if (b) setSelectedBlock(b);
+            }}
           />
         </div>
       </div>

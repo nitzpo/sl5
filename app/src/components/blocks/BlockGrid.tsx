@@ -8,6 +8,7 @@ import { useSimulationStore } from "../../store/simulation";
 import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
 import { ChainOverlay } from "./ChainOverlay";
+import { DependencyOverlay } from "./DependencyOverlay";
 import {
   CATEGORY_ORDER,
   CATEGORY_LABELS,
@@ -18,9 +19,10 @@ import {
 
 interface BlockGridProps {
   onSelectBlock: (block: Block) => void;
+  selectedBlock?: Block | null;
 }
 
-export function BlockGrid({ onSelectBlock }: BlockGridProps) {
+export function BlockGrid({ onSelectBlock, selectedBlock = null }: BlockGridProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
@@ -116,6 +118,13 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
             </g>
           );
         })}
+
+        {/* Dependency arcs for hovered/selected block */}
+        <DependencyOverlay
+          blocks={blocks}
+          focusBlock={hoveredBlock ?? selectedBlock}
+          hexSize={hexSize}
+        />
 
         {/* Attack chain overlay */}
         <ChainOverlay blocks={blocks} hexSize={hexSize} />

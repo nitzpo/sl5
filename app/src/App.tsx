@@ -8,6 +8,7 @@ import { BottomPanel } from "./components/layout/BottomPanel";
 import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
 import { DefenseRings } from "./components/rings/DefenseRings";
+import { ChainStrip } from "./components/analysis/ChainStrip";
 import type { Block } from "./engine/types";
 
 function App() {
@@ -149,6 +150,7 @@ function App() {
               </div>
             )}
           </div>
+          <ChainStrip />
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
             {viewMode === "grid" ? (
               <BlockGrid onSelectBlock={setSelectedBlock} selectedBlock={selectedBlock} />

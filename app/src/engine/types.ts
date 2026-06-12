@@ -91,6 +91,12 @@ export interface Block {
   }>;
 }
 
+export interface AttackChainStep {
+  phase: string;
+  description: string;
+  block_gap_used?: string;
+}
+
 export interface AttackChain {
   id: string;
   name: string;
@@ -102,8 +108,10 @@ export interface AttackChain {
   narrative: {
     brief: string;
     detailed: string;
+    steps?: AttackChainStep[];
   };
   stoppers: string[];
+  stopper_details?: Array<{ block_id: string; how_it_stops: string }>;
   probability_model: {
     base_probability: number;
   };

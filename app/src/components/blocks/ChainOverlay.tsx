@@ -45,7 +45,7 @@ export function ChainOverlay({ blocks, hexSize }: ChainOverlayProps) {
         stroke="#ef4444"
         strokeWidth={2}
         strokeDasharray="6 4"
-        opacity={0.6}
+        opacity={0.35}
       />
 
       {/* Rings around involved blocks */}
@@ -57,7 +57,7 @@ export function ChainOverlay({ blocks, hexSize }: ChainOverlayProps) {
           r={hexSize + 4}
           fill="none"
           stroke={p.deployed ? "#10b981" : "#ef4444"}
-          strokeWidth={2.5}
+          strokeWidth={1.5}
           opacity={0.8}
         />
       ))}

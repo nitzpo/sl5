@@ -2,6 +2,8 @@ import { useMemo, useRef } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
+import { URGENCY_COLORS } from "../../utils/decision-windows";
+import type { WindowUrgency } from "../../utils/decision-windows";
 import { aiDegradation } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
@@ -15,6 +17,7 @@ interface BlockCellProps {
   year: number;
   sliders: Sliders;
   budgetExceeded: boolean;
+  decisionWindow?: WindowUrgency;
   onSelect: (block: Block) => void;
   onHover: (block: Block, rect: DOMRect) => void;
   onHoverEnd: () => void;
@@ -34,6 +37,7 @@ export function BlockCell({
   year,
   sliders,
   budgetExceeded,
+  decisionWindow,
   onSelect,
   onHover,
   onHoverEnd,
@@ -185,6 +189,39 @@ export function BlockCell({
       >
         {shortLabel}
       </text>
+
+      {/* Decision window badge — must start soon to deploy by 2030 */}
+      {decisionWindow && (
+        <g>
+          <circle
+            cx={cx - size + 4}
+            cy={cy - size + 4}
+            r={5}
+            fill={URGENCY_COLORS[decisionWindow]}
+          >
+            {decisionWindow !== "upcoming" && (
+              <animate
+                attributeName="opacity"
+                values="1;0.35;1"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            )}
+          </circle>
+          <text
+            x={cx - size + 4}
+            y={cy - size + 5}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={7}
+            fontWeight={700}
+            fill="#fff"
+            className="pointer-events-none"
+          >
+            !
+          </text>
+        </g>
+      )}
 
       {/* Erosion badge */}
       {showErosion && degradation > 0.1 && (

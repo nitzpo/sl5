@@ -135,6 +135,12 @@ function App() {
                 <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
                 <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
                 <span className="relative flex items-center gap-1 group cursor-default">
+                  <span className="w-2 h-2 rounded-full bg-red-500 text-[8px] leading-none text-white flex items-center justify-center font-bold">!</span> Start now
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Deployment window closing — must start soon to be ready by 2030
+                  </span>
+                </span>
+                <span className="relative flex items-center gap-1 group cursor-default">
                   <span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" /> Over budget
                   <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                     Cost exceeds budget — effectiveness capped at Implementing level

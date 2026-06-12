@@ -4,6 +4,7 @@ import { getAiCapability } from "../../engine/ai-curve";
 import { computeCategoryScores, overallSlScore } from "../../engine/scoring";
 import { computeBreachProbabilities } from "../../engine/breach";
 import { applyBudgetConstraint } from "../../engine/budget";
+import { computeDecisionWindows } from "../../utils/decision-windows";
 
 const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
 const TRACK_HEIGHT = 110;
@@ -114,15 +115,9 @@ export function TimelineTrack() {
   const currentData = riskData.find((d) => d.year === year) ?? riskData[0];
 
   const buckets = useMemo(() => {
-    const items: Deadline[] = [];
-    for (const b of blocks) {
-      const state = blockStates[b.id] ?? "not_started";
-      if (state !== "not_started") continue;
-      const mustStartBy = 2030 - b.dimensions.time_to_deploy_months.max / 12;
-      if (mustStartBy <= year + 2 && mustStartBy > 2024) {
-        items.push({ id: b.id, name: b.name, mustStartBy });
-      }
-    }
+    const items: Deadline[] = computeDecisionWindows(blocks, blockStates, year, {
+      minYear: 2024,
+    }).map((w) => ({ id: w.block.id, name: w.block.name, mustStartBy: w.mustStartBy }));
 
     const bucketMap = new Map<number, Deadline[]>();
     for (const item of items) {

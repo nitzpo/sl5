@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
 import { applyBudgetConstraint } from "../../engine";
+import { computeDecisionWindows } from "../../utils/decision-windows";
+import type { WindowUrgency } from "../../utils/decision-windows";
 import { useSimulationStore } from "../../store/simulation";
 import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
@@ -31,6 +33,15 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
     () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
     [blocks, blockStates, sliders.budget_millions]
   );
+
+  const decisionWindows = useMemo(() => {
+    const map = new Map<string, WindowUrgency>();
+    for (const w of computeDecisionWindows(blocks, blockStates, year)) {
+      // grid badges only for closing/closed windows; "upcoming" stays in CISO list
+      if (w.urgency !== "upcoming") map.set(w.block.id, w.urgency);
+    }
+    return map;
+  }, [blocks, blockStates, year]);
 
   const blocksByCategory = useMemo(() => {
     const map: Record<string, Block[]> = {};
@@ -89,6 +100,7 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
                     year={year}
                     sliders={sliders}
                     budgetExceeded={budgetExceededIds.has(block.id)}
+                    decisionWindow={decisionWindows.get(block.id)}
                     onSelect={onSelectBlock}
                     onHover={(b, rect) => {
                       setHoveredBlock(b);

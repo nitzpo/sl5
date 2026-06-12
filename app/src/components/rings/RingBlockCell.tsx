@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints } from "../../utils/geometry";
 import { DEFENSE_COLORS } from "../../utils/colors";
@@ -20,8 +20,8 @@ interface RingBlockCellProps {
 
 const STATE_FILL: Record<BlockState, number> = {
   not_started: 0,
-  investing: 0.25,
-  implementing: 0.55,
+  investing: 0.2,
+  implementing: 0.6,
   deployed: 1.0,
   mature: 1.0,
 };
@@ -42,14 +42,15 @@ export function RingBlockCell({
 }: RingBlockCellProps) {
   const hexRef = useRef<SVGPolygonElement>(null);
   const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
+  const uniqueId = useId();
 
   const color = DEFENSE_COLORS[block.defense_type];
   const fillFraction = STATE_FILL[state];
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
 
   const points = hexPoints(cx, cy, size);
-  const clipId = `ring-clip-${block.id}`;
-  const erosionClipId = `ring-erosion-${block.id}`;
+  const clipId = `ring-clip-${block.id}-${uniqueId}`;
+  const erosionClipId = `ring-erosion-${block.id}-${uniqueId}`;
 
   const fillTop = cy + size - fillFraction * size * 2;
   const showErosion = degradation > 0.02 && fillFraction > 0 && block.defense_type !== "hard_stop";

@@ -87,8 +87,8 @@ export function useSimulationResults() {
   const defenseLayerStatus: Record<string, { active: boolean; strength: number }> = {};
   for (const layerId of layerIds) {
     const contributing = blocks.filter((b) =>
-      b.defense_in_depth.layer_contributions.some(
-        (lc) => lc === layerId || layerId.includes(lc) || lc.includes(layerId.split("_")[0])
+      (b.defense_in_depth?.layer_contributions ?? []).some(
+        (lc) => resolveLayer(lc) === layerId
       )
     );
     const strength =
@@ -117,7 +117,7 @@ export function useSimulationResults() {
   }
   const assigned = new Set<string>();
   for (const b of blocks) {
-    for (const raw of b.defense_in_depth.layer_contributions) {
+    for (const raw of b.defense_in_depth?.layer_contributions ?? []) {
       const resolved = resolveLayer(raw);
       if (resolved && !assigned.has(b.id)) {
         blocksByLayer[resolved].push(b);

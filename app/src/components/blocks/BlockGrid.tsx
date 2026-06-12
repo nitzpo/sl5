@@ -20,13 +20,15 @@ import {
 interface BlockGridProps {
   onSelectBlock: (block: Block) => void;
   selectedBlock?: Block | null;
+  onClearSelection?: () => void;
 }
 
-export function BlockGrid({ onSelectBlock, selectedBlock = null }: BlockGridProps) {
+export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelection }: BlockGridProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
+  const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
@@ -68,7 +70,23 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null }: BlockGridProp
         viewBox={`0 0 ${width} ${height}`}
         className="select-none"
         style={{ width: "100%", maxWidth: `${Math.round(width * 1.4)}px` }}
+        onClick={() => {
+          setSelectedChain(null);
+          onClearSelection?.();
+        }}
       >
+        {/* Background click-catcher: clears selection when clicking empty space within the viewBox */}
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="transparent"
+          onClick={() => {
+            setSelectedChain(null);
+            onClearSelection?.();
+          }}
+        />
         {CATEGORY_ORDER.map((category) => {
           const catBlocks = blocksByCategory[category] ?? [];
           const rowY = hexPosition(category, 0).y;

@@ -167,6 +167,18 @@ function App() {
                   </span>
                 </span>
                 <span className="relative flex items-center gap-1 group cursor-default">
+                  <span className="text-sky-400 text-[10px] leading-none">→</span> Requires
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Hover/select a block: solid arrows point from its prerequisites into it
+                  </span>
+                </span>
+                <span className="relative flex items-center gap-1 group cursor-default">
+                  <span className="text-teal-400 text-[10px] leading-none tracking-tighter">⇢</span> Enhances
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Dashed lines point to blocks this one makes more effective
+                  </span>
+                </span>
+                <span className="relative flex items-center gap-1 group cursor-default">
                   <span className="w-2 h-2 rounded-full bg-violet-600 text-[8px] leading-none text-white flex items-center justify-center font-bold">?</span> Contested
                   <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                     Experts disagree on feasibility — high or fundamental open questions
@@ -187,9 +199,16 @@ function App() {
           <ChainStrip />
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
             {viewMode === "grid" ? (
-              <BlockGrid onSelectBlock={setSelectedBlock} selectedBlock={selectedBlock} />
+              <BlockGrid
+                onSelectBlock={setSelectedBlock}
+                selectedBlock={selectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
             ) : (
-              <DefenseRings onSelectBlock={setSelectedBlock} />
+              <DefenseRings
+                onSelectBlock={setSelectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
             )}
           </div>
         </div>

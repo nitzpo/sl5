@@ -105,7 +105,10 @@ export function BlockCell({
       opacity={beyondAdversary && state === "not_started" ? 0.35 : irrelevantWhenAirgapped ? 0.3 : 1}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={() => onSelect(block)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(block);
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         cycleBlockState(block.id);

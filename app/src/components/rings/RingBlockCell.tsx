@@ -61,7 +61,10 @@ export function RingBlockCell({
       className="cursor-pointer select-none"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={onHoverEnd}
-      onClick={() => onSelect(block)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(block);
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         cycleBlockState(block.id);

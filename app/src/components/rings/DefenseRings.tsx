@@ -9,13 +9,15 @@ import { BlockTooltip } from "../blocks/BlockTooltip";
 
 interface DefenseRingsProps {
   onSelectBlock: (block: Block) => void;
+  onClearSelection?: () => void;
 }
 
-export function DefenseRings({ onSelectBlock }: DefenseRingsProps) {
+export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
+  const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
 
   const { defenseLayerStatus, blocksByLayer } = useSimulationResults();
 
@@ -28,7 +30,23 @@ export function DefenseRings({ onSelectBlock }: DefenseRingsProps) {
         viewBox={`0 0 ${RING_SVG_SIZE} ${RING_SVG_SIZE}`}
         className="select-none"
         style={{ width: "100%", maxWidth: `${RING_SVG_SIZE}px` }}
+        onClick={() => {
+          setSelectedChain(null);
+          onClearSelection?.();
+        }}
       >
+        {/* Background click-catcher: clears selection when clicking empty space within the viewBox */}
+        <rect
+          x={0}
+          y={0}
+          width={RING_SVG_SIZE}
+          height={RING_SVG_SIZE}
+          fill="transparent"
+          onClick={() => {
+            setSelectedChain(null);
+            onClearSelection?.();
+          }}
+        />
         {/* Center asset indicator */}
         <circle
           cx={RING_CENTER.x}

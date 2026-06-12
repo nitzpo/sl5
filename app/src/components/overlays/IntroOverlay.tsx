@@ -1,10 +1,14 @@
 import { useEffect } from "react";
+import { SCRIPTS } from "../../timelapse/scripts";
+import { usePlaybackStore } from "../../timelapse/playback-store";
 
 interface IntroOverlayProps {
   onClose: () => void;
 }
 
 export function IntroOverlay({ onClose }: IntroOverlayProps) {
+  const startScript = usePlaybackStore((s) => s.startScript);
+
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -16,6 +20,12 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
   function dismiss() {
     localStorage.setItem("sl5_intro_seen", "1");
     onClose();
+  }
+
+  function watchStory() {
+    const script = SCRIPTS.find((s) => s.id === "reactive-ciso") ?? SCRIPTS[0];
+    dismiss();
+    startScript(script);
   }
 
   return (
@@ -31,24 +41,35 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
           SL5 Explorable
         </h1>
 
-        <p className="text-sm text-gray-300 leading-relaxed mb-5">
+        <p className="text-sm text-gray-300 leading-relaxed mb-6">
           It's 2026. You're the CISO of a frontier AI lab building the world's
           most capable model. Nation-states want your weights. Your job: deploy
           enough independent defense layers to reach Security Level 5 before
           adversary capabilities outpace you.
         </p>
 
-        <div className="text-xs text-gray-400 space-y-2 mb-6 border-l-2 border-gray-700 pl-3">
-          <p><span className="text-gray-200 font-medium">Click</span> hexagons to inspect defense blocks</p>
-          <p><span className="text-gray-200 font-medium">Right-click</span> to cycle deployment state (Not Started &rarr; Mature)</p>
-          <p><span className="text-gray-200 font-medium">Advance the year</span> to watch AI erode probabilistic defenses</p>
-          <p><span className="text-gray-200 font-medium">Switch perspectives</span> (CISO, Attacker, Policy, Observer) for different analysis</p>
-          <p><span className="text-gray-200 font-medium">Adjust sliders</span> to change world parameters (budget, cooperation, AI timeline)</p>
-          <p><span className="text-gray-200 font-medium">Save scenarios</span> to bookmark configurations and compare strategies</p>
-          <p><span className="text-gray-200 font-medium">Share</span> your scenario as a URL — recipients can save it as their own</p>
+        <div className="flex gap-3 mb-5">
+          <button
+            onClick={watchStory}
+            className="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
+          >
+            ▶ Watch the 3-min story
+          </button>
+          <button
+            onClick={dismiss}
+            className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2.5 rounded-lg font-medium transition-colors"
+          >
+            Explore freely
+          </button>
         </div>
 
-        <div className="text-[10px] text-gray-500 mb-5">
+        <div className="text-xs text-gray-500 space-y-1 mb-5 border-l-2 border-gray-700 pl-3">
+          <p><span className="text-gray-300 font-medium">Click</span> a hexagon for details · <span className="text-gray-300 font-medium">right-click</span> to advance its state</p>
+          <p><span className="text-gray-300 font-medium">Drag the year</span> to watch AI erode probabilistic defenses</p>
+          <p><span className="text-gray-300 font-medium">Sliders</span> set the world: budget, cooperation, AI timeline</p>
+        </div>
+
+        <div className="text-[10px] text-gray-500">
           <span className="text-gray-600">Based on:</span>{" "}
           <a href="https://www.rand.org/pubs/research_reports/RRA2849-1.html" target="_blank" rel="noopener" className="text-violet-400 hover:underline">RAND Securing AI Model Weights (2024)</a>
           {" · "}
@@ -58,13 +79,6 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
           {" · "}
           <a href="https://ai-2027.com" target="_blank" rel="noopener" className="text-violet-400 hover:underline">AI 2027</a>
         </div>
-
-        <button
-          onClick={dismiss}
-          className="w-full bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-        >
-          Start Exploring
-        </button>
       </div>
     </div>
   );

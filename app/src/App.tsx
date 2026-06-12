@@ -9,6 +9,7 @@ import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
 import { DefenseRings } from "./components/rings/DefenseRings";
 import { ChainStrip } from "./components/analysis/ChainStrip";
+import { VerdictBanner } from "./components/layout/VerdictBanner";
 import type { Block } from "./engine/types";
 
 function App() {
@@ -149,6 +150,9 @@ function App() {
                 </span>
               </div>
             )}
+          </div>
+          <div style={{ marginRight: rightPanelWidth }}>
+            <VerdictBanner />
           </div>
           <ChainStrip />
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>

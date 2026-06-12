@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
@@ -43,6 +43,7 @@ export function BlockCell({
   onHoverEnd,
 }: BlockCellProps) {
   const hexRef = useRef<SVGPolygonElement>(null);
+  const [hovered, setHovered] = useState(false);
   const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
@@ -79,10 +80,16 @@ export function BlockCell({
   const erosionHeight = degradation * size * 2 * fillFraction;
 
   function handleMouseEnter() {
+    setHovered(true);
     if (hexRef.current) {
       const rect = hexRef.current.getBoundingClientRect();
       onHover(block, rect);
     }
+  }
+
+  function handleMouseLeave() {
+    setHovered(false);
+    onHoverEnd();
   }
 
   return (
@@ -90,7 +97,7 @@ export function BlockCell({
       className="cursor-pointer select-none"
       opacity={beyondAdversary && state === "not_started" ? 0.35 : irrelevantWhenAirgapped ? 0.3 : 1}
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={onHoverEnd}
+      onMouseLeave={handleMouseLeave}
       onClick={() => onSelect(block)}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -219,6 +226,38 @@ export function BlockCell({
             className="pointer-events-none"
           >
             !
+          </text>
+        </g>
+      )}
+
+      {/* Hover affordance: advance state (right-click shortcut still works) */}
+      {hovered && (
+        <g
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            cycleBlockState(block.id);
+          }}
+        >
+          <circle
+            cx={cx + size - 4}
+            cy={cy + size - 4}
+            r={6}
+            fill="#374151"
+            stroke="#9ca3af"
+            strokeWidth={0.75}
+          />
+          <text
+            x={cx + size - 4}
+            y={cy + size - 3}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={9}
+            fontWeight={700}
+            fill="#e5e7eb"
+            className="pointer-events-none"
+          >
+            +
           </text>
         </g>
       )}

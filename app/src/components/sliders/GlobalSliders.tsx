@@ -15,6 +15,15 @@ interface SliderRowProps {
   formatValue?: (v: number) => string;
 }
 
+/** Qualitative word for a 0-1 slider position — decimals mean nothing to most users. */
+function qualitativeLabel(value: number, minLabel: string, maxLabel: string): string {
+  if (value < 0.15) return minLabel;
+  if (value < 0.45) return `Leaning ${minLabel.toLowerCase()}`;
+  if (value <= 0.55) return "Middling";
+  if (value <= 0.85) return `Leaning ${maxLabel.toLowerCase()}`;
+  return maxLabel;
+}
+
 function SliderRow({
   label,
   minLabel,
@@ -44,8 +53,8 @@ function SliderRow({
       <span className="text-[10px] text-gray-600 w-16 shrink-0">
         {maxLabel}
       </span>
-      <span className="text-xs font-mono text-gray-300 w-12 text-right">
-        {formatValue ? formatValue(value) : value.toFixed(1)}
+      <span className="text-[10px] text-gray-300 w-24 text-right truncate">
+        {formatValue ? formatValue(value) : qualitativeLabel(value, minLabel, maxLabel)}
       </span>
     </div>
   );

@@ -5,7 +5,9 @@ import {
   computeBreachProbabilities,
   distillationProgress,
 } from "../engine";
-import type { Category } from "../engine/types";
+import type { Block, Category } from "../engine/types";
+import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
+import type { LayerId } from "../utils/ring-geometry";
 
 /**
  * Hook that computes all derived simulation results from current store state.
@@ -109,6 +111,27 @@ export function useSimulationResults() {
     (l) => l.active
   ).length;
 
+  const blocksByLayer: Record<LayerId, Block[]> = {} as Record<LayerId, Block[]>;
+  for (const lid of LAYER_ORDER) {
+    blocksByLayer[lid] = [];
+  }
+  const assigned = new Set<string>();
+  for (const b of blocks) {
+    for (const raw of b.defense_in_depth.layer_contributions) {
+      const resolved = resolveLayer(raw);
+      if (resolved && !assigned.has(b.id)) {
+        blocksByLayer[resolved].push(b);
+        assigned.add(b.id);
+        break;
+      }
+    }
+  }
+  for (const b of blocks) {
+    if (!assigned.has(b.id)) {
+      blocksByLayer["monitoring_detection"].push(b);
+    }
+  }
+
   return {
     categoryScores,
     overallSl: overall,
@@ -118,6 +141,7 @@ export function useSimulationResults() {
     breachByOc,
     defenseLayerStatus,
     activeLayers,
+    blocksByLayer,
   };
 }
 

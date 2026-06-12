@@ -7,6 +7,7 @@ import { SharedBanner } from "./components/layout/SharedBanner";
 import { BottomPanel } from "./components/layout/BottomPanel";
 import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
+import { DefenseRings } from "./components/rings/DefenseRings";
 import type { Block } from "./engine/types";
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
   const dataLoaded = useSimulationStore((s) => s.dataLoaded);
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("sl5_intro_seen"));
+  const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
   const [zoom, setZoom] = useState(1);
   const [rightPanelWidth, setRightPanelWidth] = useState(0);
   const rightPanelRef = useRef<HTMLDivElement>(null);
@@ -103,26 +105,50 @@ function App() {
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
 
       <div className="relative flex-1 overflow-hidden">
-        {/* Block Grid — full area, scrollable */}
+        {/* Main view area — scrollable */}
         <div className="absolute inset-0 overflow-auto p-4">
           <div className="mb-2 flex items-center gap-4">
+            {/* View toggle */}
+            <div className="flex items-center gap-0.5 bg-gray-800 rounded p-0.5">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "grid" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
+                title="Category Grid"
+              >
+                Grid
+              </button>
+              <button
+                onClick={() => setViewMode("rings")}
+                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "rings" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
+                title="Defense Rings"
+              >
+                Rings
+              </button>
+            </div>
+
             <span className="text-xs text-gray-600">
               Click for details | Right-click to cycle state
             </span>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-              <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
-              <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
-              <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
-              <span className="relative flex items-center gap-1 group cursor-default">
-                <span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" /> Over budget
-                <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                  Block cost pushes total above budget slider limit
+            {viewMode === "grid" && (
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
+                <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
+                <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
+                <span className="relative flex items-center gap-1 group cursor-default">
+                  <span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" /> Over budget
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Block cost pushes total above budget slider limit
+                  </span>
                 </span>
-              </span>
-            </div>
+              </div>
+            )}
           </div>
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
-            <BlockGrid onSelectBlock={setSelectedBlock} />
+            {viewMode === "grid" ? (
+              <BlockGrid onSelectBlock={setSelectedBlock} />
+            ) : (
+              <DefenseRings onSelectBlock={setSelectedBlock} />
+            )}
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import { blockEffectiveness, aiDegradation } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
 import { formatCost } from "../../utils/format";
+import { computeDecisionWindows } from "../../utils/decision-windows";
 
 interface BlockTooltipProps {
   block: Block;
@@ -35,6 +36,13 @@ export function BlockTooltip({
   const beyondAdversary = block.adversary_exploitation.oc_threshold_to_exploit > effectiveOc;
   const SERVING_ONLY = new Set(["AI-07", "AI-08", "AI-04", "NET-04"]);
   const irrelevantAirgapped = !modelServed && SERVING_ONLY.has(block.id);
+
+  const decisionWindow = computeDecisionWindows([block], { [block.id]: state }, year)[0];
+  const uncertainty = block.open_questions.some((q) => q.uncertainty_level === "fundamental")
+    ? "fundamental"
+    : block.open_questions.some((q) => q.uncertainty_level === "high")
+      ? "high"
+      : null;
 
   useEffect(() => {
     if (!anchorRect || !ref.current) return;
@@ -84,6 +92,27 @@ export function BlockTooltip({
       {irrelevantAirgapped && (
         <div className="text-[10px] text-gray-500 mt-0.5">
           Dimmed: only relevant when model is served externally
+        </div>
+      )}
+      {decisionWindow && decisionWindow.urgency !== "upcoming" && (
+        <div
+          className={`text-[10px] mt-0.5 ${
+            decisionWindow.urgency === "overdue" ? "text-red-400" : "text-amber-400"
+          }`}
+        >
+          !{" "}
+          {decisionWindow.urgency === "overdue"
+            ? `Window closed: needs up to ${block.dimensions.time_to_deploy_months.max}mo to deploy — starting now misses 2030`
+            : `Window closing: must start by ${decisionWindow.mustStartBy.toFixed(1)} to deploy by 2030`}
+        </div>
+      )}
+      {uncertainty && (
+        <div
+          className={`text-[10px] mt-0.5 ${
+            uncertainty === "fundamental" ? "text-violet-400" : "text-amber-500"
+          }`}
+        >
+          ? Feasibility contested — {uncertainty} open questions (see details)
         </div>
       )}
     </div>

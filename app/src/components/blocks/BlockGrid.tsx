@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
+import { applyBudgetConstraint } from "../../engine";
 import { useSimulationStore } from "../../store/simulation";
 import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
@@ -26,19 +27,10 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
 
-  const budgetExceededIds = useMemo(() => {
-    const active = blocks
-      .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
-      .map((b) => ({ id: b.id, cost: b.dimensions.cost.upfront_millions.min }))
-      .sort((a, b) => a.cost - b.cost);
-    let total = 0;
-    const exceeded = new Set<string>();
-    for (const item of active) {
-      total += item.cost;
-      if (total > sliders.budget_millions) exceeded.add(item.id);
-    }
-    return exceeded;
-  }, [blocks, blockStates, sliders.budget_millions]);
+  const budgetExceededIds = useMemo(
+    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
+    [blocks, blockStates, sliders.budget_millions]
+  );
 
   const blocksByCategory = useMemo(() => {
     const map: Record<string, Block[]> = {};

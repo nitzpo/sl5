@@ -3,6 +3,7 @@ import { useSimulationStore } from "../../store/simulation";
 import { getAiCapability } from "../../engine/ai-curve";
 import { computeCategoryScores, overallSlScore } from "../../engine/scoring";
 import { computeBreachProbabilities } from "../../engine/breach";
+import { applyBudgetConstraint } from "../../engine/budget";
 
 const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
 const TRACK_HEIGHT = 110;
@@ -50,13 +51,16 @@ export function TimelineTrack() {
   }
 
   const riskData = useMemo(() => {
+    const { effectiveStates } = applyBudgetConstraint(
+      blocks, blockStates, sliders.budget_millions
+    );
     return YEARS.map((y) => {
-      const catScores = computeCategoryScores(blocks, blockStates, y, sliders);
+      const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders);
       const sl = overallSlScore(catScores);
       const defense = sl / 5;
 
       const breachProbs = computeBreachProbabilities(
-        attackChains, blocks, blockStates, adversaryOc, y, sliders
+        attackChains, blocks, effectiveStates, adversaryOc, y, sliders
       );
       const threat = Math.max(...Object.values(breachProbs), 0);
 

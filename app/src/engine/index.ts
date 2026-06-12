@@ -10,9 +10,11 @@ export {
 export {
   sigmoidProbability,
   blockExploitProbability,
+  defenseInDepthDiscount,
   chainBreachProbability,
   computeBreachProbabilities,
 } from "./breach";
+export { applyBudgetConstraint } from "./budget";
 export {
   distillationProgress,
   monthlyExtractionRate,

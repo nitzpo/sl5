@@ -1,11 +1,16 @@
 import type { Block, BlockState, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
 import { blockEffectiveness } from "./scoring";
+import { resolveLayer } from "../utils/ring-geometry";
 
 const DEFAULT_SIGMOID_STEEPNESS = 1.5;
 const DEFAULT_HARD_STOP_BYPASS = 0.02;
 const DEFAULT_PROBABILISTIC_BYPASS = 0.15;
 const DEFAULT_IMPLEMENTING_BYPASS = 0.5;
+// Mirrors public/data/simulation-config.json breach_probability.defense_in_depth_discount
+// (that file is not fetched at runtime; engine constants are hard-coded by convention)
+const DEFAULT_PER_ADDITIONAL_LAYER_FACTOR = 0.6;
+const DEFAULT_CORRELATION_PENALTY = 0.2;
 
 /**
  * Sigmoid mapping from OC delta to exploitation probability.
@@ -55,6 +60,45 @@ export function blockExploitProbability(
 }
 
 /**
+ * Defense-in-depth discount: each additional independent defense layer that is
+ * actually deployed along the chain multiplies breach probability by 0.6.
+ * Layers whose blocks share a dependency (e.g., same vendor firmware) are
+ * partially correlated, weakening the discount factor to 0.8.
+ */
+export function defenseInDepthDiscount(
+  chainBlocks: Block[],
+  blockStates: Record<string, BlockState | string>
+): number {
+  const deployed = chainBlocks.filter((b) => {
+    const s = blockStates[b.id] ?? "not_started";
+    return s === "deployed" || s === "mature";
+  });
+
+  const layers = new Set<string>();
+  for (const block of deployed) {
+    for (const raw of block.defense_in_depth.layer_contributions) {
+      const layer = resolveLayer(raw);
+      if (layer) layers.add(layer);
+    }
+  }
+  if (layers.size < 2) return 1;
+
+  const sharedDepCounts = new Map<string, number>();
+  for (const block of deployed) {
+    for (const dep of block.defense_in_depth.shared_dependencies) {
+      sharedDepCounts.set(dep, (sharedDepCounts.get(dep) ?? 0) + 1);
+    }
+  }
+  const correlated = [...sharedDepCounts.values()].some((n) => n >= 2);
+
+  const factor = Math.min(
+    1,
+    DEFAULT_PER_ADDITIONAL_LAYER_FACTOR + (correlated ? DEFAULT_CORRELATION_PENALTY : 0)
+  );
+  return factor ** (layers.size - 1);
+}
+
+/**
  * Probability that an adversary succeeds along an attack chain.
  * Chain success requires overcoming (or exploiting absence of) each block in the chain.
  */
@@ -67,11 +111,13 @@ export function chainBreachProbability(
   sliders: Sliders | number = 0.5
 ): number {
   const blockMap = new Map(allBlocks.map((b) => [b.id, b]));
+  const chainBlocks: Block[] = [];
 
   let probability = 1.0;
   for (const blockId of chainBlockIds) {
     const block = blockMap.get(blockId);
     if (!block) continue;
+    chainBlocks.push(block);
     const state = blockStates[blockId] ?? "not_started";
     probability *= blockExploitProbability(
       block,
@@ -82,7 +128,9 @@ export function chainBreachProbability(
     );
   }
 
-  return probability;
+  probability *= defenseInDepthDiscount(chainBlocks, blockStates);
+
+  return Math.max(0, Math.min(1, probability));
 }
 
 /**

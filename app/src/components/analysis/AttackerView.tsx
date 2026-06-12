@@ -4,14 +4,7 @@ import { useSimulationResults } from "../../store/derived";
 import { getAiCapability } from "../../engine/ai-curve";
 import { formatProbability } from "../../utils/format";
 import type { AttackChain, BlockState } from "../../engine/types";
-
-const STATE_ICONS: Record<string, string> = {
-  not_started: "✗",
-  investing: "◔",
-  implementing: "◐",
-  deployed: "■",
-  mature: "★",
-};
+import { STATE_ICONS } from "../../utils/colors";
 
 export function AttackerView() {
   const blocks = useSimulationStore((s) => s.blocks);
@@ -182,7 +175,7 @@ function ChainCard({
       {/* Stopper blocks with their states */}
       <div className="flex flex-wrap gap-1.5 mt-1.5">
         {chain.stoppers.map((blockId) => {
-          const state = (blockStates[blockId] ?? "not_started") as string;
+          const state = (blockStates[blockId] ?? "not_started") as BlockState;
           const icon = STATE_ICONS[state] ?? "?";
           const isAbsent = state === "not_started" || state === "investing";
           return (

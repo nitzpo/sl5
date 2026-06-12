@@ -137,7 +137,7 @@ function App() {
                 <span className="relative flex items-center gap-1 group cursor-default">
                   <span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" /> Over budget
                   <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    Block cost pushes total above budget slider limit
+                    Cost exceeds budget — effectiveness capped at Implementing level
                   </span>
                 </span>
               </div>

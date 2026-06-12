@@ -1,21 +1,13 @@
 import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { blockEffectiveness } from "../../engine/scoring";
-import { DEFENSE_COLORS } from "../../utils/colors";
+import { DEFENSE_COLORS, STATE_LABELS } from "../../utils/colors";
 import { formatCost } from "../../utils/format";
 
 interface BlockDetailProps {
   block: Block;
   onClose: () => void;
 }
-
-const STATE_LABELS: Record<BlockState, string> = {
-  not_started: "Not Started",
-  investing: "Investing",
-  implementing: "Implementing",
-  deployed: "Deployed",
-  mature: "Mature",
-};
 
 export function BlockDetail({ block, onClose }: BlockDetailProps) {
   const blockStates = useSimulationStore((s) => s.blockStates);

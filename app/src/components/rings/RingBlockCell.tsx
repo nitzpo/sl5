@@ -1,7 +1,7 @@
 import { useId, useRef } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints } from "../../utils/geometry";
-import { DEFENSE_COLORS } from "../../utils/colors";
+import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
 import { aiDegradation } from "../../engine/scoring";
 import { useSimulationStore } from "../../store/simulation";
 
@@ -17,14 +17,6 @@ interface RingBlockCellProps {
   onHover: (block: Block, rect: DOMRect) => void;
   onHoverEnd: () => void;
 }
-
-const STATE_FILL: Record<BlockState, number> = {
-  not_started: 0,
-  investing: 0.2,
-  implementing: 0.6,
-  deployed: 1.0,
-  mature: 1.0,
-};
 
 const BG_FILL = "#1a1d24";
 
@@ -45,7 +37,7 @@ export function RingBlockCell({
   const uniqueId = useId();
 
   const color = DEFENSE_COLORS[block.defense_type];
-  const fillFraction = STATE_FILL[state];
+  const fillFraction = STATE_FILL_FRACTION[state];
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
 
   const points = hexPoints(cx, cy, size);

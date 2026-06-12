@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
-import { DEFENSE_COLORS } from "../../utils/colors";
+import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
 import { aiDegradation } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
@@ -19,14 +19,6 @@ interface BlockCellProps {
   onHover: (block: Block, rect: DOMRect) => void;
   onHoverEnd: () => void;
 }
-
-const STATE_FILL: Record<BlockState, number> = {
-  not_started: 0,
-  investing: 0.25,
-  implementing: 0.55,
-  deployed: 1.0,
-  mature: 1.0,
-};
 
 const BG_FILL = "#1a1d24";
 
@@ -52,7 +44,7 @@ export function BlockCell({
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
 
   const color = DEFENSE_COLORS[block.defense_type];
-  const fillFraction = STATE_FILL[state];
+  const fillFraction = STATE_FILL_FRACTION[state];
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
 
   const aiCap = getAiCapability(year, sliders.ai_timeline);

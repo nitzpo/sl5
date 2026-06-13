@@ -44,7 +44,8 @@ export function useSimulationResults() {
     effectiveStates,
     adversaryOc,
     year,
-    sliders
+    sliders,
+    modelServedExternally
   );
 
   const bestChain = Object.entries(breachProbabilities).reduce<{
@@ -73,7 +74,8 @@ export function useSimulationResults() {
       effectiveStates,
       oc,
       year,
-      sliders
+      sliders,
+      modelServedExternally
     );
     breachByOc[oc] = Math.max(...Object.values(probs), 0);
   }

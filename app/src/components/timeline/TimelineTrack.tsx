@@ -38,6 +38,7 @@ export function TimelineTrack() {
   const blockStates = useSimulationStore((s) => s.blockStates);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const attackChains = useSimulationStore((s) => s.attackChains);
+  const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
 
   const [showDecomposed, setShowDecomposed] = useState(false);
   const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
@@ -61,7 +62,7 @@ export function TimelineTrack() {
       const defense = sl / 5;
 
       const breachProbs = computeBreachProbabilities(
-        attackChains, blocks, effectiveStates, adversaryOc, y, sliders
+        attackChains, blocks, effectiveStates, adversaryOc, y, sliders, modelServedExternally
       );
       const threat = Math.max(...Object.values(breachProbs), 0);
 
@@ -73,7 +74,7 @@ export function TimelineTrack() {
         chainProbs: breachProbs,
       };
     });
-  }, [blocks, blockStates, sliders, adversaryOc, attackChains, aiTimeline]);
+  }, [blocks, blockStates, sliders, adversaryOc, attackChains, aiTimeline, modelServedExternally]);
 
   const aiCurvePoints = riskData
     .map((d) => `${yearToX(d.year)},${valueToY(d.aiCap)}`)

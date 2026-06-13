@@ -112,7 +112,11 @@ export interface AttackChain {
   };
   stoppers: string[];
   stopper_details?: Array<{ block_id: string; how_it_stops: string }>;
+  // API-extraction chains are inert unless the model is served externally.
+  requires_external_serving?: boolean;
   probability_model: {
+    // Authored prior, kept for documentation; NOT used by the breach model
+    // (redundant with adversary_profile.min_oc and would cap chains).
     base_probability: number;
   };
 }

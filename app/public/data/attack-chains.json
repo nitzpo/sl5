@@ -261,6 +261,7 @@
       { "block_id": "NET-04", "how_it_stops": "Physical bandwidth limitation puts a deterministic cap on total information leaving the enclave." },
       { "block_id": "NET-01", "how_it_stops": "Air gap: the model is not externally served, so the attack is impossible." }
     ],
+    "requires_external_serving": true,
     "probability_model": { "base_probability": 0.3 }
   }
 ]

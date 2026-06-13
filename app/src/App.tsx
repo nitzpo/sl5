@@ -10,6 +10,8 @@ import { BlockGrid } from "./components/blocks/BlockGrid";
 import { DefenseRings } from "./components/rings/DefenseRings";
 import { ChainStrip } from "./components/analysis/ChainStrip";
 import { VerdictBanner } from "./components/layout/VerdictBanner";
+import { useViewStore } from "./store/view";
+import type { BadgeKey } from "./store/view";
 import type { Block } from "./engine/types";
 
 function App() {
@@ -155,43 +157,46 @@ function App() {
             <span className="text-xs text-gray-600">
               Click for details | Right-click to cycle state
             </span>
-            {viewMode === "grid" && (
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
-                <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
-                <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
-                <span className="relative flex items-center gap-1 group cursor-default">
-                  <span className="w-2 h-2 rounded-full bg-red-500 text-[8px] leading-none text-white flex items-center justify-center font-bold">!</span> Start now
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    Deployment window closing — must start soon to be ready by 2030
-                  </span>
-                </span>
-                <span className="relative flex items-center gap-1 group cursor-default">
-                  <span className="text-sky-400 text-[10px] leading-none">→</span> Requires
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    Hover/select a block: solid arrows point from its prerequisites into it
-                  </span>
-                </span>
-                <span className="relative flex items-center gap-1 group cursor-default">
-                  <span className="text-teal-400 text-[10px] leading-none tracking-tighter">⇢</span> Enhances
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    Dashed lines point to blocks this one makes more effective
-                  </span>
-                </span>
-                <span className="relative flex items-center gap-1 group cursor-default">
-                  <span className="w-2 h-2 rounded-full bg-violet-600 text-[8px] leading-none text-white flex items-center justify-center font-bold">?</span> Contested
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    Experts disagree on feasibility — high or fundamental open questions
-                  </span>
-                </span>
-                <span className="relative flex items-center gap-1 group cursor-default">
-                  <span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" /> Over budget
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    Cost exceeds budget — effectiveness capped at Implementing level
-                  </span>
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
+              <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
+              <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
+              <span className="w-px h-3 bg-gray-700" />
+              <ToggleLegendItem
+                badge="startNow"
+                swatch={<span className="w-2 h-2 rounded-full bg-red-500 text-[8px] leading-none text-white flex items-center justify-center font-bold">!</span>}
+                label="Start now"
+                tip="Deployment window closing — must start soon to be ready by 2030. Click to toggle."
+              />
+              {viewMode === "grid" && (
+                <>
+                  <ToggleLegendItem
+                    badge="requires"
+                    swatch={<span className="text-sky-400 text-[10px] leading-none">→</span>}
+                    label="Requires"
+                    tip="Hover/select a block: solid arrows point from its prerequisites into it. Click to toggle."
+                  />
+                  <ToggleLegendItem
+                    badge="enhances"
+                    swatch={<span className="text-teal-400 text-[10px] leading-none tracking-tighter">⇢</span>}
+                    label="Enhances"
+                    tip="Dashed lines point to blocks this one makes more effective. Click to toggle."
+                  />
+                </>
+              )}
+              <ToggleLegendItem
+                badge="contested"
+                swatch={<span className="w-2 h-2 rounded-full bg-violet-600 text-[8px] leading-none text-white flex items-center justify-center font-bold">?</span>}
+                label="Contested"
+                tip="Experts disagree on feasibility — high or fundamental open questions. Click to toggle."
+              />
+              <ToggleLegendItem
+                badge="overBudget"
+                swatch={<span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" />}
+                label="Over budget"
+                tip="Cost exceeds budget — effectiveness capped at Implementing level. Click to toggle."
+              />
+            </div>
           </div>
           <div style={{ marginRight: rightPanelWidth }}>
             <VerdictBanner />
@@ -268,6 +273,36 @@ function LegendItem({ color, label, tip }: { color: string; label: string; tip: 
         {tip}
       </span>
     </span>
+  );
+}
+
+function ToggleLegendItem({
+  badge,
+  swatch,
+  label,
+  tip,
+}: {
+  badge: BadgeKey;
+  swatch: React.ReactNode;
+  label: string;
+  tip: string;
+}) {
+  const on = useViewStore((s) => s.badges[badge]);
+  const toggleBadge = useViewStore((s) => s.toggleBadge);
+  return (
+    <button
+      onClick={() => toggleBadge(badge)}
+      aria-pressed={on}
+      className={`relative flex items-center gap-1 group transition-opacity ${
+        on ? "" : "opacity-35"
+      }`}
+    >
+      {swatch}
+      <span className={on ? "" : "line-through"}>{label}</span>
+      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+        {on ? tip : `${label} hidden — click to show`}
+      </span>
+    </button>
   );
 }
 

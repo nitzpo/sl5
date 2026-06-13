@@ -4,6 +4,7 @@ import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
 import { URGENCY_COLORS } from "../../utils/decision-windows";
 import type { WindowUrgency } from "../../utils/decision-windows";
+import { useViewStore } from "../../store/view";
 import { aiDegradation } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
@@ -44,6 +45,7 @@ export function BlockCell({
 }: BlockCellProps) {
   const hexRef = useRef<SVGPolygonElement>(null);
   const [hovered, setHovered] = useState(false);
+  const badges = useViewStore((s) => s.badges);
   const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
@@ -170,7 +172,7 @@ export function BlockCell({
       )}
 
       {/* Budget exceeded indicator */}
-      {budgetExceeded && (
+      {budgetExceeded && badges.overBudget && (
         <polygon
           points={hexPoints(cx, cy, size + 3)}
           fill="none"
@@ -208,7 +210,7 @@ export function BlockCell({
       </text>
 
       {/* Decision window badge — must start soon to deploy by 2030 */}
-      {decisionWindow && (
+      {decisionWindow && badges.startNow && (
         <g>
           <circle
             cx={cx - size + 4}
@@ -241,7 +243,7 @@ export function BlockCell({
       )}
 
       {/* Uncertainty badge — feasibility contested by experts */}
-      {uncertainty && (
+      {uncertainty && badges.contested && (
         <g>
           <circle
             cx={cx - size + 4}

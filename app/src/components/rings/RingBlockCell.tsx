@@ -6,6 +6,7 @@ import { URGENCY_COLORS } from "../../utils/decision-windows";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { aiDegradation } from "../../engine/scoring";
 import { useSimulationStore } from "../../store/simulation";
+import { useViewStore } from "../../store/view";
 
 interface RingBlockCellProps {
   block: Block;
@@ -42,6 +43,7 @@ export function RingBlockCell({
 }: RingBlockCellProps) {
   const hexRef = useRef<SVGPolygonElement>(null);
   const [hovered, setHovered] = useState(false);
+  const badges = useViewStore((s) => s.badges);
   const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
   const uniqueId = useId();
 
@@ -153,7 +155,7 @@ export function RingBlockCell({
       )}
 
       {/* Budget exceeded — dashed amber halo */}
-      {budgetExceeded && (
+      {budgetExceeded && badges.overBudget && (
         <polygon
           points={hexPoints(cx, cy, size + 2)}
           fill="none"
@@ -178,7 +180,7 @@ export function RingBlockCell({
       </text>
 
       {/* Decision window badge (top-left) */}
-      {decisionWindow && (
+      {decisionWindow && badges.startNow && (
         <g>
           <circle cx={cx - size + 3} cy={cy - size + 3} r={4} fill={URGENCY_COLORS[decisionWindow]}>
             {decisionWindow !== "upcoming" && (
@@ -201,7 +203,7 @@ export function RingBlockCell({
       )}
 
       {/* Uncertainty badge (bottom-left) */}
-      {uncertainty && (
+      {uncertainty && badges.contested && (
         <g>
           <circle
             cx={cx - size + 3}

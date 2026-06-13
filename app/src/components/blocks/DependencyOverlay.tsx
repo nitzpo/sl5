@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Block } from "../../engine/types";
 import { blockGridPosition } from "../../utils/geometry";
+import { useViewStore } from "../../store/view";
 
 interface DependencyOverlayProps {
   blocks: Block[];
@@ -32,6 +33,9 @@ function arcPath(from: { x: number; y: number }, to: { x: number; y: number }): 
 
 /** Dependency arcs for the focused (hovered/selected) block. */
 export function DependencyOverlay({ blocks, focusBlock, hexSize }: DependencyOverlayProps) {
+  const showRequires = useViewStore((s) => s.badges.requires);
+  const showEnhances = useViewStore((s) => s.badges.enhances);
+
   const edges = useMemo(() => {
     if (!focusBlock) return [];
     const blockMap = new Map(blocks.map((b) => [b.id, b]));
@@ -40,35 +44,39 @@ export function DependencyOverlay({ blocks, focusBlock, hexSize }: DependencyOve
     const seen = new Set<string>();
 
     // requires + enabled_by: dependency → focus (solid, arrowhead)
-    const incoming = [
-      ...focusBlock.dependencies.requires,
-      ...focusBlock.dependencies.enabled_by,
-    ];
-    for (const id of incoming) {
-      const dep = blockMap.get(id);
-      if (!dep || seen.has(id)) continue;
-      seen.add(id);
-      result.push({
-        key: `req-${id}`,
-        from: blockGridPosition(blocks, dep),
-        to: focusPos,
-        kind: "requires",
-      });
+    if (showRequires) {
+      const incoming = [
+        ...focusBlock.dependencies.requires,
+        ...focusBlock.dependencies.enabled_by,
+      ];
+      for (const id of incoming) {
+        const dep = blockMap.get(id);
+        if (!dep || seen.has(id)) continue;
+        seen.add(id);
+        result.push({
+          key: `req-${id}`,
+          from: blockGridPosition(blocks, dep),
+          to: focusPos,
+          kind: "requires",
+        });
+      }
     }
 
     // enhances: focus → target (dashed, subtle)
-    for (const id of focusBlock.dependencies.enhances) {
-      const target = blockMap.get(id);
-      if (!target) continue;
-      result.push({
-        key: `enh-${id}`,
-        from: focusPos,
-        to: blockGridPosition(blocks, target),
-        kind: "enhances",
-      });
+    if (showEnhances) {
+      for (const id of focusBlock.dependencies.enhances) {
+        const target = blockMap.get(id);
+        if (!target) continue;
+        result.push({
+          key: `enh-${id}`,
+          from: focusPos,
+          to: blockGridPosition(blocks, target),
+          kind: "enhances",
+        });
+      }
     }
     return result;
-  }, [blocks, focusBlock]);
+  }, [blocks, focusBlock, showRequires, showEnhances]);
 
   if (!focusBlock || edges.length === 0) return null;
 

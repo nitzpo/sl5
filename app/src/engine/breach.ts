@@ -101,7 +101,7 @@ export function defenseInDepthDiscount(
 
   const layers = new Set<string>();
   for (const block of deployed) {
-    for (const raw of block.defense_in_depth.layer_contributions) {
+    for (const raw of block.defense_in_depth?.layer_contributions ?? []) {
       const layer = resolveLayer(raw);
       if (layer) layers.add(layer);
     }
@@ -110,7 +110,7 @@ export function defenseInDepthDiscount(
 
   const sharedDepCounts = new Map<string, number>();
   for (const block of deployed) {
-    for (const dep of block.defense_in_depth.shared_dependencies) {
+    for (const dep of block.defense_in_depth?.shared_dependencies ?? []) {
       sharedDepCounts.set(dep, (sharedDepCounts.get(dep) ?? 0) + 1);
     }
   }

@@ -37,7 +37,7 @@ export function ChainStrip() {
       chain.blocks_exploited.map((id, i) => {
         const block = blocks.find((b) => b.id === id);
         const firstSentence =
-          block?.adversary_exploitation.exploit_narrative.split(/(?<=\.)\s/)[0] ?? "";
+          block?.adversary_exploitation?.exploit_narrative?.split(/(?<=\.)\s/)[0] ?? "";
         return { phase: `Step ${i + 1}`, description: firstSentence, block_gap_used: id };
       });
 

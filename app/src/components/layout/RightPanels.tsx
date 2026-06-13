@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Block, Perspective } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { ScoreCard } from "../analysis/ScoreCard";
@@ -29,6 +29,11 @@ export function RightPanels({ selectedBlock, onCloseBlock, onNavigateBlock }: Ri
 
   // If a block is selected, it takes over the score panel area
   const showBlockDetail = selectedBlock !== null;
+
+  // Selecting a block should reveal its detail even if the panel was collapsed
+  useEffect(() => {
+    if (selectedBlock) setScoreOpen(true);
+  }, [selectedBlock]);
 
   return (
     <div className="flex h-full shadow-xl">

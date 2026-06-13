@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { LAYER_ORDER, RING_SVG_SIZE, RING_CENTER } from "../../utils/ring-geometry";
+import { applyBudgetConstraint } from "../../engine";
+import { computeDecisionWindows } from "../../utils/decision-windows";
+import type { WindowUrgency } from "../../utils/decision-windows";
 import { RingLayer } from "./RingLayer";
 import { BlockTooltip } from "../blocks/BlockTooltip";
 
@@ -18,11 +21,31 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
   const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
+  const selectedChainId = useSimulationStore((s) => s.selectedChainId);
+  const attackChains = useSimulationStore((s) => s.attackChains);
 
   const { defenseLayerStatus, blocksByLayer } = useSimulationResults();
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
+
+  const budgetExceededIds = useMemo(
+    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
+    [blocks, blockStates, sliders.budget_millions]
+  );
+
+  const decisionWindows = useMemo(() => {
+    const map = new Map<string, WindowUrgency>();
+    for (const w of computeDecisionWindows(blocks, blockStates, year)) {
+      if (w.urgency !== "upcoming") map.set(w.block.id, w.urgency);
+    }
+    return map;
+  }, [blocks, blockStates, year]);
+
+  const chainMembers = useMemo(() => {
+    const chain = attackChains.find((c) => c.id === selectedChainId);
+    return new Set(chain?.stoppers ?? []);
+  }, [attackChains, selectedChainId]);
 
   return (
     <div className="relative">
@@ -90,6 +113,9 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
               strength={layerStatus.strength}
               year={year}
               sliders={sliders}
+              budgetExceededIds={budgetExceededIds}
+              decisionWindows={decisionWindows}
+              chainMembers={chainMembers}
               onSelectBlock={onSelectBlock}
               onHoverBlock={(block, rect) => {
                 setHoveredBlock(block);

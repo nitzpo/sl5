@@ -7,6 +7,7 @@ import {
   LAYER_COLORS,
   blockPositionOnRing,
 } from "../../utils/ring-geometry";
+import type { WindowUrgency } from "../../utils/decision-windows";
 import { RingBlockCell } from "./RingBlockCell";
 
 interface RingLayerProps {
@@ -17,6 +18,9 @@ interface RingLayerProps {
   strength: number;
   year: number;
   sliders: Sliders;
+  budgetExceededIds: Set<string>;
+  decisionWindows: Map<string, WindowUrgency>;
+  chainMembers: Set<string>;
   onSelectBlock: (block: Block) => void;
   onHoverBlock: (block: Block, rect: DOMRect) => void;
   onHoverEnd: () => void;
@@ -30,6 +34,9 @@ export function RingLayer({
   strength,
   year,
   sliders,
+  budgetExceededIds,
+  decisionWindows,
+  chainMembers,
   onSelectBlock,
   onHoverBlock,
   onHoverEnd,
@@ -74,6 +81,9 @@ export function RingLayer({
             state={state}
             year={year}
             sliders={sliders}
+            budgetExceeded={budgetExceededIds.has(block.id)}
+            decisionWindow={decisionWindows.get(block.id)}
+            chainMember={chainMembers.has(block.id)}
             onSelect={onSelectBlock}
             onHover={onHoverBlock}
             onHoverEnd={onHoverEnd}

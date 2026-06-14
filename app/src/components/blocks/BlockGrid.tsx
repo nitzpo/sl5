@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
+import { applyBudgetConstraint } from "../../engine";
+import { computeDecisionWindows } from "../../utils/decision-windows";
+import type { WindowUrgency } from "../../utils/decision-windows";
 import { useSimulationStore } from "../../store/simulation";
 import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
 import { ChainOverlay } from "./ChainOverlay";
+import { DependencyOverlay } from "./DependencyOverlay";
 import {
   CATEGORY_ORDER,
   CATEGORY_LABELS,
@@ -15,30 +19,33 @@ import {
 
 interface BlockGridProps {
   onSelectBlock: (block: Block) => void;
+  selectedBlock?: Block | null;
+  onClearSelection?: () => void;
 }
 
-export function BlockGrid({ onSelectBlock }: BlockGridProps) {
+export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelection }: BlockGridProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
+  const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
 
-  const budgetExceededIds = useMemo(() => {
-    const active = blocks
-      .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
-      .map((b) => ({ id: b.id, cost: b.dimensions.cost.upfront_millions.min }))
-      .sort((a, b) => a.cost - b.cost);
-    let total = 0;
-    const exceeded = new Set<string>();
-    for (const item of active) {
-      total += item.cost;
-      if (total > sliders.budget_millions) exceeded.add(item.id);
+  const budgetExceededIds = useMemo(
+    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
+    [blocks, blockStates, sliders.budget_millions]
+  );
+
+  const decisionWindows = useMemo(() => {
+    const map = new Map<string, WindowUrgency>();
+    for (const w of computeDecisionWindows(blocks, blockStates, year)) {
+      // grid badges only for closing/closed windows; "upcoming" stays in CISO list
+      if (w.urgency !== "upcoming") map.set(w.block.id, w.urgency);
     }
-    return exceeded;
-  }, [blocks, blockStates, sliders.budget_millions]);
+    return map;
+  }, [blocks, blockStates, year]);
 
   const blocksByCategory = useMemo(() => {
     const map: Record<string, Block[]> = {};
@@ -63,7 +70,23 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
         viewBox={`0 0 ${width} ${height}`}
         className="select-none"
         style={{ width: "100%", maxWidth: `${Math.round(width * 1.4)}px` }}
+        onClick={() => {
+          setSelectedChain(null);
+          onClearSelection?.();
+        }}
       >
+        {/* Background click-catcher: clears selection when clicking empty space within the viewBox */}
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="transparent"
+          onClick={() => {
+            setSelectedChain(null);
+            onClearSelection?.();
+          }}
+        />
         {CATEGORY_ORDER.map((category) => {
           const catBlocks = blocksByCategory[category] ?? [];
           const rowY = hexPosition(category, 0).y;
@@ -97,6 +120,7 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
                     year={year}
                     sliders={sliders}
                     budgetExceeded={budgetExceededIds.has(block.id)}
+                    decisionWindow={decisionWindows.get(block.id)}
                     onSelect={onSelectBlock}
                     onHover={(b, rect) => {
                       setHoveredBlock(b);
@@ -112,6 +136,13 @@ export function BlockGrid({ onSelectBlock }: BlockGridProps) {
             </g>
           );
         })}
+
+        {/* Dependency arcs for hovered/selected block */}
+        <DependencyOverlay
+          blocks={blocks}
+          focusBlock={hoveredBlock ?? selectedBlock}
+          hexSize={hexSize}
+        />
 
         {/* Attack chain overlay */}
         <ChainOverlay blocks={blocks} hexSize={hexSize} />

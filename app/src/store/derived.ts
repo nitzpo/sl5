@@ -4,6 +4,7 @@ import {
   overallSlScore,
   computeBreachProbabilities,
   distillationProgress,
+  applyBudgetConstraint,
 } from "../engine";
 import type { Block, Category } from "../engine/types";
 import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
@@ -24,9 +25,13 @@ export function useSimulationResults() {
     modelServedExternally,
   } = useSimulationStore();
 
+  // Over-budget blocks are capped at "implementing" for all scoring purposes
+  const { effectiveStates, exceededIds: budgetExceededIds } =
+    applyBudgetConstraint(blocks, blockStates, sliders.budget_millions);
+
   const categoryScores = computeCategoryScores(
     blocks,
-    blockStates,
+    effectiveStates,
     year,
     sliders
   );
@@ -36,10 +41,11 @@ export function useSimulationResults() {
   const breachProbabilities = computeBreachProbabilities(
     attackChains,
     blocks,
-    blockStates,
+    effectiveStates,
     adversaryOc,
     year,
-    sliders
+    sliders,
+    modelServedExternally
   );
 
   const bestChain = Object.entries(breachProbabilities).reduce<{
@@ -51,7 +57,7 @@ export function useSimulationResults() {
   }, null);
 
   // Distillation: check if AI-07 is deployed (inference outbound defense)
-  const ai07State = blockStates["AI-07"] ?? "not_started";
+  const ai07State = effectiveStates["AI-07"] ?? "not_started";
   const defensesDeployed =
     ai07State === "deployed" || ai07State === "mature";
 
@@ -65,10 +71,11 @@ export function useSimulationResults() {
     const probs = computeBreachProbabilities(
       attackChains,
       blocks,
-      blockStates,
+      effectiveStates,
       oc,
       year,
-      sliders
+      sliders,
+      modelServedExternally
     );
     breachByOc[oc] = Math.max(...Object.values(probs), 0);
   }
@@ -94,7 +101,7 @@ export function useSimulationResults() {
     const strength =
       contributing.length > 0
         ? contributing.reduce((sum, b) => {
-            const state = blockStates[b.id] ?? "not_started";
+            const state = effectiveStates[b.id] ?? "not_started";
             const stateVal =
               state === "deployed" || state === "mature"
                 ? 1
@@ -142,6 +149,8 @@ export function useSimulationResults() {
     defenseLayerStatus,
     activeLayers,
     blocksByLayer,
+    budgetExceededIds,
+    overBudget: budgetExceededIds.size > 0,
   };
 }
 

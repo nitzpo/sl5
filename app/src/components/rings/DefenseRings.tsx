@@ -1,26 +1,51 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { LAYER_ORDER, RING_SVG_SIZE, RING_CENTER } from "../../utils/ring-geometry";
+import { applyBudgetConstraint } from "../../engine";
+import { computeDecisionWindows } from "../../utils/decision-windows";
+import type { WindowUrgency } from "../../utils/decision-windows";
 import { RingLayer } from "./RingLayer";
 import { BlockTooltip } from "../blocks/BlockTooltip";
 
 interface DefenseRingsProps {
   onSelectBlock: (block: Block) => void;
+  onClearSelection?: () => void;
 }
 
-export function DefenseRings({ onSelectBlock }: DefenseRingsProps) {
+export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
+  const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
+  const selectedChainId = useSimulationStore((s) => s.selectedChainId);
+  const attackChains = useSimulationStore((s) => s.attackChains);
 
   const { defenseLayerStatus, blocksByLayer } = useSimulationResults();
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
+
+  const budgetExceededIds = useMemo(
+    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
+    [blocks, blockStates, sliders.budget_millions]
+  );
+
+  const decisionWindows = useMemo(() => {
+    const map = new Map<string, WindowUrgency>();
+    for (const w of computeDecisionWindows(blocks, blockStates, year)) {
+      if (w.urgency !== "upcoming") map.set(w.block.id, w.urgency);
+    }
+    return map;
+  }, [blocks, blockStates, year]);
+
+  const chainMembers = useMemo(() => {
+    const chain = attackChains.find((c) => c.id === selectedChainId);
+    return new Set(chain?.stoppers ?? []);
+  }, [attackChains, selectedChainId]);
 
   return (
     <div className="relative">
@@ -28,7 +53,23 @@ export function DefenseRings({ onSelectBlock }: DefenseRingsProps) {
         viewBox={`0 0 ${RING_SVG_SIZE} ${RING_SVG_SIZE}`}
         className="select-none"
         style={{ width: "100%", maxWidth: `${RING_SVG_SIZE}px` }}
+        onClick={() => {
+          setSelectedChain(null);
+          onClearSelection?.();
+        }}
       >
+        {/* Background click-catcher: clears selection when clicking empty space within the viewBox */}
+        <rect
+          x={0}
+          y={0}
+          width={RING_SVG_SIZE}
+          height={RING_SVG_SIZE}
+          fill="transparent"
+          onClick={() => {
+            setSelectedChain(null);
+            onClearSelection?.();
+          }}
+        />
         {/* Center asset indicator */}
         <circle
           cx={RING_CENTER.x}
@@ -72,6 +113,9 @@ export function DefenseRings({ onSelectBlock }: DefenseRingsProps) {
               strength={layerStatus.strength}
               year={year}
               sliders={sliders}
+              budgetExceededIds={budgetExceededIds}
+              decisionWindows={decisionWindows}
+              chainMembers={chainMembers}
               onSelectBlock={onSelectBlock}
               onHoverBlock={(block, rect) => {
                 setHoveredBlock(block);

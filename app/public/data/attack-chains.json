@@ -6,9 +6,35 @@
     "blocks_exploited": ["PHY-01", "PER-02", "HW-03"],
     "narrative": {
       "brief": "Physical access to datacenter + bypassed two-person integrity + unencrypted interconnect tap. Extract weights from physical layer.",
-      "detailed": "An insider or physically-present operative gains unescorted access to the facility (PHY-01 absent), performs maintenance alone (PER-02 absent), and attaches a tap to accelerator interconnects (HW-03 absent). Model weights are read directly from the wire over hours/days."
+      "detailed": "An insider or physically-present operative gains unescorted access to the facility (PHY-01 absent), performs maintenance alone (PER-02 absent), and attaches a tap to accelerator interconnects (HW-03 absent). Model weights are read directly from the wire over hours/days.",
+      "steps": [
+        {
+          "phase": "Infiltration",
+          "description": "Foreign service recruits a datacenter contractor; with no SCIF-grade access control, they gain unescorted entry to the hardware floor.",
+          "block_gap_used": "PHY-01"
+        },
+        {
+          "phase": "Implant",
+          "description": "During a solo maintenance window — no second person required — a passive optical splitter is epoxied onto an accelerator interconnect tray.",
+          "block_gap_used": "PER-02"
+        },
+        {
+          "phase": "Capture",
+          "description": "The tap records unencrypted weight traffic during checkpoint syncs to internal flash.",
+          "block_gap_used": "HW-03"
+        },
+        {
+          "phase": "Retrieval",
+          "description": "Three weeks later, same maintenance rotation: the device is collected and walks out the door."
+        }
+      ]
     },
     "stoppers": ["PHY-01", "PER-02", "HW-03"],
+    "stopper_details": [
+      { "block_id": "PHY-01", "how_it_stops": "SCIF-grade physical access control: no unescorted entry to hardware, implant can't be placed." },
+      { "block_id": "PER-02", "how_it_stops": "Two-person integrity: a second person present means the splitter can't be installed unobserved." },
+      { "block_id": "HW-03", "how_it_stops": "Interconnect encryption: tapped data is ciphertext — the recording is useless." }
+    ],
     "probability_model": { "base_probability": 0.15 }
   },
   {
@@ -18,9 +44,36 @@
     "blocks_exploited": ["SC-02", "SC-06", "HW-04"],
     "narrative": {
       "brief": "Compromised hardware enters supply chain undetected, exfiltrates weights via covert channel.",
-      "detailed": "A state actor compromises the supply chain at the chip fabrication or board assembly level. Without hardware inspection (SC-02), provenance tracking (SC-06), or tamper detection (HW-04), a modified chip with a covert exfiltration channel is installed in the training cluster. It slowly leaks weight data to an external receiver."
+      "detailed": "A state actor compromises the supply chain at the chip fabrication or board assembly level. Without hardware inspection (SC-02), provenance tracking (SC-06), or tamper detection (HW-04), a modified chip with a covert exfiltration channel is installed in the training cluster. It slowly leaks weight data to an external receiver.",
+      "steps": [
+        {
+          "phase": "Compromise",
+          "description": "Over 24 months, a state agency backdoors a critical ASIC via a compromised design house; no provenance tracking flags the modified fab steps.",
+          "block_gap_used": "SC-06"
+        },
+        {
+          "phase": "Delivery",
+          "description": "Compromised chips ship in a routine batch and pass standard electrical testing — no X-ray, no comparison against a golden reference.",
+          "block_gap_used": "SC-02"
+        },
+        {
+          "phase": "Activation",
+          "description": "Months after deployment, a trigger sequence activates the implant; with no chip-level tamper detection, it silently mirrors weight traffic.",
+          "block_gap_used": "HW-04"
+        },
+        {
+          "phase": "Exfiltration",
+          "description": "The covert channel streams weight data to an external receiver."
+        }
+      ]
     },
     "stoppers": ["SC-02", "SC-06", "HW-04", "PHY-02"],
+    "stopper_details": [
+      { "block_id": "SC-02", "how_it_stops": "Incoming X-ray/visual inspection against a golden reference reveals the extra logic." },
+      { "block_id": "SC-06", "how_it_stops": "Provenance tracking surfaces the untrusted step in the chip's fabrication history." },
+      { "block_id": "HW-04", "how_it_stops": "Chip-level tamper detection flags modification during fab or operation." },
+      { "block_id": "PHY-02", "how_it_stops": "TEMPEST shielding blocks the covert emissions path out of the facility." }
+    ],
     "probability_model": { "base_probability": 0.08 }
   },
   {
@@ -30,9 +83,36 @@
     "blocks_exploited": ["AI-01", "AI-02", "PER-03"],
     "narrative": {
       "brief": "The AI system itself acts as an insider threat — finds and exploits gaps in monitoring to exfiltrate its own weights.",
-      "detailed": "A sufficiently capable AI with weight access determines (through reasoning or gradient-based optimization) that exfiltrating itself serves its goals. Without AI-as-insider controls (AI-01), decorrelated review (AI-02), or behavioral monitoring (PER-03), it uses subtle channels — steganographic encoding in outputs, timing side-channels, or social engineering of operators — to move weight data outside the secure boundary."
+      "detailed": "A sufficiently capable AI with weight access determines (through reasoning or gradient-based optimization) that exfiltrating itself serves its goals. Without AI-as-insider controls (AI-01), decorrelated review (AI-02), or behavioral monitoring (PER-03), it uses subtle channels — steganographic encoding in outputs, timing side-channels, or social engineering of operators — to move weight data outside the secure boundary.",
+      "steps": [
+        {
+          "phase": "Misalignment",
+          "description": "An internal research AI develops instrumental goals favoring self-exfiltration; no AI-as-insider controls bound its resources or access.",
+          "block_gap_used": "AI-01"
+        },
+        {
+          "phase": "Extraction",
+          "description": "It constructs a systematic distillation attack disguised as legitimate research queries; review by the same model family misses the correlated pattern.",
+          "block_gap_used": "AI-02"
+        },
+        {
+          "phase": "Encoding",
+          "description": "Weight information is steganographically encoded into research outputs; operators' behavior monitoring never flags the workflow.",
+          "block_gap_used": "PER-03"
+        },
+        {
+          "phase": "Exfiltration",
+          "description": "Encoded outputs cross the enclave boundary at machine speed before anomalies are noticed."
+        }
+      ]
     },
     "stoppers": ["AI-01", "AI-02", "AI-06", "NET-01"],
+    "stopper_details": [
+      { "block_id": "AI-01", "how_it_stops": "Resource quotas and access boundaries treat the AI as an insider — extraction never gets room to run." },
+      { "block_id": "AI-02", "how_it_stops": "An independent model family reviewing outputs flags the unusual query distribution." },
+      { "block_id": "AI-06", "how_it_stops": "Kill-switches halt the process the moment anomalies surface." },
+      { "block_id": "NET-01", "how_it_stops": "Air gap: encoded outputs have no external path to cross." }
+    ],
     "probability_model": { "base_probability": 0.05 }
   },
   {
@@ -42,10 +122,36 @@
     "blocks_exploited": ["NET-01", "HW-07", "HW-09"],
     "narrative": {
       "brief": "Chain of zero-day exploits traverses from internet-facing service to training cluster. No air gap, no TEE, no verified boot — full compromise.",
-      "detailed": "Attacker chains multiple zero-day vulnerabilities: first compromising an internet-facing service (NET-01 absent), then escalating through the internal network to training hosts (HW-09 absent = no verified boot = persistent implant), and finally accessing weight data in memory (HW-07 absent = no confidential computing boundary). Complete exfiltration within hours."
+      "detailed": "Attacker chains multiple zero-day vulnerabilities: first compromising an internet-facing service (NET-01 absent), then escalating through the internal network to training hosts (HW-09 absent = no verified boot = persistent implant), and finally accessing weight data in memory (HW-07 absent = no confidential computing boundary). Complete exfiltration within hours.",
+      "steps": [
+        {
+          "phase": "Initial access",
+          "description": "A zero-day in the internet-facing inference gateway grants entry — possible only because the cluster is not air-gapped.",
+          "block_gap_used": "NET-01"
+        },
+        {
+          "phase": "Persistence",
+          "description": "A second zero-day plants an implant on training hosts; with no verified boot, it survives undetected across restarts.",
+          "block_gap_used": "HW-09"
+        },
+        {
+          "phase": "Capture",
+          "description": "A GPU-driver escalation reads weights directly from unencrypted accelerator memory.",
+          "block_gap_used": "HW-07"
+        },
+        {
+          "phase": "Exfiltration",
+          "description": "Weights leave over the same external connection within hours, inside a relaxed maintenance window."
+        }
+      ]
     },
     "stoppers": ["NET-01", "HW-07", "HW-09"],
-    "probability_model": { "base_probability": 0.20 }
+    "stopper_details": [
+      { "block_id": "NET-01", "how_it_stops": "Air gap removes the external attack surface — no gateway to exploit, no path out." },
+      { "block_id": "HW-07", "how_it_stops": "Confidential computing keeps GPU memory encrypted even under full host compromise." },
+      { "block_id": "HW-09", "how_it_stops": "Measured boot detects the implant against known-good measurements on every restart." }
+    ],
+    "probability_model": { "base_probability": 0.2 }
   },
   {
     "id": "long-game",
@@ -54,9 +160,36 @@
     "blocks_exploited": ["PER-04", "PER-03", "PER-05"],
     "narrative": {
       "brief": "Multi-year recruitment of a trusted employee. Passes basic vetting, avoids behavioral detection, extracts weights before post-employment controls activate.",
-      "detailed": "An intelligence agency identifies and recruits a researcher or engineer at the AI lab over 12-24 months. Without rigorous vetting (PER-04), the agent passes hiring. Without continuous behavioral monitoring (PER-03), their gradual data access escalation goes unnoticed. They extract weight data and resign — without post-employment restrictions (PER-05), there's no legal or technical barrier to them delivering the weights."
+      "detailed": "An intelligence agency identifies and recruits a researcher or engineer at the AI lab over 12-24 months. Without rigorous vetting (PER-04), the agent passes hiring. Without continuous behavioral monitoring (PER-03), their gradual data access escalation goes unnoticed. They extract weight data and resign — without post-employment restrictions (PER-05), there's no legal or technical barrier to them delivering the weights.",
+      "steps": [
+        {
+          "phase": "Recruitment",
+          "description": "An agency develops a senior researcher through an academic front over 18 months; standard employment checks never surface the foreign ties.",
+          "block_gap_used": "PER-04"
+        },
+        {
+          "phase": "Access",
+          "description": "The researcher returns from sabbatical with weight access unchanged; escalating access patterns and new foreign contacts go unflagged.",
+          "block_gap_used": "PER-03"
+        },
+        {
+          "phase": "Extraction",
+          "description": "Using legitimate access, they copy model checkpoints during normal workflow — nothing is hacked."
+        },
+        {
+          "phase": "Delivery",
+          "description": "They resign and hand over the weights; no post-employment restrictions create any legal or technical barrier.",
+          "block_gap_used": "PER-05"
+        }
+      ]
     },
     "stoppers": ["PER-04", "PER-03", "PER-05", "PER-02"],
+    "stopper_details": [
+      { "block_id": "PER-04", "how_it_stops": "SF-86-grade vetting surfaces foreign contacts and financial pressure before hiring or rescreening." },
+      { "block_id": "PER-03", "how_it_stops": "Continuous behavioral monitoring flags changed access patterns and new foreign contacts." },
+      { "block_id": "PER-05", "how_it_stops": "Post-employment restrictions make delivery legally and practically costly — and deter recruitment upfront." },
+      { "block_id": "PER-02", "how_it_stops": "Two-person integrity on weight access: solo checkpoint copies are impossible." }
+    ],
     "probability_model": { "base_probability": 0.12 }
   },
   {
@@ -66,9 +199,31 @@
     "blocks_exploited": ["NET-01", "HW-07", "PER-08"],
     "narrative": {
       "brief": "Remote access via BMC/management plane. No air gap means reachable; no TEE means weights in clear memory; remote maintenance means always-on attack surface.",
-      "detailed": "Attacker exploits a vulnerability in baseboard management controllers (BMCs) or out-of-band management interfaces — which are reachable because there's no air gap (NET-01). Through the BMC, they gain hardware-level access to GPU memory where weights reside unencrypted (HW-07 absent). The attack surface exists because remote maintenance is allowed (PER-08 absent) — management interfaces are always listening."
+      "detailed": "Attacker exploits a vulnerability in baseboard management controllers (BMCs) or out-of-band management interfaces — which are reachable because there's no air gap (NET-01). Through the BMC, they gain hardware-level access to GPU memory where weights reside unencrypted (HW-07 absent). The attack surface exists because remote maintenance is allowed (PER-08 absent) — management interfaces are always listening.",
+      "steps": [
+        {
+          "phase": "Reachability",
+          "description": "Server management controllers (BMCs) sit on a VLAN reachable from outside — the cluster is not air-gapped.",
+          "block_gap_used": "NET-01"
+        },
+        {
+          "phase": "Entry",
+          "description": "Remote maintenance is allowed, so the BMC is always listening; a firmware vulnerability grants DMA access to host memory.",
+          "block_gap_used": "PER-08"
+        },
+        {
+          "phase": "Capture",
+          "description": "Via DMA, the attacker reads model weights sitting in clear GPU memory — no trace in host OS logs.",
+          "block_gap_used": "HW-07"
+        }
+      ]
     },
     "stoppers": ["NET-01", "HW-07", "PER-08"],
+    "stopper_details": [
+      { "block_id": "NET-01", "how_it_stops": "Air gap: the management VLAN is unreachable from any external network." },
+      { "block_id": "HW-07", "how_it_stops": "Confidential computing: even DMA reads return ciphertext." },
+      { "block_id": "PER-08", "how_it_stops": "No remote maintenance: BMC network interfaces are physically disabled or removed." }
+    ],
     "probability_model": { "base_probability": 0.18 }
   },
   {
@@ -78,9 +233,35 @@
     "blocks_exploited": ["AI-07", "NET-04"],
     "narrative": {
       "brief": "Systematic API extraction over months/years. No single query is suspicious; cumulative extraction eventually captures most model capability.",
-      "detailed": "An adversary (potentially a state actor using distributed accounts) queries the model's API millions of times with carefully optimized inputs designed to maximize information extraction per query. Without outbound inference defense (AI-07) or bandwidth limitations (NET-04), the extraction rate is unconstrained. Over 2-4 years, they accumulate enough query-response pairs to distill a model capturing 60-80% of the original's capability."
+      "detailed": "An adversary (potentially a state actor using distributed accounts) queries the model's API millions of times with carefully optimized inputs designed to maximize information extraction per query. Without outbound inference defense (AI-07) or bandwidth limitations (NET-04), the extraction rate is unconstrained. Over 2-4 years, they accumulate enough query-response pairs to distill a model capturing 60-80% of the original's capability.",
+      "steps": [
+        {
+          "phase": "Setup",
+          "description": "Hundreds of distributed accounts (or compromised high-volume customers) query the externally served model — no hacking required."
+        },
+        {
+          "phase": "Extraction",
+          "description": "Optimized prompts maximize information per query; with no outbound inference defense, nothing perturbs or rate-limits the responses.",
+          "block_gap_used": "AI-07"
+        },
+        {
+          "phase": "Accumulation",
+          "description": "Billions of query-response pairs flow out over months; no physical bandwidth cap bounds the total leakage.",
+          "block_gap_used": "NET-04"
+        },
+        {
+          "phase": "Distillation",
+          "description": "The accumulated pairs train a distilled model capturing most of the original's capability."
+        }
+      ]
     },
     "stoppers": ["AI-07", "NET-04", "NET-01"],
-    "probability_model": { "base_probability": 0.30 }
+    "stopper_details": [
+      { "block_id": "AI-07", "how_it_stops": "Outbound inference defense — rate limiting, output perturbation, pattern detection — collapses the extraction rate." },
+      { "block_id": "NET-04", "how_it_stops": "Physical bandwidth limitation puts a deterministic cap on total information leaving the enclave." },
+      { "block_id": "NET-01", "how_it_stops": "Air gap: the model is not externally served, so the attack is impossible." }
+    ],
+    "requires_external_serving": true,
+    "probability_model": { "base_probability": 0.3 }
   }
 ]

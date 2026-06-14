@@ -1,7 +1,10 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
-import { DEFENSE_COLORS } from "../../utils/colors";
+import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
+import { URGENCY_COLORS } from "../../utils/decision-windows";
+import type { WindowUrgency } from "../../utils/decision-windows";
+import { useViewStore } from "../../store/view";
 import { aiDegradation } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
@@ -15,18 +18,11 @@ interface BlockCellProps {
   year: number;
   sliders: Sliders;
   budgetExceeded: boolean;
+  decisionWindow?: WindowUrgency;
   onSelect: (block: Block) => void;
   onHover: (block: Block, rect: DOMRect) => void;
   onHoverEnd: () => void;
 }
-
-const STATE_FILL: Record<BlockState, number> = {
-  not_started: 0,
-  investing: 0.25,
-  implementing: 0.55,
-  deployed: 1.0,
-  mature: 1.0,
-};
 
 const BG_FILL = "#1a1d24";
 
@@ -42,17 +38,20 @@ export function BlockCell({
   year,
   sliders,
   budgetExceeded,
+  decisionWindow,
   onSelect,
   onHover,
   onHoverEnd,
 }: BlockCellProps) {
   const hexRef = useRef<SVGPolygonElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const badges = useViewStore((s) => s.badges);
   const cycleBlockState = useSimulationStore((s) => s.cycleBlockState);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
 
   const color = DEFENSE_COLORS[block.defense_type];
-  const fillFraction = STATE_FILL[state];
+  const fillFraction = STATE_FILL_FRACTION[state];
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
 
   const aiCap = getAiCapability(year, sliders.ai_timeline);
@@ -82,11 +81,24 @@ export function BlockCell({
   const showErosion = degradation > 0.02 && fillFraction > 0 && block.defense_type !== "hard_stop";
   const erosionHeight = degradation * size * 2 * fillFraction;
 
+  // Expert-disagreement badge for high/fundamental open questions
+  const uncertainty = block.open_questions.some((q) => q.uncertainty_level === "fundamental")
+    ? "fundamental"
+    : block.open_questions.some((q) => q.uncertainty_level === "high")
+      ? "high"
+      : null;
+
   function handleMouseEnter() {
+    setHovered(true);
     if (hexRef.current) {
       const rect = hexRef.current.getBoundingClientRect();
       onHover(block, rect);
     }
+  }
+
+  function handleMouseLeave() {
+    setHovered(false);
+    onHoverEnd();
   }
 
   return (
@@ -94,8 +106,11 @@ export function BlockCell({
       className="cursor-pointer select-none"
       opacity={beyondAdversary && state === "not_started" ? 0.35 : irrelevantWhenAirgapped ? 0.3 : 1}
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={onHoverEnd}
-      onClick={() => onSelect(block)}
+      onMouseLeave={handleMouseLeave}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(block);
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         cycleBlockState(block.id);
@@ -157,7 +172,7 @@ export function BlockCell({
       )}
 
       {/* Budget exceeded indicator */}
-      {budgetExceeded && (
+      {budgetExceeded && badges.overBudget && (
         <polygon
           points={hexPoints(cx, cy, size + 3)}
           fill="none"
@@ -193,6 +208,96 @@ export function BlockCell({
       >
         {shortLabel}
       </text>
+
+      {/* Decision window badge — must start soon to deploy by 2030 */}
+      {decisionWindow && badges.startNow && (
+        <g>
+          <circle
+            cx={cx - size + 4}
+            cy={cy - size + 4}
+            r={5}
+            fill={URGENCY_COLORS[decisionWindow]}
+          >
+            {decisionWindow !== "upcoming" && (
+              <animate
+                attributeName="opacity"
+                values="1;0.35;1"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            )}
+          </circle>
+          <text
+            x={cx - size + 4}
+            y={cy - size + 5}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={7}
+            fontWeight={700}
+            fill="#fff"
+            className="pointer-events-none"
+          >
+            !
+          </text>
+        </g>
+      )}
+
+      {/* Uncertainty badge — feasibility contested by experts */}
+      {uncertainty && badges.contested && (
+        <g>
+          <circle
+            cx={cx - size + 4}
+            cy={cy + size - 4}
+            r={4.5}
+            fill={uncertainty === "fundamental" ? "#7c3aed" : "#b45309"}
+            opacity={0.9}
+          />
+          <text
+            x={cx - size + 4}
+            y={cy + size - 3}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={6.5}
+            fontWeight={700}
+            fill="#fff"
+            className="pointer-events-none"
+          >
+            ?
+          </text>
+        </g>
+      )}
+
+      {/* Hover affordance: advance state (right-click shortcut still works) */}
+      {hovered && (
+        <g
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            cycleBlockState(block.id);
+          }}
+        >
+          <circle
+            cx={cx + size - 4}
+            cy={cy + size - 4}
+            r={6}
+            fill="#374151"
+            stroke="#9ca3af"
+            strokeWidth={0.75}
+          />
+          <text
+            x={cx + size - 4}
+            y={cy + size - 3}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={9}
+            fontWeight={700}
+            fill="#e5e7eb"
+            className="pointer-events-none"
+          >
+            +
+          </text>
+        </g>
+      )}
 
       {/* Erosion badge */}
       {showErosion && degradation > 0.1 && (

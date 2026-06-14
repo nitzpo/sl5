@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Block, Perspective } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { ScoreCard } from "../analysis/ScoreCard";
@@ -18,9 +18,10 @@ const PERSPECTIVES: { key: Perspective; label: string }[] = [
 interface RightPanelsProps {
   selectedBlock: Block | null;
   onCloseBlock: () => void;
+  onNavigateBlock?: (blockId: string) => void;
 }
 
-export function RightPanels({ selectedBlock, onCloseBlock }: RightPanelsProps) {
+export function RightPanels({ selectedBlock, onCloseBlock, onNavigateBlock }: RightPanelsProps) {
   const [scoreOpen, setScoreOpen] = useState(true);
   const [perspectiveOpen, setPerspectiveOpen] = useState(true);
   const perspective = useSimulationStore((s) => s.perspective);
@@ -28,6 +29,11 @@ export function RightPanels({ selectedBlock, onCloseBlock }: RightPanelsProps) {
 
   // If a block is selected, it takes over the score panel area
   const showBlockDetail = selectedBlock !== null;
+
+  // Selecting a block should reveal its detail even if the panel was collapsed
+  useEffect(() => {
+    if (selectedBlock) setScoreOpen(true);
+  }, [selectedBlock]);
 
   return (
     <div className="flex h-full shadow-xl">
@@ -94,7 +100,11 @@ export function RightPanels({ selectedBlock, onCloseBlock }: RightPanelsProps) {
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar p-3">
             {showBlockDetail ? (
-              <BlockDetail block={selectedBlock!} onClose={onCloseBlock} />
+              <BlockDetail
+                block={selectedBlock!}
+                onClose={onCloseBlock}
+                onNavigate={onNavigateBlock}
+              />
             ) : (
               <ScoreCard />
             )}

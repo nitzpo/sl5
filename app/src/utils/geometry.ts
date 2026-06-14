@@ -1,4 +1,4 @@
-import type { Category } from "../engine/types";
+import type { Block, Category } from "../engine/types";
 
 export const HEX_WIDTH = 52;
 export const HEX_HEIGHT = 46;
@@ -87,6 +87,15 @@ export function hexPosition(
     x: col * cellWidth + HEX_WIDTH / 2 + 70,
     y: row * ROW_HEIGHT + HEX_HEIGHT / 2 + 30,
   };
+}
+
+/** Grid position of a block (category row + index within category). */
+export function blockGridPosition(
+  blocks: Block[],
+  block: Block
+): { x: number; y: number } {
+  const catBlocks = blocks.filter((b) => b.category === block.category);
+  return hexPosition(block.category, catBlocks.indexOf(block));
 }
 
 export function hexPoints(cx: number, cy: number, size: number): string {

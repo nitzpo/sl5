@@ -10,6 +10,7 @@ export function ScoreCard() {
   const {
     categoryScores,
     overallSl,
+    bestChain,
     breachByOc,
     extractionProgress,
     activeLayers,
@@ -18,7 +19,21 @@ export function ScoreCard() {
   const budget = useSimulationStore((s) => s.sliders.budget_millions);
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
+  const attackChains = useSimulationStore((s) => s.attackChains);
+  const adversaryOc = useSimulationStore((s) => s.adversaryOc);
+  const year = useSimulationStore((s) => s.year);
   const requiredSl = 5.0 - riskTolerance * 2.0;
+
+  const bestChainName = bestChain
+    ? attackChains.find((c) => c.id === bestChain.id)?.name ?? bestChain.id
+    : null;
+  const breachProb = bestChain?.probability ?? 0;
+  const breachColor =
+    breachProb > 0.5
+      ? "text-red-400"
+      : breachProb > 0.2
+        ? "text-amber-400"
+        : "text-emerald-400";
 
   const totalCost = useMemo(() =>
     blocks
@@ -30,11 +45,30 @@ export function ScoreCard() {
 
   return (
     <div className="space-y-3">
+      {/* Breach probability — the headline number */}
+      <div className="bg-gray-900 rounded-lg p-3">
+        <div
+          className="text-xs text-gray-500"
+          title="Most likely attack chain; includes defense-in-depth discount"
+        >
+          Breach Probability
+        </div>
+        <div className={`text-3xl font-bold ${breachColor}`}>
+          {formatProbability(breachProb)}
+        </div>
+        <div className="text-[10px] text-gray-500 mt-0.5">
+          Best chain vs OC{adversaryOc}, {year}
+          {bestChainName && (
+            <span className="text-gray-400"> — {bestChainName}</span>
+          )}
+        </div>
+      </div>
+
       {/* Overall SL */}
       <div className="bg-gray-900 rounded-lg p-3">
         <div className="flex items-baseline justify-between">
           <span className="text-xs text-gray-500">Security Posture</span>
-          <span className="text-2xl font-bold text-gray-100">
+          <span className="text-xl font-bold text-gray-100">
             SL {formatSl(overallSl)}
           </span>
         </div>
@@ -72,13 +106,18 @@ export function ScoreCard() {
         </div>
       </div>
 
-      {/* Breach probabilities */}
+      {/* Breach probabilities by adversary class */}
       <div className="bg-gray-900 rounded-lg p-3">
-        <div className="text-xs text-gray-500 mb-2">Breach Probability (best chain)</div>
+        <div className="text-xs text-gray-500 mb-2">By Adversary Class</div>
         <div className="space-y-1">
           {[3, 4, 5].map((oc) => (
-            <div key={oc} className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">vs OC{oc}</span>
+            <div
+              key={oc}
+              className={`flex items-center justify-between text-xs ${
+                oc === adversaryOc ? "bg-gray-800 rounded px-1 -mx-1" : ""
+              }`}
+            >
+              <span className={oc === adversaryOc ? "text-gray-200" : "text-gray-400"}>vs OC{oc}</span>
               <span
                 className={`font-mono ${
                   (breachByOc[oc] ?? 0) > 0.5

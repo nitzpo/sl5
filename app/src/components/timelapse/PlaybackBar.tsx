@@ -26,14 +26,21 @@ export function PlaybackBar() {
 
   if (state === "idle") {
     return (
-      <div className="relative flex items-center gap-2 px-2 py-1">
-        <button
-          onClick={() => setShowSelector(!showSelector)}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="text-xs text-violet-400 hover:text-violet-300 px-2 py-1 rounded hover:bg-gray-800 transition-colors"
-        >
-          ▶ Time-Lapse
-        </button>
+      <div className="relative flex items-center gap-3 px-2 py-1">
+        <div className="relative inline-flex">
+          {/* soft pulsing glow to draw the eye */}
+          <span className="absolute -inset-1 rounded-full bg-violet-500/30 blur-md animate-pulse pointer-events-none" />
+          <button
+            onClick={() => setShowSelector(!showSelector)}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="relative flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow-md transition-colors"
+          >
+            <span className="text-[10px]">▶</span> Play the 3-min story
+          </button>
+        </div>
+        <span className="text-[11px] text-gray-500">
+          Watch defenses race the threat from 2024 → 2030
+        </span>
         {showSelector && <ScriptSelector onClose={() => setShowSelector(false)} />}
       </div>
     );

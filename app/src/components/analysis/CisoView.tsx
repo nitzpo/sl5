@@ -3,6 +3,7 @@ import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { blockEffectiveness } from "../../engine/scoring";
 import { CATEGORY_LABELS } from "../../utils/geometry";
+import { computeDecisionWindows } from "../../utils/decision-windows";
 import { formatCost, formatSl } from "../../utils/format";
 import type { Block, Category } from "../../engine/types";
 
@@ -67,21 +68,10 @@ export function CisoView() {
   }, [blocks, blockStates, year, sliders, weakestCat]);
 
   // Decision windows: blocks that must start within 2 years to be ready by 2030
-  const closingWindows = useMemo(() => {
-    return blocks
-      .filter((b) => {
-        const state = blockStates[b.id] ?? "not_started";
-        if (state !== "not_started") return false;
-        const deployMonths = b.dimensions.time_to_deploy_months.max;
-        const latestStart = 2030 - deployMonths / 12;
-        return latestStart <= year + 2;
-      })
-      .map((b) => ({
-        block: b,
-        mustStartBy: Math.round((2030 - b.dimensions.time_to_deploy_months.max / 12) * 10) / 10,
-      }))
-      .sort((a, b) => a.mustStartBy - b.mustStartBy);
-  }, [blocks, blockStates, year]);
+  const closingWindows = useMemo(
+    () => computeDecisionWindows(blocks, blockStates, year),
+    [blocks, blockStates, year]
+  );
 
   // Budget estimate for top recommendations
   const totalCostEstimate = recommendations

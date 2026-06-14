@@ -3,6 +3,8 @@ import { useSimulationStore } from "../../store/simulation";
 import { getAiCapability } from "../../engine/ai-curve";
 import { computeCategoryScores, overallSlScore } from "../../engine/scoring";
 import { computeBreachProbabilities } from "../../engine/breach";
+import { applyBudgetConstraint } from "../../engine/budget";
+import { computeDecisionWindows } from "../../utils/decision-windows";
 
 const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
 const TRACK_HEIGHT = 110;
@@ -36,6 +38,7 @@ export function TimelineTrack() {
   const blockStates = useSimulationStore((s) => s.blockStates);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const attackChains = useSimulationStore((s) => s.attackChains);
+  const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
 
   const [showDecomposed, setShowDecomposed] = useState(false);
   const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
@@ -50,13 +53,16 @@ export function TimelineTrack() {
   }
 
   const riskData = useMemo(() => {
+    const { effectiveStates } = applyBudgetConstraint(
+      blocks, blockStates, sliders.budget_millions
+    );
     return YEARS.map((y) => {
-      const catScores = computeCategoryScores(blocks, blockStates, y, sliders);
+      const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders);
       const sl = overallSlScore(catScores);
       const defense = sl / 5;
 
       const breachProbs = computeBreachProbabilities(
-        attackChains, blocks, blockStates, adversaryOc, y, sliders
+        attackChains, blocks, effectiveStates, adversaryOc, y, sliders, modelServedExternally
       );
       const threat = Math.max(...Object.values(breachProbs), 0);
 
@@ -68,7 +74,7 @@ export function TimelineTrack() {
         chainProbs: breachProbs,
       };
     });
-  }, [blocks, blockStates, sliders, adversaryOc, attackChains, aiTimeline]);
+  }, [blocks, blockStates, sliders, adversaryOc, attackChains, aiTimeline, modelServedExternally]);
 
   const aiCurvePoints = riskData
     .map((d) => `${yearToX(d.year)},${valueToY(d.aiCap)}`)
@@ -110,15 +116,9 @@ export function TimelineTrack() {
   const currentData = riskData.find((d) => d.year === year) ?? riskData[0];
 
   const buckets = useMemo(() => {
-    const items: Deadline[] = [];
-    for (const b of blocks) {
-      const state = blockStates[b.id] ?? "not_started";
-      if (state !== "not_started") continue;
-      const mustStartBy = 2030 - b.dimensions.time_to_deploy_months.max / 12;
-      if (mustStartBy <= year + 2 && mustStartBy > 2024) {
-        items.push({ id: b.id, name: b.name, mustStartBy });
-      }
-    }
+    const items: Deadline[] = computeDecisionWindows(blocks, blockStates, year, {
+      minYear: 2024,
+    }).map((w) => ({ id: w.block.id, name: w.block.name, mustStartBy: w.mustStartBy }));
 
     const bucketMap = new Map<number, Deadline[]>();
     for (const item of items) {

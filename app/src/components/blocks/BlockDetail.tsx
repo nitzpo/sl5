@@ -1,23 +1,17 @@
 import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { blockEffectiveness } from "../../engine/scoring";
-import { DEFENSE_COLORS } from "../../utils/colors";
+import { DEFENSE_COLORS, STATE_LABELS, STATE_ICONS } from "../../utils/colors";
+import { BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { formatCost } from "../../utils/format";
 
 interface BlockDetailProps {
   block: Block;
   onClose: () => void;
+  onNavigate?: (blockId: string) => void;
 }
 
-const STATE_LABELS: Record<BlockState, string> = {
-  not_started: "Not Started",
-  investing: "Investing",
-  implementing: "Implementing",
-  deployed: "Deployed",
-  mature: "Mature",
-};
-
-export function BlockDetail({ block, onClose }: BlockDetailProps) {
+export function BlockDetail({ block, onClose, onNavigate }: BlockDetailProps) {
   const blockStates = useSimulationStore((s) => s.blockStates);
   const setBlockState = useSimulationStore((s) => s.setBlockState);
   const year = useSimulationStore((s) => s.year);
@@ -136,6 +130,32 @@ export function BlockDetail({ block, onClose }: BlockDetailProps) {
         </div>
       </div>
 
+      {/* Dependencies */}
+      {(block.dependencies.requires.length > 0 ||
+        block.dependencies.enhances.length > 0 ||
+        block.dependencies.enabled_by.length > 0) && (
+        <div className="space-y-1.5">
+          <DependencyGroup
+            label="Requires"
+            ids={block.dependencies.requires}
+            blockStates={blockStates}
+            onNavigate={onNavigate}
+          />
+          <DependencyGroup
+            label="Enhances"
+            ids={block.dependencies.enhances}
+            blockStates={blockStates}
+            onNavigate={onNavigate}
+          />
+          <DependencyGroup
+            label="Enabled by"
+            ids={block.dependencies.enabled_by}
+            blockStates={blockStates}
+            onNavigate={onNavigate}
+          />
+        </div>
+      )}
+
       {/* Exploit narrative */}
       <div>
         <div className="text-xs text-gray-500 mb-1">If absent:</div>
@@ -159,6 +179,55 @@ export function BlockDetail({ block, onClose }: BlockDetailProps) {
           ))}
         </div>
       )}
+
+      {/* Real-world parallels */}
+      {block.real_world_parallels.length > 0 && (
+        <div>
+          <div className="text-xs text-gray-500 mb-1">Real-World Parallels</div>
+          {block.real_world_parallels.map((p, i) => (
+            <div key={i} className="text-xs mb-1">
+              <span className="text-gray-400">{p.description}</span>
+              <span className="text-gray-600 ml-1">
+                — {p.source} · {p.year}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DependencyGroup({
+  label,
+  ids,
+  blockStates,
+  onNavigate,
+}: {
+  label: string;
+  ids: string[];
+  blockStates: Record<string, BlockState>;
+  onNavigate?: (blockId: string) => void;
+}) {
+  if (ids.length === 0) return null;
+  return (
+    <div>
+      <div className="text-xs text-gray-500 mb-1">{label}</div>
+      <div className="flex flex-wrap gap-1">
+        {ids.map((id) => {
+          const state = (blockStates[id] ?? "not_started") as BlockState;
+          return (
+            <button
+              key={id}
+              onClick={() => onNavigate?.(id)}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+              title={`Go to ${id}`}
+            >
+              {STATE_ICONS[state]} {id} {BLOCK_SHORT_LABELS[id] ?? ""}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -91,6 +91,12 @@ export interface Block {
   }>;
 }
 
+export interface AttackChainStep {
+  phase: string;
+  description: string;
+  block_gap_used?: string;
+}
+
 export interface AttackChain {
   id: string;
   name: string;
@@ -102,9 +108,15 @@ export interface AttackChain {
   narrative: {
     brief: string;
     detailed: string;
+    steps?: AttackChainStep[];
   };
   stoppers: string[];
+  stopper_details?: Array<{ block_id: string; how_it_stops: string }>;
+  // API-extraction chains are inert unless the model is served externally.
+  requires_external_serving?: boolean;
   probability_model: {
+    // Authored prior, kept for documentation; NOT used by the breach model
+    // (redundant with adversary_profile.min_oc and would cap chains).
     base_probability: number;
   };
 }

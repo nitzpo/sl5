@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
-import { hexPosition, CATEGORY_ORDER } from "../../utils/geometry";
+import { blockGridPosition } from "../../utils/geometry";
 import type { Block, BlockState } from "../../engine/types";
 
 interface ChainOverlayProps {
@@ -22,9 +22,7 @@ export function ChainOverlay({ blocks, hexSize }: ChainOverlayProps) {
       .map((id) => {
         const block = blockMap.get(id);
         if (!block) return null;
-        const catBlocks = blocks.filter((b) => b.category === block.category);
-        const idx = catBlocks.indexOf(block);
-        const pos = hexPosition(block.category, idx);
+        const pos = blockGridPosition(blocks, block);
         const state = (blockStates[id] ?? "not_started") as BlockState;
         const deployed = state === "deployed" || state === "mature";
         return { id, ...pos, deployed };
@@ -47,7 +45,7 @@ export function ChainOverlay({ blocks, hexSize }: ChainOverlayProps) {
         stroke="#ef4444"
         strokeWidth={2}
         strokeDasharray="6 4"
-        opacity={0.6}
+        opacity={0.35}
       />
 
       {/* Rings around involved blocks */}
@@ -59,7 +57,7 @@ export function ChainOverlay({ blocks, hexSize }: ChainOverlayProps) {
           r={hexSize + 4}
           fill="none"
           stroke={p.deployed ? "#10b981" : "#ef4444"}
-          strokeWidth={2.5}
+          strokeWidth={1.5}
           opacity={0.8}
         />
       ))}

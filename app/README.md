@@ -1,73 +1,54 @@
-# React + TypeScript + Vite
+# SL5 Explorable — app
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend for [SL5 Explorable](../README.md). A static, client-side interactive simulation; all state and data live in the browser.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **TypeScript**
+- **Vite 8** (build/dev) — static output, base path `/sl5/`
+- **Tailwind CSS v4**
+- **Zustand** for state
+- **All-SVG rendering** (no Canvas), **no backend**
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # dev server (HMR) at /sl5/
+npm run build      # tsc -b + vite build → dist/
+npm run preview    # serve the production build
+npm test           # vitest run (engine unit tests)
+npm run test:watch # vitest in watch mode
+npm run lint       # eslint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Requires Node 20+.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Layout
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── App.tsx               # composition: header, canvas, right panels, bottom panel
+├── components/
+│   ├── blocks/            # hex grid, block cell, detail, dependency + chain overlays
+│   ├── rings/             # defense-in-depth concentric-ring view
+│   ├── analysis/          # CISO / Attacker / Policy / Observer panels, ScoreCard, ChainStrip
+│   ├── timeline/          # year-axis track with threat/defense/AI curves
+│   ├── timelapse/         # scripted scenario playback bar + selector
+│   ├── sliders/           # world-parameter sliders
+│   ├── layout/            # header, right panels, bottom panel, verdict banner
+│   └── overlays/          # intro overlay
+├── engine/               # pure model: scoring, breach, budget, ai-curve, distillation, maturation
+├── store/                # simulation, derived (reactive results), view (badge toggles), persistence
+├── utils/                # geometry, ring-geometry, colors, decision-windows, format
+└── timelapse/            # playback store + scripts
+
+public/data/              # block + attack-chain + world-state + config JSON (loaded at runtime)
+tests/engine/             # vitest unit tests for the engine
+```
+
+The model is fully separated from rendering: `engine/` is pure functions, `store/derived.ts` turns store state into results, and components subscribe. To change the simulation's behavior, start in `engine/` and `public/data/`.
+
+## Deploy
+
+Pushed builds deploy to GitHub Pages via [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml). The Vite `base` (`/sl5/`) must match the repository name so asset paths resolve on Pages.

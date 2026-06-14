@@ -30,8 +30,11 @@ export function RightPanels({ selectedBlock, onCloseBlock, onNavigateBlock }: Ri
   // If a block is selected, it takes over the score panel area
   const showBlockDetail = selectedBlock !== null;
 
-  // Selecting a block should reveal its detail even if the panel was collapsed
+  // Selecting a block should reveal its detail even if the panel was collapsed.
+  // Intentional external-state sync (selection lives in the parent); the user can
+  // still collapse afterwards, so a derived value wouldn't preserve that.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (selectedBlock) setScoreOpen(true);
   }, [selectedBlock]);
 

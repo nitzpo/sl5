@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
-import type { Sliders } from "../../engine/types";
 import { formatCost } from "../../utils/format";
 
 interface SliderRowProps {

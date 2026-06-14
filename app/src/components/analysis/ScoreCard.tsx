@@ -3,7 +3,6 @@ import { useSimulationResults } from "../../store/derived";
 import { useSimulationStore } from "../../store/simulation";
 import { formatSl, formatProbability, formatPercent, formatCost } from "../../utils/format";
 import { CATEGORY_LABELS } from "../../utils/geometry";
-import { DEFENSE_COLORS } from "../../utils/colors";
 import type { Category } from "../../engine/types";
 
 export function ScoreCard() {

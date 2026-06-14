@@ -5,7 +5,6 @@ import {
   overallSlScore,
 } from "../../engine/scoring";
 import { formatSl } from "../../utils/format";
-import type { Block } from "../../engine/types";
 
 interface LeverImpact {
   lever: string;

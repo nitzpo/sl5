@@ -19,7 +19,7 @@ export function CisoView() {
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
   const budget = sliders.budget_millions;
-  const { categoryScores, overallSl } = useSimulationResults();
+  const { categoryScores } = useSimulationResults();
 
   // Find weakest category
   const weakestCat = useMemo(() => {
@@ -50,7 +50,7 @@ export function CisoView() {
       const catBlocks = blocks.filter((b) => b.category === block.category);
       const slImpact = (delta / catBlocks.length) * 4.0;
 
-      let reason = "";
+      let reason: string;
       if (block.category === weakestCat?.cat) {
         reason = `${CATEGORY_LABELS[block.category]} is weakest at ${formatSl(weakestCat.score)}`;
       } else if (block.dimensions.organizational_readiness.value >= 50) {

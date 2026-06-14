@@ -17,11 +17,15 @@ export function ScenariosDropdown() {
 
   useEffect(() => {
     if (open) {
+      // Load the saved-scenario list from localStorage when the dropdown opens.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setScenarios(loadScenarios());
       if (!name && lastLoadedName.current) {
         setName(lastLoadedName.current);
       }
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {

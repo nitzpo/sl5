@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Block, Perspective } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { ScoreCard } from "../analysis/ScoreCard";
@@ -19,24 +19,25 @@ interface RightPanelsProps {
   selectedBlock: Block | null;
   onCloseBlock: () => void;
   onNavigateBlock?: (blockId: string) => void;
+  // Score/detail panel open state is owned by the parent so selecting a block
+  // (which happens in the parent) can reveal it without a setState-in-effect.
+  scoreOpen: boolean;
+  onScoreOpenChange: (open: boolean) => void;
 }
 
-export function RightPanels({ selectedBlock, onCloseBlock, onNavigateBlock }: RightPanelsProps) {
-  const [scoreOpen, setScoreOpen] = useState(true);
+export function RightPanels({
+  selectedBlock,
+  onCloseBlock,
+  onNavigateBlock,
+  scoreOpen,
+  onScoreOpenChange,
+}: RightPanelsProps) {
   const [perspectiveOpen, setPerspectiveOpen] = useState(true);
   const perspective = useSimulationStore((s) => s.perspective);
   const setPerspective = useSimulationStore((s) => s.setPerspective);
 
   // If a block is selected, it takes over the score panel area
   const showBlockDetail = selectedBlock !== null;
-
-  // Selecting a block should reveal its detail even if the panel was collapsed.
-  // Intentional external-state sync (selection lives in the parent); the user can
-  // still collapse afterwards, so a derived value wouldn't preserve that.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (selectedBlock) setScoreOpen(true);
-  }, [selectedBlock]);
 
   return (
     <div className="flex h-full shadow-xl">
@@ -94,7 +95,7 @@ export function RightPanels({ selectedBlock, onCloseBlock, onNavigateBlock }: Ri
               {showBlockDetail ? "Block Detail" : "Security Posture"}
             </span>
             <button
-              onClick={() => setScoreOpen(false)}
+              onClick={() => onScoreOpenChange(false)}
               className="text-gray-600 hover:text-gray-400 text-xs px-1"
               title="Collapse"
             >
@@ -115,7 +116,7 @@ export function RightPanels({ selectedBlock, onCloseBlock, onNavigateBlock }: Ri
         </div>
       ) : (
         <button
-          onClick={() => setScoreOpen(true)}
+          onClick={() => onScoreOpenChange(true)}
           className="w-6 border-l border-gray-800 bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition-colors"
           title="Show score panel"
         >

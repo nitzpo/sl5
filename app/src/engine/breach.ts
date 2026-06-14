@@ -110,7 +110,9 @@ export function defenseInDepthDiscount(
 
   const sharedDepCounts = new Map<string, number>();
   for (const block of deployed) {
-    for (const dep of block.defense_in_depth?.shared_dependencies ?? []) {
+    // dedupe per block so a single block listing a dep twice can't trip the penalty alone
+    const uniqueDeps = new Set(block.defense_in_depth?.shared_dependencies ?? []);
+    for (const dep of uniqueDeps) {
       sharedDepCounts.set(dep, (sharedDepCounts.get(dep) ?? 0) + 1);
     }
   }

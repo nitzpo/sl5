@@ -12,7 +12,7 @@ export function applyBudgetConstraint(
 ): { effectiveStates: Record<string, BlockState>; exceededIds: Set<string> } {
   const active = blocks
     .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
-    .map((b) => ({ id: b.id, cost: b.dimensions.cost.upfront_millions.min }))
+    .map((b) => ({ id: b.id, cost: b.dimensions?.cost?.upfront_millions?.min ?? 0 }))
     .sort((a, b) => a.cost - b.cost);
 
   let total = 0;

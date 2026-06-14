@@ -46,8 +46,8 @@ export function DependencyOverlay({ blocks, focusBlock, hexSize }: DependencyOve
     // requires + enabled_by: dependency → focus (solid, arrowhead)
     if (showRequires) {
       const incoming = [
-        ...focusBlock.dependencies.requires,
-        ...focusBlock.dependencies.enabled_by,
+        ...(focusBlock.dependencies?.requires ?? []),
+        ...(focusBlock.dependencies?.enabled_by ?? []),
       ];
       for (const id of incoming) {
         const dep = blockMap.get(id);
@@ -64,7 +64,7 @@ export function DependencyOverlay({ blocks, focusBlock, hexSize }: DependencyOve
 
     // enhances: focus → target (dashed, subtle)
     if (showEnhances) {
-      for (const id of focusBlock.dependencies.enhances) {
+      for (const id of focusBlock.dependencies?.enhances ?? []) {
         const target = blockMap.get(id);
         if (!target) continue;
         result.push({

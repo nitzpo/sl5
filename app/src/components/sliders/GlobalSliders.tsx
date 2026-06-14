@@ -53,7 +53,10 @@ function SliderRow({
       <span className="text-[10px] text-gray-600 w-16 shrink-0">
         {maxLabel}
       </span>
-      <span className="text-[10px] text-gray-300 w-24 text-right truncate">
+      <span
+        className="text-[10px] text-gray-300 w-24 text-right truncate"
+        title={formatValue ? formatValue(value) : qualitativeLabel(value, minLabel, maxLabel)}
+      >
         {formatValue ? formatValue(value) : qualitativeLabel(value, minLabel, maxLabel)}
       </span>
     </div>

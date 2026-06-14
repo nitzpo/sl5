@@ -218,33 +218,29 @@ function App() {
           </div>
         </div>
 
-        {/* Zoom control — top right, shifts left with right panels */}
-        <div
-          className="absolute top-3 z-20 flex items-center gap-1.5 bg-gray-900/90 border border-gray-700 rounded px-2 py-1 backdrop-blur-sm transition-[right] duration-200"
-          style={{ right: rightPanelWidth + 12 }}
-        >
+        {/* Zoom control — stable bottom-left corner (map-style), never moves */}
+        <div className="absolute bottom-4 left-4 z-20 flex items-center bg-gray-900/90 border border-gray-700 rounded-lg backdrop-blur-sm shadow-lg overflow-hidden">
           <button
-            onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
-            className="text-xs text-gray-400 hover:text-gray-200 w-4 h-4 flex items-center justify-center"
+            onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.1) * 10) / 10))}
+            className="text-base text-gray-300 hover:text-white hover:bg-gray-800 w-7 h-7 flex items-center justify-center transition-colors"
+            title="Zoom out"
           >
             −
           </button>
-          <input
-            type="range"
-            min={0.5}
-            max={2}
-            step={0.1}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-16 accent-violet-500 h-1"
-          />
           <button
-            onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-            className="text-xs text-gray-400 hover:text-gray-200 w-4 h-4 flex items-center justify-center"
+            onClick={() => setZoom(1)}
+            className="text-[11px] text-gray-400 hover:text-gray-200 w-12 h-7 flex items-center justify-center border-x border-gray-700 transition-colors"
+            title="Reset to 100%"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            onClick={() => setZoom((z) => Math.min(2, Math.round((z + 0.1) * 10) / 10))}
+            className="text-base text-gray-300 hover:text-white hover:bg-gray-800 w-7 h-7 flex items-center justify-center transition-colors"
+            title="Zoom in"
           >
             +
           </button>
-          <span className="text-[10px] text-gray-500 w-7 text-center">{Math.round(zoom * 100)}%</span>
         </div>
 
         {/* Right panels — overlay on top of grid */}

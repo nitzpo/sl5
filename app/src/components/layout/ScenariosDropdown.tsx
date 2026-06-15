@@ -15,14 +15,12 @@ export function ScenariosDropdown() {
   const loadScenarioAction = useSimulationStore((s) => s.loadScenario);
   const deleteScenario = useSimulationStore((s) => s.deleteScenario);
 
-  useEffect(() => {
-    if (open) {
-      setScenarios(loadScenarios());
-      if (!name && lastLoadedName.current) {
-        setName(lastLoadedName.current);
-      }
-    }
-  }, [open]);
+  // Load the saved-scenario list from localStorage when the dropdown opens.
+  function openDropdown() {
+    setScenarios(loadScenarios());
+    if (!name && lastLoadedName.current) setName(lastLoadedName.current);
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -84,7 +82,7 @@ export function ScenariosDropdown() {
   return (
     <div className="relative flex items-center" ref={ref}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => (open ? setOpen(false) : openDropdown())}
         className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
       >
         Scenarios

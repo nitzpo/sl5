@@ -18,7 +18,14 @@ function App() {
   const loadData = useSimulationStore((s) => s.loadData);
   const dataLoaded = useSimulationStore((s) => s.dataLoaded);
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
+  const [scoreOpen, setScoreOpen] = useState(true);
   const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("sl5_intro_seen"));
+
+  // Selecting a block reveals its detail in the score panel (open it if collapsed).
+  const selectBlock = (block: Block | null) => {
+    setSelectedBlock(block);
+    if (block) setScoreOpen(true);
+  };
   const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
   const [zoom, setZoom] = useState(1);
   const [rightPanelWidth, setRightPanelWidth] = useState(0);
@@ -205,13 +212,13 @@ function App() {
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
             {viewMode === "grid" ? (
               <BlockGrid
-                onSelectBlock={setSelectedBlock}
+                onSelectBlock={selectBlock}
                 selectedBlock={selectedBlock}
                 onClearSelection={() => setSelectedBlock(null)}
               />
             ) : (
               <DefenseRings
-                onSelectBlock={setSelectedBlock}
+                onSelectBlock={selectBlock}
                 onClearSelection={() => setSelectedBlock(null)}
               />
             )}
@@ -250,8 +257,10 @@ function App() {
             onCloseBlock={() => setSelectedBlock(null)}
             onNavigateBlock={(id) => {
               const b = useSimulationStore.getState().blocks.find((x) => x.id === id);
-              if (b) setSelectedBlock(b);
+              if (b) selectBlock(b);
             }}
+            scoreOpen={scoreOpen}
+            onScoreOpenChange={setScoreOpen}
           />
         </div>
       </div>

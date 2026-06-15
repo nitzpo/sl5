@@ -1,13 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   blockEffectiveness,
-  categoryScore,
   overallSlScore,
   computeCategoryScores,
   getStateEffectiveness,
 } from "../../src/engine/scoring";
 import { getAiCapability } from "../../src/engine/ai-curve";
-import type { Block, Category } from "../../src/engine/types";
+import type { Block } from "../../src/engine/types";
 import fs from "fs";
 import path from "path";
 

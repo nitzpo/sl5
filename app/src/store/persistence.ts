@@ -32,7 +32,9 @@ export function loadScenarios(): SavedScenario[] {
 export function saveScenarios(scenarios: SavedScenario[]): void {
   try {
     localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
-  } catch {}
+  } catch {
+    /* ignore storage quota / availability errors */
+  }
 }
 
 export function saveToLocalStorage(state: PersistedState): void {

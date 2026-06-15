@@ -48,7 +48,6 @@ export function BlockTooltip({
     if (!anchorRect || !ref.current) return;
     const tipRect = ref.current.getBoundingClientRect();
     const spaceAbove = anchorRect.top;
-    const spaceBelow = window.innerHeight - anchorRect.bottom;
 
     let top: number;
     if (spaceAbove > tipRect.height + 8) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GlobalSliders } from "../sliders/GlobalSliders";
 import { TimelineTrack } from "../timeline/TimelineTrack";
 import { PlaybackBar } from "../timelapse/PlaybackBar";
@@ -13,10 +13,8 @@ export function BottomPanel() {
   const startScript = usePlaybackStore((s) => s.startScript);
   const activeScript = usePlaybackStore((s) => s.activeScript);
 
-  // Auto-expand whenever a time-lapse is running so its controls are visible.
-  useEffect(() => {
-    if (playbackState !== "idle") setCollapsed(false);
-  }, [playbackState]);
+  // While a time-lapse is running, force the panel open so its controls are visible.
+  const isCollapsed = collapsed && playbackState === "idle";
 
   return (
     <div className="relative z-20 border-t border-gray-800 bg-gray-950/95 backdrop-blur-sm">
@@ -24,7 +22,7 @@ export function BottomPanel() {
       <div className="w-full flex items-center justify-between px-4 py-1.5">
         <span className="text-xs text-gray-500">Timeline & World Parameters</span>
         <div className="flex items-center gap-3">
-          {collapsed && playbackState === "idle" && (
+          {isCollapsed && (
             <button
               onClick={() => {
                 setCollapsed(false);
@@ -39,12 +37,12 @@ export function BottomPanel() {
             onClick={() => setCollapsed(!collapsed)}
             className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
           >
-            {collapsed ? "▲ Show" : "▼ Hide"}
+            {isCollapsed ? "▲ Show" : "▼ Hide"}
           </button>
         </div>
       </div>
 
-      {!collapsed && (
+      {!isCollapsed && (
         <div className="px-4 pb-3 space-y-3">
           <PlaybackBar />
           <TimelineTrack />

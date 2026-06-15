@@ -9,7 +9,6 @@ const STATE_ORDER: BlockState[] = [
 ];
 
 const DEFAULT_INVESTING_FRACTION = 0.3;
-const DEFAULT_IMPLEMENTING_FRACTION = 0.7;
 const DEFAULT_MATURE_MONTHS = 12;
 
 /**

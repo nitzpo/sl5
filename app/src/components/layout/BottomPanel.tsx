@@ -13,16 +13,13 @@ export function BottomPanel() {
   const startScript = usePlaybackStore((s) => s.startScript);
   const activeScript = usePlaybackStore((s) => s.activeScript);
 
-  // While a time-lapse is running, force the panel open so its controls are visible.
-  const isCollapsed = collapsed && playbackState === "idle";
-
   return (
     <div className="relative z-20 border-t border-gray-800 bg-gray-950/95 backdrop-blur-sm">
       {/* Toggle bar — always visible, carries a discoverable story CTA when collapsed */}
       <div className="w-full flex items-center justify-between px-4 py-1.5">
         <span className="text-xs text-gray-500">Timeline & World Parameters</span>
         <div className="flex items-center gap-3">
-          {isCollapsed && (
+          {collapsed && playbackState === "idle" && (
             <button
               onClick={() => {
                 setCollapsed(false);
@@ -37,12 +34,12 @@ export function BottomPanel() {
             onClick={() => setCollapsed(!collapsed)}
             className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
           >
-            {isCollapsed ? "▲ Show" : "▼ Hide"}
+            {collapsed ? "▲ Show" : "▼ Hide"}
           </button>
         </div>
       </div>
 
-      {!isCollapsed && (
+      {!collapsed && (
         <div className="px-4 pb-3 space-y-3">
           <PlaybackBar />
           <TimelineTrack />

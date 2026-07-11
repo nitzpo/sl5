@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
+import { useSimulationResults } from "../../store/derived";
+import { usePlaybackStore } from "../../timelapse/playback-store";
 import type { AttackChainStep, BlockState } from "../../engine/types";
 import { BLOCK_SHORT_LABELS } from "../../utils/geometry";
 
@@ -18,8 +20,15 @@ export function ChainStrip() {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
+  const playbackActive = usePlaybackStore((s) => s.state !== "idle");
+  const { bestChain } = useSimulationResults();
 
-  const chain = attackChains.find((c) => c.id === selectedChainId);
+  // During playback with no manual pin, follow the verdict's best chain so the
+  // strip and the banner always tell the same story.
+  const followingVerdict = playbackActive && !selectedChainId;
+  const effectiveChainId =
+    selectedChainId ?? (followingVerdict ? (bestChain?.id ?? null) : null);
+  const chain = attackChains.find((c) => c.id === effectiveChainId);
 
   const steps: StripStep[] = useMemo(() => {
     if (!chain) return [];
@@ -60,13 +69,19 @@ export function ChainStrip() {
         <span className="text-[10px] text-gray-500">
           OC{chain.adversary_profile.typical_oc} attack path
         </span>
-        <button
-          onClick={() => setSelectedChain(null)}
-          className="ml-auto text-gray-600 hover:text-gray-300 text-sm leading-none px-1"
-          title="Close"
-        >
-          ×
-        </button>
+        {followingVerdict ? (
+          <span className="ml-auto text-[9px] uppercase tracking-wide text-violet-400/80 px-1">
+            live — most viable chain
+          </span>
+        ) : (
+          <button
+            onClick={() => setSelectedChain(null)}
+            className="ml-auto text-gray-600 hover:text-gray-300 text-sm leading-none px-1"
+            title="Close"
+          >
+            ×
+          </button>
+        )}
       </div>
       <div className="flex items-stretch gap-1.5 overflow-x-auto no-scrollbar">
         {steps.map((step, i) => {

@@ -4,7 +4,7 @@ import { useSimulationResults } from "../../store/derived";
 import { blockEffectiveness } from "../../engine/scoring";
 import { CATEGORY_LABELS } from "../../utils/geometry";
 import { computeDecisionWindows } from "../../utils/decision-windows";
-import { formatCost, formatSl } from "../../utils/format";
+import { formatCost, formatSl, formatDeployRange } from "../../utils/format";
 import type { Block, Category } from "../../engine/types";
 
 interface Recommendation {
@@ -111,8 +111,10 @@ export function CisoView() {
                 {rec.reason} |{" "}
                 {formatCost(rec.block.dimensions.cost.upfront_millions.min)}-
                 {formatCost(rec.block.dimensions.cost.upfront_millions.max)} |{" "}
-                {rec.block.dimensions.time_to_deploy_months.min}-
-                {rec.block.dimensions.time_to_deploy_months.max}mo
+                {formatDeployRange(
+                  rec.block.dimensions.time_to_deploy_months.min,
+                  rec.block.dimensions.time_to_deploy_months.max
+                )}
               </div>
             </div>
           ))}

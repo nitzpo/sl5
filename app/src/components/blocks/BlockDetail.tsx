@@ -3,7 +3,7 @@ import { useSimulationStore } from "../../store/simulation";
 import { blockEffectiveness } from "../../engine/scoring";
 import { DEFENSE_COLORS, STATE_LABELS, STATE_ICONS } from "../../utils/colors";
 import { BLOCK_SHORT_LABELS } from "../../utils/geometry";
-import { formatCost } from "../../utils/format";
+import { formatCost, formatDeployRange } from "../../utils/format";
 
 interface BlockDetailProps {
   block: Block;
@@ -99,8 +99,10 @@ export function BlockDetail({ block, onClose, onNavigate }: BlockDetailProps) {
         <div className="bg-gray-900 rounded p-2">
           <div className="text-gray-500">Deploy Time</div>
           <div className="text-gray-200">
-            {block.dimensions.time_to_deploy_months.min}-
-            {block.dimensions.time_to_deploy_months.max}mo
+            {formatDeployRange(
+              block.dimensions.time_to_deploy_months.min,
+              block.dimensions.time_to_deploy_months.max
+            )}
           </div>
         </div>
         <div className="bg-gray-900 rounded p-2">

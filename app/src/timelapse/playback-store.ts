@@ -91,9 +91,12 @@ export const usePlaybackStore = create<PlaybackStore>()(
           year: startYear,
           blockStates: newBlockStates,
           sliders: newSliders,
+          // A chain pinned before playback would contradict the story's own
+          // verdict banner — the strip follows the live best chain instead.
+          selectedChainId: null,
         });
       } else {
-        useSimulationStore.setState({ year: startYear });
+        useSimulationStore.setState({ year: startYear, selectedChainId: null });
       }
 
       useSimulationStore.getState().setPlaybackActive(true);

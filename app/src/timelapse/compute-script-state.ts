@@ -1,6 +1,7 @@
 import type { Block, BlockState } from "../engine/types";
 import type { TimeLapseScript } from "./types";
 import { blockStateAtYear } from "../engine/maturation";
+import { schedulableDeployMonths } from "../utils/decision-windows";
 
 export function computeScriptBlockStates(
   script: TimeLapseScript,
@@ -28,7 +29,7 @@ export function computeScriptBlockStates(
           states[dep.blockId] = blockStateAtYear(
             dep.startYear,
             currentYear,
-            block.dimensions.time_to_deploy_months.max
+            schedulableDeployMonths(block)
           );
         }
       }

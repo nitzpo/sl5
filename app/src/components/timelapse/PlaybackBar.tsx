@@ -35,7 +35,7 @@ export function PlaybackBar() {
             onMouseDown={(e) => e.stopPropagation()}
             className="relative flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow-md transition-colors"
           >
-            <span className="text-[10px]">▶</span> Play the 3-min story
+            <span className="text-[10px]">▶</span> Play the story (~1 min)
           </button>
         </div>
         <span className="text-[11px] text-gray-500">

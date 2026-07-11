@@ -5,6 +5,7 @@ import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
 import { formatCost } from "../../utils/format";
 import { computeDecisionWindows } from "../../utils/decision-windows";
+import { STATE_LABELS } from "../../utils/colors";
 
 interface BlockTooltipProps {
   block: Block;
@@ -47,14 +48,17 @@ export function BlockTooltip({
   useEffect(() => {
     if (!anchorRect || !ref.current) return;
     const tipRect = ref.current.getBoundingClientRect();
-    const spaceAbove = anchorRect.top;
+    const spaceBelow = window.innerHeight - anchorRect.bottom;
 
+    // Prefer below the hex: placing above covers the verdict banner for
+    // top-row blocks; flipping up is only needed near the viewport bottom.
     let top: number;
-    if (spaceAbove > tipRect.height + 8) {
-      top = anchorRect.top - tipRect.height - 6;
-    } else {
+    if (spaceBelow > tipRect.height + 8) {
       top = anchorRect.bottom + 6;
+    } else {
+      top = anchorRect.top - tipRect.height - 6;
     }
+    top = Math.max(8, top);
 
     let left = anchorRect.left + anchorRect.width / 2 - tipRect.width / 2;
     left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
@@ -74,7 +78,7 @@ export function BlockTooltip({
         {block.id}: {block.name}
       </div>
       <div className="text-[11px] text-gray-400 mt-0.5">
-        {state} | effectiveness: {Math.round(effectiveness * 100)}% |{" "}
+        {STATE_LABELS[state]} | effectiveness: {Math.round(effectiveness * 100)}% |{" "}
         {formatCost(block.dimensions.cost.upfront_millions.min)}-
         {formatCost(block.dimensions.cost.upfront_millions.max)}
         {showErosion && (

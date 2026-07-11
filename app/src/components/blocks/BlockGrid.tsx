@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
-import { applyBudgetConstraint } from "../../engine";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { useSimulationStore } from "../../store/simulation";
+import { useSimulationResults } from "../../store/derived";
 import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
 import { ChainOverlay } from "./ChainOverlay";
@@ -33,10 +33,7 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
 
-  const budgetExceededIds = useMemo(
-    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
-    [blocks, blockStates, sliders.budget_millions]
-  );
+  const { budgetExceededIds } = useSimulationResults();
 
   const decisionWindows = useMemo(() => {
     const map = new Map<string, WindowUrgency>();

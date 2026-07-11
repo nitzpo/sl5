@@ -36,6 +36,7 @@ export function TimelineTrack() {
   const aiTimeline = sliders.ai_timeline;
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
+  const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const attackChains = useSimulationStore((s) => s.attackChains);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
@@ -54,7 +55,8 @@ export function TimelineTrack() {
 
   const riskData = useMemo(() => {
     const { effectiveStates } = applyBudgetConstraint(
-      blocks, blockStates, sliders.budget_millions
+      blocks, blockStates, sliders.budget_millions,
+      { order: advanceOrder, riskTolerance: sliders.risk_tolerance }
     );
     return YEARS.map((y) => {
       const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders);
@@ -74,7 +76,7 @@ export function TimelineTrack() {
         chainProbs: breachProbs,
       };
     });
-  }, [blocks, blockStates, sliders, adversaryOc, attackChains, aiTimeline, modelServedExternally]);
+  }, [blocks, blockStates, advanceOrder, sliders, adversaryOc, attackChains, aiTimeline, modelServedExternally]);
 
   const aiCurvePoints = riskData
     .map((d) => `${yearToX(d.year)},${valueToY(d.aiCap)}`)

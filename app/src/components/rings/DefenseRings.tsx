@@ -4,7 +4,6 @@ import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { LAYER_ORDER, RING_SVG_SIZE, RING_CENTER } from "../../utils/ring-geometry";
-import { applyBudgetConstraint } from "../../engine";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { RingLayer } from "./RingLayer";
@@ -24,15 +23,10 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
   const selectedChainId = useSimulationStore((s) => s.selectedChainId);
   const attackChains = useSimulationStore((s) => s.attackChains);
 
-  const { defenseLayerStatus, blocksByLayer } = useSimulationResults();
+  const { defenseLayerStatus, blocksByLayer, budgetExceededIds } = useSimulationResults();
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
-
-  const budgetExceededIds = useMemo(
-    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
-    [blocks, blockStates, sliders.budget_millions]
-  );
 
   const decisionWindows = useMemo(() => {
     const map = new Map<string, WindowUrgency>();

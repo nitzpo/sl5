@@ -52,25 +52,17 @@ export const usePlaybackStore = create<PlaybackStore>()(
     startScript: (script) => {
       const currentState = get().state;
       const sim = useSimulationStore.getState();
-      const saved: PersistedState = currentState === "idle"
-        ? {
-            blockStates: sim.blockStates,
-            year: sim.year,
-            perspective: sim.perspective,
-            adversaryOc: sim.adversaryOc,
-            sliders: sim.sliders,
-            modelServedExternally: sim.modelServedExternally,
-            expertMode: sim.expertMode,
-          }
-        : get().savedUserState ?? {
-            blockStates: sim.blockStates,
-            year: sim.year,
-            perspective: sim.perspective,
-            adversaryOc: sim.adversaryOc,
-            sliders: sim.sliders,
-            modelServedExternally: sim.modelServedExternally,
-            expertMode: sim.expertMode,
-          };
+      const snapshot = (): PersistedState => ({
+        blockStates: sim.blockStates,
+        advanceOrder: sim.advanceOrder,
+        year: sim.year,
+        perspective: sim.perspective,
+        adversaryOc: sim.adversaryOc,
+        sliders: sim.sliders,
+        modelServedExternally: sim.modelServedExternally,
+      });
+      const saved: PersistedState =
+        currentState === "idle" ? snapshot() : get().savedUserState ?? snapshot();
 
       const startYear = script.startYear ?? 2024;
 
@@ -87,9 +79,16 @@ export const usePlaybackStore = create<PlaybackStore>()(
           Object.assign(newBlockStates, script.initialBlockStates);
         }
 
+        // Budget funding follows the story's own deployment order.
+        const scriptOrder: string[] = [
+          ...Object.keys(script.initialBlockStates ?? {}),
+          ...(script.deployments ?? []).map((d) => d.blockId),
+        ].filter((id, i, arr) => arr.indexOf(id) === i);
+
         useSimulationStore.setState({
           year: startYear,
           blockStates: newBlockStates,
+          advanceOrder: scriptOrder,
           sliders: newSliders,
           // A chain pinned before playback would contradict the story's own
           // verdict banner — the strip follows the live best chain instead.
@@ -117,12 +116,16 @@ export const usePlaybackStore = create<PlaybackStore>()(
       if (savedUserState) {
         useSimulationStore.setState({
           blockStates: savedUserState.blockStates,
+          advanceOrder:
+            savedUserState.advanceOrder ??
+            Object.keys(savedUserState.blockStates).filter(
+              (id) => savedUserState.blockStates[id] !== "not_started"
+            ),
           year: savedUserState.year,
           perspective: savedUserState.perspective,
           adversaryOc: savedUserState.adversaryOc,
           sliders: savedUserState.sliders,
           modelServedExternally: savedUserState.modelServedExternally,
-          expertMode: savedUserState.expertMode,
         });
       }
       useSimulationStore.getState().setPlaybackActive(false);

@@ -4,9 +4,11 @@ import {
   overallSlScore,
   computeBreachProbabilities,
   distillationProgress,
+  distillationDefenseReduction,
   applyBudgetConstraint,
+  applyDependencyConstraint,
 } from "../engine";
-import type { Block, Category } from "../engine/types";
+import type { Block } from "../engine/types";
 import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
 import type { LayerId } from "../utils/ring-geometry";
 
@@ -18,6 +20,7 @@ export function useSimulationResults() {
   const {
     blocks,
     blockStates,
+    advanceOrder,
     year,
     sliders,
     adversaryOc,
@@ -25,9 +28,20 @@ export function useSimulationResults() {
     modelServedExternally,
   } = useSimulationStore();
 
-  // Over-budget blocks are capped at "implementing" for all scoring purposes
-  const { effectiveStates, exceededIds: budgetExceededIds } =
-    applyBudgetConstraint(blocks, blockStates, sliders.budget_millions);
+  // Over-budget blocks are capped at "implementing" for all scoring purposes;
+  // funding follows advancement order so a new block can only cap itself.
+  const {
+    effectiveStates: budgetedStates,
+    exceededIds: budgetExceededIds,
+    spentMillions,
+  } = applyBudgetConstraint(blocks, blockStates, sliders.budget_millions, {
+    order: advanceOrder,
+    riskTolerance: sliders.risk_tolerance,
+  });
+
+  // A block whose hard prerequisites aren't operational is capped too.
+  const { effectiveStates, unmetIds: dependencyUnmetIds } =
+    applyDependencyConstraint(blocks, budgetedStates);
 
   const categoryScores = computeCategoryScores(
     blocks,
@@ -56,13 +70,19 @@ export function useSimulationResults() {
     return best;
   }, null);
 
-  // Distillation: check if AI-07 is deployed (inference outbound defense)
-  const ai07State = effectiveStates["AI-07"] ?? "not_started";
-  const defensesDeployed =
-    ai07State === "deployed" || ai07State === "mature";
+  // Distillation defenses: AI-07 (outbound channel defense) and NET-04
+  // (bandwidth/rate limitation) each reduce the extraction rate.
+  const isOperational = (id: string) => {
+    const s = effectiveStates[id] ?? "not_started";
+    return s === "deployed" || s === "mature";
+  };
+  const defenseReduction = distillationDefenseReduction({
+    outboundDefense: isOperational("AI-07"),
+    rateLimiting: isOperational("NET-04"),
+  });
 
   const extractionProgress = modelServedExternally
-    ? distillationProgress(year, 2026, defensesDeployed, sliders.ai_timeline)
+    ? distillationProgress(year, 2026, defenseReduction, sliders.ai_timeline)
     : 0;
 
   // Breach probabilities for multiple OC levels (for score card)
@@ -150,20 +170,8 @@ export function useSimulationResults() {
     activeLayers,
     blocksByLayer,
     budgetExceededIds,
+    dependencyUnmetIds,
+    spentMillions,
     overBudget: budgetExceededIds.size > 0,
   };
-}
-
-/**
- * Get the weakest category (for CISO recommendations).
- */
-export function useWeakestCategory(): { category: Category; score: number } | null {
-  const { categoryScores } = useSimulationResults();
-  let weakest: { category: Category; score: number } | null = null;
-  for (const [cat, score] of Object.entries(categoryScores)) {
-    if (!weakest || score < weakest.score) {
-      weakest = { category: cat as Category, score };
-    }
-  }
-  return weakest;
 }

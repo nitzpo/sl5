@@ -138,6 +138,31 @@ describe("chain breach model", () => {
     expect(maxChain(none, 2, false)).toBeLessThan(maxChain(none, 2, true));
   });
 
+  it("OC tiers gate qualitatively: one tier below min_oc is largely locked out", () => {
+    // At year 2024 (no AI lift) an undefended chain reduces to its gate.
+    const none = allState("not_started");
+    for (const chain of chains) {
+      const minOc = chain.adversary_profile.min_oc;
+      const atMin = chainBreachProbability(chain, blocks, none, minOc, 2024, SLIDERS, true);
+      expect(atMin, `${chain.id} at min_oc`).toBeGreaterThan(0.7);
+      if (minOc > 1) {
+        const below = chainBreachProbability(chain, blocks, none, minOc - 1, 2024, SLIDERS, true);
+        expect(below, `${chain.id} one tier below min_oc`).toBeLessThan(0.2);
+      }
+    }
+  });
+
+  it("AI lift reopens the gate for a below-threshold adversary over time", () => {
+    // The 'AI compresses the OC scale' thesis: an OC3 adversary against an
+    // OC4-minimum chain gains meaningfully by 2030 as AI capability grows.
+    const none = allState("not_started");
+    const chain = chains.find((c) => c.id === "zero-day-cascade")!;
+    const early = chainBreachProbability(chain, blocks, none, 3, 2024, SLIDERS, true);
+    const late = chainBreachProbability(chain, blocks, none, 3, 2030, SLIDERS, true);
+    expect(early).toBeLessThan(0.2);
+    expect(late).toBeGreaterThan(early * 2);
+  });
+
   it("AI capability raises breach over time", () => {
     const none = allState("not_started");
     const max2024 = Math.max(

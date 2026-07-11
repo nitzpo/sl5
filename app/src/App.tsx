@@ -70,12 +70,16 @@ function App() {
       clearUrlHash();
       useSimulationStore.setState({
         blockStates: parsed.state.blockStates,
+        advanceOrder:
+          parsed.state.advanceOrder ??
+          Object.keys(parsed.state.blockStates).filter(
+            (id) => parsed.state.blockStates[id] !== "not_started"
+          ),
         year: parsed.state.year,
         perspective: parsed.state.perspective,
         adversaryOc: parsed.state.adversaryOc,
         sliders: parsed.state.sliders,
         modelServedExternally: parsed.state.modelServedExternally,
-        expertMode: parsed.state.expertMode,
         scenarioName: parsed.name ?? null,
         viewingShared: true,
       });

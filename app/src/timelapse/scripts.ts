@@ -22,7 +22,8 @@ export const SCRIPTS: TimeLapseScript[] = [
     type: "scripted",
     // High enough to fund the ~$346M of panic deployments below — the
     // reactive failure mode here is lateness, not underfunding.
-    sliderOverrides: { budget_millions: 400, org_transformation: 0.3 },
+    // risk_tolerance 1.0: story deployments are authored at optimistic costs
+    sliderOverrides: { budget_millions: 400, org_transformation: 0.3, risk_tolerance: 1.0 },
     deployments: [
       // After first network probe detected ~mid-2025
       { blockId: "NET-02", startYear: 2025.5 },
@@ -61,7 +62,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     // Budget covers the full program: the 29 deployments below sum to ~$778M
     // at optimistic upfront costs (a multi-hundred-million-dollar program is
     // the point of this story — see the README's framing).
-    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6 },
+    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, risk_tolerance: 1.0 },
     deployments: [
       // Immediate hard-stops (2024)
       { blockId: "NET-01", startYear: 2024 },
@@ -110,7 +111,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Budget-Constrained",
     description: "$100M limit. Pick the highest-impact blocks only.",
     type: "scripted",
-    sliderOverrides: { budget_millions: 100, org_transformation: 0.4 },
+    sliderOverrides: { budget_millions: 100, org_transformation: 0.4, risk_tolerance: 1.0 },
     deployments: [
       // Highest-impact blocks that fit ~$100M of upfront capital
       // (optimistic costs; running total in comments)

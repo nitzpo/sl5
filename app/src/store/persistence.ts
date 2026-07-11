@@ -5,12 +5,14 @@ const SCENARIOS_KEY = "sl5-scenarios";
 
 export interface PersistedState {
   blockStates: Record<string, BlockState>;
+  /** Funding priority: block ids in the order they were advanced.
+   * Absent in old saves — derived from blockStates on load. */
+  advanceOrder?: string[];
   year: number;
   perspective: Perspective;
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
-  expertMode: boolean;
 }
 
 export interface SavedScenario {

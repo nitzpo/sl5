@@ -27,12 +27,14 @@ interface SimulationStore {
 
   // User-controlled state
   blockStates: Record<string, BlockState>;
+  /** Block ids in the order they were advanced from not_started — the budget
+   * engine funds in this order so a newly-activated block can only cap itself. */
+  advanceOrder: string[];
   year: number;
   perspective: Perspective;
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
-  expertMode: boolean;
   selectedChainId: string | null;
   viewingShared: boolean;
   playbackActive: boolean;
@@ -47,7 +49,6 @@ interface SimulationStore {
   setAdversaryOc: (oc: number) => void;
   setSlider: (key: keyof Sliders, value: number) => void;
   setModelServed: (served: boolean) => void;
-  setExpertMode: (expert: boolean) => void;
   setPlaybackActive: (active: boolean) => void;
   setSelectedChain: (chainId: string | null) => void;
   copyShareUrl: () => void;
@@ -76,17 +77,42 @@ const DEFAULT_SLIDERS: Sliders = {
   risk_tolerance: 0.5,
 };
 
+/** Keep the advancement order in sync with a single block-state change. */
+function orderWith(order: string[], blockId: string, nextState: BlockState): string[] {
+  const active = nextState !== "not_started";
+  const has = order.includes(blockId);
+  if (active && !has) return [...order, blockId];
+  if (!active && has) return order.filter((id) => id !== blockId);
+  return order;
+}
+
+/** Fallback for persisted states that predate advanceOrder. */
+function deriveOrder(blockStates: Record<string, BlockState>): string[] {
+  return Object.keys(blockStates).filter((id) => blockStates[id] !== "not_started");
+}
+
+function baselineStatesFor(blocks: Block[]): Record<string, BlockState> {
+  const baselineStates: Record<string, BlockState> = {};
+  for (const b of blocks) {
+    const bs = b.current_state.baseline_state;
+    baselineStates[b.id] = STATE_CYCLE.includes(bs as BlockState)
+      ? (bs as BlockState)
+      : "not_started";
+  }
+  return baselineStates;
+}
+
 export const useSimulationStore = create<SimulationStore>()(subscribeWithSelector((set, get) => ({
   blocks: [],
   attackChains: [],
   dataLoaded: false,
   blockStates: {},
+  advanceOrder: [],
   year: 2026,
   perspective: "ciso",
   adversaryOc: 4,
   sliders: DEFAULT_SLIDERS,
   modelServedExternally: true,
-  expertMode: false,
   selectedChainId: null,
   viewingShared: false,
   playbackActive: false,
@@ -95,13 +121,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   loadData: (blocks, chains) => {
     if (get().dataLoaded) return;
 
-    const baselineStates: Record<string, BlockState> = {};
-    for (const b of blocks) {
-      const bs = b.current_state.baseline_state;
-      baselineStates[b.id] = STATE_CYCLE.includes(bs as BlockState)
-        ? (bs as BlockState)
-        : "not_started";
-    }
+    const baselineStates = baselineStatesFor(blocks);
 
     // Restore: URL hash takes priority (shared link), then localStorage
     const fromUrl = loadFromUrlHash();
@@ -111,12 +131,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
         blocks,
         attackChains: chains,
         blockStates: fromUrl.state.blockStates,
+        advanceOrder: fromUrl.state.advanceOrder ?? deriveOrder(fromUrl.state.blockStates),
         year: fromUrl.state.year,
         perspective: fromUrl.state.perspective,
         adversaryOc: fromUrl.state.adversaryOc,
         sliders: fromUrl.state.sliders,
         modelServedExternally: fromUrl.state.modelServedExternally,
-        expertMode: fromUrl.state.expertMode,
         scenarioName: fromUrl.name ?? null,
         viewingShared: true,
         dataLoaded: true,
@@ -130,28 +150,42 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
         blocks,
         attackChains: chains,
         blockStates: fromStorage.blockStates,
+        advanceOrder: fromStorage.advanceOrder ?? deriveOrder(fromStorage.blockStates),
         year: fromStorage.year,
         perspective: fromStorage.perspective,
         adversaryOc: fromStorage.adversaryOc,
         sliders: fromStorage.sliders,
         modelServedExternally: fromStorage.modelServedExternally,
-        expertMode: fromStorage.expertMode,
         dataLoaded: true,
       });
     } else {
-      set({ blocks, attackChains: chains, blockStates: baselineStates, dataLoaded: true });
+      set({
+        blocks,
+        attackChains: chains,
+        blockStates: baselineStates,
+        advanceOrder: deriveOrder(baselineStates),
+        dataLoaded: true,
+      });
     }
   },
 
   setBlockState: (blockId, state) => {
-    set((s) => ({ blockStates: { ...s.blockStates, [blockId]: state }, scenarioName: null }));
+    set((s) => ({
+      blockStates: { ...s.blockStates, [blockId]: state },
+      advanceOrder: orderWith(s.advanceOrder, blockId, state),
+      scenarioName: null,
+    }));
   },
 
   cycleBlockState: (blockId) => {
     const current = get().blockStates[blockId] ?? "not_started";
     const idx = STATE_CYCLE.indexOf(current);
     const next = STATE_CYCLE[(idx + 1) % STATE_CYCLE.length];
-    set((s) => ({ blockStates: { ...s.blockStates, [blockId]: next }, scenarioName: null }));
+    set((s) => ({
+      blockStates: { ...s.blockStates, [blockId]: next },
+      advanceOrder: orderWith(s.advanceOrder, blockId, next),
+      scenarioName: null,
+    }));
   },
 
   setYear: (year) => set({ year, scenarioName: null }),
@@ -163,7 +197,6 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 
   setModelServed: (served) => set({ modelServedExternally: served, scenarioName: null }),
-  setExpertMode: (expert) => set({ expertMode: expert }),
   setPlaybackActive: (active) => set({ playbackActive: active }),
   setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
 
@@ -171,12 +204,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     const s = get();
     const persisted: PersistedState = {
       blockStates: s.blockStates,
+      advanceOrder: s.advanceOrder,
       year: s.year,
       perspective: s.perspective,
       adversaryOc: s.adversaryOc,
       sliders: s.sliders,
       modelServedExternally: s.modelServedExternally,
-      expertMode: s.expertMode,
     };
     const url = stateToShareUrl(persisted, s.scenarioName ?? undefined);
     navigator.clipboard.writeText(url);
@@ -186,12 +219,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     const s = get();
     const persisted: PersistedState = {
       blockStates: s.blockStates,
+      advanceOrder: s.advanceOrder,
       year: s.year,
       perspective: s.perspective,
       adversaryOc: s.adversaryOc,
       sliders: s.sliders,
       modelServedExternally: s.modelServedExternally,
-      expertMode: s.expertMode,
     };
     saveToLocalStorage(persisted);
     if (s.scenarioName) {
@@ -208,12 +241,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     if (saved) {
       set({
         blockStates: saved.blockStates,
+        advanceOrder: saved.advanceOrder ?? deriveOrder(saved.blockStates),
         year: saved.year,
         perspective: saved.perspective,
         adversaryOc: saved.adversaryOc,
         sliders: saved.sliders,
         modelServedExternally: saved.modelServedExternally,
-        expertMode: saved.expertMode,
         viewingShared: false,
       });
     } else {
@@ -223,16 +256,11 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
 
   resetToBaseline: () => {
     const { blocks } = get();
-    const baselineStates: Record<string, BlockState> = {};
-    for (const b of blocks) {
-      const bs = b.current_state.baseline_state;
-      baselineStates[b.id] = STATE_CYCLE.includes(bs as BlockState)
-        ? (bs as BlockState)
-        : "not_started";
-    }
+    const baselineStates = baselineStatesFor(blocks);
     clearLocalStorage();
     set({
       blockStates: baselineStates,
+      advanceOrder: deriveOrder(baselineStates),
       year: 2026,
       sliders: DEFAULT_SLIDERS,
       adversaryOc: 4,
@@ -249,12 +277,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       savedAt: Date.now(),
       state: {
         blockStates: s.blockStates,
+        advanceOrder: s.advanceOrder,
         year: s.year,
         perspective: s.perspective,
         adversaryOc: s.adversaryOc,
         sliders: s.sliders,
         modelServedExternally: s.modelServedExternally,
-        expertMode: s.expertMode,
       },
     };
     const existing = scenarios.findIndex((sc) => sc.name === name);
@@ -273,12 +301,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     if (!scenario) return;
     set({
       blockStates: scenario.state.blockStates,
+      advanceOrder: scenario.state.advanceOrder ?? deriveOrder(scenario.state.blockStates),
       year: scenario.state.year,
       perspective: scenario.state.perspective,
       adversaryOc: scenario.state.adversaryOc,
       sliders: scenario.state.sliders,
       modelServedExternally: scenario.state.modelServedExternally,
-      expertMode: scenario.state.expertMode,
       scenarioName: scenario.name,
       viewingShared: false,
     });
@@ -295,12 +323,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
 useSimulationStore.subscribe(
   (s) => ({
     blockStates: s.blockStates,
+    advanceOrder: s.advanceOrder,
     year: s.year,
     perspective: s.perspective,
     adversaryOc: s.adversaryOc,
     sliders: s.sliders,
     modelServedExternally: s.modelServedExternally,
-    expertMode: s.expertMode,
   }),
   (persisted) => {
     const { dataLoaded, viewingShared, playbackActive } = useSimulationStore.getState();

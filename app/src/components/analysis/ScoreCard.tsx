@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useSimulationResults } from "../../store/derived";
 import { useSimulationStore } from "../../store/simulation";
 import { formatSl, formatProbability, formatPercent, formatCost } from "../../utils/format";
@@ -13,11 +12,10 @@ export function ScoreCard() {
     breachByOc,
     extractionProgress,
     activeLayers,
+    spentMillions,
   } = useSimulationResults();
   const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
   const budget = useSimulationStore((s) => s.sliders.budget_millions);
-  const blocks = useSimulationStore((s) => s.blocks);
-  const blockStates = useSimulationStore((s) => s.blockStates);
   const attackChains = useSimulationStore((s) => s.attackChains);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const year = useSimulationStore((s) => s.year);
@@ -34,12 +32,7 @@ export function ScoreCard() {
         ? "text-amber-400"
         : "text-emerald-400";
 
-  const totalCost = useMemo(() =>
-    blocks
-      .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
-      .reduce((sum, b) => sum + b.dimensions.cost.upfront_millions.min, 0),
-    [blocks, blockStates]
-  );
+  const totalCost = spentMillions;
   const overBudget = totalCost > budget;
 
   return (

@@ -1,17 +1,15 @@
-import type { Block, BlockState, Category, Sliders, SimulationConfig } from "./types";
+import type { Block, BlockState, Category, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
 
-const DEFAULT_CONFIG: SimulationConfig["scoring"] = {
-  method: "hybrid",
+export interface ScoringConfig {
+  hybrid_weights: { weakest_link_weight: number; harmonic_mean_weight: number };
+  baseline_floor: number;
+}
+
+// The one scoring formula the app actually uses: 0.6·weakest-link + 0.4·harmonic
+// mean over category scores, with categories floored at SL 1.0.
+const DEFAULT_CONFIG: ScoringConfig = {
   hybrid_weights: { weakest_link_weight: 0.6, harmonic_mean_weight: 0.4 },
-  category_weights: {
-    network: 0.2,
-    machine: 0.2,
-    physical: 0.15,
-    personnel: 0.2,
-    supply_chain: 0.1,
-    ai_specific: 0.15,
-  },
   baseline_floor: 1.0,
 };
 
@@ -65,12 +63,22 @@ function govCoopMultiplier(block: Block, govCooperation: number): number {
 
 /**
  * Effective defense contribution of a block given its state, year, and sliders.
+ *
+ * AI affects the simulation through two deliberately separate channels, each
+ * counted exactly once:
+ *  - the DEFENDER channel (here): probabilistic defenses erode as AI advances
+ *    (`aiDegradation`), which lowers SL scores;
+ *  - the ATTACKER channel (breach.ts): AI lifts the adversary's effective OC,
+ *    which raises the capability gate and lowers probabilistic resist.
+ * Breach therefore evaluates blocks with `opts.aiErosion: false` so the same
+ * `ai_oc_shift` is never double-counted in one number.
  */
 export function blockEffectiveness(
   block: Block,
   state: BlockState | string,
   year: number,
-  sliders: Sliders | number = 0.5
+  sliders: Sliders | number = 0.5,
+  opts: { aiErosion?: boolean } = {}
 ): number {
   // Backward compat: accept bare ai_timeline number
   const s: Sliders = typeof sliders === "number"
@@ -78,7 +86,7 @@ export function blockEffectiveness(
     : sliders;
 
   const base = getStateEffectiveness(state);
-  const degradation = aiDegradation(block, year, s.ai_timeline);
+  const degradation = opts.aiErosion === false ? 0 : aiDegradation(block, year, s.ai_timeline);
   const orgMult = orgTransformMultiplier(block, s.org_transformation);
   const vendorMult = vendorCoopMultiplier(block, s.vendor_cooperation);
   const govMult = govCoopMultiplier(block, s.gov_cooperation);
@@ -111,7 +119,7 @@ export function categoryScore(
  */
 export function overallSlScore(
   categoryScores: Record<Category, number>,
-  config: SimulationConfig["scoring"] = DEFAULT_CONFIG
+  config: ScoringConfig = DEFAULT_CONFIG
 ): number {
   const scores = Object.values(categoryScores);
   if (scores.length === 0) return 0;

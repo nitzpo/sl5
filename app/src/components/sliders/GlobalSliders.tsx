@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
+import { useSimulationResults } from "../../store/derived";
 import { formatCost } from "../../utils/format";
 
 interface SliderRowProps {
@@ -65,18 +65,12 @@ function SliderRow({
 export function GlobalSliders() {
   const sliders = useSimulationStore((s) => s.sliders);
   const setSlider = useSimulationStore((s) => s.setSlider);
-  const blocks = useSimulationStore((s) => s.blocks);
-  const blockStates = useSimulationStore((s) => s.blockStates);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
   const setModelServed = useSimulationStore((s) => s.setModelServed);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const setAdversaryOc = useSimulationStore((s) => s.setAdversaryOc);
 
-  const totalSpending = useMemo(() => {
-    return blocks
-      .filter((b) => (blockStates[b.id] ?? "not_started") !== "not_started")
-      .reduce((sum, b) => sum + b.dimensions.cost.upfront_millions.min, 0);
-  }, [blocks, blockStates]);
+  const { spentMillions: totalSpending } = useSimulationResults();
 
   return (
     <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">

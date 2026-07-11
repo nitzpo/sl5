@@ -3,6 +3,7 @@ import { useSimulationResults } from "../../store/derived";
 import { getAiCapability } from "../../engine/ai-curve";
 import { formatSl, formatProbability, formatPercent } from "../../utils/format";
 import { CATEGORY_LABELS } from "../../utils/geometry";
+import { breachLevel } from "../../utils/colors";
 import type { Category } from "../../engine/types";
 
 export function ObserverView() {
@@ -68,7 +69,7 @@ export function ObserverView() {
             key={oc}
             label={`vs OC${oc}`}
             value={formatProbability(breachByOc[oc] ?? 0)}
-            danger={(breachByOc[oc] ?? 0) > 0.3}
+            danger={breachLevel(breachByOc[oc] ?? 0) === "bad"}
           />
         ))}
       </Section>
@@ -105,7 +106,7 @@ export function ObserverView() {
           .sort(([, a], [, b]) => b - a)
           .slice(0, 4)
           .map(([id, prob]) => (
-            <Row key={id} label={id} value={formatProbability(prob)} danger={prob > 0.3} />
+            <Row key={id} label={id} value={formatProbability(prob)} danger={breachLevel(prob) === "bad"} />
           ))}
       </Section>
     </div>

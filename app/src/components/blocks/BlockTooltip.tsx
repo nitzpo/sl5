@@ -3,6 +3,7 @@ import type { Block, BlockState, Sliders } from "../../engine/types";
 import { blockEffectiveness, aiDegradation } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
+import { useSimulationResults } from "../../store/derived";
 import { formatCost } from "../../utils/format";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import { STATE_LABELS } from "../../utils/colors";
@@ -27,6 +28,13 @@ export function BlockTooltip({
 
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
+  const { budgetExceededIds, dependencyUnmetIds } = useSimulationResults();
+
+  const cappedByBudget = budgetExceededIds.has(block.id);
+  const cappedByDependency = dependencyUnmetIds.has(block.id);
+  const missingRequires = cappedByDependency
+    ? (block.dependencies?.requires ?? []).join(", ")
+    : null;
 
   const effectiveness = blockEffectiveness(block, state, year, sliders);
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
@@ -87,6 +95,16 @@ export function BlockTooltip({
           </span>
         )}
       </div>
+      {cappedByDependency && (
+        <div className="text-[10px] text-sky-400 mt-0.5">
+          ⚠ Capped at Implementing — prerequisite not operational ({missingRequires})
+        </div>
+      )}
+      {cappedByBudget && !cappedByDependency && (
+        <div className="text-[10px] text-pink-400 mt-0.5">
+          ⚠ Capped at Implementing — over budget
+        </div>
+      )}
       {beyondAdversary && state === "not_started" && (
         <div className="text-[10px] text-gray-500 mt-0.5">
           Dimmed: OC{adversaryOc} adversary can't exploit this (needs OC{block.adversary_exploitation.oc_threshold_to_exploit}+)

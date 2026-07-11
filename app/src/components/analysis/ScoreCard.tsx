@@ -2,7 +2,24 @@ import { useSimulationResults } from "../../store/derived";
 import { useSimulationStore } from "../../store/simulation";
 import { formatSl, formatProbability, formatPercent, formatCost } from "../../utils/format";
 import { CATEGORY_LABELS } from "../../utils/geometry";
+import { breachLevel, slLevel, LEVEL_TEXT, LEVEL_HEX, SEMANTIC } from "../../utils/colors";
+import { useDeltaFlash } from "../../utils/use-delta-flash";
 import type { Category } from "../../engine/types";
+
+/** Small signed-change chip flashed beside a headline metric. */
+function DeltaChip({ delta, format, downIsGood }: { delta: number | null; format: (d: number) => string; downIsGood: boolean }) {
+  if (delta === null) return null;
+  const improving = downIsGood ? delta < 0 : delta > 0;
+  return (
+    <span
+      className={`ml-2 align-middle text-xs font-semibold px-1.5 py-0.5 rounded animate-fade-in ${
+        improving ? "bg-emerald-950/70 text-emerald-400" : "bg-red-950/70 text-red-400"
+      }`}
+    >
+      {delta > 0 ? "+" : "−"}{format(Math.abs(delta))}
+    </span>
+  );
+}
 
 export function ScoreCard() {
   const {
@@ -25,12 +42,10 @@ export function ScoreCard() {
     ? attackChains.find((c) => c.id === bestChain.id)?.name ?? bestChain.id
     : null;
   const breachProb = bestChain?.probability ?? 0;
-  const breachColor =
-    breachProb > 0.5
-      ? "text-red-400"
-      : breachProb > 0.2
-        ? "text-amber-400"
-        : "text-emerald-400";
+  const breachColor = LEVEL_TEXT[breachLevel(breachProb)];
+
+  const breachFlash = useDeltaFlash(breachProb, 0.0005);
+  const slFlash = useDeltaFlash(overallSl, 0.005);
 
   const totalCost = spentMillions;
   const overBudget = totalCost > budget;
@@ -47,6 +62,11 @@ export function ScoreCard() {
         </div>
         <div className={`text-3xl font-bold ${breachColor}`}>
           {formatProbability(breachProb)}
+          <DeltaChip
+            delta={breachFlash.delta}
+            format={(d) => (d < 0.01 ? "<1pt" : `${(d * 100).toFixed(d < 0.05 ? 1 : 0)}pt`)}
+            downIsGood
+          />
         </div>
         <div className="text-[10px] text-gray-500 mt-0.5">
           Best chain vs OC{adversaryOc}, {year}
@@ -59,9 +79,12 @@ export function ScoreCard() {
       {/* Overall SL */}
       <div className="bg-gray-900 rounded-lg p-3">
         <div className="flex items-baseline justify-between">
-          <span className="text-xs text-gray-500">Security Posture</span>
+          <span className="text-xs text-gray-500" title="Posture score — independent of the attacker; the adversary rows below carry the OC story">
+            Security Posture
+          </span>
           <span className="text-xl font-bold text-gray-100">
             SL {formatSl(overallSl)}
+            <DeltaChip delta={slFlash.delta} format={(d) => d.toFixed(1)} downIsGood={false} />
           </span>
         </div>
         <div className="mt-2 relative">
@@ -71,11 +94,9 @@ export function ScoreCard() {
               style={{
                 width: `${(overallSl / 5) * 100}%`,
                 backgroundColor:
-                  overallSl >= requiredSl
-                    ? "#059669"
-                    : overallSl >= requiredSl - 0.5
-                      ? "#d97706"
-                      : "#dc2626",
+                  LEVEL_HEX[
+                    overallSl >= requiredSl ? "good" : overallSl >= requiredSl - 0.5 ? "warn" : "bad"
+                  ],
               }}
             />
           </div>
@@ -110,15 +131,7 @@ export function ScoreCard() {
               }`}
             >
               <span className={oc === adversaryOc ? "text-gray-200" : "text-gray-400"}>vs OC{oc}</span>
-              <span
-                className={`font-mono ${
-                  (breachByOc[oc] ?? 0) > 0.5
-                    ? "text-red-400"
-                    : (breachByOc[oc] ?? 0) > 0.2
-                      ? "text-amber-400"
-                      : "text-emerald-400"
-                }`}
-              >
+              <span className={`font-mono ${LEVEL_TEXT[breachLevel(breachByOc[oc] ?? 0)]}`}>
                 {formatProbability(breachByOc[oc] ?? 0)}
               </span>
             </div>
@@ -156,7 +169,10 @@ export function ScoreCard() {
       <div className="bg-gray-900 rounded-lg p-3">
         <div className="flex items-baseline justify-between">
           <span className="text-xs text-gray-500">Budget</span>
-          <span className={`text-xs font-medium ${overBudget ? "text-red-400" : "text-emerald-400"}`}>
+          <span
+            className="text-xs font-medium"
+            style={{ color: overBudget ? SEMANTIC.overBudget : SEMANTIC.defenseText }}
+          >
             {overBudget ? "OVER" : "OK"}
           </span>
         </div>
@@ -180,12 +196,7 @@ export function ScoreCard() {
                     className="h-full rounded-full transition-all duration-300"
                     style={{
                       width: `${(score / 5) * 100}%`,
-                      backgroundColor:
-                        score >= 4
-                          ? "#059669"
-                          : score >= 3
-                            ? "#d97706"
-                            : "#dc2626",
+                      backgroundColor: LEVEL_HEX[slLevel(score)],
                     }}
                   />
                 </div>

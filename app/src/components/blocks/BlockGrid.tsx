@@ -33,7 +33,7 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
 
-  const { budgetExceededIds } = useSimulationResults();
+  const { budgetExceededIds, dependencyUnmetIds } = useSimulationResults();
 
   const decisionWindows = useMemo(() => {
     const map = new Map<string, WindowUrgency>();
@@ -117,6 +117,7 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
                     year={year}
                     sliders={sliders}
                     budgetExceeded={budgetExceededIds.has(block.id)}
+                    dependencyUnmet={dependencyUnmetIds.has(block.id)}
                     decisionWindow={decisionWindows.get(block.id)}
                     onSelect={onSelectBlock}
                     onHover={(b, rect) => {

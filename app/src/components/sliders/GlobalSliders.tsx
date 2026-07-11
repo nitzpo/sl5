@@ -1,6 +1,7 @@
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { formatCost } from "../../utils/format";
+import { SEMANTIC } from "../../utils/colors";
 
 interface SliderRowProps {
   label: string;
@@ -123,13 +124,18 @@ export function GlobalSliders() {
               className="absolute top-1/2 -translate-y-1/2 h-2.5 w-0.5 rounded-full pointer-events-none"
               style={{
                 left: `${Math.min((totalSpending - 50) / (2000 - 50) * 100, 100)}%`,
-                backgroundColor: totalSpending > sliders.budget_millions ? "#ef4444" : "#22c55e",
+                backgroundColor:
+                  totalSpending > sliders.budget_millions ? SEMANTIC.overBudget : SEMANTIC.chrome,
               }}
             />
           )}
         </div>
         <span className="text-[10px] text-gray-600 w-16 shrink-0">$2B</span>
-        <span className={`text-xs font-mono w-20 text-right ${totalSpending > sliders.budget_millions ? "text-red-400" : "text-gray-300"}`}>
+        <span
+          className="text-xs font-mono w-20 text-right"
+          style={{ color: totalSpending > sliders.budget_millions ? SEMANTIC.overBudget : "#d1d5db" }}
+          title="Planned upfront spend vs budget (basis follows Risk Tolerance)"
+        >
           {formatCost(totalSpending)}/{formatCost(sliders.budget_millions)}
         </span>
       </div>

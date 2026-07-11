@@ -2,6 +2,8 @@ import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { LAYER_LABELS } from "../../utils/ring-geometry";
 import { formatProbability } from "../../utils/format";
+import { breachLevel } from "../../utils/colors";
+import type { ThresholdLevel } from "../../utils/colors";
 
 const OC_ACTOR: Record<number, string> = {
   1: "A hobbyist attacker",
@@ -32,14 +34,12 @@ export function VerdictBanner() {
     { id: string; strength: number } | null
   >((min, [id, s]) => (!min || s.strength < min.strength ? { id, strength: s.strength } : min), null);
 
-  // Green is reserved for genuinely defensible postures: a 1-in-5 chance of
-  // nation-state weight theft is not a success state.
-  const tone =
-    p > 0.25
-      ? { text: "text-red-300", accent: "text-red-400", border: "border-red-900/60", bg: "bg-red-950/30" }
-      : p > 0.05
-        ? { text: "text-amber-200", accent: "text-amber-400", border: "border-amber-900/60", bg: "bg-amber-950/20" }
-        : { text: "text-emerald-200", accent: "text-emerald-400", border: "border-emerald-900/50", bg: "bg-emerald-950/20" };
+  const TONES: Record<ThresholdLevel, { text: string; accent: string; border: string; bg: string }> = {
+    bad: { text: "text-red-300", accent: "text-red-400", border: "border-red-900/60", bg: "bg-red-950/30" },
+    warn: { text: "text-amber-200", accent: "text-amber-400", border: "border-amber-900/60", bg: "bg-amber-950/20" },
+    good: { text: "text-emerald-200", accent: "text-emerald-400", border: "border-emerald-900/50", bg: "bg-emerald-950/20" },
+  };
+  const tone = TONES[breachLevel(p)];
 
   return (
     <button

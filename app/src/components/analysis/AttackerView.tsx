@@ -4,7 +4,7 @@ import { useSimulationResults } from "../../store/derived";
 import { getAiCapability } from "../../engine/ai-curve";
 import { formatProbability } from "../../utils/format";
 import type { AttackChain, BlockState } from "../../engine/types";
-import { STATE_ICONS } from "../../utils/colors";
+import { STATE_ICONS, breachLevel, LEVEL_TEXT } from "../../utils/colors";
 
 export function AttackerView() {
   const blocks = useSimulationStore((s) => s.blocks);
@@ -155,15 +155,7 @@ function ChainCard({
             {chain.name}
           </span>
         </div>
-        <span
-          className={`text-xs font-mono font-bold ${
-            probability > 0.4
-              ? "text-red-400"
-              : probability > 0.15
-                ? "text-amber-400"
-                : "text-yellow-500"
-          }`}
-        >
+        <span className={`text-xs font-mono font-bold ${LEVEL_TEXT[breachLevel(probability)]}`}>
           {formatProbability(probability)}
         </span>
       </div>

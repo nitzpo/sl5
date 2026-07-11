@@ -15,7 +15,10 @@ export function formatCost(millions: number): string {
 
 export function formatProbability(p: number): string {
   if (p < 0.01) return "<1%";
-  if (p > 0.99) return ">99%";
+  // Near saturation, integer rounding freezes the display at "99%" and hides
+  // real movement — show one decimal so cause→effect stays visible.
+  if (p >= 0.999) return ">99.9%";
+  if (p >= 0.95) return `${(p * 100).toFixed(1)}%`;
   return `${Math.round(p * 100)}%`;
 }
 

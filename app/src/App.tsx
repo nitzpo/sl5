@@ -185,11 +185,11 @@ function App() {
                     badge="requires"
                     swatch={<span className="text-sky-400 text-[10px] leading-none">→</span>}
                     label="Requires"
-                    tip="Hover/select a block: solid arrows point from its prerequisites into it. Click to toggle."
+                    tip="Hover/select a block: solid arrows point from its prerequisites into it. A deployed block with a missing prerequisite is capped (dotted sky ring). Click to toggle."
                   />
                   <ToggleLegendItem
                     badge="enhances"
-                    swatch={<span className="text-teal-400 text-[10px] leading-none tracking-tighter">⇢</span>}
+                    swatch={<span className="text-sky-400 text-[10px] leading-none tracking-tighter">⇢</span>}
                     label="Enhances"
                     tip="Dashed lines point to blocks this one makes more effective. Click to toggle."
                   />
@@ -197,13 +197,13 @@ function App() {
               )}
               <ToggleLegendItem
                 badge="contested"
-                swatch={<span className="w-2 h-2 rounded-full bg-violet-600 text-[8px] leading-none text-white flex items-center justify-center font-bold">?</span>}
+                swatch={<span className="w-2 h-2 rounded-full bg-gray-800 border border-slate-400 text-[8px] leading-none text-slate-300 flex items-center justify-center font-bold">?</span>}
                 label="Contested"
                 tip="Experts disagree on feasibility — high or fundamental open questions. Click to toggle."
               />
               <ToggleLegendItem
                 badge="overBudget"
-                swatch={<span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" />}
+                swatch={<span className="w-2 h-2 rounded-sm border border-dashed border-pink-500" />}
                 label="Over budget"
                 tip="Cost exceeds budget — effectiveness capped at Implementing level. Click to toggle."
               />

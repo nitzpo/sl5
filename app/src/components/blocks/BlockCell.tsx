@@ -1,8 +1,14 @@
 import { useMemo, useRef, useState } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints, BLOCK_SHORT_LABELS } from "../../utils/geometry";
-import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
-import { URGENCY_COLORS } from "../../utils/decision-windows";
+import {
+  DEFENSE_COLORS,
+  STATE_FILL_FRACTION,
+  URGENCY_BADGE,
+  CONTESTED_BADGE,
+  SEMANTIC,
+  DEPENDENCY_COLOR,
+} from "../../utils/colors";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { useViewStore } from "../../store/view";
 import { aiDegradation } from "../../engine/scoring";
@@ -18,6 +24,7 @@ interface BlockCellProps {
   year: number;
   sliders: Sliders;
   budgetExceeded: boolean;
+  dependencyUnmet?: boolean;
   decisionWindow?: WindowUrgency;
   onSelect: (block: Block) => void;
   onHover: (block: Block, rect: DOMRect) => void;
@@ -38,6 +45,7 @@ export function BlockCell({
   year,
   sliders,
   budgetExceeded,
+  dependencyUnmet = false,
   decisionWindow,
   onSelect,
   onHover,
@@ -176,10 +184,22 @@ export function BlockCell({
         <polygon
           points={hexPoints(cx, cy, size + 3)}
           fill="none"
-          stroke="#f59e0b"
+          stroke={SEMANTIC.overBudget}
           strokeWidth={1.5}
           strokeDasharray="4 3"
-          opacity={0.7}
+          opacity={0.8}
+        />
+      )}
+
+      {/* Missing hard prerequisite — capped until its `requires` are operational */}
+      {dependencyUnmet && badges.requires && (
+        <polygon
+          points={hexPoints(cx, cy, size + 3)}
+          fill="none"
+          stroke={DEPENDENCY_COLOR}
+          strokeWidth={1.5}
+          strokeDasharray="2 3"
+          opacity={0.85}
         />
       )}
 
@@ -189,7 +209,7 @@ export function BlockCell({
         y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={9}
+        fontSize={10}
         fontWeight={600}
         fill="#e5e7eb"
         className="pointer-events-none"
@@ -200,25 +220,28 @@ export function BlockCell({
       {/* Short label below hex */}
       <text
         x={cx}
-        y={cy + size + 10}
+        y={cy + size + 11}
         textAnchor="middle"
-        fontSize={8}
+        fontSize={9}
         fill="#9ca3af"
         className="pointer-events-none"
       >
         {shortLabel}
       </text>
 
-      {/* Decision window badge — must start soon to deploy by 2030 */}
+      {/* Decision window badge — deadline pressure; urgency carried by weight
+          (solid = overdue, outlined = urgent), hue stays threat-red */}
       {decisionWindow && badges.startNow && (
         <g>
           <circle
             cx={cx - size + 4}
             cy={cy - size + 4}
-            r={5}
-            fill={URGENCY_COLORS[decisionWindow]}
+            r={6}
+            fill={URGENCY_BADGE[decisionWindow].fill}
+            stroke={URGENCY_BADGE[decisionWindow].stroke}
+            strokeWidth={1.25}
           >
-            {decisionWindow !== "upcoming" && (
+            {decisionWindow === "overdue" && (
               <animate
                 attributeName="opacity"
                 values="1;0.35;1"
@@ -232,9 +255,9 @@ export function BlockCell({
             y={cy - size + 5}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={7}
+            fontSize={8}
             fontWeight={700}
-            fill="#fff"
+            fill={URGENCY_BADGE[decisionWindow].text}
             className="pointer-events-none"
           >
             !
@@ -242,24 +265,25 @@ export function BlockCell({
         </g>
       )}
 
-      {/* Uncertainty badge — feasibility contested by experts */}
+      {/* Uncertainty badge — feasibility contested by experts (quiet marker) */}
       {uncertainty && badges.contested && (
         <g>
           <circle
             cx={cx - size + 4}
             cy={cy + size - 4}
-            r={4.5}
-            fill={uncertainty === "fundamental" ? "#7c3aed" : "#b45309"}
-            opacity={0.9}
+            r={5.5}
+            fill={CONTESTED_BADGE.fill}
+            stroke={CONTESTED_BADGE.stroke}
+            strokeWidth={uncertainty === "fundamental" ? 1.5 : 0.75}
           />
           <text
             x={cx - size + 4}
             y={cy + size - 3}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={6.5}
+            fontSize={8}
             fontWeight={700}
-            fill="#fff"
+            fill={CONTESTED_BADGE.text}
             className="pointer-events-none"
           >
             ?
@@ -279,7 +303,7 @@ export function BlockCell({
           <circle
             cx={cx + size - 4}
             cy={cy + size - 4}
-            r={6}
+            r={6.5}
             fill="#374151"
             stroke="#9ca3af"
             strokeWidth={0.75}
@@ -289,30 +313,12 @@ export function BlockCell({
             y={cy + size - 3}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={9}
+            fontSize={10}
             fontWeight={700}
             fill="#e5e7eb"
             className="pointer-events-none"
           >
             +
-          </text>
-        </g>
-      )}
-
-      {/* Erosion badge */}
-      {showErosion && degradation > 0.1 && (
-        <g>
-          <circle cx={cx + size - 4} cy={cy - size + 4} r={5} fill="#991b1b" />
-          <text
-            x={cx + size - 4}
-            y={cy - size + 5}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={6}
-            fill="#fca5a5"
-            className="pointer-events-none"
-          >
-            ↓
           </text>
         </g>
       )}

@@ -1,8 +1,13 @@
 import { useId, useRef, useState } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
 import { hexPoints } from "../../utils/geometry";
-import { DEFENSE_COLORS, STATE_FILL_FRACTION } from "../../utils/colors";
-import { URGENCY_COLORS } from "../../utils/decision-windows";
+import {
+  DEFENSE_COLORS,
+  STATE_FILL_FRACTION,
+  URGENCY_BADGE,
+  CONTESTED_BADGE,
+  SEMANTIC,
+} from "../../utils/colors";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { aiDegradation } from "../../engine/scoring";
 import { useSimulationStore } from "../../store/simulation";
@@ -154,15 +159,15 @@ export function RingBlockCell({
         />
       )}
 
-      {/* Budget exceeded — dashed amber halo */}
+      {/* Budget exceeded — dashed halo */}
       {budgetExceeded && badges.overBudget && (
         <polygon
           points={hexPoints(cx, cy, size + 2)}
           fill="none"
-          stroke="#f59e0b"
+          stroke={SEMANTIC.overBudget}
           strokeWidth={1}
           strokeDasharray="3 2"
-          opacity={0.7}
+          opacity={0.8}
         />
       )}
 
@@ -171,7 +176,7 @@ export function RingBlockCell({
         y={cy + 1}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={7}
+        fontSize={8}
         fontWeight={600}
         fill="#e5e7eb"
         className="pointer-events-none"
@@ -179,11 +184,18 @@ export function RingBlockCell({
         {block.id}
       </text>
 
-      {/* Decision window badge (top-left) */}
+      {/* Decision window badge (top-left) — weight carries urgency */}
       {decisionWindow && badges.startNow && (
         <g>
-          <circle cx={cx - size + 3} cy={cy - size + 3} r={4} fill={URGENCY_COLORS[decisionWindow]}>
-            {decisionWindow !== "upcoming" && (
+          <circle
+            cx={cx - size + 3}
+            cy={cy - size + 3}
+            r={4.5}
+            fill={URGENCY_BADGE[decisionWindow].fill}
+            stroke={URGENCY_BADGE[decisionWindow].stroke}
+            strokeWidth={1}
+          >
+            {decisionWindow === "overdue" && (
               <animate attributeName="opacity" values="1;0.35;1" dur="2s" repeatCount="indefinite" />
             )}
           </circle>
@@ -192,9 +204,9 @@ export function RingBlockCell({
             y={cy - size + 3.5}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={5.5}
+            fontSize={6.5}
             fontWeight={700}
-            fill="#fff"
+            fill={URGENCY_BADGE[decisionWindow].text}
             className="pointer-events-none"
           >
             !
@@ -202,34 +214,30 @@ export function RingBlockCell({
         </g>
       )}
 
-      {/* Uncertainty badge (bottom-left) */}
+      {/* Uncertainty badge (bottom-left) — quiet epistemic marker */}
       {uncertainty && badges.contested && (
         <g>
           <circle
             cx={cx - size + 3}
             cy={cy + size - 3}
-            r={3.5}
-            fill={uncertainty === "fundamental" ? "#7c3aed" : "#b45309"}
-            opacity={0.9}
+            r={4}
+            fill={CONTESTED_BADGE.fill}
+            stroke={CONTESTED_BADGE.stroke}
+            strokeWidth={uncertainty === "fundamental" ? 1.2 : 0.6}
           />
           <text
             x={cx - size + 3}
             y={cy + size - 2.5}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={5}
+            fontSize={6}
             fontWeight={700}
-            fill="#fff"
+            fill={CONTESTED_BADGE.text}
             className="pointer-events-none"
           >
             ?
           </text>
         </g>
-      )}
-
-      {/* Erosion badge (top-right) */}
-      {showErosion && degradation > 0.1 && (
-        <circle cx={cx + size - 3} cy={cy - size + 3} r={4} fill="#991b1b" opacity={0.9} />
       )}
 
       {/* Hover affordance: advance state (bottom-right) */}

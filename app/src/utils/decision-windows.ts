@@ -52,8 +52,5 @@ export function computeDecisionWindows(
   return result.sort((a, b) => a.mustStartBy - b.mustStartBy);
 }
 
-export const URGENCY_COLORS: Record<WindowUrgency, string> = {
-  overdue: "#ef4444",
-  urgent: "#f59e0b",
-  upcoming: "#6b7280",
-};
+// Badge styling for urgency lives in utils/colors.ts (URGENCY_BADGE):
+// hue stays threat-red; urgency is carried by weight (solid vs outline).

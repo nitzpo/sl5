@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSimulationStore } from "./store/simulation";
 import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
 import { Header } from "./components/layout/Header";
@@ -28,10 +28,8 @@ function App() {
   };
   const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
   const [zoom, setZoom] = useState(1);
-  const [rightPanelWidth, setRightPanelWidth] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const rightPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -50,13 +48,14 @@ function App() {
         return resp.json();
       };
 
-      const [chains, ...blockArrays] = await Promise.all([
+      const [chains, worldState, ...blockArrays] = await Promise.all([
         fetchJson("attack-chains.json"),
+        fetchJson("world-state.json"),
         ...blockFiles.map(fetchJson),
       ]);
       const blocks: Block[] = blockArrays.flat();
 
-      loadData(blocks, chains);
+      loadData(blocks, chains, worldState?.oc_definitions ?? []);
     }
     load().catch((err: unknown) => {
       setLoadError(err instanceof Error ? err.message : String(err));
@@ -90,17 +89,6 @@ function App() {
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
   }, [applyHash]);
-
-  useEffect(() => {
-    const el = rightPanelRef.current;
-    if (!el) return;
-    setRightPanelWidth(el.offsetWidth);
-    const obs = new ResizeObserver(() => {
-      setRightPanelWidth(el.offsetWidth);
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [dataLoaded]);
 
   if (loadError) {
     return (
@@ -143,9 +131,9 @@ function App() {
       <SharedBanner />
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
 
-      <div className="relative flex-1 overflow-hidden">
-        {/* Main view area — scrollable */}
-        <div className="absolute inset-0 overflow-auto p-4">
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Main view area — scrollable, sits beside (never under) the panels */}
+        <div className="relative flex-1 overflow-auto p-4">
           <div className="mb-2 flex items-center gap-4">
             {/* View toggle */}
             <div className="flex items-center gap-0.5 bg-gray-800 rounded p-0.5">
@@ -165,10 +153,10 @@ function App() {
               </button>
             </div>
 
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-gray-600 whitespace-nowrap hidden xl:inline">
               Click for details | Right-click to cycle state
             </span>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
               <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
               <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
               <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
@@ -209,9 +197,7 @@ function App() {
               />
             </div>
           </div>
-          <div style={{ marginRight: rightPanelWidth }}>
-            <VerdictBanner />
-          </div>
+          <VerdictBanner />
           <ChainStrip />
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
             {viewMode === "grid" ? (
@@ -254,8 +240,8 @@ function App() {
           </button>
         </div>
 
-        {/* Right panels — overlay on top of grid */}
-        <div ref={rightPanelRef} className="absolute top-0 right-0 h-full z-10">
+        {/* Right panels — in-flow flex column, canvas is never occluded */}
+        <div className="shrink-0 h-full">
           <RightPanels
             selectedBlock={selectedBlock}
             onCloseBlock={() => setSelectedBlock(null)}
@@ -276,7 +262,7 @@ function App() {
 
 function LegendItem({ color, label, tip }: { color: string; label: string; tip: string }) {
   return (
-    <span className="relative flex items-center gap-1 group cursor-default">
+    <span className="relative flex items-center gap-1 group cursor-default whitespace-nowrap">
       <span className={`w-2 h-2 rounded-sm ${color}`} /> {label}
       <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
         {tip}
@@ -302,7 +288,7 @@ function ToggleLegendItem({
     <button
       onClick={() => toggleBadge(badge)}
       aria-pressed={on}
-      className={`relative flex items-center gap-1 group transition-opacity ${
+      className={`relative flex items-center gap-1 group transition-opacity whitespace-nowrap ${
         on ? "" : "opacity-35"
       }`}
     >

@@ -124,8 +124,8 @@ export function CisoView() {
       {/* Budget */}
       <div className="bg-gray-900 rounded p-2.5">
         <div className="flex justify-between text-xs">
-          <span className="text-gray-500">Annual Budget</span>
-          <span className="text-gray-300">{formatCost(budget)}/yr</span>
+          <span className="text-gray-500">Budget (upfront capex)</span>
+          <span className="text-gray-300">{formatCost(budget)}</span>
         </div>
         <div className="flex justify-between text-xs mt-1">
           <span className="text-gray-500">Top 3 cost (upfront)</span>

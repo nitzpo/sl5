@@ -6,6 +6,7 @@ import {
   LAYER_LABELS,
   LAYER_COLORS,
   blockPositionOnRing,
+  ringLabelPosition,
 } from "../../utils/ring-geometry";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { RingBlockCell } from "./RingBlockCell";
@@ -50,8 +51,11 @@ export function RingLayer({
   const strokeOpacity = 0.15 + strength * 0.6;
   const dashArray = active ? "none" : "6 4";
 
-  const labelX = RING_CENTER.x;
-  const labelY = RING_CENTER.y - radius - 6;
+  // Labels march out along the NE spoke (kept clear of blocks) with a small
+  // leader tick to their ring, so all eight stay readable.
+  const anchor = ringLabelPosition(ringIdx);
+  const labelX = anchor.x + 9;
+  const labelY = anchor.y - 7;
 
   return (
     <g>
@@ -91,29 +95,32 @@ export function RingLayer({
         );
       })}
 
-      {/* Label at top (rendered last = on top of blocks) */}
+      {/* Leader tick from the ring to its label */}
+      <line
+        x1={anchor.x}
+        y1={anchor.y}
+        x2={labelX - 2}
+        y2={labelY + 3}
+        stroke={color}
+        strokeWidth={0.75}
+        opacity={0.45}
+        className="pointer-events-none"
+      />
+      {/* Label along the spoke (rendered last = on top of rings) */}
       <text
         x={labelX}
         y={labelY}
-        textAnchor="middle"
-        fontSize={8}
+        textAnchor="start"
+        fontSize={10}
         fill={color}
-        opacity={0.85}
+        opacity={0.9}
         fontWeight={600}
         className="pointer-events-none"
       >
         {label}
-      </text>
-      <text
-        x={labelX}
-        y={labelY + 9}
-        textAnchor="middle"
-        fontSize={7}
-        fill={color}
-        opacity={0.5}
-        className="pointer-events-none"
-      >
-        {Math.round(strength * 100)}%
+        <tspan fontSize={9} opacity={0.6}>
+          {"  "}{Math.round(strength * 100)}%
+        </tspan>
       </text>
     </g>
   );

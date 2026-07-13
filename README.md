@@ -37,19 +37,27 @@ The tool is built around **two simultaneous races**:
 
 Everything runs client-side from JSON data — no backend.
 
-- **Building blocks** (`app/public/data/blocks-*.json`) — each block has a category, a **defense type** (🔵 hard-stop / 🟠 probabilistic / 🔷 hybrid), cost, deploy time, an effectiveness curve, an AI-erosion rate, dependencies, and which defense-in-depth layer(s) it contributes to. A block moves through states: *not started → investing → implementing → deployed → mature.*
-- **Attack chains** (`app/public/data/attack-chains.json`) — multi-step exfiltration scenarios (e.g., *The Quiet Tap*, *The Poisoned Chip*, *Patient Distillation*). Each names the blocks that would stop it and the adversary level required.
+- **Building blocks** (`app/public/data/blocks-*.json`) — each block has a category, a **defense type** (🔵 hard-stop / 🟠 probabilistic / 🔷 hybrid), cost, deploy time, an effectiveness curve, an AI-erosion rate, dependencies, and which defense-in-depth layer(s) it contributes to. A block moves through states: *not started → investing → implementing → deployed → mature.* Hard `requires` dependencies are enforced: a block claiming deployed while a prerequisite isn't operational is capped at implementing.
+- **Attack chains** (`app/public/data/attack-chains.json`) — multi-step exfiltration scenarios (e.g., *The Quiet Tap*, *The Poisoned Chip*, *Patient Distillation*). Each names the blocks it exploits and its stoppers — and both are mechanical: every listed stopper reduces its chain.
 - **Breach probability** is **capability-gated and monotonic**: for a chain,
 
   ```
   P(breach) = precondition × gate(min_OC) × ∏ get-past(block) × defense-in-depth-discount
   ```
 
-  The **capability gate** asks whether the adversary can even attempt the chain (it scales with OC and with AI capability over time). The per-block **get-past** term falls from 1 (absent) toward ~0 as a defense matures — so improving a defense can *never* raise breach probability. Hard stops are deterministic; probabilistic defenses weaken against stronger adversaries and erode as AI advances. Independent deployed layers earn a defense-in-depth discount; correlated ones (shared dependencies) earn less.
+  The **capability gate** asks whether the adversary can even attempt the chain — it is steep (≈85% at the chain's minimum OC, ≈10% one tier below), so OC tiers are qualitative jumps, and AI capability lifts an adversary's *effective* OC over time, reopening gates from below. The per-block **get-past** term falls from 1 (absent) toward ~0 as a defense matures — so improving a defense can *never* raise breach probability (asserted by property tests). Hard stops are deterministic; probabilistic defenses weaken against stronger adversaries. AI is counted exactly once per number: breach takes AI's attacker-side lift through effective OC, while the SL score takes the defender-side erosion of probabilistic blocks. Independent deployed layers earn a defense-in-depth discount; a layer whose blocks share a failure mode (`shared_dependencies`) earns half credit.
 - **Security Level** is a hybrid of weakest-link and harmonic-mean per-category scores.
-- **Budget** is binding: blocks funded past the budget cap are capped at "implementing" effectiveness.
+- **Budget** is binding and order-aware: blocks are funded in the order you advanced them, so activating one more block can only cap *that* block, never evict an earlier commitment. The **risk-tolerance** slider sets the planning cost basis (aggressive = optimistic costs, conservative = worst-case).
 
-The methodology and calibration are documented in [`research/`](research/) — see `scoring-model.md`, `design-decisions.md`, `distillation-analysis.md`, and `formula-calibration-results.md`. JSON schemas live in [`research/schema/`](research/schema/).
+The methodology and calibration are documented in [`research/`](research/) — see `scoring-model.md`, `design-decisions.md`, `distillation-analysis.md`, and `formula-calibration-results.md`. Note that those documents describe the earlier Python-prototype generation of the model; where they differ from the shipped engine (`app/src/engine/`), the engine and this README are authoritative. JSON schemas live in [`research/schema/`](research/schema/).
+
+### Not modeled (yet)
+
+Ideas the research docs argue for that the simulation does not implement — listed here so the docs don't over-promise:
+
+- **Inbound inference-channel attacks** (prompt-driven exploitation of the serving stack; block AI-08 exists in the data but has no engine mechanics beyond a generic block).
+- **Uncertainty bands** on scores (`open_questions` are surfaced as contested badges, not as ±SL error bars).
+- **Split SL** for the same model (weights-at-rest vs served-externally) — the extraction meter carries the served-model story instead.
 
 ---
 

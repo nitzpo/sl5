@@ -6,6 +6,7 @@ import type {
   Perspective,
   Sliders,
   AttackChain,
+  OcDefinition,
 } from "../engine/types";
 import {
   saveToLocalStorage,
@@ -23,6 +24,7 @@ interface SimulationStore {
   // Data (loaded once)
   blocks: Block[];
   attackChains: AttackChain[];
+  ocDefinitions: OcDefinition[];
   dataLoaded: boolean;
 
   // User-controlled state
@@ -41,7 +43,7 @@ interface SimulationStore {
   scenarioName: string | null;
 
   // Actions
-  loadData: (blocks: Block[], chains: AttackChain[]) => void;
+  loadData: (blocks: Block[], chains: AttackChain[], ocDefinitions?: OcDefinition[]) => void;
   setBlockState: (blockId: string, state: BlockState) => void;
   cycleBlockState: (blockId: string) => void;
   setYear: (year: number) => void;
@@ -105,6 +107,7 @@ function baselineStatesFor(blocks: Block[]): Record<string, BlockState> {
 export const useSimulationStore = create<SimulationStore>()(subscribeWithSelector((set, get) => ({
   blocks: [],
   attackChains: [],
+  ocDefinitions: [],
   dataLoaded: false,
   blockStates: {},
   advanceOrder: [],
@@ -118,10 +121,11 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   playbackActive: false,
   scenarioName: null,
 
-  loadData: (blocks, chains) => {
+  loadData: (blocks, chains, ocDefinitions = []) => {
     if (get().dataLoaded) return;
 
     const baselineStates = baselineStatesFor(blocks);
+    set({ ocDefinitions });
 
     // Restore: URL hash takes priority (shared link), then localStorage
     const fromUrl = loadFromUrlHash();

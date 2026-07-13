@@ -91,6 +91,18 @@ export interface Block {
   }>;
 }
 
+/** Adversary operational-capability tier, loaded from world-state.json. */
+export interface OcDefinition {
+  level: number;
+  name: string;
+  budget_millions: number;
+  team_size: number;
+  time_horizon_months: number;
+  description: string;
+  typical_actors: string[];
+  key_capabilities: string[];
+}
+
 export interface AttackChainStep {
   phase: string;
   description: string;

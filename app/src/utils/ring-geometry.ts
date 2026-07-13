@@ -45,10 +45,14 @@ export const LAYER_ALIAS_MAP: Record<string, string> = {
   input_boundary: "network_boundary",
 };
 
-export const RING_CENTER = { x: 310, y: 310 };
-export const RING_RADII = [50, 82, 114, 146, 180, 214, 248, 282];
-export const RING_BLOCK_SIZE = 16;
-export const RING_SVG_SIZE = 620;
+export const RING_CENTER = { x: 330, y: 330 };
+export const RING_RADII = [54, 88, 122, 156, 192, 226, 260, 294];
+export const RING_BLOCK_SIZE = 17;
+export const RING_SVG_SIZE = 660;
+
+/** Layer labels sit along this radial spoke (north-east), inside a wedge kept
+ * clear of blocks — so the eight labels never stack into one column. */
+export const LABEL_SPOKE_ANGLE = -Math.PI / 4;
 
 export function resolveLayer(raw: string): LayerId | null {
   if ((LAYER_ORDER as readonly string[]).includes(raw)) return raw as LayerId;
@@ -57,12 +61,13 @@ export function resolveLayer(raw: string): LayerId | null {
   return null;
 }
 
-export function blockAngle(index: number, total: number, ringIdx: number): number {
-  const excludeHalf = Math.PI / 9;
+export function blockAngle(index: number, total: number): number {
+  // Keep a wedge clear around the label spoke; distribute blocks evenly over
+  // the rest. No per-ring rotation jitter — stable, comparable positions.
+  const excludeHalf = Math.PI / 10;
   const availableArc = Math.PI * 2 - excludeHalf * 2;
-  const startAngle = -Math.PI / 2 + excludeHalf;
-  const ringOffset = ringIdx * 0.35;
-  const pos = (((index + 0.5) / total) * availableArc + ringOffset) % availableArc;
+  const startAngle = LABEL_SPOKE_ANGLE + excludeHalf;
+  const pos = ((index + 0.5) / total) * availableArc;
   return startAngle + pos;
 }
 
@@ -71,10 +76,19 @@ export function blockPositionOnRing(
   blockIdx: number,
   totalOnRing: number
 ): { x: number; y: number } {
-  const angle = blockAngle(blockIdx, totalOnRing, ringIdx);
+  const angle = blockAngle(blockIdx, totalOnRing);
   const r = RING_RADII[ringIdx];
   return {
     x: RING_CENTER.x + r * Math.cos(angle),
     y: RING_CENTER.y + r * Math.sin(angle),
+  };
+}
+
+/** Where a ring's label anchors: on the spoke, at the ring's radius. */
+export function ringLabelPosition(ringIdx: number): { x: number; y: number } {
+  const r = RING_RADII[ringIdx];
+  return {
+    x: RING_CENTER.x + r * Math.cos(LABEL_SPOKE_ANGLE),
+    y: RING_CENTER.y + r * Math.sin(LABEL_SPOKE_ANGLE),
   };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { GlobalSliders } from "../sliders/GlobalSliders";
 import { TimelineTrack } from "../timeline/TimelineTrack";
 import { PlaybackBar } from "../timelapse/PlaybackBar";
@@ -25,13 +25,17 @@ export function BottomPanel() {
 
   // Auto-open exactly when playback starts (idle → active); a user who hides
   // the panel mid-story is respected (pause/resume won't re-open it).
-  const prevPlayback = useRef(playbackState);
-  useEffect(() => {
-    if (prevPlayback.current === "idle" && playbackState !== "idle") {
-      setCollapsed(false);
-    }
-    prevPlayback.current = playbackState;
-  }, [playbackState]);
+  // Store subscription (event-driven) rather than setState-in-effect.
+  useEffect(
+    () =>
+      usePlaybackStore.subscribe(
+        (s) => s.state,
+        (state, prev) => {
+          if (prev === "idle" && state !== "idle") setCollapsed(false);
+        }
+      ),
+    []
+  );
 
   const breach = bestChain?.probability ?? 0;
 

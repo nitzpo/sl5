@@ -26,10 +26,9 @@ export function applyDependencyConstraint(
     for (const block of blocks) {
       const state = states[block.id] ?? "not_started";
       if (!SATISFIED.has(state)) continue;
-      const requires = (block.dependencies?.requires ?? []).filter((id) =>
-        blockIds.has(id)
+      const unmet = (block.dependencies?.requires ?? []).some(
+        (id) => blockIds.has(id) && !SATISFIED.has(states[id] ?? "not_started")
       );
-      const unmet = requires.some((id) => !SATISFIED.has(states[id] ?? "not_started"));
       if (unmet) {
         states[block.id] = "implementing";
         unmetIds.add(block.id);

@@ -137,10 +137,13 @@ export function defenseInDepthDiscount(
       depCounts.set(dep, (depCounts.get(dep) ?? 0) + 1);
     }
   }
-  const isCorrelated = (block: Block): boolean =>
-    [...new Set(block.defense_in_depth?.shared_dependencies ?? [])].some(
-      (dep) => (depCounts.get(dep) ?? 0) >= 2
-    );
+  const correlatedBlocks = new Set<string>();
+  for (const block of chainBlocks) {
+    const deps = block.defense_in_depth?.shared_dependencies ?? [];
+    if (deps.some((dep) => (depCounts.get(dep) ?? 0) >= 2)) {
+      correlatedBlocks.add(block.id);
+    }
+  }
 
   const layerCredit = new Map<string, number>();
   for (const block of chainBlocks) {
@@ -154,7 +157,7 @@ export function defenseInDepthDiscount(
     if (stateWeight === 0) continue;
     const layer = primaryLayer(block);
     if (!layer) continue;
-    const credit = stateWeight * (isCorrelated(block) ? CORRELATED_LAYER_WEIGHT : 1);
+    const credit = stateWeight * (correlatedBlocks.has(block.id) ? CORRELATED_LAYER_WEIGHT : 1);
     layerCredit.set(layer, Math.max(layerCredit.get(layer) ?? 0, credit));
   }
 

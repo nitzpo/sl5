@@ -49,8 +49,9 @@ export function usePlaybackLoop() {
       const newT = holding
         ? store.playbackT
         : Math.min(store.playbackT + dt * ratePerSec, totalRange);
-
-      store.setPlaybackT(newT);
+      if (!holding) {
+        store.setPlaybackT(newT);
+      }
 
       const currentYear = startYear + newT;
       const intYear = Math.min(Math.floor(currentYear), endYear);

@@ -58,7 +58,9 @@ export function applyBudgetConstraint(
   const exceededIds = new Set<string>();
   for (const block of queue) {
     total += blockCostBasis(block, opts.riskTolerance);
-    if (total > budgetMillions) exceededIds.add(block.id);
+    // Epsilon guard: cost bases accumulate float error, and an exact-fit
+    // budget must not read as exceeded.
+    if (total - budgetMillions > 1e-9) exceededIds.add(block.id);
   }
 
   if (exceededIds.size === 0) {

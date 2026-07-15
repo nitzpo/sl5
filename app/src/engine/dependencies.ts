@@ -15,7 +15,6 @@ export function applyDependencyConstraint(
   blocks: Block[],
   blockStates: Record<string, BlockState>
 ): { effectiveStates: Record<string, BlockState>; unmetIds: Set<string> } {
-  const blockIds = new Set(blocks.map((b) => b.id));
   const states: Record<string, BlockState> = { ...blockStates };
   const unmetIds = new Set<string>();
 
@@ -26,8 +25,11 @@ export function applyDependencyConstraint(
     for (const block of blocks) {
       const state = states[block.id] ?? "not_started";
       if (!SATISFIED.has(state)) continue;
+      // Fail closed: a prerequisite that doesn't resolve to a loaded block is
+      // unmet, never silently satisfied (data integrity tests forbid dangling
+      // references in shipped data, so this only bites corrupt/stale state).
       const unmet = (block.dependencies?.requires ?? []).some(
-        (id) => blockIds.has(id) && !SATISFIED.has(states[id] ?? "not_started")
+        (id) => !SATISFIED.has(states[id] ?? "not_started")
       );
       if (unmet) {
         states[block.id] = "implementing";

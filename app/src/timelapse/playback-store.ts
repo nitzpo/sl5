@@ -79,9 +79,13 @@ export const usePlaybackStore = create<PlaybackStore>()(
           Object.assign(newBlockStates, script.initialBlockStates);
         }
 
-        // Budget funding follows the story's own deployment order.
+        // Budget funding follows the story's own deployment order. Blocks a
+        // script explicitly starts as not_started take their slot from their
+        // deployment, not from the initial-state list.
         const scriptOrder: string[] = [
-          ...Object.keys(script.initialBlockStates ?? {}),
+          ...Object.keys(script.initialBlockStates ?? {}).filter(
+            (id) => script.initialBlockStates?.[id] !== "not_started"
+          ),
           ...(script.deployments ?? []).map((d) => d.blockId),
         ].filter((id, i, arr) => arr.indexOf(id) === i);
 

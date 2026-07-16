@@ -65,8 +65,14 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
     <div className="relative">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="select-none"
-        style={{ width: "100%", maxWidth: `${Math.round(width * 1.4)}px` }}
+        className="select-none block"
+        style={{
+          // Render at a fixed natural pixel size, top-left aligned. The grid no
+          // longer shrinks to fit — hexes keep their designed size and the grid
+          // overflows into the pannable canvas viewport (drag / trackpad to move).
+          width: `${width}px`,
+          height: `${height}px`,
+        }}
         onClick={() => {
           setSelectedChain(null);
           onClearSelection?.();

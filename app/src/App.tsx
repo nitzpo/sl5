@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { usePanDrag } from "./utils/use-pan-drag";
 import { useSimulationStore } from "./store/simulation";
 import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
 import { Header } from "./components/layout/Header";
@@ -9,7 +10,6 @@ import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
 import { DefenseRings } from "./components/rings/DefenseRings";
 import { ChainStrip } from "./components/analysis/ChainStrip";
-import { VerdictBanner } from "./components/layout/VerdictBanner";
 import { useViewStore } from "./store/view";
 import type { BadgeKey } from "./store/view";
 import type { Block } from "./engine/types";
@@ -28,6 +28,8 @@ function App() {
   };
   const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
   const [zoom, setZoom] = useState(1);
+  const { ref: panRef, dragging, overflowing, onPointerDown: onPanPointerDown } =
+    usePanDrag();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
 
@@ -132,8 +134,11 @@ function App() {
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
 
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Main view area — scrollable, sits beside (never under) the panels */}
-        <div className="relative flex-1 overflow-auto p-4">
+        {/* Main view area — fixed controls on top, a pannable canvas below.
+            The page itself never scrolls; only the canvas viewport does, and it
+            hides its scrollbars (trackpad + drag-to-pan move the view instead). */}
+        <div className="relative flex-1 flex flex-col overflow-hidden">
+          <div className="shrink-0 px-4 pt-4">
           <div className="mb-2 flex items-center gap-4">
             {/* View toggle */}
             <div className="flex items-center gap-0.5 bg-gray-800 rounded p-0.5">
@@ -197,21 +202,35 @@ function App() {
               />
             </div>
           </div>
-          <VerdictBanner />
           <ChainStrip />
-          <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
-            {viewMode === "grid" ? (
-              <BlockGrid
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            ) : (
-              <DefenseRings
-                onSelectBlock={selectBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            )}
+          </div>
+
+          {/* Pannable canvas viewport: hides its scrollbars; trackpad scrolls in
+              any direction, and dragging empty space pans it like a map. */}
+          <div
+            ref={panRef}
+            onPointerDown={onPanPointerDown}
+            className={`relative flex-1 overflow-auto no-scrollbar px-4 pb-4 ${
+              dragging ? "cursor-grabbing" : overflowing ? "cursor-grab" : ""
+            }`}
+          >
+            <div
+              className="w-full"
+              style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
+            >
+              {viewMode === "grid" ? (
+                <BlockGrid
+                  onSelectBlock={selectBlock}
+                  selectedBlock={selectedBlock}
+                  onClearSelection={() => setSelectedBlock(null)}
+                />
+              ) : (
+                <DefenseRings
+                  onSelectBlock={selectBlock}
+                  onClearSelection={() => setSelectedBlock(null)}
+                />
+              )}
+            </div>
           </div>
         </div>
 

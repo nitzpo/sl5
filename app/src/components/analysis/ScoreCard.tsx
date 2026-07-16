@@ -2,9 +2,18 @@ import { useSimulationResults } from "../../store/derived";
 import { useSimulationStore } from "../../store/simulation";
 import { formatSl, formatProbability, formatPercent, formatCost } from "../../utils/format";
 import { CATEGORY_LABELS } from "../../utils/geometry";
+import { LAYER_LABELS } from "../../utils/ring-geometry";
 import { breachLevel, slLevel, LEVEL_TEXT, LEVEL_HEX, SEMANTIC } from "../../utils/colors";
 import { useDeltaFlash } from "../../utils/use-delta-flash";
 import type { Category } from "../../engine/types";
+
+const OC_ACTOR: Record<number, string> = {
+  1: "A hobbyist attacker",
+  2: "A professional attacker",
+  3: "A criminal syndicate",
+  4: "A nation-state attacker",
+  5: "A top-priority state operation",
+};
 
 /** Small signed-change chip flashed beside a headline metric. */
 function DeltaChip({ delta, format, downIsGood }: { delta: number | null; format: (d: number) => string; downIsGood: boolean }) {
@@ -30,13 +39,22 @@ export function ScoreCard() {
     extractionProgress,
     activeLayers,
     spentMillions,
+    defenseLayerStatus,
   } = useSimulationResults();
   const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
   const budget = useSimulationStore((s) => s.sliders.budget_millions);
   const attackChains = useSimulationStore((s) => s.attackChains);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const year = useSimulationStore((s) => s.year);
+  const selectedChainId = useSimulationStore((s) => s.selectedChainId);
+  const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
   const requiredSl = 5.0 - riskTolerance * 2.0;
+
+  // Weakest defense layer — the narrative "where they get in" that used to live
+  // in the (now-removed) canvas verdict banner.
+  const weakestLayer = (Object.entries(defenseLayerStatus) as [string, { strength: number }][]).reduce<
+    { id: string; strength: number } | null
+  >((min, [id, s]) => (!min || s.strength < min.strength ? { id, strength: s.strength } : min), null);
 
   const bestChainName = bestChain
     ? attackChains.find((c) => c.id === bestChain.id)?.name ?? bestChain.id
@@ -52,12 +70,19 @@ export function ScoreCard() {
 
   return (
     <div className="space-y-3">
-      {/* Breach probability — the headline number */}
-      <div className="bg-gray-900 rounded-lg p-3">
-        <div
-          className="text-xs text-gray-500"
-          title="Most likely attack chain; includes defense-in-depth discount"
-        >
+      {/* Breach probability — the headline number. Clickable to highlight the
+          most-viable chain on the canvas (this absorbed the old verdict banner). */}
+      <button
+        type="button"
+        onClick={() =>
+          bestChain &&
+          setSelectedChain(selectedChainId === bestChain.id ? null : bestChain.id)
+        }
+        disabled={!bestChain}
+        className="block w-full text-left bg-gray-900 rounded-lg p-3 transition-colors enabled:hover:bg-gray-800 disabled:cursor-default"
+        title={bestChain ? "Click to show this attack chain on the canvas" : undefined}
+      >
+        <div className="text-xs text-gray-500">
           Breach Probability
         </div>
         <div className={`text-3xl font-bold ${breachColor}`}>
@@ -69,12 +94,20 @@ export function ScoreCard() {
           />
         </div>
         <div className="text-[10px] text-gray-500 mt-0.5">
-          Best chain vs OC{adversaryOc}, {year}
+          {OC_ACTOR[adversaryOc] ?? "An attacker"} (OC{adversaryOc}), {year}
           {bestChainName && (
             <span className="text-gray-400"> — {bestChainName}</span>
           )}
         </div>
-      </div>
+        {weakestLayer && (
+          <div className="text-[10px] text-gray-500 mt-0.5">
+            Weakest layer:{" "}
+            <span className="text-gray-400">
+              {LAYER_LABELS[weakestLayer.id] ?? weakestLayer.id}
+            </span>
+          </div>
+        )}
+      </button>
 
       {/* Overall SL */}
       <div className="bg-gray-900 rounded-lg p-3">

@@ -4,7 +4,6 @@ import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { LAYER_ORDER, RING_SVG_SIZE, RING_CENTER } from "../../utils/ring-geometry";
-import { applyBudgetConstraint } from "../../engine";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { RingLayer } from "./RingLayer";
@@ -24,15 +23,10 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
   const selectedChainId = useSimulationStore((s) => s.selectedChainId);
   const attackChains = useSimulationStore((s) => s.attackChains);
 
-  const { defenseLayerStatus, blocksByLayer } = useSimulationResults();
+  const { defenseLayerStatus, blocksByLayer, budgetExceededIds } = useSimulationResults();
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
-
-  const budgetExceededIds = useMemo(
-    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
-    [blocks, blockStates, sliders.budget_millions]
-  );
 
   const decisionWindows = useMemo(() => {
     const map = new Map<string, WindowUrgency>();
@@ -51,8 +45,13 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
     <div className="relative">
       <svg
         viewBox={`0 0 ${RING_SVG_SIZE} ${RING_SVG_SIZE}`}
-        className="select-none"
-        style={{ width: "100%", maxWidth: `${RING_SVG_SIZE}px` }}
+        className="select-none block mx-auto"
+        style={{
+          width: "100%",
+          maxWidth: `${RING_SVG_SIZE}px`,
+          // fit the full composition in the visible canvas without scrolling
+          maxHeight: "calc(100vh - 220px)",
+        }}
         onClick={() => {
           setSelectedChain(null);
           onClearSelection?.();
@@ -82,7 +81,7 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
           x={RING_CENTER.x}
           y={RING_CENTER.y - 4}
           textAnchor="middle"
-          fontSize={8}
+          fontSize={10}
           fill="#a78bfa"
           fontWeight={600}
         >
@@ -90,9 +89,9 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
         </text>
         <text
           x={RING_CENTER.x}
-          y={RING_CENTER.y + 6}
+          y={RING_CENTER.y + 8}
           textAnchor="middle"
-          fontSize={7}
+          fontSize={9}
           fill="#a78bfa"
           opacity={0.7}
         >

@@ -14,9 +14,11 @@ export {
   chainBreachProbability,
   computeBreachProbabilities,
 } from "./breach";
-export { applyBudgetConstraint } from "./budget";
+export { applyBudgetConstraint, blockCostBasis } from "./budget";
+export { applyDependencyConstraint } from "./dependencies";
 export {
   distillationProgress,
+  distillationDefenseReduction,
   monthlyExtractionRate,
   isModelCompromised,
 } from "./distillation";

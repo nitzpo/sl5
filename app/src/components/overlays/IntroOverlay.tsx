@@ -53,7 +53,7 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
             onClick={watchStory}
             className="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
           >
-            ▶ Watch the 3-min story
+            ▶ Watch the 1-min story
           </button>
           <button
             onClick={dismiss}

@@ -3,8 +3,10 @@ import type { Block, BlockState, Sliders } from "../../engine/types";
 import { blockEffectiveness, aiDegradation } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
+import { useSimulationResults } from "../../store/derived";
 import { formatCost } from "../../utils/format";
 import { computeDecisionWindows } from "../../utils/decision-windows";
+import { STATE_LABELS } from "../../utils/colors";
 
 interface BlockTooltipProps {
   block: Block;
@@ -26,6 +28,13 @@ export function BlockTooltip({
 
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
+  const { budgetExceededIds, dependencyUnmetIds } = useSimulationResults();
+
+  const cappedByBudget = budgetExceededIds.has(block.id);
+  const cappedByDependency = dependencyUnmetIds.has(block.id);
+  const missingRequires = cappedByDependency
+    ? (block.dependencies?.requires ?? []).join(", ")
+    : null;
 
   const effectiveness = blockEffectiveness(block, state, year, sliders);
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
@@ -47,14 +56,17 @@ export function BlockTooltip({
   useEffect(() => {
     if (!anchorRect || !ref.current) return;
     const tipRect = ref.current.getBoundingClientRect();
-    const spaceAbove = anchorRect.top;
+    const spaceBelow = window.innerHeight - anchorRect.bottom;
 
+    // Prefer below the hex: placing above covers the verdict banner for
+    // top-row blocks; flipping up is only needed near the viewport bottom.
     let top: number;
-    if (spaceAbove > tipRect.height + 8) {
-      top = anchorRect.top - tipRect.height - 6;
-    } else {
+    if (spaceBelow > tipRect.height + 8) {
       top = anchorRect.bottom + 6;
+    } else {
+      top = anchorRect.top - tipRect.height - 6;
     }
+    top = Math.max(8, top);
 
     let left = anchorRect.left + anchorRect.width / 2 - tipRect.width / 2;
     left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
@@ -74,7 +86,7 @@ export function BlockTooltip({
         {block.id}: {block.name}
       </div>
       <div className="text-[11px] text-gray-400 mt-0.5">
-        {state} | effectiveness: {Math.round(effectiveness * 100)}% |{" "}
+        {STATE_LABELS[state]} | effectiveness: {Math.round(effectiveness * 100)}% |{" "}
         {formatCost(block.dimensions.cost.upfront_millions.min)}-
         {formatCost(block.dimensions.cost.upfront_millions.max)}
         {showErosion && (
@@ -83,6 +95,16 @@ export function BlockTooltip({
           </span>
         )}
       </div>
+      {cappedByDependency && (
+        <div className="text-[10px] text-sky-400 mt-0.5">
+          ⚠ Capped at Implementing — prerequisite not operational ({missingRequires})
+        </div>
+      )}
+      {cappedByBudget && !cappedByDependency && (
+        <div className="text-[10px] text-pink-400 mt-0.5">
+          ⚠ Capped at Implementing — over budget
+        </div>
+      )}
       {beyondAdversary && state === "not_started" && (
         <div className="text-[10px] text-gray-500 mt-0.5">
           Dimmed: OC{adversaryOc} adversary can't exploit this (needs OC{block.adversary_exploitation.oc_threshold_to_exploit}+)

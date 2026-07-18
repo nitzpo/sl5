@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
-import { applyBudgetConstraint } from "../../engine";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { useSimulationStore } from "../../store/simulation";
+import { useSimulationResults } from "../../store/derived";
 import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
 import { ChainOverlay } from "./ChainOverlay";
@@ -33,10 +33,7 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
 
-  const budgetExceededIds = useMemo(
-    () => applyBudgetConstraint(blocks, blockStates, sliders.budget_millions).exceededIds,
-    [blocks, blockStates, sliders.budget_millions]
-  );
+  const { budgetExceededIds, dependencyUnmetIds } = useSimulationResults();
 
   const decisionWindows = useMemo(() => {
     const map = new Map<string, WindowUrgency>();
@@ -68,8 +65,14 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
     <div className="relative">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="select-none"
-        style={{ width: "100%", maxWidth: `${Math.round(width * 1.4)}px` }}
+        className="select-none block"
+        style={{
+          // Render at a fixed natural pixel size, top-left aligned. The grid no
+          // longer shrinks to fit — hexes keep their designed size and the grid
+          // overflows into the pannable canvas viewport (drag / trackpad to move).
+          width: `${width}px`,
+          height: `${height}px`,
+        }}
         onClick={() => {
           setSelectedChain(null);
           onClearSelection?.();
@@ -120,6 +123,7 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
                     year={year}
                     sliders={sliders}
                     budgetExceeded={budgetExceededIds.has(block.id)}
+                    dependencyUnmet={dependencyUnmetIds.has(block.id)}
                     decisionWindow={decisionWindows.get(block.id)}
                     onSelect={onSelectBlock}
                     onHover={(b, rect) => {

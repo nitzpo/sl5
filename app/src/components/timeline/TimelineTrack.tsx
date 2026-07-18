@@ -4,14 +4,37 @@ import { getAiCapability } from "../../engine/ai-curve";
 import { computeCategoryScores, overallSlScore } from "../../engine/scoring";
 import { computeBreachProbabilities } from "../../engine/breach";
 import { applyBudgetConstraint } from "../../engine/budget";
+import { applyDependencyConstraint } from "../../engine/dependencies";
 import { computeDecisionWindows } from "../../utils/decision-windows";
+import { SEMANTIC, URGENCY_BADGE, chainSeries } from "../../utils/colors";
+import { formatSl } from "../../utils/format";
 
 const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
-const TRACK_HEIGHT = 110;
-const PADDING_X = 40;
-const PLOT_TOP = 8;
-const PLOT_BOTTOM = TRACK_HEIGHT - 22;
+
+// One normalized 0–1 axis (never dual-axis): threat and AI capability are
+// probabilities; the defense line is SL/5, direct-labeled as "SL x.x".
+const W = 1400;
+const H = 250;
+const PAD_L = 52;
+const PAD_R = 70;
+const PLOT_TOP = 12;
+const PLOT_BOTTOM = 168;
+const LANE_TOP = 186; // must-start deadline lane (own space, never over ticks)
+const LANE_H = 22;
+const YEAR_LABEL_Y = H - 8;
 const PLOT_RANGE = PLOT_BOTTOM - PLOT_TOP;
+
+const GRID = "#1f2937";
+const AXIS = "#374151";
+const MUTED = "#6b7280";
+
+function yearToX(y: number): number {
+  return PAD_L + ((y - YEARS[0]) / (YEARS[YEARS.length - 1] - YEARS[0])) * (W - PAD_L - PAD_R);
+}
+
+function valueToY(v: number): number {
+  return PLOT_BOTTOM - v * PLOT_RANGE;
+}
 
 interface Deadline {
   id: string;
@@ -22,10 +45,7 @@ interface Deadline {
 interface Bucket {
   center: number;
   items: Deadline[];
-}
-
-function valueToY(v: number): number {
-  return PLOT_BOTTOM - v * PLOT_RANGE;
+  urgency: "overdue" | "urgent" | "upcoming";
 }
 
 export function TimelineTrack() {
@@ -36,6 +56,7 @@ export function TimelineTrack() {
   const aiTimeline = sliders.ai_timeline;
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
+  const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const attackChains = useSimulationStore((s) => s.attackChains);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
@@ -45,17 +66,12 @@ export function TimelineTrack() {
   const [hoveredChain, setHoveredChain] = useState<string | null>(null);
   const [hoveredLegend, setHoveredLegend] = useState<string | null>(null);
 
-  const width = 600;
-  const usableWidth = width - PADDING_X * 2;
-
-  function yearToX(y: number): number {
-    return PADDING_X + ((y - YEARS[0]) / (YEARS[YEARS.length - 1] - YEARS[0])) * usableWidth;
-  }
-
   const riskData = useMemo(() => {
-    const { effectiveStates } = applyBudgetConstraint(
-      blocks, blockStates, sliders.budget_millions
+    const { effectiveStates: budgeted } = applyBudgetConstraint(
+      blocks, blockStates, sliders.budget_millions,
+      { order: advanceOrder, riskTolerance: sliders.risk_tolerance }
     );
+    const { effectiveStates } = applyDependencyConstraint(blocks, budgeted);
     return YEARS.map((y) => {
       const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders);
       const sl = overallSlScore(catScores);
@@ -74,46 +90,69 @@ export function TimelineTrack() {
         chainProbs: breachProbs,
       };
     });
-  }, [blocks, blockStates, sliders, adversaryOc, attackChains, aiTimeline, modelServedExternally]);
+  }, [blocks, blockStates, advanceOrder, sliders, adversaryOc, attackChains, aiTimeline, modelServedExternally]);
 
-  const aiCurvePoints = riskData
-    .map((d) => `${yearToX(d.year)},${valueToY(d.aiCap)}`)
-    .join(" ");
+  const toPoints = (get: (d: (typeof riskData)[number]) => number) =>
+    riskData.map((d) => `${yearToX(d.year)},${valueToY(get(d))}`).join(" ");
 
+  const aiCurvePoints = toPoints((d) => d.aiCap);
   const aiAreaPoints = [
     `${yearToX(YEARS[0])},${PLOT_BOTTOM}`,
-    ...riskData.map((d) => `${yearToX(d.year)},${valueToY(d.aiCap)}`),
+    aiCurvePoints,
     `${yearToX(YEARS[YEARS.length - 1])},${PLOT_BOTTOM}`,
   ].join(" ");
-
-  const threatPoints = riskData
-    .map((d) => `${yearToX(d.year)},${valueToY(d.threat)}`)
-    .join(" ");
-
-  const defensePoints = riskData
-    .map((d) => `${yearToX(d.year)},${valueToY(d.defense)}`)
-    .join(" ");
+  const threatPoints = toPoints((d) => d.threat);
+  const defensePoints = toPoints((d) => d.defense);
 
   const riskGapPoints = [
     ...riskData.map((d) => `${yearToX(d.year)},${valueToY(Math.max(d.threat, d.defense))}`),
     ...riskData.slice().reverse().map((d) => `${yearToX(d.year)},${valueToY(d.defense)}`),
   ].join(" ");
 
-  // Per-chain lines — assign distinct colors and spread y-labels to avoid overlap
-  const CHAIN_COLORS = ["#f87171", "#fb923c", "#fbbf24", "#a78bfa", "#60a5fa", "#34d399", "#f472b6"];
+  // Label the exposure gap once, at its widest year (only when it's substantial)
+  const gapLabel = useMemo(() => {
+    let bestIdx = -1;
+    let bestGap = 0.18; // only label gaps worth talking about
+    riskData.forEach((d, i) => {
+      const gap = Math.max(d.threat, d.defense) - d.defense;
+      if (gap > bestGap) {
+        bestGap = gap;
+        bestIdx = i;
+      }
+    });
+    if (bestIdx < 0) return null;
+    const d = riskData[bestIdx];
+    return {
+      x: yearToX(d.year),
+      y: (valueToY(Math.max(d.threat, d.defense)) + valueToY(d.defense)) / 2,
+    };
+  }, [riskData]);
+
   const chainLines = useMemo(() => {
     if (!showDecomposed) return [];
     return attackChains.map((chain, i) => {
       const points = riskData
         .map((d) => `${yearToX(d.year)},${valueToY(d.chainProbs[chain.id] ?? 0)}`)
         .join(" ");
-      const lastProb = riskData[riskData.length - 1]?.chainProbs[chain.id] ?? 0;
-      return { chainId: chain.id, chainName: chain.name, points, lastProb, color: CHAIN_COLORS[i % CHAIN_COLORS.length] };
+      const atYearProb =
+        riskData.find((d) => d.year === year)?.chainProbs[chain.id] ??
+        riskData[riskData.length - 1]?.chainProbs[chain.id] ??
+        0;
+      const series = chainSeries(chain.id, i);
+      return { chainId: chain.id, chainName: chain.name, points, atYearProb, ...series };
     });
-  }, [showDecomposed, riskData, attackChains]);
+  }, [showDecomposed, riskData, attackChains, year]);
 
   const currentX = yearToX(year);
   const currentData = riskData.find((d) => d.year === year) ?? riskData[0];
+  // Near the right edge, value labels flip to the left of the dot
+  const labelsFlip = currentX > W - PAD_R - 70;
+  const labelX = labelsFlip ? currentX - 9 : currentX + 9;
+  const labelAnchor = labelsFlip ? "end" : "start";
+  // Keep the two labels from colliding when the lines cross
+  const threatY = valueToY(currentData.threat);
+  const defenseYraw = valueToY(currentData.defense) + 12;
+  const defenseY = Math.abs(defenseYraw - (threatY - 5)) < 14 ? defenseYraw + 14 : defenseYraw;
 
   const buckets = useMemo(() => {
     const items: Deadline[] = computeDecisionWindows(blocks, blockStates, year, {
@@ -129,21 +168,19 @@ export function TimelineTrack() {
 
     const result: Bucket[] = [];
     for (const [center, bucketItems] of bucketMap) {
-      result.push({ center, items: bucketItems.sort((a, b) => a.mustStartBy - b.mustStartBy) });
+      result.push({
+        center,
+        items: bucketItems.sort((a, b) => a.mustStartBy - b.mustStartBy),
+        urgency: center <= year ? "overdue" : center <= year + 1 ? "urgent" : "upcoming",
+      });
     }
     return result.sort((a, b) => a.center - b.center);
   }, [blocks, blockStates, year]);
 
-  function bucketColor(center: number): string {
-    if (center <= year) return "#ef4444";
-    if (center <= year + 1) return "#f59e0b";
-    return "#6b7280";
-  }
-
   const legendItems = [
-    { id: "threat", color: "#ef4444", dashed: true, label: "Threat", tip: "Highest breach probability across all attack chains at each year. Rises as AI makes attacks easier." },
-    { id: "defense", color: "#22c55e", dashed: false, label: "Defense", tip: "Your overall security level (SL/5). Improves as you deploy and mature defenses." },
-    { id: "ai", color: "#7c3aed", dashed: false, label: "AI Cap", tip: "AI capability growth (0→100%). Drives threat up and erodes probabilistic defenses over time." },
+    { id: "threat", color: SEMANTIC.threat, dashed: true, label: "Threat", tip: "Highest breach probability across all attack chains at each year. Rises as AI makes attacks easier. Hidden while chains are decomposed (it is their upper envelope)." },
+    { id: "defense", color: SEMANTIC.defense, dashed: false, label: "Defense", tip: "Your overall security level (SL/5, shown on the same 0-100% scale). Improves as you deploy and mature defenses." },
+    { id: "ai", color: SEMANTIC.ai, dashed: false, label: "AI Cap", tip: "AI capability growth (0→100%). Drives threat up and erodes probabilistic defenses over time." },
   ];
 
   return (
@@ -152,11 +189,13 @@ export function TimelineTrack() {
       onMouseLeave={() => { setHoveredBucket(null); setHoveredChain(null); setHoveredLegend(null); }}
     >
       {/* Legend (HTML for proper tooltips) */}
-      <div className="flex items-center gap-3 mb-0.5 ml-10">
+      <div className="flex items-center gap-3 mb-0.5" style={{ marginLeft: `${(PAD_L / W) * 100}%` }}>
         {legendItems.map((item) => (
           <span
             key={item.id}
-            className="relative flex items-center gap-1 text-[10px] text-gray-400 cursor-default group"
+            className={`relative flex items-center gap-1 text-[11px] text-gray-400 cursor-default group ${
+              item.id === "threat" && showDecomposed ? "opacity-40" : ""
+            }`}
             onMouseEnter={() => setHoveredLegend(item.id)}
             onMouseLeave={() => setHoveredLegend(null)}
           >
@@ -170,7 +209,7 @@ export function TimelineTrack() {
             />
             {item.label}
             {hoveredLegend === item.id && (
-              <span className="absolute left-0 top-full mt-1 z-[110] bg-gray-800 border border-gray-700 rounded shadow-lg px-2 py-1 text-[10px] text-gray-300 whitespace-normal w-48 leading-tight">
+              <span className="absolute left-0 top-full mt-1 z-[110] bg-gray-800 border border-gray-700 rounded shadow-lg px-2 py-1 text-[11px] text-gray-300 whitespace-normal w-52 leading-tight">
                 {item.tip}
               </span>
             )}
@@ -178,54 +217,82 @@ export function TimelineTrack() {
         ))}
         <button
           onClick={() => setShowDecomposed(!showDecomposed)}
-          className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${showDecomposed ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"}`}
+          className={`text-[11px] px-1.5 py-0.5 rounded transition-colors ${showDecomposed ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"}`}
         >
           {showDecomposed ? "Chains ✓" : "+ Chains"}
         </button>
       </div>
 
-      <svg width="100%" viewBox={`0 0 ${width} ${TRACK_HEIGHT}`} className="select-none">
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="select-none">
+        {/* Gridlines + probability axis (one normalized scale for everything) */}
+        {[0, 0.25, 0.5, 0.75, 1].map((v) => (
+          <g key={v}>
+            <line
+              x1={PAD_L}
+              y1={valueToY(v)}
+              x2={W - PAD_R}
+              y2={valueToY(v)}
+              stroke={v === 0 ? AXIS : GRID}
+              strokeWidth={1}
+            />
+            <text
+              x={PAD_L - 8}
+              y={valueToY(v) + 4}
+              textAnchor="end"
+              fontSize={11}
+              fill={MUTED}
+            >
+              {Math.round(v * 100)}%
+            </text>
+          </g>
+        ))}
+
         {/* AI capability area (background) */}
-        <polygon points={aiAreaPoints} fill="#7c3aed" opacity={0.06} />
-        <polyline
-          points={aiCurvePoints}
-          fill="none"
-          stroke="#7c3aed"
-          strokeWidth={1.5}
-          opacity={0.3}
-        />
+        <polygon points={aiAreaPoints} fill={SEMANTIC.ai} opacity={0.06} />
+        <polyline points={aiCurvePoints} fill="none" stroke={SEMANTIC.ai} strokeWidth={1.75} opacity={0.35} />
 
-        {/* Risk gap shading */}
-        <polygon points={riskGapPoints} fill="#ef4444" opacity={0.08} />
+        {/* Exposure gap between threat and defense */}
+        <polygon points={riskGapPoints} fill={SEMANTIC.threat} opacity={0.07} />
+        {gapLabel && !showDecomposed && (
+          <text
+            x={gapLabel.x}
+            y={gapLabel.y}
+            textAnchor="middle"
+            fontSize={11}
+            fill="#f87171"
+            opacity={0.6}
+            className="pointer-events-none uppercase"
+            letterSpacing={1.5}
+          >
+            exposure gap
+          </text>
+        )}
 
-        {/* Defense line (green) */}
-        <polyline
-          points={defensePoints}
-          fill="none"
-          stroke="#22c55e"
-          strokeWidth={2}
-          opacity={0.8}
-        />
+        {/* Defense line */}
+        <polyline points={defensePoints} fill="none" stroke={SEMANTIC.defense} strokeWidth={2.5} opacity={0.85} />
 
-        {/* Threat line (red, dashed) */}
-        <polyline
-          points={threatPoints}
-          fill="none"
-          stroke="#ef4444"
-          strokeWidth={2}
-          strokeDasharray="5 3"
-          opacity={0.85}
-        />
+        {/* Threat line — hidden while decomposed (it is the chains' upper envelope) */}
+        {!showDecomposed && (
+          <polyline
+            points={threatPoints}
+            fill="none"
+            stroke={SEMANTIC.threat}
+            strokeWidth={2.5}
+            strokeDasharray="6 4"
+            opacity={0.85}
+          />
+        )}
 
-        {/* Per-chain lines (decomposed) — distinct colors, hover highlights */}
-        {showDecomposed && chainLines.map(({ chainId, points, color }) => (
+        {/* Per-chain lines (decomposed) — fixed per-chain hue + dash, hover highlights */}
+        {showDecomposed && chainLines.map(({ chainId, points, color, dash }) => (
           <polyline
             key={chainId}
             points={points}
             fill="none"
             stroke={color}
-            strokeWidth={hoveredChain === chainId ? 2 : 1}
-            opacity={hoveredChain === chainId ? 1 : hoveredChain ? 0.15 : 0.5}
+            strokeWidth={hoveredChain === chainId ? 2.5 : 1.5}
+            strokeDasharray={dash}
+            opacity={hoveredChain === chainId ? 1 : hoveredChain ? 0.15 : 0.75}
             onMouseEnter={() => setHoveredChain(chainId)}
             onMouseLeave={() => setHoveredChain(null)}
             className="cursor-pointer"
@@ -233,40 +300,60 @@ export function TimelineTrack() {
           />
         ))}
 
-        {/* X axis */}
-        <line
-          x1={PADDING_X}
-          y1={PLOT_BOTTOM}
-          x2={width - PADDING_X}
-          y2={PLOT_BOTTOM}
-          stroke="#374151"
-          strokeWidth={1}
-        />
-
         {/* Year ticks */}
         {YEARS.map((y) => {
           const x = yearToX(y);
           const isActive = y === year;
           return (
             <g key={y} className="cursor-pointer" onClick={() => setYear(y)}>
+              {/* generous invisible hit target */}
+              <rect x={x - 40} y={PLOT_BOTTOM} width={80} height={H - PLOT_BOTTOM} fill="transparent" />
               <line
                 x1={x}
-                y1={PLOT_BOTTOM - 3}
+                y1={PLOT_BOTTOM - 4}
                 x2={x}
-                y2={PLOT_BOTTOM + 3}
+                y2={PLOT_BOTTOM + 4}
                 stroke={isActive ? "#a78bfa" : "#4b5563"}
                 strokeWidth={isActive ? 2 : 1}
               />
               <text
                 x={x}
-                y={TRACK_HEIGHT - 3}
+                y={YEAR_LABEL_Y}
                 textAnchor="middle"
-                fontSize={10}
-                fill={isActive ? "#e5e7eb" : "#6b7280"}
+                fontSize={15}
+                fill={isActive ? "#e5e7eb" : MUTED}
                 fontWeight={isActive ? 600 : 400}
               >
                 {y}
               </text>
+            </g>
+          );
+        })}
+
+        {/* Deadline lane — must-start markers get their own space below the axis */}
+        <text x={PAD_L - 8} y={LANE_TOP + 12} textAnchor="end" fontSize={10} fill={MUTED}>
+          start by
+        </text>
+        {buckets.map((bucket, i) => {
+          const x = yearToX(Math.max(2024, Math.min(2030, bucket.center)));
+          const style = URGENCY_BADGE[bucket.urgency];
+          const isHovered = hoveredBucket === i;
+          const yTop = LANE_TOP + 3;
+          return (
+            <g key={bucket.center} className="cursor-pointer" onMouseEnter={() => setHoveredBucket(i)}>
+              <rect x={x - 14} y={LANE_TOP - 2} width={28} height={LANE_H} fill="transparent" />
+              <polygon
+                points={`${x},${yTop + 11} ${x - 5},${yTop} ${x + 5},${yTop}`}
+                fill={style.fill}
+                stroke={style.stroke}
+                strokeWidth={1}
+                opacity={isHovered ? 1 : 0.9}
+              />
+              {bucket.items.length > 1 && (
+                <text x={x + 8} y={yTop + 10} fontSize={11} fill={style.stroke} fontWeight={600}>
+                  {bucket.items.length}
+                </text>
+              )}
             </g>
           );
         })}
@@ -276,7 +363,7 @@ export function TimelineTrack() {
           x1={currentX}
           y1={PLOT_TOP}
           x2={currentX}
-          y2={PLOT_BOTTOM - 3}
+          y2={PLOT_BOTTOM}
           stroke="#a78bfa"
           strokeWidth={1}
           strokeDasharray="3 2"
@@ -284,80 +371,55 @@ export function TimelineTrack() {
         />
 
         {/* Current year dots */}
-        <circle cx={currentX} cy={valueToY(currentData.threat)} r={3} fill="#ef4444" stroke="#1f2937" strokeWidth={1.5} />
-        <circle cx={currentX} cy={valueToY(currentData.defense)} r={3} fill="#22c55e" stroke="#1f2937" strokeWidth={1.5} />
-        <circle cx={currentX} cy={valueToY(currentData.aiCap)} r={2.5} fill="#7c3aed" stroke="#1f2937" strokeWidth={1.5} opacity={0.5} />
+        {!showDecomposed && (
+          <circle cx={currentX} cy={threatY} r={4} fill={SEMANTIC.threat} stroke="#111827" strokeWidth={1.5} />
+        )}
+        <circle cx={currentX} cy={valueToY(currentData.defense)} r={4} fill={SEMANTIC.defense} stroke="#111827" strokeWidth={1.5} />
+        <circle cx={currentX} cy={valueToY(currentData.aiCap)} r={3} fill={SEMANTIC.ai} stroke="#111827" strokeWidth={1.5} opacity={0.6} />
 
-        {/* Current year value labels */}
-        <text x={currentX + 7} y={valueToY(currentData.threat) - 4} fontSize={8} fill="#fca5a5">
-          {Math.round(currentData.threat * 100)}%
+        {/* Current year value labels — flip near the right edge, never collide */}
+        {!showDecomposed && (
+          <text
+            x={labelX}
+            y={Math.max(threatY - 6, PLOT_TOP + 10)}
+            textAnchor={labelAnchor}
+            fontSize={13}
+            fontWeight={600}
+            fill="#fca5a5"
+          >
+            {Math.round(currentData.threat * 100)}%
+          </text>
+        )}
+        <text x={labelX} y={defenseY} textAnchor={labelAnchor} fontSize={13} fontWeight={600} fill="#86efac">
+          SL {formatSl(currentData.defense * 5)}
         </text>
-        <text x={currentX + 7} y={valueToY(currentData.defense) + 10} fontSize={8} fill="#86efac">
-          SL {(currentData.defense * 5).toFixed(1)}
-        </text>
-
-        {/* Bucket markers */}
-        {buckets.map((bucket, i) => {
-          const x = yearToX(bucket.center);
-          const color = bucketColor(bucket.center);
-          const isHovered = hoveredBucket === i;
-          return (
-            <g
-              key={bucket.center}
-              className="cursor-pointer"
-              onMouseEnter={() => setHoveredBucket(i)}
-            >
-              <rect x={x - 14} y={PLOT_BOTTOM - 18} width={28} height={16} fill="transparent" />
-              <polygon
-                points={`${x},${PLOT_BOTTOM - 6} ${x - 4},${PLOT_BOTTOM - 13} ${x + 4},${PLOT_BOTTOM - 13}`}
-                fill={color}
-                opacity={isHovered ? 1 : 0.8}
-              />
-              {bucket.items.length > 1 && (
-                <text x={x + 7} y={PLOT_BOTTOM - 7} fontSize={8} fill={color} fontWeight={600}>
-                  {bucket.items.length}
-                </text>
-              )}
-            </g>
-          );
-        })}
       </svg>
 
       {/* Chain legend (HTML, below SVG when decomposed) */}
       {showDecomposed && (
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 ml-10 mt-0.5">
-          {chainLines.map(({ chainId, chainName, lastProb, color }) => (
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5" style={{ marginLeft: `${(PAD_L / W) * 100}%` }}>
+          {chainLines.map(({ chainId, chainName, atYearProb, color }) => (
             <span
               key={chainId}
-              className={`text-[9px] flex items-center gap-1 cursor-default transition-opacity ${hoveredChain && hoveredChain !== chainId ? "opacity-30" : ""}`}
+              className={`text-[11px] flex items-center gap-1 cursor-default transition-opacity ${hoveredChain && hoveredChain !== chainId ? "opacity-30" : ""}`}
               onMouseEnter={() => setHoveredChain(chainId)}
               onMouseLeave={() => setHoveredChain(null)}
             >
-              <span className="inline-block w-2 h-0 border-t-[2px]" style={{ borderColor: color }} />
+              <span className="inline-block w-2.5 h-0 border-t-[2px]" style={{ borderColor: color }} />
               <span className="text-gray-400">{chainName}</span>
-              <span className="text-gray-600">{Math.round(lastProb * 100)}%</span>
+              <span className="text-gray-600">{Math.round(atYearProb * 100)}%</span>
             </span>
           ))}
-        </div>
-      )}
-
-      {/* Hovered chain tooltip */}
-      {hoveredChain && !showDecomposed && (
-        <div
-          className="absolute z-[100] bg-gray-800 border border-gray-700 rounded shadow-lg px-2 py-1 text-[10px] text-gray-200 pointer-events-none"
-          style={{ right: 8, top: 4 }}
-        >
-          {attackChains.find((c) => c.id === hoveredChain)?.name ?? hoveredChain}
         </div>
       )}
 
       {/* Bucket hover popup */}
       {hoveredBucket !== null && buckets[hoveredBucket] && (
         <div
-          className="absolute z-[100] bg-gray-800 border border-gray-700 rounded shadow-lg p-2 text-[10px] max-w-[220px]"
+          className="absolute z-[100] bg-gray-800 border border-gray-700 rounded shadow-lg p-2 text-[11px] max-w-[240px]"
           style={{
-            left: `${(yearToX(buckets[hoveredBucket].center) / width) * 100}%`,
-            bottom: "40%",
+            left: `${(yearToX(Math.max(2024, Math.min(2030, buckets[hoveredBucket].center))) / W) * 100}%`,
+            bottom: "18%",
             transform: "translateX(-50%)",
           }}
           onMouseLeave={() => setHoveredBucket(null)}

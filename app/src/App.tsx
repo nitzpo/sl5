@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { usePanDrag } from "./utils/use-pan-drag";
 import { useSimulationStore } from "./store/simulation";
 import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
 import { Header } from "./components/layout/Header";
@@ -9,7 +10,6 @@ import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
 import { DefenseRings } from "./components/rings/DefenseRings";
 import { ChainStrip } from "./components/analysis/ChainStrip";
-import { VerdictBanner } from "./components/layout/VerdictBanner";
 import { useViewStore } from "./store/view";
 import type { BadgeKey } from "./store/view";
 import type { Block } from "./engine/types";
@@ -28,10 +28,10 @@ function App() {
   };
   const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
   const [zoom, setZoom] = useState(1);
-  const [rightPanelWidth, setRightPanelWidth] = useState(0);
+  const { ref: panRef, dragging, overflowing, onPointerDown: onPanPointerDown } =
+    usePanDrag([viewMode, zoom]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const rightPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -50,13 +50,14 @@ function App() {
         return resp.json();
       };
 
-      const [chains, ...blockArrays] = await Promise.all([
+      const [chains, worldState, ...blockArrays] = await Promise.all([
         fetchJson("attack-chains.json"),
+        fetchJson("world-state.json"),
         ...blockFiles.map(fetchJson),
       ]);
       const blocks: Block[] = blockArrays.flat();
 
-      loadData(blocks, chains);
+      loadData(blocks, chains, worldState?.oc_definitions ?? []);
     }
     load().catch((err: unknown) => {
       setLoadError(err instanceof Error ? err.message : String(err));
@@ -70,12 +71,16 @@ function App() {
       clearUrlHash();
       useSimulationStore.setState({
         blockStates: parsed.state.blockStates,
+        advanceOrder:
+          parsed.state.advanceOrder ??
+          Object.keys(parsed.state.blockStates).filter(
+            (id) => parsed.state.blockStates[id] !== "not_started"
+          ),
         year: parsed.state.year,
         perspective: parsed.state.perspective,
         adversaryOc: parsed.state.adversaryOc,
         sliders: parsed.state.sliders,
         modelServedExternally: parsed.state.modelServedExternally,
-        expertMode: parsed.state.expertMode,
         scenarioName: parsed.name ?? null,
         viewingShared: true,
       });
@@ -86,17 +91,6 @@ function App() {
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
   }, [applyHash]);
-
-  useEffect(() => {
-    const el = rightPanelRef.current;
-    if (!el) return;
-    setRightPanelWidth(el.offsetWidth);
-    const obs = new ResizeObserver(() => {
-      setRightPanelWidth(el.offsetWidth);
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [dataLoaded]);
 
   if (loadError) {
     return (
@@ -139,9 +133,12 @@ function App() {
       <SharedBanner />
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
 
-      <div className="relative flex-1 overflow-hidden">
-        {/* Main view area — scrollable */}
-        <div className="absolute inset-0 overflow-auto p-4">
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Main view area — fixed controls on top, a pannable canvas below.
+            The page itself never scrolls; only the canvas viewport does, and it
+            hides its scrollbars (trackpad + drag-to-pan move the view instead). */}
+        <div className="relative flex-1 flex flex-col overflow-hidden">
+          <div className="shrink-0 px-4 pt-4">
           <div className="mb-2 flex items-center gap-4">
             {/* View toggle */}
             <div className="flex items-center gap-0.5 bg-gray-800 rounded p-0.5">
@@ -161,10 +158,10 @@ function App() {
               </button>
             </div>
 
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-gray-600 whitespace-nowrap hidden xl:inline">
               Click for details | Right-click to cycle state
             </span>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
               <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
               <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
               <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
@@ -181,11 +178,11 @@ function App() {
                     badge="requires"
                     swatch={<span className="text-sky-400 text-[10px] leading-none">→</span>}
                     label="Requires"
-                    tip="Hover/select a block: solid arrows point from its prerequisites into it. Click to toggle."
+                    tip="Hover/select a block: solid arrows point from its prerequisites into it. A deployed block with a missing prerequisite is capped (dotted sky ring). Click to toggle."
                   />
                   <ToggleLegendItem
                     badge="enhances"
-                    swatch={<span className="text-teal-400 text-[10px] leading-none tracking-tighter">⇢</span>}
+                    swatch={<span className="text-sky-400 text-[10px] leading-none tracking-tighter">⇢</span>}
                     label="Enhances"
                     tip="Dashed lines point to blocks this one makes more effective. Click to toggle."
                   />
@@ -193,35 +190,47 @@ function App() {
               )}
               <ToggleLegendItem
                 badge="contested"
-                swatch={<span className="w-2 h-2 rounded-full bg-violet-600 text-[8px] leading-none text-white flex items-center justify-center font-bold">?</span>}
+                swatch={<span className="w-2 h-2 rounded-full bg-gray-800 border border-slate-400 text-[8px] leading-none text-slate-300 flex items-center justify-center font-bold">?</span>}
                 label="Contested"
                 tip="Experts disagree on feasibility — high or fundamental open questions. Click to toggle."
               />
               <ToggleLegendItem
                 badge="overBudget"
-                swatch={<span className="w-2 h-2 rounded-sm border border-dashed border-amber-500" />}
+                swatch={<span className="w-2 h-2 rounded-sm border border-dashed border-pink-500" />}
                 label="Over budget"
                 tip="Cost exceeds budget — effectiveness capped at Implementing level. Click to toggle."
               />
             </div>
           </div>
-          <div style={{ marginRight: rightPanelWidth }}>
-            <VerdictBanner />
-          </div>
           <ChainStrip />
-          <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
-            {viewMode === "grid" ? (
-              <BlockGrid
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            ) : (
-              <DefenseRings
-                onSelectBlock={selectBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            )}
+          </div>
+
+          {/* Pannable canvas viewport: hides its scrollbars; trackpad scrolls in
+              any direction, and dragging empty space pans it like a map. */}
+          <div
+            ref={panRef}
+            onPointerDown={onPanPointerDown}
+            className={`relative flex-1 overflow-auto no-scrollbar px-4 pb-4 ${
+              dragging ? "cursor-grabbing" : overflowing ? "cursor-grab" : ""
+            }`}
+          >
+            <div
+              className="w-full"
+              style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
+            >
+              {viewMode === "grid" ? (
+                <BlockGrid
+                  onSelectBlock={selectBlock}
+                  selectedBlock={selectedBlock}
+                  onClearSelection={() => setSelectedBlock(null)}
+                />
+              ) : (
+                <DefenseRings
+                  onSelectBlock={selectBlock}
+                  onClearSelection={() => setSelectedBlock(null)}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -250,8 +259,8 @@ function App() {
           </button>
         </div>
 
-        {/* Right panels — overlay on top of grid */}
-        <div ref={rightPanelRef} className="absolute top-0 right-0 h-full z-10">
+        {/* Right panels — in-flow flex column, canvas is never occluded */}
+        <div className="shrink-0 h-full">
           <RightPanels
             selectedBlock={selectedBlock}
             onCloseBlock={() => setSelectedBlock(null)}
@@ -272,7 +281,7 @@ function App() {
 
 function LegendItem({ color, label, tip }: { color: string; label: string; tip: string }) {
   return (
-    <span className="relative flex items-center gap-1 group cursor-default">
+    <span className="relative flex items-center gap-1 group cursor-default whitespace-nowrap">
       <span className={`w-2 h-2 rounded-sm ${color}`} /> {label}
       <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
         {tip}
@@ -298,7 +307,7 @@ function ToggleLegendItem({
     <button
       onClick={() => toggleBadge(badge)}
       aria-pressed={on}
-      className={`relative flex items-center gap-1 group transition-opacity ${
+      className={`relative flex items-center gap-1 group transition-opacity whitespace-nowrap ${
         on ? "" : "opacity-35"
       }`}
     >

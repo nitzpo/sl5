@@ -20,7 +20,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "d3": "^7.9.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "zustand": "^5.0.13"
@@ -30,7 +29,6 @@
     "@tailwindcss/vite": "^4.3.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/d3": "^7.4.3",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

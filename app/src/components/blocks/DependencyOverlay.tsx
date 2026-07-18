@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { Block } from "../../engine/types";
 import { blockGridPosition } from "../../utils/geometry";
 import { useViewStore } from "../../store/view";
+import { DEPENDENCY_COLOR, ENHANCES_DASH } from "../../utils/colors";
 
 interface DependencyOverlayProps {
   blocks: Block[];
@@ -16,8 +17,8 @@ interface Edge {
   kind: "requires" | "enhances";
 }
 
-const REQUIRES_COLOR = "#38bdf8";
-const ENHANCES_COLOR = "#2dd4bf";
+// One hue for the dependency system; the relationship kind is carried by line
+// style (solid+arrow = requires, dashed = enhances), not by a second color.
 
 function arcPath(from: { x: number; y: number }, to: { x: number; y: number }): string {
   const mx = (from.x + to.x) / 2;
@@ -92,7 +93,7 @@ export function DependencyOverlay({ blocks, focusBlock, hexSize }: DependencyOve
           markerHeight={6}
           orient="auto-start-reverse"
         >
-          <path d="M 0 0 L 8 4 L 0 8 z" fill={REQUIRES_COLOR} />
+          <path d="M 0 0 L 8 4 L 0 8 z" fill={DEPENDENCY_COLOR} />
         </marker>
       </defs>
       {edges.map((e) => (
@@ -100,9 +101,9 @@ export function DependencyOverlay({ blocks, focusBlock, hexSize }: DependencyOve
           key={e.key}
           d={arcPath(e.from, e.to)}
           fill="none"
-          stroke={e.kind === "requires" ? REQUIRES_COLOR : ENHANCES_COLOR}
+          stroke={DEPENDENCY_COLOR}
           strokeWidth={e.kind === "requires" ? 1.5 : 1}
-          strokeDasharray={e.kind === "enhances" ? "3 3" : undefined}
+          strokeDasharray={e.kind === "enhances" ? ENHANCES_DASH : undefined}
           opacity={e.kind === "requires" ? 0.85 : 0.45}
           markerEnd={e.kind === "requires" ? "url(#dep-arrow)" : undefined}
         />

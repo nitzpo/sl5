@@ -3,14 +3,18 @@ import { usePlaybackStore } from "./playback-store";
 import { useSimulationStore } from "../store/simulation";
 import { computeScriptBlockStates } from "./compute-script-state";
 
-const BASE_DURATION_SEC = 12;
+const BASE_DURATION_SEC = 48;
 const UPDATE_INTERVAL_MS = 16;
+/** Time progression holds still this long when an annotation appears, so the
+ * viewer can actually read it before the story moves on. */
+const ANNOTATION_HOLD_MS = 2500;
 
 export function usePlaybackLoop() {
   const rafRef = useRef(0);
   const lastTimeRef = useRef(0);
   const lastUpdateRef = useRef(0);
   const lastAnnotationRef = useRef(-1);
+  const holdUntilRef = useRef(0);
   const annotationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playbackState = usePlaybackStore((s) => s.state);
@@ -41,9 +45,13 @@ export function usePlaybackLoop() {
 
       const currentSpeed = store.speed;
       const ratePerSec = (totalRange / BASE_DURATION_SEC) * currentSpeed;
-      const newT = Math.min(store.playbackT + dt * ratePerSec, totalRange);
-
-      store.setPlaybackT(newT);
+      const holding = timestamp < holdUntilRef.current;
+      const newT = holding
+        ? store.playbackT
+        : Math.min(store.playbackT + dt * ratePerSec, totalRange);
+      if (!holding) {
+        store.setPlaybackT(newT);
+      }
 
       const currentYear = startYear + newT;
       const intYear = Math.min(Math.floor(currentYear), endYear);
@@ -86,6 +94,7 @@ export function usePlaybackLoop() {
         for (let i = script.annotations.length - 1; i >= 0; i--) {
           if (currentYear >= script.annotations[i].atYear && i > lastAnnotationRef.current) {
             lastAnnotationRef.current = i;
+            holdUntilRef.current = timestamp + ANNOTATION_HOLD_MS;
             store.setAnnotation(script.annotations[i].message);
             if (annotationTimeoutRef.current) {
               clearTimeout(annotationTimeoutRef.current);
@@ -118,6 +127,7 @@ export function usePlaybackLoop() {
     document.addEventListener("visibilitychange", onVisibilityChange);
     lastTimeRef.current = 0;
     lastAnnotationRef.current = -1;
+    holdUntilRef.current = 0;
     lastBlockStatesJson = "";
     rafRef.current = requestAnimationFrame(tick);
 

@@ -20,7 +20,10 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Reactive CISO",
     description: "Deploy defenses only after threats materialize. Always a step behind.",
     type: "scripted",
-    sliderOverrides: { budget_millions: 200, org_transformation: 0.3 },
+    // High enough to fund the ~$346M of panic deployments below — the
+    // reactive failure mode here is lateness, not underfunding.
+    // risk_tolerance 1.0: story deployments are authored at optimistic costs
+    sliderOverrides: { budget_millions: 400, org_transformation: 0.3, risk_tolerance: 1.0 },
     deployments: [
       // After first network probe detected ~mid-2025
       { blockId: "NET-02", startYear: 2025.5 },
@@ -56,7 +59,10 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Proactive Program",
     description: "Start early. Hard-stops first. Ahead of the AI curve.",
     type: "scripted",
-    sliderOverrides: { budget_millions: 400, org_transformation: 0.7, vendor_cooperation: 0.6 },
+    // Budget covers the full program: the 29 deployments below sum to ~$778M
+    // at optimistic upfront costs (a multi-hundred-million-dollar program is
+    // the point of this story — see the README's framing).
+    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, risk_tolerance: 1.0 },
     deployments: [
       // Immediate hard-stops (2024)
       { blockId: "NET-01", startYear: 2024 },
@@ -105,16 +111,24 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Budget-Constrained",
     description: "$100M limit. Pick the highest-impact blocks only.",
     type: "scripted",
-    sliderOverrides: { budget_millions: 100, org_transformation: 0.4 },
+    sliderOverrides: { budget_millions: 100, org_transformation: 0.4, risk_tolerance: 1.0 },
     deployments: [
-      // Cheapest hard-stops with high impact
-      { blockId: "NET-04", startYear: 2024.5 },   // $10M, 12mo
-      { blockId: "HW-09", startYear: 2024.5 },    // $20M, 18mo
-      { blockId: "PER-02", startYear: 2025 },      // $10M, 12mo
-      { blockId: "PHY-05", startYear: 2025 },      // $8M, 9mo
-      { blockId: "NET-03", startYear: 2025 },      // $30M, 18mo
-      { blockId: "PER-07", startYear: 2025.5 },    // $5M, 9mo
-      { blockId: "AI-04", startYear: 2026 },       // $20M, 18mo  (Total ~$103M)
+      // Highest-impact blocks that fit ~$100M of upfront capital
+      // (optimistic costs; running total in comments)
+      { blockId: "NET-04", startYear: 2024.5 },   // $2M   → $2M
+      { blockId: "HW-09", startYear: 2024.5 },    // $5M   → $7M
+      { blockId: "PER-02", startYear: 2025 },      // $2M   → $9M
+      { blockId: "PHY-05", startYear: 2025 },      // $2M   → $11M
+      { blockId: "NET-03", startYear: 2025 },      // $5M   → $16M
+      { blockId: "PER-07", startYear: 2025.5 },    // $1M   → $17M
+      { blockId: "AI-04", startYear: 2025.5 },     // $5M   → $22M
+      { blockId: "PER-03", startYear: 2026 },      // $10M  → $32M
+      { blockId: "AI-06", startYear: 2026 },       // $5M   → $37M
+      { blockId: "NET-05", startYear: 2026 },      // $10M  → $47M
+      { blockId: "PHY-06", startYear: 2026.5 },    // $20M  → $67M
+      { blockId: "AI-01", startYear: 2026.5 },     // $20M  → $87M
+      { blockId: "PER-08", startYear: 2027 },      // $5M   → $92M
+      { blockId: "PER-04", startYear: 2027 },      // $5M   → $97M
     ],
     annotations: [
       { atYear: 2025.5, message: "Budget nearly exhausted at ~$100M — major gaps remain" },

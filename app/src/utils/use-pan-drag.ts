@@ -35,7 +35,14 @@ export interface PanDragState {
   onPointerDown: (e: React.PointerEvent) => void;
 }
 
-export function usePanDrag(): PanDragState {
+/**
+ * @param deps values that change the scrollable geometry without changing the
+ * container's own layout box — e.g. the zoom scale (visual size changes via
+ * `transform`, not layout bounds) or the view mode (which swaps the first
+ * child the observer is bound to). Changing any of them re-measures overflow
+ * and re-binds the ResizeObserver to the current child.
+ */
+export function usePanDrag(deps: React.DependencyList = []): PanDragState {
   const ref = useRef<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
@@ -69,7 +76,10 @@ export function usePanDrag(): PanDragState {
     // Observe the scrolled content too — zoom changes its size, not the box.
     if (el.firstElementChild) ro.observe(el.firstElementChild);
     return () => ro.disconnect();
-  }, [measure]);
+    // `deps` (zoom/viewMode) re-bind the observer to the current child and
+    // re-measure, since those change geometry without resizing the container.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measure, ...deps]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     const el = ref.current;

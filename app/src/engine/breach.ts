@@ -94,7 +94,7 @@ function chainEffectiveOc(
   const aiCap = getAiCapability(year, aiTimelineSlider);
   const avgShift =
     exploitedBlocks.length > 0
-      ? exploitedBlocks.reduce((s, b) => s + b.adversary_exploitation.ai_oc_shift, 0) /
+      ? exploitedBlocks.reduce((s, b) => s + (b.adversary_exploitation?.ai_oc_shift ?? 0), 0) /
         exploitedBlocks.length
       : 0;
   return adversaryOc + avgShift * aiCap;

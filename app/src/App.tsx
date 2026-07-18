@@ -29,7 +29,7 @@ function App() {
   const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
   const [zoom, setZoom] = useState(1);
   const { ref: panRef, dragging, overflowing, onPointerDown: onPanPointerDown } =
-    usePanDrag();
+    usePanDrag([viewMode, zoom]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
 

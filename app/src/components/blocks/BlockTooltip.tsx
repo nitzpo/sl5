@@ -28,12 +28,14 @@ export function BlockTooltip({
 
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
-  const { budgetExceededIds, dependencyUnmetIds } = useSimulationResults();
+  const { budgetExceededIds, dependencyUnmetIds, dependencyUnmetRequires } =
+    useSimulationResults();
 
   const cappedByBudget = budgetExceededIds.has(block.id);
   const cappedByDependency = dependencyUnmetIds.has(block.id);
+  // Name only the prerequisites actually missing, not the block's full requires.
   const missingRequires = cappedByDependency
-    ? (block.dependencies?.requires ?? []).join(", ")
+    ? (dependencyUnmetRequires.get(block.id) ?? block.dependencies?.requires ?? []).join(", ")
     : null;
 
   const effectiveness = blockEffectiveness(block, state, year, sliders);

@@ -101,15 +101,15 @@ describe("Category and Overall Scores", () => {
     expect(overall).toBeCloseTo(2.54, 1);
   });
 
-  it("Scenario 3: All deployed 2029 matches Python (~4.06)", () => {
+  it("Scenario 3: All deployed 2029 (~4.12 under 0.5/0.5 hybrid)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) states[b.id] = "deployed";
     const catScores = computeCategoryScores(blocks, states, 2029);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(4.06, 1);
+    expect(overall).toBeCloseTo(4.12, 1);
   });
 
-  it("Scenario 4: Network+Physical deployed, AI absent 2028 matches Python (~1.41)", () => {
+  it("Scenario 4: Network+Physical deployed, AI absent 2028 (~1.52 under 0.5/0.5 hybrid)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) {
       if (b.category === "network" || b.category === "physical") {
@@ -124,7 +124,7 @@ describe("Category and Overall Scores", () => {
     }
     const catScores = computeCategoryScores(blocks, states, 2028);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(1.41, 1);
+    expect(overall).toBeCloseTo(1.52, 1);
   });
 
   it("weakest link dominates: absent category drags overall down", () => {

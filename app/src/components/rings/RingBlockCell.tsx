@@ -7,6 +7,7 @@ import {
   URGENCY_BADGE,
   CONTESTED_BADGE,
   SEMANTIC,
+  DEPENDENCY_COLOR,
 } from "../../utils/colors";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { aiDegradation } from "../../engine/scoring";
@@ -22,6 +23,7 @@ interface RingBlockCellProps {
   year: number;
   sliders: Sliders;
   budgetExceeded?: boolean;
+  dependencyUnmet?: boolean;
   decisionWindow?: WindowUrgency;
   chainMember?: boolean;
   onSelect: (block: Block) => void;
@@ -40,6 +42,7 @@ export function RingBlockCell({
   year,
   sliders,
   budgetExceeded,
+  dependencyUnmet,
   decisionWindow,
   chainMember,
   onSelect,
@@ -168,6 +171,18 @@ export function RingBlockCell({
           strokeWidth={1}
           strokeDasharray="3 2"
           opacity={0.8}
+        />
+      )}
+
+      {/* Missing hard prerequisite — capped until its `requires` are operational */}
+      {dependencyUnmet && badges.requires && (
+        <polygon
+          points={hexPoints(cx, cy, size + 2)}
+          fill="none"
+          stroke={DEPENDENCY_COLOR}
+          strokeWidth={1}
+          strokeDasharray="2 3"
+          opacity={0.85}
         />
       )}
 

@@ -6,10 +6,13 @@ export interface ScoringConfig {
   baseline_floor: number;
 }
 
-// The one scoring formula the app actually uses: 0.6·weakest-link + 0.4·harmonic
-// mean over category scores, with categories floored at SL 1.0.
+// The one scoring formula the app actually uses: 0.5·weakest-link + 0.5·harmonic
+// mean over category scores, with categories floored at SL 1.0. The weakest
+// category still matters (defense-in-depth: a wide-open category is a real hole),
+// but an even split rewards breadth of coverage so a broad, well-funded program
+// isn't pinned to its single weakest category.
 const DEFAULT_CONFIG: ScoringConfig = {
-  hybrid_weights: { weakest_link_weight: 0.6, harmonic_mean_weight: 0.4 },
+  hybrid_weights: { weakest_link_weight: 0.5, harmonic_mean_weight: 0.5 },
   baseline_floor: 1.0,
 };
 

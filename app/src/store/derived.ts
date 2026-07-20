@@ -40,8 +40,11 @@ export function useSimulationResults() {
   });
 
   // A block whose hard prerequisites aren't operational is capped too.
-  const { effectiveStates, unmetIds: dependencyUnmetIds } =
-    applyDependencyConstraint(blocks, budgetedStates);
+  const {
+    effectiveStates,
+    unmetIds: dependencyUnmetIds,
+    unmetRequires: dependencyUnmetRequires,
+  } = applyDependencyConstraint(blocks, budgetedStates);
 
   const categoryScores = computeCategoryScores(
     blocks,
@@ -171,6 +174,7 @@ export function useSimulationResults() {
     blocksByLayer,
     budgetExceededIds,
     dependencyUnmetIds,
+    dependencyUnmetRequires,
     spentMillions,
     overBudget: budgetExceededIds.size > 0,
   };

@@ -25,13 +25,19 @@ interface PlaybackStore {
   setAnnotation: (msg: string | null) => void;
 }
 
-/** The latest annotation whose atYear has been reached at time t, or null. */
+/** The latest annotation whose atYear has been reached at time t, or null.
+ * Picks the max atYear ≤ currentYear so it holds even if annotations are
+ * not stored in chronological order. */
 function annotationAtT(t: number, script: TimeLapseScript): string | null {
   const startYear = script.startYear ?? 2024;
   const currentYear = startYear + t;
   let active: string | null = null;
+  let maxYear = -Infinity;
   for (const a of script.annotations ?? []) {
-    if (currentYear >= a.atYear) active = a.message;
+    if (currentYear >= a.atYear && a.atYear > maxYear) {
+      active = a.message;
+      maxYear = a.atYear;
+    }
   }
   return active;
 }

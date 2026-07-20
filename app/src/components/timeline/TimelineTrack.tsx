@@ -389,6 +389,7 @@ export function TimelineTrack() {
               key={`${beat.atYear}-${i}`}
               className="cursor-pointer"
               onMouseEnter={() => setHoveredBeat(i)}
+              onMouseLeave={() => setHoveredBeat(null)}
               onClick={() => setPlaybackT(beat.atYear - startYear)}
             >
               <rect x={beat.x - 8} y={PLOT_TOP - 2} width={16} height={16} fill="transparent" />

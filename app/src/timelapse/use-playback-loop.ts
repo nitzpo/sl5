@@ -87,6 +87,9 @@ export function usePlaybackLoop() {
               }
             }
             lastAnnotationRef.current = newIdx;
+            // Jumped backward while playing: sync the caption to the earlier
+            // beat now, since the forward loop below only fires for i > newIdx.
+            store.setAnnotation(newIdx >= 0 ? script.annotations[newIdx].message : null);
           }
         }
 

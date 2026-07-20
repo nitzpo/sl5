@@ -25,6 +25,17 @@ interface PlaybackStore {
   setAnnotation: (msg: string | null) => void;
 }
 
+/** The latest annotation whose atYear has been reached at time t, or null. */
+function annotationAtT(t: number, script: TimeLapseScript): string | null {
+  const startYear = script.startYear ?? 2024;
+  const currentYear = startYear + t;
+  let active: string | null = null;
+  for (const a of script.annotations ?? []) {
+    if (currentYear >= a.atYear) active = a.message;
+  }
+  return active;
+}
+
 function applyStateAtT(t: number, script: TimeLapseScript) {
   const startYear = script.startYear ?? 2024;
   const endYear = script.endYear ?? 2030;
@@ -43,7 +54,7 @@ function applyStateAtT(t: number, script: TimeLapseScript) {
 export const usePlaybackStore = create<PlaybackStore>()(
   subscribeWithSelector((set, get) => ({
     state: "idle",
-    speed: 1,
+    speed: 2,
     activeScript: null,
     playbackT: 0,
     savedUserState: null,
@@ -67,9 +78,12 @@ export const usePlaybackStore = create<PlaybackStore>()(
       const startYear = script.startYear ?? 2024;
 
       if (script.type === "scripted") {
+        // Overrides layer on the saved USER baseline, never on the live sliders:
+        // switching stories while one is active would otherwise leak the prior
+        // script's overrides (e.g. an unset vendor_cooperation) into the next.
         const newSliders = script.sliderOverrides
-          ? { ...sim.sliders, ...script.sliderOverrides }
-          : sim.sliders;
+          ? { ...saved.sliders, ...script.sliderOverrides }
+          : saved.sliders;
 
         const newBlockStates: Record<string, BlockState> = {};
         for (const b of sim.blocks) {
@@ -163,6 +177,8 @@ export const usePlaybackStore = create<PlaybackStore>()(
       const { activeScript, state: pbState } = get();
       if (activeScript && pbState !== "playing") {
         applyStateAtT(t, activeScript);
+        // Scrubbing while paused: keep the caption in sync with the position.
+        set({ currentAnnotation: annotationAtT(t, activeScript) });
       }
     },
     setAnnotation: (msg) => set({ currentAnnotation: msg }),

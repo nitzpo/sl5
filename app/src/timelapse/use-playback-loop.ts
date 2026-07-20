@@ -15,7 +15,6 @@ export function usePlaybackLoop() {
   const lastUpdateRef = useRef(0);
   const lastAnnotationRef = useRef(-1);
   const holdUntilRef = useRef(0);
-  const annotationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playbackState = usePlaybackStore((s) => s.state);
 
@@ -95,13 +94,9 @@ export function usePlaybackLoop() {
           if (currentYear >= script.annotations[i].atYear && i > lastAnnotationRef.current) {
             lastAnnotationRef.current = i;
             holdUntilRef.current = timestamp + ANNOTATION_HOLD_MS;
+            // The caption stays up for the whole beat — the next annotation
+            // replaces it, and stop/start clear it. No timed auto-dismiss.
             store.setAnnotation(script.annotations[i].message);
-            if (annotationTimeoutRef.current) {
-              clearTimeout(annotationTimeoutRef.current);
-            }
-            annotationTimeoutRef.current = setTimeout(() => {
-              usePlaybackStore.getState().setAnnotation(null);
-            }, 8000);
             break;
           }
         }
@@ -133,9 +128,6 @@ export function usePlaybackLoop() {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      if (annotationTimeoutRef.current) {
-        clearTimeout(annotationTimeoutRef.current);
-      }
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [playbackState]);

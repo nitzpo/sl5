@@ -9,6 +9,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     initialBlockStates: {},
     deployments: [],
     annotations: [
+      { atYear: 2024, message: "2024: no defenses, and no plan to build any. We just watch." },
       { atYear: 2025.5, message: "AI at 15% — first attack chains becoming viable" },
       { atYear: 2027, message: "AI at 65% — probabilistic defenses would be deeply eroded by now", highlight: { type: "chain", id: "patient-distillation" } },
       { atYear: 2028.5, message: "AI at 88% — even OC3 adversaries succeed on multiple paths" },
@@ -48,6 +49,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "HW-05", startYear: 2029 },
     ],
     annotations: [
+      { atYear: 2024, message: "2024: no defenses yet — we deploy only after each threat lands." },
       { atYear: 2025.5, message: "Network probe detected — scrambling to deploy firewall controls" },
       { atYear: 2026.5, message: "Breach attempt. Starting air-gap project — won't deploy until 2028.5", highlight: { type: "block", id: "NET-01" } },
       { atYear: 2027, message: "Insider incident. Personnel controls start but AI already at 65%" },
@@ -100,6 +102,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "PHY-03", startYear: 2026 },
     ],
     annotations: [
+      { atYear: 2024, message: "2024: hard-stops go in first, ahead of the AI curve." },
       { atYear: 2025, message: "Hard-stop foundation in place — many chains already blocked" },
       { atYear: 2026, message: "First blocks reaching deployed. AI still at 35%." },
       { atYear: 2027.5, message: "Core defenses mature. Resilient even as AI passes 70%." },
@@ -131,6 +134,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "PER-04", startYear: 2027 },      // $5M   → $97M
     ],
     annotations: [
+      { atYear: 2024, message: "2024: a $100M cap — only the highest-impact blocks make the cut." },
       { atYear: 2025.5, message: "Budget nearly exhausted at ~$100M — major gaps remain" },
       { atYear: 2027, message: "No air gap, no physical perimeter, no hardware encryption. Multiple chains viable.", highlight: { type: "chain", id: "quiet-tap" } },
       { atYear: 2028.5, message: "Supply chain completely unprotected — Poisoned Chip exploitable", highlight: { type: "chain", id: "poisoned-chip" } },
@@ -142,6 +146,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     description: "Advance time on your existing defense posture.",
     type: "passthrough",
     annotations: [
+      { atYear: 2024, message: "2024: your current posture, held fixed while time advances." },
       { atYear: 2026, message: "AI at 35% — check which probabilistic defenses are eroding" },
       { atYear: 2028, message: "AI at 82% — are your hard-stops in place?" },
     ],

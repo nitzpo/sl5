@@ -4,6 +4,7 @@ export {
   categoryScore,
   overallSlScore,
   computeCategoryScores,
+  relevantBlockIds,
   getStateEffectiveness,
   aiDegradation,
 } from "./scoring";

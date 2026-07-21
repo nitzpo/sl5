@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { getAiCapability } from "../../engine/ai-curve";
-import { computeCategoryScores, overallSlScore } from "../../engine/scoring";
+import { computeCategoryScores, overallSlScore, relevantBlockIds } from "../../engine/scoring";
 import { computeBreachProbabilities } from "../../engine/breach";
 import { applyBudgetConstraint } from "../../engine/budget";
 import { applyDependencyConstraint } from "../../engine/dependencies";
@@ -72,8 +72,9 @@ export function TimelineTrack() {
       { order: advanceOrder, riskTolerance: sliders.risk_tolerance }
     );
     const { effectiveStates } = applyDependencyConstraint(blocks, budgeted);
+    const relevantIds = relevantBlockIds(attackChains);
     return YEARS.map((y) => {
-      const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders);
+      const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders, relevantIds);
       const sl = overallSlScore(catScores);
       const defense = sl / 5;
 

@@ -22,8 +22,9 @@ const DEFAULT_CONFIG: ScoringConfig = {
  * the full catalog — otherwise deep catalogs of exotic, never-deployed controls
  * dilute a category's score and make real coverage look worse than it is.
  */
-export function relevantBlockIds(chains: AttackChain[]): Set<string> {
+export function relevantBlockIds(chains?: AttackChain[]): Set<string> {
   const ids = new Set<string>();
+  if (!chains) return ids;
   for (const chain of chains) {
     for (const id of chain.blocks_exploited ?? []) ids.add(id);
     for (const id of chain.stoppers ?? []) ids.add(id);
@@ -117,9 +118,15 @@ export function blockEffectiveness(
  * The score measures coverage over the category's *threat-relevant* blocks —
  * those any attack chain exploits or is stopped by (`relevantIds`). Scoring over
  * the whole catalog instead would divide by exotic controls no threat exercises,
- * making a well-covered category look like a D. When `relevantIds` is omitted (or
- * a category has none of them), it falls back to the full category — preserving
- * the old behavior for callers without chain context.
+ * making a well-covered category look like a D.
+ *
+ * Two "no relevant blocks" cases are handled distinctly:
+ *  - `relevantIds` omitted → no chain context; score over the full category
+ *    (back-compat for callers/tests without chains);
+ *  - `relevantIds` given but this category has none of them → the category has
+ *    no exposure in the current threat model, so return the neutral baseline
+ *    floor rather than diluting with the full catalog (which would re-introduce
+ *    the very dilution this fix removes).
  */
 export function categoryScore(
   blocksInCategory: Block[],
@@ -131,10 +138,13 @@ export function categoryScore(
 ): number {
   if (blocksInCategory.length === 0) return baselineFloor;
 
-  const relevant = relevantIds
+  const pool = relevantIds
     ? blocksInCategory.filter((b) => relevantIds.has(b.id))
     : blocksInCategory;
-  const pool = relevant.length > 0 ? relevant : blocksInCategory;
+  // Chain context, but no threat-relevant block in this category: not scoreable
+  // against the threat model — stay at the neutral floor, don't fall back to the
+  // full catalog (that would dilute) and don't fabricate a perfect 5.0.
+  if (pool.length === 0) return baselineFloor;
 
   const total = pool.reduce((sum, block) => {
     const state = blockStates[block.id] ?? "not_started";

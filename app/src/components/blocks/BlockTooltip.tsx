@@ -35,7 +35,7 @@ export function BlockTooltip({
   const cappedByDependency = dependencyUnmetIds.has(block.id);
   // Name only the prerequisites actually missing, not the block's full requires.
   const missingRequires = cappedByDependency
-    ? (dependencyUnmetRequires.get(block.id) ?? block.dependencies?.requires ?? []).join(", ")
+    ? (dependencyUnmetRequires?.get(block.id) ?? block.dependencies?.requires ?? []).join(", ")
     : null;
 
   const effectiveness = blockEffectiveness(block, state, year, sliders);

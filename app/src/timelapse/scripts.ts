@@ -127,25 +127,24 @@ export const SCRIPTS: TimeLapseScript[] = [
     sliderOverrides: { budget_millions: 100, org_transformation: 0.4, risk_tolerance: 1.0 },
     deployments: [
       // Highest-impact blocks that fit ~$100M of upfront capital
-      // (optimistic costs; running total in comments). PER-01 is the cheap
-      // foundational baseline that unlocks PER-02/03/04 — without it those three
-      // stay capped at implementing, so it earns its slot. Blocks whose only
-      // prerequisite is unaffordable here (HW-09 needs the $100M HW-01; PHY-05
-      // needs the $200M PHY-01) are deliberately left out rather than shipped
-      // permanently capped — the honest gaps this budget can't close.
+      // (optimistic costs; running total in comments). Every deployed block's
+      // prerequisites are funded so nothing ships permanently capped:
+      //  - PER-01 unlocks PER-02/03/04; PER-06 unlocks the AI containment blocks.
+      //  - NET-04/05 (need the $20M NET-02 enclave) and HW/PHY hard-stops (need
+      //    the $100M+ HW-01 / $200M PHY-01 foundations) are deliberately left
+      //    out — the honest gaps this budget can't close. NET-03 stands alone.
       { blockId: "PER-01", startYear: 2024.5 },   // $10M  → $10M
-      { blockId: "NET-04", startYear: 2024.5 },   // $2M   → $12M
-      { blockId: "PER-02", startYear: 2025 },      // $2M   → $14M
-      { blockId: "NET-03", startYear: 2025 },      // $5M   → $19M
-      { blockId: "PER-07", startYear: 2025.5 },    // $1M   → $20M
-      { blockId: "AI-04", startYear: 2025.5 },     // $5M   → $25M
-      { blockId: "PER-03", startYear: 2026 },      // $10M  → $35M
-      { blockId: "AI-06", startYear: 2026 },       // $5M   → $40M
-      { blockId: "NET-05", startYear: 2026 },      // $10M  → $50M
-      { blockId: "PHY-06", startYear: 2026.5 },    // $20M  → $70M
-      { blockId: "AI-01", startYear: 2026.5 },     // $20M  → $90M
-      { blockId: "PER-08", startYear: 2027 },      // $5M   → $95M
-      { blockId: "PER-04", startYear: 2027 },      // $5M   → $100M
+      { blockId: "PER-06", startYear: 2024.5 },   // $3M   → $13M
+      { blockId: "PER-02", startYear: 2025 },      // $2M   → $15M
+      { blockId: "NET-03", startYear: 2025 },      // $5M   → $20M
+      { blockId: "PER-07", startYear: 2025.5 },    // $1M   → $21M
+      { blockId: "AI-04", startYear: 2025.5 },     // $5M   → $26M
+      { blockId: "PER-03", startYear: 2026 },      // $10M  → $36M
+      { blockId: "AI-06", startYear: 2026 },       // $5M   → $41M
+      { blockId: "PHY-06", startYear: 2026.5 },    // $20M  → $61M
+      { blockId: "AI-01", startYear: 2026.5 },     // $20M  → $81M
+      { blockId: "PER-08", startYear: 2027 },      // $5M   → $86M
+      { blockId: "PER-04", startYear: 2027 },      // $5M   → $91M
     ],
     annotations: [
       { atYear: 2025.5, message: "Budget nearly exhausted at ~$100M — major gaps remain" },

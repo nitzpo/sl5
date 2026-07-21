@@ -5,9 +5,10 @@ import { computeScriptBlockStates } from "./compute-script-state";
 
 const BASE_DURATION_SEC = 48;
 const UPDATE_INTERVAL_MS = 16;
-/** Time progression holds still this long when an annotation appears, so the
- * viewer can actually read it before the story moves on. */
-const ANNOTATION_HOLD_MS = 2500;
+/** Brief pause when a beat lands, so it registers before time moves on. Kept
+ * short: the caption now persists for the whole beat, so this is just a beat
+ * of emphasis, not the full reading window. */
+const ANNOTATION_HOLD_MS = 1200;
 
 export function usePlaybackLoop() {
   const rafRef = useRef(0);
@@ -15,7 +16,6 @@ export function usePlaybackLoop() {
   const lastUpdateRef = useRef(0);
   const lastAnnotationRef = useRef(-1);
   const holdUntilRef = useRef(0);
-  const annotationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playbackState = usePlaybackStore((s) => s.state);
 
@@ -88,6 +88,13 @@ export function usePlaybackLoop() {
               }
             }
             lastAnnotationRef.current = newIdx;
+            // Jumped backward while playing: sync the caption to the earlier
+            // beat now, since the forward loop below only fires for i > newIdx.
+            // Re-trigger the read-hold on the reached beat so a backward jump
+            // pauses to be read just like a forward one (clear it if we landed
+            // before the first beat).
+            store.setAnnotation(newIdx >= 0 ? script.annotations[newIdx].message : null);
+            holdUntilRef.current = newIdx >= 0 ? timestamp + ANNOTATION_HOLD_MS : 0;
           }
         }
 
@@ -95,13 +102,9 @@ export function usePlaybackLoop() {
           if (currentYear >= script.annotations[i].atYear && i > lastAnnotationRef.current) {
             lastAnnotationRef.current = i;
             holdUntilRef.current = timestamp + ANNOTATION_HOLD_MS;
+            // The caption stays up for the whole beat — the next annotation
+            // replaces it, and stop/start clear it. No timed auto-dismiss.
             store.setAnnotation(script.annotations[i].message);
-            if (annotationTimeoutRef.current) {
-              clearTimeout(annotationTimeoutRef.current);
-            }
-            annotationTimeoutRef.current = setTimeout(() => {
-              usePlaybackStore.getState().setAnnotation(null);
-            }, 8000);
             break;
           }
         }
@@ -133,9 +136,6 @@ export function usePlaybackLoop() {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      if (annotationTimeoutRef.current) {
-        clearTimeout(annotationTimeoutRef.current);
-      }
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [playbackState]);

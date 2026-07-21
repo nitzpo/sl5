@@ -193,9 +193,9 @@ export function PlaybackBar() {
         </button>
       </div>
 
-      {/* Annotation toast */}
+      {/* Annotation caption — capped width so it reads as a caption, not a band */}
       {currentAnnotation && !atEnd && (
-        <div className="text-[11px] text-violet-300 bg-violet-950/50 border border-violet-800/30 rounded px-2 py-1 animate-fade-in">
+        <div className="max-w-xl text-xs leading-snug text-violet-300 bg-violet-950/50 border border-violet-800/30 rounded px-2.5 py-1 animate-fade-in">
           {currentAnnotation}
         </div>
       )}

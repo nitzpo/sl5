@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
+import { usePlaybackStore } from "../../timelapse/playback-store";
 import { getAiCapability } from "../../engine/ai-curve";
 import { computeCategoryScores, overallSlScore, relevantBlockIds } from "../../engine/scoring";
 import { computeBreachProbabilities } from "../../engine/breach";
@@ -61,10 +62,15 @@ export function TimelineTrack() {
   const attackChains = useSimulationStore((s) => s.attackChains);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
 
+  const activeScript = usePlaybackStore((s) => s.activeScript);
+  const playbackT = usePlaybackStore((s) => s.playbackT);
+  const setPlaybackT = usePlaybackStore((s) => s.setPlaybackT);
+
   const [showDecomposed, setShowDecomposed] = useState(false);
   const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
   const [hoveredChain, setHoveredChain] = useState<string | null>(null);
   const [hoveredLegend, setHoveredLegend] = useState<string | null>(null);
+  const [hoveredBeat, setHoveredBeat] = useState<number | null>(null);
 
   const riskData = useMemo(() => {
     const { effectiveStates: budgeted } = applyBudgetConstraint(
@@ -178,6 +184,21 @@ export function TimelineTrack() {
     return result.sort((a, b) => a.center - b.center);
   }, [blocks, blockStates, year]);
 
+  // Story beats: each annotation plotted at its year while a script is playing.
+  const startYear = activeScript?.startYear ?? 2024;
+  const beats = useMemo(() => {
+    if (!activeScript?.annotations) return [];
+    const currentYear = startYear + playbackT;
+    return activeScript.annotations
+      .filter((a) => a.atYear >= YEARS[0] && a.atYear <= YEARS[YEARS.length - 1])
+      .map((a) => ({
+        atYear: a.atYear,
+        message: a.message,
+        x: yearToX(a.atYear),
+        reached: currentYear >= a.atYear,
+      }));
+  }, [activeScript, startYear, playbackT]);
+
   const legendItems = [
     { id: "threat", color: SEMANTIC.threat, dashed: true, label: "Threat", tip: "Highest breach probability across all attack chains at each year. Rises as AI makes attacks easier. Hidden while chains are decomposed (it is their upper envelope)." },
     { id: "defense", color: SEMANTIC.defense, dashed: false, label: "Defense", tip: "Your overall security level (SL/5, shown on the same 0-100% scale). Improves as you deploy and mature defenses." },
@@ -187,7 +208,7 @@ export function TimelineTrack() {
   return (
     <div
       className="w-full relative"
-      onMouseLeave={() => { setHoveredBucket(null); setHoveredChain(null); setHoveredLegend(null); }}
+      onMouseLeave={() => { setHoveredBucket(null); setHoveredChain(null); setHoveredLegend(null); setHoveredBeat(null); }}
     >
       {/* Legend (HTML for proper tooltips) */}
       <div className="flex items-center gap-3 mb-0.5" style={{ marginLeft: `${(PAD_L / W) * 100}%` }}>
@@ -359,6 +380,31 @@ export function TimelineTrack() {
           );
         })}
 
+        {/* Story beats — one marker per annotation while a script plays */}
+        {beats.map((beat, i) => {
+          const isHovered = hoveredBeat === i;
+          const yTop = PLOT_TOP + 2;
+          const fill = beat.reached ? "#a78bfa" : "#4b5563";
+          return (
+            <g
+              key={`${beat.atYear}-${i}`}
+              className="cursor-pointer"
+              onMouseEnter={() => setHoveredBeat(i)}
+              onMouseLeave={() => setHoveredBeat(null)}
+              onClick={() => setPlaybackT(beat.atYear - startYear)}
+            >
+              <rect x={beat.x - 8} y={PLOT_TOP - 2} width={16} height={16} fill="transparent" />
+              <polygon
+                points={`${beat.x},${yTop} ${beat.x + 4},${yTop + 4} ${beat.x},${yTop + 8} ${beat.x - 4},${yTop + 4}`}
+                fill={fill}
+                stroke="#111827"
+                strokeWidth={1}
+                opacity={isHovered ? 1 : 0.9}
+              />
+            </g>
+          );
+        })}
+
         {/* Current year vertical marker */}
         <line
           x1={currentX}
@@ -448,6 +494,21 @@ export function TimelineTrack() {
               <span className="text-gray-500">{d.id}</span> {d.name}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Story-beat hover popup */}
+      {hoveredBeat !== null && beats[hoveredBeat] && (
+        <div
+          className="absolute z-[100] bg-gray-800 border border-violet-800/40 rounded shadow-lg px-2 py-1 text-[11px] text-violet-200 max-w-[220px] leading-snug pointer-events-none"
+          style={{
+            left: `${(beats[hoveredBeat].x / W) * 100}%`,
+            top: 0,
+            transform: "translateX(-50%)",
+          }}
+        >
+          <span className="text-gray-500">{beats[hoveredBeat].atYear}</span>{" "}
+          {beats[hoveredBeat].message}
         </div>
       )}
     </div>

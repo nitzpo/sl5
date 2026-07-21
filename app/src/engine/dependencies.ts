@@ -14,9 +14,16 @@ const SATISFIED: ReadonlySet<string> = new Set(["deployed", "mature"]);
 export function applyDependencyConstraint(
   blocks: Block[],
   blockStates: Record<string, BlockState>
-): { effectiveStates: Record<string, BlockState>; unmetIds: Set<string> } {
+): {
+  effectiveStates: Record<string, BlockState>;
+  unmetIds: Set<string>;
+  /** For each capped block, the specific prerequisites that aren't operational —
+   * so the UI can name exactly what's blocking it, not the full requires list. */
+  unmetRequires: Map<string, string[]>;
+} {
   const states: Record<string, BlockState> = { ...blockStates };
   const unmetIds = new Set<string>();
+  const unmetRequires = new Map<string, string[]>();
 
   let changed = true;
   let guard = blocks.length + 1;
@@ -28,17 +35,18 @@ export function applyDependencyConstraint(
       // Fail closed: a prerequisite that doesn't resolve to a loaded block is
       // unmet, never silently satisfied (data integrity tests forbid dangling
       // references in shipped data, so this only bites corrupt/stale state).
-      const unmet = (block.dependencies?.requires ?? []).some(
+      const missing = (block.dependencies?.requires ?? []).filter(
         (id) => !SATISFIED.has(states[id] ?? "not_started")
       );
-      if (unmet) {
+      if (missing.length > 0) {
         states[block.id] = "implementing";
         unmetIds.add(block.id);
+        unmetRequires.set(block.id, missing);
         changed = true;
       }
     }
   }
 
-  if (unmetIds.size === 0) return { effectiveStates: blockStates, unmetIds };
-  return { effectiveStates: states, unmetIds };
+  if (unmetIds.size === 0) return { effectiveStates: blockStates, unmetIds, unmetRequires };
+  return { effectiveStates: states, unmetIds, unmetRequires };
 }

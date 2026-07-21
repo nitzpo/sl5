@@ -23,7 +23,8 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
   const selectedChainId = useSimulationStore((s) => s.selectedChainId);
   const attackChains = useSimulationStore((s) => s.attackChains);
 
-  const { defenseLayerStatus, blocksByLayer, budgetExceededIds } = useSimulationResults();
+  const { defenseLayerStatus, blocksByLayer, budgetExceededIds, dependencyUnmetIds } =
+    useSimulationResults();
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
@@ -113,6 +114,7 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
               year={year}
               sliders={sliders}
               budgetExceededIds={budgetExceededIds}
+              dependencyUnmetIds={dependencyUnmetIds}
               decisionWindows={decisionWindows}
               chainMembers={chainMembers}
               onSelectBlock={onSelectBlock}

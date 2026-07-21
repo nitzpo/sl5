@@ -83,33 +83,36 @@ describe("Block Effectiveness", () => {
 describe("Category and Overall Scores", () => {
   const blocks = loadBlocks();
 
-  it("Scenario 1: Baseline 2026 matches Python (~1.76)", () => {
+  // Overall SL uses the 0.3·min + 0.7·mean aggregation over category scores
+  // (all-catalog denominator here, since these tests pass no relevantIds set).
+
+  it("Scenario 1: Baseline 2026 (~1.85)", () => {
     const baselineStates: Record<string, string> = {};
     for (const b of blocks) {
       baselineStates[b.id] = b.current_state.baseline_state;
     }
     const catScores = computeCategoryScores(blocks, baselineStates, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(1.76, 1);
+    expect(overall).toBeCloseTo(1.85, 1);
   });
 
-  it("Scenario 2: All implementing 2026 matches Python (~2.54)", () => {
+  it("Scenario 2: All implementing 2026 (~2.56)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) states[b.id] = "implementing";
     const catScores = computeCategoryScores(blocks, states, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(2.54, 1);
+    expect(overall).toBeCloseTo(2.56, 1);
   });
 
-  it("Scenario 3: All deployed 2029 matches Python (~4.06)", () => {
+  it("Scenario 3: All deployed 2029 (~4.18)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) states[b.id] = "deployed";
     const catScores = computeCategoryScores(blocks, states, 2029);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(4.06, 1);
+    expect(overall).toBeCloseTo(4.18, 1);
   });
 
-  it("Scenario 4: Network+Physical deployed, AI absent 2028 matches Python (~1.41)", () => {
+  it("Scenario 4: Network+Physical deployed, AI absent 2028 (~2.20)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) {
       if (b.category === "network" || b.category === "physical") {
@@ -124,17 +127,21 @@ describe("Category and Overall Scores", () => {
     }
     const catScores = computeCategoryScores(blocks, states, 2028);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(1.41, 1);
+    expect(overall).toBeCloseTo(2.20, 1);
   });
 
-  it("weakest link dominates: absent category drags overall down", () => {
+  it("an absent category still drags overall below full coverage", () => {
+    const allDeployed: Record<string, string> = {};
+    for (const b of blocks) allDeployed[b.id] = "deployed";
+    const fullOverall = overallSlScore(computeCategoryScores(blocks, allDeployed, 2028));
+
     const states: Record<string, string> = {};
     for (const b of blocks) {
       states[b.id] = b.category === "ai_specific" ? "not_started" : "deployed";
     }
-    const catScores = computeCategoryScores(blocks, states, 2028);
-    const overall = overallSlScore(catScores);
-    // AI-specific at baseline (1.0) should pull overall far below deployed categories (~4.2)
-    expect(overall).toBeLessThan(2.5);
+    const overall = overallSlScore(computeCategoryScores(blocks, states, 2028));
+    // The weakest-link term still bites: a wide-open AI category pulls overall
+    // meaningfully below full coverage (~4.18), even though breadth now dominates.
+    expect(overall).toBeLessThan(fullOverall - 0.8);
   });
 });

@@ -30,9 +30,11 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "NET-02", startYear: 2025.5 },
       { blockId: "NET-03", startYear: 2025.5 },
       { blockId: "NET-04", startYear: 2025.5 },
-      // Physical after insider scare 2026
+      // Physical after insider scare 2026. PER-01 (foundational personnel
+      // baseline) is finally started here too — it gates PER-02/03/04.
       { blockId: "PHY-01", startYear: 2026 },
       { blockId: "PHY-05", startYear: 2026 },
+      { blockId: "PER-01", startYear: 2026 },
       { blockId: "PER-02", startYear: 2026 },
       // Network air gap after breach attempt
       { blockId: "NET-01", startYear: 2026.5 },
@@ -40,12 +42,15 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "PER-03", startYear: 2027 },
       { blockId: "PER-04", startYear: 2027 },
       { blockId: "PER-08", startYear: 2027 },
-      // AI-specific very late — after distillation detected
+      // AI-specific very late — after distillation detected. PER-06 gates
+      // AI-06, so it has to come first (still far too late to mature by 2030).
+      { blockId: "PER-06", startYear: 2028 },
       { blockId: "AI-04", startYear: 2028 },
       { blockId: "AI-06", startYear: 2028 },
       { blockId: "AI-01", startYear: 2028.5 },
-      // Hardware even later
-      { blockId: "HW-09", startYear: 2028.5 },
+      // Hardware even later. HW-05 needs no prerequisite; HW-09 (requires the
+      // $100M HW-01 foundation this budget never funds) is left out rather than
+      // shipped as a block permanently capped to implementing.
       { blockId: "HW-05", startYear: 2029 },
     ],
     annotations: [
@@ -61,11 +66,20 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Proactive Program",
     description: "Start early. Hard-stops first. Ahead of the AI curve.",
     type: "scripted",
-    // Budget covers the full program: the 29 deployments below sum to ~$778M
+    // Budget covers the full program: the deployments below sum to ~$791M
     // at optimistic upfront costs (a multi-hundred-million-dollar program is
-    // the point of this story — see the README's framing).
-    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, risk_tolerance: 1.0 },
+    // the point of this story — see the README's framing). gov_cooperation is
+    // set high: a program this well-resourced assumes government partnership,
+    // so personnel/supply-chain controls aren't govMult-penalized.
+    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 1.0 },
     deployments: [
+      // Foundations first (2024) — zero-prereq blocks that everything else
+      // requires. PER-01 gates PER-02/03/04/05 and PER-06; PER-06 gates
+      // AI-01/AI-06; HW-01 gates HW-05/06/07/09 and SC-06. Deploying these up
+      // front is what makes the later blocks actually reach mature (not capped).
+      { blockId: "PER-01", startYear: 2024 },
+      { blockId: "PER-06", startYear: 2024 },
+      { blockId: "HW-01", startYear: 2024 },
       // Immediate hard-stops (2024)
       { blockId: "NET-01", startYear: 2024 },
       { blockId: "NET-02", startYear: 2024 },
@@ -96,14 +110,13 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "NET-05", startYear: 2025.5 },
       // Long-lead items
       { blockId: "AI-02", startYear: 2025 },
-      { blockId: "HW-01", startYear: 2025 },
       { blockId: "SC-06", startYear: 2026 },
       { blockId: "PER-05", startYear: 2026 },
       { blockId: "PHY-03", startYear: 2026 },
     ],
     annotations: [
       { atYear: 2024, message: "2024: hard-stops go in first, ahead of the AI curve." },
-      { atYear: 2025, message: "Hard-stop foundation in place — many chains already blocked" },
+      { atYear: 2025, message: "Foundations + hard-stops in place — prerequisite chains satisfied, many attack paths already blocked" },
       { atYear: 2026, message: "First blocks reaching deployed. AI still at 35%." },
       { atYear: 2027.5, message: "Core defenses mature. Resilient even as AI passes 70%." },
       { atYear: 2029, message: "Full program mature — hard-stops hold regardless of AI capability" },
@@ -117,21 +130,24 @@ export const SCRIPTS: TimeLapseScript[] = [
     sliderOverrides: { budget_millions: 100, org_transformation: 0.4, risk_tolerance: 1.0 },
     deployments: [
       // Highest-impact blocks that fit ~$100M of upfront capital
-      // (optimistic costs; running total in comments)
-      { blockId: "NET-04", startYear: 2024.5 },   // $2M   → $2M
-      { blockId: "HW-09", startYear: 2024.5 },    // $5M   → $7M
-      { blockId: "PER-02", startYear: 2025 },      // $2M   → $9M
-      { blockId: "PHY-05", startYear: 2025 },      // $2M   → $11M
-      { blockId: "NET-03", startYear: 2025 },      // $5M   → $16M
-      { blockId: "PER-07", startYear: 2025.5 },    // $1M   → $17M
-      { blockId: "AI-04", startYear: 2025.5 },     // $5M   → $22M
-      { blockId: "PER-03", startYear: 2026 },      // $10M  → $32M
-      { blockId: "AI-06", startYear: 2026 },       // $5M   → $37M
-      { blockId: "NET-05", startYear: 2026 },      // $10M  → $47M
-      { blockId: "PHY-06", startYear: 2026.5 },    // $20M  → $67M
-      { blockId: "AI-01", startYear: 2026.5 },     // $20M  → $87M
-      { blockId: "PER-08", startYear: 2027 },      // $5M   → $92M
-      { blockId: "PER-04", startYear: 2027 },      // $5M   → $97M
+      // (optimistic costs; running total in comments). Every deployed block's
+      // prerequisites are funded so nothing ships permanently capped:
+      //  - PER-01 unlocks PER-02/03/04; PER-06 unlocks the AI containment blocks.
+      //  - NET-04/05 (need the $20M NET-02 enclave) and HW/PHY hard-stops (need
+      //    the $100M+ HW-01 / $200M PHY-01 foundations) are deliberately left
+      //    out — the honest gaps this budget can't close. NET-03 stands alone.
+      { blockId: "PER-01", startYear: 2024.5 },   // $10M  → $10M
+      { blockId: "PER-06", startYear: 2024.5 },   // $3M   → $13M
+      { blockId: "PER-02", startYear: 2025 },      // $2M   → $15M
+      { blockId: "NET-03", startYear: 2025 },      // $5M   → $20M
+      { blockId: "PER-07", startYear: 2025.5 },    // $1M   → $21M
+      { blockId: "AI-04", startYear: 2025.5 },     // $5M   → $26M
+      { blockId: "PER-03", startYear: 2026 },      // $10M  → $36M
+      { blockId: "AI-06", startYear: 2026 },       // $5M   → $41M
+      { blockId: "PHY-06", startYear: 2026.5 },    // $20M  → $61M
+      { blockId: "AI-01", startYear: 2026.5 },     // $20M  → $81M
+      { blockId: "PER-08", startYear: 2027 },      // $5M   → $86M
+      { blockId: "PER-04", startYear: 2027 },      // $5M   → $91M
     ],
     annotations: [
       { atYear: 2024, message: "2024: a $100M cap — only the highest-impact blocks make the cut." },

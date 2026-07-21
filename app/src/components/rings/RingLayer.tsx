@@ -20,6 +20,7 @@ interface RingLayerProps {
   year: number;
   sliders: Sliders;
   budgetExceededIds: Set<string>;
+  dependencyUnmetIds: Set<string>;
   decisionWindows: Map<string, WindowUrgency>;
   chainMembers: Set<string>;
   onSelectBlock: (block: Block) => void;
@@ -36,6 +37,7 @@ export function RingLayer({
   year,
   sliders,
   budgetExceededIds,
+  dependencyUnmetIds,
   decisionWindows,
   chainMembers,
   onSelectBlock,
@@ -86,6 +88,7 @@ export function RingLayer({
             year={year}
             sliders={sliders}
             budgetExceeded={budgetExceededIds.has(block.id)}
+            dependencyUnmet={dependencyUnmetIds?.has(block.id) ?? false}
             decisionWindow={decisionWindows.get(block.id)}
             chainMember={chainMembers.has(block.id)}
             onSelect={onSelectBlock}

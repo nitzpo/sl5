@@ -5,9 +5,10 @@ import { computeScriptBlockStates } from "./compute-script-state";
 
 const BASE_DURATION_SEC = 48;
 const UPDATE_INTERVAL_MS = 16;
-/** Time progression holds still this long when an annotation appears, so the
- * viewer can actually read it before the story moves on. */
-const ANNOTATION_HOLD_MS = 2500;
+/** Brief pause when a beat lands, so it registers before time moves on. Kept
+ * short: the caption now persists for the whole beat, so this is just a beat
+ * of emphasis, not the full reading window. */
+const ANNOTATION_HOLD_MS = 1200;
 
 export function usePlaybackLoop() {
   const rafRef = useRef(0);
@@ -89,7 +90,11 @@ export function usePlaybackLoop() {
             lastAnnotationRef.current = newIdx;
             // Jumped backward while playing: sync the caption to the earlier
             // beat now, since the forward loop below only fires for i > newIdx.
+            // Re-trigger the read-hold on the reached beat so a backward jump
+            // pauses to be read just like a forward one (clear it if we landed
+            // before the first beat).
             store.setAnnotation(newIdx >= 0 ? script.annotations[newIdx].message : null);
+            holdUntilRef.current = newIdx >= 0 ? timestamp + ANNOTATION_HOLD_MS : 0;
           }
         }
 

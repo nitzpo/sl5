@@ -1,20 +1,35 @@
-import type { Block, BlockState, Category, Sliders } from "./types";
+import type { AttackChain, Block, BlockState, Category, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
 
 export interface ScoringConfig {
-  hybrid_weights: { weakest_link_weight: number; harmonic_mean_weight: number };
+  /** Overall SL = weakest_link_weight·min(categories) + (1−weakest_link_weight)·mean.
+   * A small weakest-link term keeps defense-in-depth honest (a wide-open category
+   * still drags the score) while the average lets broad coverage dominate — so a
+   * program that buys the controls that matter isn't pinned to its single most
+   * expensive-to-defend category. */
+  weakest_link_weight: number;
   baseline_floor: number;
 }
 
-// The one scoring formula the app actually uses: 0.5·weakest-link + 0.5·harmonic
-// mean over category scores, with categories floored at SL 1.0. The weakest
-// category still matters (defense-in-depth: a wide-open category is a real hole),
-// but an even split rewards breadth of coverage so a broad, well-funded program
-// isn't pinned to its single weakest category.
 const DEFAULT_CONFIG: ScoringConfig = {
-  hybrid_weights: { weakest_link_weight: 0.5, harmonic_mean_weight: 0.5 },
+  weakest_link_weight: 0.3,
   baseline_floor: 1.0,
 };
+
+/**
+ * The blocks that actually matter to the threat model: every block any attack
+ * chain exploits or is stopped by. Category scores are measured over these, not
+ * the full catalog — otherwise deep catalogs of exotic, never-deployed controls
+ * dilute a category's score and make real coverage look worse than it is.
+ */
+export function relevantBlockIds(chains: AttackChain[]): Set<string> {
+  const ids = new Set<string>();
+  for (const chain of chains) {
+    for (const id of chain.blocks_exploited ?? []) ids.add(id);
+    for (const id of chain.stoppers ?? []) ids.add(id);
+  }
+  return ids;
+}
 
 const STATE_EFFECTIVENESS: Record<string, number> = {
   not_started: 0.0,
@@ -98,27 +113,42 @@ export function blockEffectiveness(
 
 /**
  * Score for a single category (0-5 SL scale).
+ *
+ * The score measures coverage over the category's *threat-relevant* blocks —
+ * those any attack chain exploits or is stopped by (`relevantIds`). Scoring over
+ * the whole catalog instead would divide by exotic controls no threat exercises,
+ * making a well-covered category look like a D. When `relevantIds` is omitted (or
+ * a category has none of them), it falls back to the full category — preserving
+ * the old behavior for callers without chain context.
  */
 export function categoryScore(
   blocksInCategory: Block[],
   blockStates: Record<string, BlockState | string>,
   year: number,
   sliders: Sliders | number = 0.5,
+  relevantIds?: Set<string>,
   baselineFloor: number = DEFAULT_CONFIG.baseline_floor
 ): number {
   if (blocksInCategory.length === 0) return baselineFloor;
 
-  const total = blocksInCategory.reduce((sum, block) => {
+  const relevant = relevantIds
+    ? blocksInCategory.filter((b) => relevantIds.has(b.id))
+    : blocksInCategory;
+  const pool = relevant.length > 0 ? relevant : blocksInCategory;
+
+  const total = pool.reduce((sum, block) => {
     const state = blockStates[block.id] ?? "not_started";
     return sum + blockEffectiveness(block, state, year, sliders);
   }, 0);
 
-  const raw = total / blocksInCategory.length;
+  const raw = total / pool.length;
   return baselineFloor + raw * (5.0 - baselineFloor);
 }
 
 /**
- * Overall SL score using hybrid formula: 0.6*min + 0.4*harmonic_mean.
+ * Overall SL: weakest_link_weight·min(categories) + (1−weakest_link_weight)·mean.
+ * A small weakest-link term keeps a gaping-hole category honest; the average lets
+ * broad, threat-relevant coverage move the score (see ScoringConfig).
  */
 export function overallSlScore(
   categoryScores: Record<Category, number>,
@@ -128,26 +158,25 @@ export function overallSlScore(
   if (scores.length === 0) return 0;
 
   const minScore = Math.min(...scores);
+  const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
 
-  const nonzero = scores.filter((s) => s > 0);
-  if (nonzero.length === 0) return 0;
-  const harmonicMean =
-    nonzero.length / nonzero.reduce((sum, s) => sum + 1.0 / s, 0);
-
-  return (
-    config.hybrid_weights.weakest_link_weight * minScore +
-    config.hybrid_weights.harmonic_mean_weight * harmonicMean
-  );
+  const wl = config.weakest_link_weight;
+  return wl * minScore + (1 - wl) * mean;
 }
 
 /**
  * Compute all category scores from blocks and states.
+ *
+ * Pass `relevantIds` (from `relevantBlockIds(chains)`) so each category is scored
+ * over its threat-relevant blocks. Omit it and categories score over the full
+ * catalog (back-compat for tests / callers without chain context).
  */
 export function computeCategoryScores(
   blocks: Block[],
   blockStates: Record<string, BlockState | string>,
   year: number,
   sliders: Sliders | number = 0.5,
+  relevantIds?: Set<string>,
   baselineFloor: number = DEFAULT_CONFIG.baseline_floor
 ): Record<Category, number> {
   const categories: Record<Category, Block[]> = {
@@ -172,6 +201,7 @@ export function computeCategoryScores(
       blockStates,
       year,
       sliders,
+      relevantIds,
       baselineFloor
     );
   }

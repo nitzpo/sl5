@@ -3,6 +3,7 @@ import { useSimulationStore } from "../../store/simulation";
 import {
   computeCategoryScores,
   overallSlScore,
+  relevantBlockIds,
 } from "../../engine/scoring";
 import { formatSl } from "../../utils/format";
 
@@ -25,12 +26,14 @@ export function PolicyView() {
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
+  const attackChains = useSimulationStore((s) => s.attackChains);
+  const relevantIds = useMemo(() => relevantBlockIds(attackChains), [attackChains]);
 
   // Compute current SL
   const currentSl = useMemo(() => {
-    const cats = computeCategoryScores(blocks, blockStates, year, sliders.ai_timeline);
+    const cats = computeCategoryScores(blocks, blockStates, year, sliders.ai_timeline, relevantIds);
     return overallSlScore(cats);
-  }, [blocks, blockStates, year, sliders]);
+  }, [blocks, blockStates, year, sliders, relevantIds]);
 
   // Simulate "what if" for each policy lever at high value
   const levers = useMemo(() => {
@@ -44,7 +47,7 @@ export function PolicyView() {
     // Simulate: move gov-affected blocks from not_started to implementing
     const govStates = { ...blockStates };
     for (const b of govUnlocked) govStates[b.id] = "implementing";
-    const govCats = computeCategoryScores(blocks, govStates, year, sliders.ai_timeline);
+    const govCats = computeCategoryScores(blocks, govStates, year, sliders.ai_timeline, relevantIds);
     const govSl = overallSlScore(govCats);
     results.push({
       lever: "Government Cooperation",
@@ -64,7 +67,7 @@ export function PolicyView() {
     );
     const vendorStates = { ...blockStates };
     for (const b of vendorUnlocked) vendorStates[b.id] = "implementing";
-    const vendorCats = computeCategoryScores(blocks, vendorStates, year, sliders.ai_timeline);
+    const vendorCats = computeCategoryScores(blocks, vendorStates, year, sliders.ai_timeline, relevantIds);
     const vendorSl = overallSlScore(vendorCats);
     results.push({
       lever: "Vendor Cooperation",
@@ -84,7 +87,7 @@ export function PolicyView() {
     );
     const orgStates = { ...blockStates };
     for (const b of orgUnlocked) orgStates[b.id] = "implementing";
-    const orgCats = computeCategoryScores(blocks, orgStates, year, sliders.ai_timeline);
+    const orgCats = computeCategoryScores(blocks, orgStates, year, sliders.ai_timeline, relevantIds);
     const orgSl = overallSlScore(orgCats);
     results.push({
       lever: "Org Transformation",
@@ -98,7 +101,7 @@ export function PolicyView() {
     });
 
     return results.sort((a, b) => b.slDelta - a.slDelta);
-  }, [blocks, blockStates, year, sliders, currentSl]);
+  }, [blocks, blockStates, year, sliders, currentSl, relevantIds]);
 
   // Industry bottlenecks
   const bottlenecks = useMemo(() => {

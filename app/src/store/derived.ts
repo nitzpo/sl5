@@ -7,6 +7,7 @@ import {
   distillationDefenseReduction,
   applyBudgetConstraint,
   applyDependencyConstraint,
+  relevantBlockIds,
 } from "../engine";
 import type { Block } from "../engine/types";
 import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
@@ -46,11 +47,15 @@ export function useSimulationResults() {
     unmetRequires: dependencyUnmetRequires,
   } = applyDependencyConstraint(blocks, budgetedStates);
 
+  // Score each category over the blocks that matter to the threat model, so SL
+  // tracks real coverage instead of being diluted by never-deployed catalog depth.
+  const relevantIds = relevantBlockIds(attackChains);
   const categoryScores = computeCategoryScores(
     blocks,
     effectiveStates,
     year,
-    sliders
+    sliders,
+    relevantIds
   );
 
   const overall = overallSlScore(categoryScores);

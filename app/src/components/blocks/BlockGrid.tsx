@@ -67,11 +67,14 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
         viewBox={`0 0 ${width} ${height}`}
         className="select-none block"
         style={{
-          // Render at a fixed natural pixel size, top-left aligned. The grid no
-          // longer shrinks to fit — hexes keep their designed size and the grid
-          // overflows into the pannable canvas viewport (drag / trackpad to move).
-          width: `${width}px`,
-          height: `${height}px`,
+          // Scale to fill the canvas (viewBox keeps hexes crisp and proportioned).
+          // Fit to the visible height so the grid fills the vertical space instead
+          // of clustering tiny in the top-left; cap width so it never blows up on
+          // ultra-wide screens. Zooming past 100% then overflows into the pannable
+          // viewport (drag / trackpad to move).
+          width: "100%",
+          maxWidth: `${width * 1.9}px`,
+          maxHeight: "calc(100vh - 200px)",
         }}
         onClick={() => {
           setSelectedChain(null);

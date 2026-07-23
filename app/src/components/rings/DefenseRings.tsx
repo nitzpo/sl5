@@ -84,7 +84,6 @@ export function DefenseRings({
       <PanZoomCanvas
         state={panZoom}
         viewBox={{ minX: 0, minY: 0, width: RING_SVG_SIZE, height: RING_SVG_SIZE }}
-        maxHeight="calc(100vh - 220px)"
         onBackgroundClick={clearSelection}
       >
         {/* Background click-catcher: clears selection when clicking empty space */}

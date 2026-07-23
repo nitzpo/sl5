@@ -12,17 +12,19 @@ import { DependencyOverlay } from "../blocks/DependencyOverlay";
 import { PanZoomCanvas } from "../canvas/PanZoomCanvas";
 import type { PanZoomState } from "../../utils/use-viewbox-pan-zoom";
 import { CATEGORY_ORDER, CATEGORY_LABELS } from "../../utils/geometry";
+import { LAYER_ORDER, LAYER_LABELS, LAYER_COLORS, resolveLayer } from "../../utils/ring-geometry";
 import {
-  clusterCenter,
-  clusterRadius,
-  clusterBlockPosition,
-  clusterWorldBounds,
+  buildClusterLayout,
   CLUSTER_CENTER,
+  CENTER_NODE_RADIUS,
   CLUSTER_BLOCK_SIZE,
 } from "../../utils/cluster-geometry";
 
+export type ClusterGrouping = "category" | "layer";
+
 interface ClusterViewProps {
   panZoom: PanZoomState;
+  grouping: ClusterGrouping;
   onSelectBlock: (block: Block) => void;
   selectedBlock?: Block | null;
   onClearSelection?: () => void;
@@ -30,6 +32,7 @@ interface ClusterViewProps {
 
 export function ClusterView({
   panZoom,
+  grouping,
   onSelectBlock,
   selectedBlock = null,
   onClearSelection,
@@ -53,18 +56,30 @@ export function ClusterView({
     return map;
   }, [blocks, blockStates, year]);
 
-  const blocksByCategory = useMemo(() => {
-    const map: Record<string, Block[]> = {};
-    for (const b of blocks) {
-      if (!map[b.category]) map[b.category] = [];
-      map[b.category].push(b);
+  // Build the layout for the active grouping. Category: block.category.
+  // Layer: first resolvable defense-in-depth layer (fallback monitoring), which
+  // matches how the Rings view assigns blocks to layers.
+  const layout = useMemo(() => {
+    if (grouping === "layer") {
+      const groupOf = (b: Block) => {
+        for (const lc of b.defense_in_depth?.layer_contributions ?? []) {
+          const resolved = resolveLayer(lc);
+          if (resolved) return resolved;
+        }
+        return "monitoring_detection";
+      };
+      return buildClusterLayout(blocks, LAYER_ORDER, groupOf);
     }
-    return map;
-  }, [blocks]);
+    return buildClusterLayout(blocks, CATEGORY_ORDER, (b) => b.category);
+  }, [blocks, grouping]);
 
-  const bounds = useMemo(() => clusterWorldBounds(blocks), [blocks]);
+  const groupLabel = (g: string) =>
+    grouping === "layer" ? LAYER_LABELS[g] ?? g : CATEGORY_LABELS[g as keyof typeof CATEGORY_LABELS] ?? g;
+  const groupColor = (g: string) =>
+    grouping === "layer" ? LAYER_COLORS[g] ?? "#6b7280" : "#8b5cf6";
+
   const hexSize = CLUSTER_BLOCK_SIZE;
-  const pos = (block: Block) => clusterBlockPosition(blocks, block);
+  const pos = layout.pos;
 
   const clearSelection = () => {
     setSelectedChain(null);
@@ -75,68 +90,66 @@ export function ClusterView({
     <>
       <PanZoomCanvas
         state={panZoom}
-        viewBox={bounds}
+        viewBox={layout.bounds}
         onBackgroundClick={clearSelection}
       >
         {/* Background click-catcher spanning the world bounds */}
         <rect
-          x={bounds.minX}
-          y={bounds.minY}
-          width={bounds.width}
-          height={bounds.height}
+          x={layout.bounds.minX}
+          y={layout.bounds.minY}
+          width={layout.bounds.width}
+          height={layout.bounds.height}
           fill="transparent"
           onClick={clearSelection}
         />
 
-        {/* Cluster hulls + labels (drawn first, under everything) */}
-        {CATEGORY_ORDER.map((category) => {
-          const catBlocks = blocksByCategory[category] ?? [];
-          if (catBlocks.length === 0) return null;
-          const center = clusterCenter(category);
-          const r = clusterRadius(catBlocks.length);
-          return (
-            <g key={`hull-${category}`} className="pointer-events-none">
-              <circle
-                cx={center.x}
-                cy={center.y}
-                r={r}
-                fill="#8b5cf6"
-                opacity={0.04}
-                stroke="#4b5563"
-                strokeOpacity={0.35}
-                strokeWidth={1}
-              />
-              <text
-                x={center.x}
-                y={center.y - r - 8}
-                textAnchor="middle"
-                fontSize={12}
-                fontWeight={600}
-                fill="#9ca3af"
-              >
-                {CATEGORY_LABELS[category]}
-              </text>
-            </g>
-          );
-        })}
-
         {/* Spokes from the central asset out to each cluster (subtle) */}
-        {CATEGORY_ORDER.map((category) => {
-          const catBlocks = blocksByCategory[category] ?? [];
-          if (catBlocks.length === 0) return null;
-          const center = clusterCenter(category);
+        {layout.groups.map((g) => {
+          const center = layout.groupCenter(g);
           return (
             <line
-              key={`spoke-${category}`}
+              key={`spoke-${g}`}
               x1={CLUSTER_CENTER.x}
               y1={CLUSTER_CENTER.y}
               x2={center.x}
               y2={center.y}
               stroke="#374151"
-              strokeOpacity={0.4}
+              strokeOpacity={0.35}
               strokeWidth={1}
               className="pointer-events-none"
             />
+          );
+        })}
+
+        {/* Cluster ring hulls + labels (under the blocks) */}
+        {layout.groups.map((g) => {
+          const center = layout.groupCenter(g);
+          const r = layout.groupRadius(g);
+          const color = groupColor(g);
+          return (
+            <g key={`hull-${g}`} className="pointer-events-none">
+              <circle
+                cx={center.x}
+                cy={center.y}
+                r={r}
+                fill={color}
+                opacity={0.05}
+                stroke={color}
+                strokeOpacity={0.25}
+                strokeWidth={1}
+              />
+              <text
+                x={center.x}
+                y={center.y - r - 10}
+                textAnchor="middle"
+                fontSize={13}
+                fontWeight={600}
+                fill={grouping === "layer" ? color : "#9ca3af"}
+                opacity={grouping === "layer" ? 0.9 : 1}
+              >
+                {groupLabel(g)}
+              </text>
+            </g>
           );
         })}
 
@@ -145,14 +158,14 @@ export function ClusterView({
           <circle
             cx={CLUSTER_CENTER.x}
             cy={CLUSTER_CENTER.y}
-            r={34}
+            r={CENTER_NODE_RADIUS}
             fill="#7c3aed"
             opacity={0.15}
           />
           <circle
             cx={CLUSTER_CENTER.x}
             cy={CLUSTER_CENTER.y}
-            r={34}
+            r={CENTER_NODE_RADIUS}
             fill="none"
             stroke="#a78bfa"
             strokeOpacity={0.5}
@@ -191,40 +204,33 @@ export function ClusterView({
         {/* Attack chain overlay */}
         <ChainOverlay blocks={blocks} hexSize={hexSize} pos={pos} />
 
-        {/* Block cells, per cluster */}
-        {CATEGORY_ORDER.map((category) => {
-          const catBlocks = blocksByCategory[category] ?? [];
+        {/* Block cells */}
+        {blocks.map((block) => {
+          const { x, y } = pos(block);
+          const state = (blockStates[block.id] ?? "not_started") as BlockState;
           return (
-            <g key={category}>
-              {catBlocks.map((block) => {
-                const { x, y } = clusterBlockPosition(blocks, block);
-                const state = (blockStates[block.id] ?? "not_started") as BlockState;
-                return (
-                  <BlockCell
-                    key={block.id}
-                    block={block}
-                    cx={x}
-                    cy={y}
-                    size={hexSize}
-                    state={state}
-                    year={year}
-                    sliders={sliders}
-                    budgetExceeded={budgetExceededIds.has(block.id)}
-                    dependencyUnmet={dependencyUnmetIds.has(block.id)}
-                    decisionWindow={decisionWindows.get(block.id)}
-                    onSelect={onSelectBlock}
-                    onHover={(b, rect) => {
-                      setHoveredBlock(b);
-                      setHoverRect(rect);
-                    }}
-                    onHoverEnd={() => {
-                      setHoveredBlock(null);
-                      setHoverRect(null);
-                    }}
-                  />
-                );
-              })}
-            </g>
+            <BlockCell
+              key={block.id}
+              block={block}
+              cx={x}
+              cy={y}
+              size={hexSize}
+              state={state}
+              year={year}
+              sliders={sliders}
+              budgetExceeded={budgetExceededIds.has(block.id)}
+              dependencyUnmet={dependencyUnmetIds.has(block.id)}
+              decisionWindow={decisionWindows.get(block.id)}
+              onSelect={onSelectBlock}
+              onHover={(b, rect) => {
+                setHoveredBlock(b);
+                setHoverRect(rect);
+              }}
+              onHoverEnd={() => {
+                setHoveredBlock(null);
+                setHoverRect(null);
+              }}
+            />
           );
         })}
       </PanZoomCanvas>

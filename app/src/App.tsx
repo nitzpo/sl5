@@ -15,7 +15,7 @@ import { useViewStore } from "./store/view";
 import type { BadgeKey } from "./store/view";
 import type { Block } from "./engine/types";
 
-type ViewMode = "clusters" | "grid" | "rings";
+type ViewMode = "clusters" | "layers" | "grid" | "rings";
 
 function App() {
   const loadData = useSimulationStore((s) => s.loadData);
@@ -137,12 +137,43 @@ function App() {
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
 
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Main view area — fixed controls on top, a pannable canvas below.
-            The page itself never scrolls; only the canvas viewport does, and it
-            hides its scrollbars (trackpad + drag-to-pan move the view instead). */}
-        <div className="relative flex-1 flex flex-col overflow-hidden">
-          <div className="shrink-0 px-4 pt-4">
-          <div className="mb-2 flex items-center gap-4">
+        {/* Main view area — the map-style canvas fills the whole space; the view
+            toggle, legend, chain strip and zoom controls float on top of it so
+            the map uses the full area (map-app chrome, not a reserved header). */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Map-style canvas: fills the area. Each view owns an <svg> whose
+              single transform group is moved by wheel-zoom and drag-to-pan. */}
+          <div className="absolute inset-0 overflow-hidden">
+            {viewMode === "clusters" || viewMode === "layers" ? (
+              <ClusterView
+                panZoom={panZoom}
+                grouping={viewMode === "layers" ? "layer" : "category"}
+                onSelectBlock={selectBlock}
+                selectedBlock={selectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
+            ) : viewMode === "grid" ? (
+              <BlockGrid
+                panZoom={panZoom}
+                onSelectBlock={selectBlock}
+                selectedBlock={selectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
+            ) : (
+              <DefenseRings
+                panZoom={panZoom}
+                onSelectBlock={selectBlock}
+                selectedBlock={selectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
+            )}
+          </div>
+
+          {/* Floating top chrome — over the map. The wrapper ignores pointer
+              events so drags pass through to the canvas; interactive children
+              re-enable them. A soft gradient keeps text legible over content. */}
+          <div className="absolute top-0 left-0 right-0 z-10 px-4 pt-4 pointer-events-none bg-gradient-to-b from-gray-950/90 via-gray-950/60 to-transparent pb-6">
+          <div className="mb-2 flex items-center gap-4 [&_button]:pointer-events-auto [&_a]:pointer-events-auto">
             {/* View toggle */}
             <div className="flex items-center gap-0.5 bg-gray-800 rounded p-0.5">
               <button
@@ -151,6 +182,13 @@ function App() {
                 title="Category Clusters"
               >
                 Clusters
+              </button>
+              <button
+                onClick={() => setViewMode("layers")}
+                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "layers" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
+                title="Defense-in-depth Layers"
+              >
+                Layers
               </button>
               <button
                 onClick={() => setViewMode("grid")}
@@ -214,39 +252,13 @@ function App() {
               />
             </div>
           </div>
-          <ChainStrip />
+          <div className="pointer-events-auto">
+            <ChainStrip />
           </div>
-
-          {/* Map-style canvas: each view owns an <svg> whose single transform
-              group is moved by wheel-zoom and drag-to-pan (see PanZoomCanvas).
-              The container never scrolls; panning works at any zoom. */}
-          <div className="relative flex-1 overflow-hidden px-4 pb-4">
-            {viewMode === "clusters" ? (
-              <ClusterView
-                panZoom={panZoom}
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            ) : viewMode === "grid" ? (
-              <BlockGrid
-                panZoom={panZoom}
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            ) : (
-              <DefenseRings
-                panZoom={panZoom}
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            )}
           </div>
         </div>
 
-        {/* Zoom control — stable bottom-left corner (map-style), never moves */}
+        {/* Zoom control — floats over the map, stable bottom-left corner */}
         <div className="absolute bottom-4 left-4 z-20 flex items-center bg-gray-900/90 border border-gray-700 rounded-lg backdrop-blur-sm shadow-lg overflow-hidden">
           <button
             onClick={panZoom.zoomOut}

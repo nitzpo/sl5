@@ -19,7 +19,6 @@ interface PanZoomCanvasProps {
   /** Fired when empty canvas is clicked (clear selection). */
   onBackgroundClick?: () => void;
   className?: string;
-  maxHeight?: string;
   children: React.ReactNode;
 }
 
@@ -28,7 +27,6 @@ export function PanZoomCanvas({
   viewBox,
   onBackgroundClick,
   className,
-  maxHeight = "calc(100vh - 200px)",
   children,
 }: PanZoomCanvasProps) {
   const { minX, minY, width, height } = viewBox;
@@ -38,10 +36,10 @@ export function PanZoomCanvas({
     <svg
       ref={ref}
       viewBox={`${minX} ${minY} ${width} ${height}`}
-      className={`select-none block touch-none ${
+      preserveAspectRatio="xMidYMid meet"
+      className={`select-none block touch-none w-full h-full ${
         dragging ? "cursor-grabbing" : "cursor-grab"
       } ${className ?? ""}`}
-      style={{ width: "100%", maxHeight }}
       onPointerDown={onPointerDown}
       onWheel={onWheel}
       onClick={onBackgroundClick}

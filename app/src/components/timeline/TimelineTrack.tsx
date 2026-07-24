@@ -15,14 +15,15 @@ const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
 // One normalized 0–1 axis (never dual-axis): threat and AI capability are
 // probabilities; the defense line is SL/5, direct-labeled as "SL x.x".
 const W = 1400;
-const H = 250;
+const H = 196;
 const PAD_L = 52;
 const PAD_R = 70;
 const PLOT_TOP = 12;
 const PLOT_BOTTOM = 168;
-const LANE_TOP = 186; // must-start deadline lane (own space, never over ticks)
-const LANE_H = 22;
-const YEAR_LABEL_Y = H - 8;
+// Must-start deadline markers sit ON the axis (just below it); year labels sit
+// just under those, small and close to the ticks — no separate deadline lane.
+const DEADLINE_Y = PLOT_BOTTOM + 2;
+const YEAR_LABEL_Y = PLOT_BOTTOM + 22;
 const PLOT_RANGE = PLOT_BOTTOM - PLOT_TOP;
 
 const GRID = "#1f2937";
@@ -322,7 +323,7 @@ export function TimelineTrack() {
           />
         ))}
 
-        {/* Year ticks */}
+        {/* Year ticks — small labels tucked just under the axis ticks */}
         {YEARS.map((y) => {
           const x = yearToX(y);
           const isActive = y === year;
@@ -342,7 +343,7 @@ export function TimelineTrack() {
                 x={x}
                 y={YEAR_LABEL_Y}
                 textAnchor="middle"
-                fontSize={15}
+                fontSize={10}
                 fill={isActive ? "#e5e7eb" : MUTED}
                 fontWeight={isActive ? 600 : 400}
               >
@@ -352,27 +353,26 @@ export function TimelineTrack() {
           );
         })}
 
-        {/* Deadline lane — must-start markers get their own space below the axis */}
-        <text x={PAD_L - 8} y={LANE_TOP + 12} textAnchor="end" fontSize={10} fill={MUTED}>
-          start by
-        </text>
+        {/* Must-start deadline markers — sit ON the axis (small triangles just
+            below it, pointing up at the axis), no separate lane or side label */}
         {buckets.map((bucket, i) => {
           const x = yearToX(Math.max(2024, Math.min(2030, bucket.center)));
           const style = URGENCY_BADGE[bucket.urgency];
           const isHovered = hoveredBucket === i;
-          const yTop = LANE_TOP + 3;
+          const yBase = DEADLINE_Y + 9;
           return (
             <g key={bucket.center} className="cursor-pointer" onMouseEnter={() => setHoveredBucket(i)}>
-              <rect x={x - 14} y={LANE_TOP - 2} width={28} height={LANE_H} fill="transparent" />
+              <rect x={x - 10} y={DEADLINE_Y - 2} width={20} height={16} fill="transparent" />
+              {/* triangle apex touches the axis, base sits below */}
               <polygon
-                points={`${x},${yTop + 11} ${x - 5},${yTop} ${x + 5},${yTop}`}
+                points={`${x},${DEADLINE_Y} ${x - 4.5},${yBase} ${x + 4.5},${yBase}`}
                 fill={style.fill}
                 stroke={style.stroke}
                 strokeWidth={1}
                 opacity={isHovered ? 1 : 0.9}
               />
               {bucket.items.length > 1 && (
-                <text x={x + 8} y={yTop + 10} fontSize={11} fill={style.stroke} fontWeight={600}>
+                <text x={x + 7} y={yBase} fontSize={10} fill={style.stroke} fontWeight={600}>
                   {bucket.items.length}
                 </text>
               )}

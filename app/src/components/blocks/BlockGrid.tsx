@@ -9,21 +9,25 @@ import { BlockCell } from "./BlockCell";
 import { BlockTooltip } from "./BlockTooltip";
 import { ChainOverlay } from "./ChainOverlay";
 import { DependencyOverlay } from "./DependencyOverlay";
+import { PanZoomCanvas } from "../canvas/PanZoomCanvas";
+import type { PanZoomState } from "../../utils/use-viewbox-pan-zoom";
 import {
   CATEGORY_ORDER,
   CATEGORY_LABELS,
   hexPosition,
+  blockGridPosition,
   gridDimensions,
   HEX_WIDTH,
 } from "../../utils/geometry";
 
 interface BlockGridProps {
+  panZoom: PanZoomState;
   onSelectBlock: (block: Block) => void;
   selectedBlock?: Block | null;
   onClearSelection?: () => void;
 }
 
-export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelection }: BlockGridProps) {
+export function BlockGrid({ panZoom, onSelectBlock, selectedBlock = null, onClearSelection }: BlockGridProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
@@ -60,38 +64,28 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
 
   const { width, height } = gridDimensions(maxBlocksInRow);
   const hexSize = HEX_WIDTH / 2 - 2;
+  const pos = (block: Block) => blockGridPosition(blocks, block);
+
+  const clearSelection = () => {
+    setSelectedChain(null);
+    onClearSelection?.();
+  };
 
   return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="select-none block"
-        style={{
-          // Scale to fill the canvas (viewBox keeps hexes crisp and proportioned).
-          // Fit to the visible height so the grid fills the vertical space instead
-          // of clustering tiny in the top-left; cap width so it never blows up on
-          // ultra-wide screens. Zooming past 100% then overflows into the pannable
-          // viewport (drag / trackpad to move).
-          width: "100%",
-          maxWidth: `${width * 1.9}px`,
-          maxHeight: "calc(100vh - 200px)",
-        }}
-        onClick={() => {
-          setSelectedChain(null);
-          onClearSelection?.();
-        }}
+    <>
+      <PanZoomCanvas
+        state={panZoom}
+        viewBox={{ minX: 0, minY: 0, width, height }}
+        onBackgroundClick={clearSelection}
       >
-        {/* Background click-catcher: clears selection when clicking empty space within the viewBox */}
+        {/* Transparent backdrop. Clearing is handled by PanZoomCanvas's guarded
+            click (ignores the trailing click after a pan), so no handler here. */}
         <rect
           x={0}
           y={0}
           width={width}
           height={height}
           fill="transparent"
-          onClick={() => {
-            setSelectedChain(null);
-            onClearSelection?.();
-          }}
         />
         {CATEGORY_ORDER.map((category) => {
           const catBlocks = blocksByCategory[category] ?? [];
@@ -149,11 +143,12 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
           blocks={blocks}
           focusBlock={hoveredBlock ?? selectedBlock}
           hexSize={hexSize}
+          pos={pos}
         />
 
         {/* Attack chain overlay */}
-        <ChainOverlay blocks={blocks} hexSize={hexSize} />
-      </svg>
+        <ChainOverlay blocks={blocks} hexSize={hexSize} pos={pos} />
+      </PanZoomCanvas>
 
       {hoveredBlock && createPortal(
         <BlockTooltip
@@ -165,6 +160,6 @@ export function BlockGrid({ onSelectBlock, selectedBlock = null, onClearSelectio
         />,
         document.body
       )}
-    </div>
+    </>
   );
 }

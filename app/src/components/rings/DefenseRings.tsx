@@ -3,18 +3,35 @@ import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
-import { LAYER_ORDER, RING_SVG_SIZE, RING_CENTER } from "../../utils/ring-geometry";
+import {
+  LAYER_ORDER,
+  RING_SVG_SIZE,
+  RING_CENTER,
+  RING_BLOCK_SIZE,
+  blockPositionOnRing,
+} from "../../utils/ring-geometry";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import type { WindowUrgency } from "../../utils/decision-windows";
 import { RingLayer } from "./RingLayer";
 import { BlockTooltip } from "../blocks/BlockTooltip";
+import { ChainOverlay } from "../blocks/ChainOverlay";
+import { DependencyOverlay } from "../blocks/DependencyOverlay";
+import { PanZoomCanvas } from "../canvas/PanZoomCanvas";
+import type { PanZoomState } from "../../utils/use-viewbox-pan-zoom";
 
 interface DefenseRingsProps {
+  panZoom: PanZoomState;
   onSelectBlock: (block: Block) => void;
+  selectedBlock?: Block | null;
   onClearSelection?: () => void;
 }
 
-export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsProps) {
+export function DefenseRings({
+  panZoom,
+  onSelectBlock,
+  selectedBlock = null,
+  onClearSelection,
+}: DefenseRingsProps) {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
@@ -42,33 +59,41 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
     return new Set(chain?.stoppers ?? []);
   }, [attackChains, selectedChainId]);
 
+  // Position lookup mirroring RingLayer's placement, so the shared dependency /
+  // chain overlays can draw arcs between blocks on their rings.
+  const posMap = useMemo(() => {
+    const map = new Map<string, { x: number; y: number }>();
+    LAYER_ORDER.forEach((layerId, ringIdx) => {
+      const layerBlocks = blocksByLayer[layerId] ?? [];
+      layerBlocks.forEach((block, idx) => {
+        map.set(block.id, blockPositionOnRing(ringIdx, idx, layerBlocks.length));
+      });
+    });
+    return map;
+  }, [blocksByLayer]);
+
+  const pos = (block: Block) => posMap.get(block.id) ?? RING_CENTER;
+
+  const clearSelection = () => {
+    setSelectedChain(null);
+    onClearSelection?.();
+  };
+
   return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${RING_SVG_SIZE} ${RING_SVG_SIZE}`}
-        className="select-none block mx-auto"
-        style={{
-          width: "100%",
-          maxWidth: `${RING_SVG_SIZE}px`,
-          // fit the full composition in the visible canvas without scrolling
-          maxHeight: "calc(100vh - 220px)",
-        }}
-        onClick={() => {
-          setSelectedChain(null);
-          onClearSelection?.();
-        }}
+    <>
+      <PanZoomCanvas
+        state={panZoom}
+        viewBox={{ minX: 0, minY: 0, width: RING_SVG_SIZE, height: RING_SVG_SIZE }}
+        onBackgroundClick={clearSelection}
       >
-        {/* Background click-catcher: clears selection when clicking empty space within the viewBox */}
+        {/* Transparent backdrop. Clearing is handled by PanZoomCanvas's guarded
+            click (ignores the trailing click after a pan), so no handler here. */}
         <rect
           x={0}
           y={0}
           width={RING_SVG_SIZE}
           height={RING_SVG_SIZE}
           fill="transparent"
-          onClick={() => {
-            setSelectedChain(null);
-            onClearSelection?.();
-          }}
         />
         {/* Center asset indicator */}
         <circle
@@ -98,6 +123,17 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
         >
           Weights
         </text>
+
+        {/* Dependency arcs (hover-focused, or the whole web when toggled on) */}
+        <DependencyOverlay
+          blocks={blocks}
+          focusBlock={hoveredBlock ?? selectedBlock}
+          hexSize={RING_BLOCK_SIZE}
+          pos={pos}
+        />
+
+        {/* Attack chain overlay */}
+        <ChainOverlay blocks={blocks} hexSize={RING_BLOCK_SIZE} pos={pos} />
 
         {/* Rings with blocks */}
         {LAYER_ORDER.map((layerId, idx) => {
@@ -129,7 +165,7 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
             />
           );
         })}
-      </svg>
+      </PanZoomCanvas>
 
       {hoveredBlock && createPortal(
         <BlockTooltip
@@ -141,6 +177,6 @@ export function DefenseRings({ onSelectBlock, onClearSelection }: DefenseRingsPr
         />,
         document.body
       )}
-    </div>
+    </>
   );
 }

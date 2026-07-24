@@ -1,14 +1,16 @@
 import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
-import { blockGridPosition } from "../../utils/geometry";
 import type { Block, BlockState } from "../../engine/types";
+import type { PosFn } from "./DependencyOverlay";
 
 interface ChainOverlayProps {
   blocks: Block[];
   hexSize: number;
+  /** Absolute position of a block in the current view's coordinate space. */
+  pos: PosFn;
 }
 
-export function ChainOverlay({ blocks, hexSize }: ChainOverlayProps) {
+export function ChainOverlay({ blocks, hexSize, pos }: ChainOverlayProps) {
   const selectedChainId = useSimulationStore((s) => s.selectedChainId);
   const attackChains = useSimulationStore((s) => s.attackChains);
   const blockStates = useSimulationStore((s) => s.blockStates);
@@ -22,13 +24,13 @@ export function ChainOverlay({ blocks, hexSize }: ChainOverlayProps) {
       .map((id) => {
         const block = blockMap.get(id);
         if (!block) return null;
-        const pos = blockGridPosition(blocks, block);
+        const p = pos(block);
         const state = (blockStates[id] ?? "not_started") as BlockState;
         const deployed = state === "deployed" || state === "mature";
-        return { id, ...pos, deployed };
+        return { id, ...p, deployed };
       })
       .filter(Boolean) as { id: string; x: number; y: number; deployed: boolean }[];
-  }, [chain, blocks, blockStates]);
+  }, [chain, blocks, blockStates, pos]);
 
   if (!chain || positions.length === 0) return null;
 

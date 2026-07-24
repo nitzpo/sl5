@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { usePlaybackStore } from "../../timelapse/playback-store";
 import { ScenariosDropdown } from "./ScenariosDropdown";
+import { HEADER_BTN } from "./header-button";
 
 interface HeaderProps {
   onShowIntro: () => void;
@@ -42,7 +43,7 @@ export function Header({ onShowIntro }: HeaderProps) {
         <span className="text-xs text-violet-400 truncate max-w-[150px]">{scenarioName}</span>
       )}
 
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex items-center gap-1.5">
       {/* Scenarios */}
       <ScenariosDropdown />
 
@@ -53,24 +54,22 @@ export function Header({ onShowIntro }: HeaderProps) {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         }}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        className={HEADER_BTN}
       >
-        {copied ? "Copied!" : "Share"}
+        {copied ? "✓ Copied" : "Share"}
       </button>
 
       {/* Reset */}
-      <button
-        onClick={resetToBaseline}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
-      >
+      <button onClick={resetToBaseline} className={HEADER_BTN}>
         Reset
       </button>
 
       {/* Help */}
       <button
         onClick={onShowIntro}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        className={`${HEADER_BTN} w-7 justify-center`}
         title="How to use"
+        aria-label="How to use"
       >
         ?
       </button>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { usePanDrag } from "./utils/use-pan-drag";
+import { useViewBoxPanZoom } from "./utils/use-viewbox-pan-zoom";
 import { useSimulationStore } from "./store/simulation";
 import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
 import { Header } from "./components/layout/Header";
@@ -9,10 +9,13 @@ import { BottomPanel } from "./components/layout/BottomPanel";
 import { RightPanels } from "./components/layout/RightPanels";
 import { BlockGrid } from "./components/blocks/BlockGrid";
 import { DefenseRings } from "./components/rings/DefenseRings";
+import { ClusterView } from "./components/clusters/ClusterView";
 import { ChainStrip } from "./components/analysis/ChainStrip";
 import { useViewStore } from "./store/view";
 import type { BadgeKey } from "./store/view";
 import type { Block } from "./engine/types";
+
+type ViewMode = "clusters" | "grid" | "rings";
 
 function App() {
   const loadData = useSimulationStore((s) => s.loadData);
@@ -26,10 +29,10 @@ function App() {
     setSelectedBlock(block);
     if (block) setScoreOpen(true);
   };
-  const [viewMode, setViewMode] = useState<"grid" | "rings">("grid");
-  const [zoom, setZoom] = useState(1);
-  const { ref: panRef, dragging, overflowing, onPointerDown: onPanPointerDown } =
-    usePanDrag([viewMode, zoom]);
+  const [viewMode, setViewMode] = useState<ViewMode>("clusters");
+  // One shared map-style pan/zoom engine; the view mode is its reset key so
+  // switching views re-centers.
+  const panZoom = useViewBoxPanZoom(viewMode);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
 
@@ -134,14 +137,52 @@ function App() {
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
 
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Main view area — fixed controls on top, a pannable canvas below.
-            The page itself never scrolls; only the canvas viewport does, and it
-            hides its scrollbars (trackpad + drag-to-pan move the view instead). */}
-        <div className="relative flex-1 flex flex-col overflow-hidden">
-          <div className="shrink-0 px-4 pt-4">
-          <div className="mb-2 flex items-center gap-4">
+        {/* Main view area — the map-style canvas fills the whole space; the view
+            toggle, legend, chain strip and zoom controls float on top of it so
+            the map uses the full area (map-app chrome, not a reserved header). */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Map-style canvas: fills the area. Each view owns an <svg> whose
+              single transform group is moved by wheel-zoom and drag-to-pan. */}
+          <div className="absolute inset-0 overflow-hidden">
+            {viewMode === "clusters" ? (
+              <ClusterView
+                panZoom={panZoom}
+                grouping="category"
+                onSelectBlock={selectBlock}
+                selectedBlock={selectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
+            ) : viewMode === "grid" ? (
+              <BlockGrid
+                panZoom={panZoom}
+                onSelectBlock={selectBlock}
+                selectedBlock={selectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
+            ) : (
+              <DefenseRings
+                panZoom={panZoom}
+                onSelectBlock={selectBlock}
+                selectedBlock={selectedBlock}
+                onClearSelection={() => setSelectedBlock(null)}
+              />
+            )}
+          </div>
+
+          {/* Floating top chrome — over the map. The wrapper ignores pointer
+              events so drags pass through to the canvas; interactive children
+              re-enable them. A soft gradient keeps text legible over content. */}
+          <div className="absolute top-0 left-0 right-0 z-10 px-4 pt-4 pointer-events-none bg-gradient-to-b from-gray-950/90 via-gray-950/60 to-transparent pb-6">
+          <div className="mb-2 flex items-center gap-4 [&_button]:pointer-events-auto [&_a]:pointer-events-auto">
             {/* View toggle */}
             <div className="flex items-center gap-0.5 bg-gray-800 rounded p-0.5">
+              <button
+                onClick={() => setViewMode("clusters")}
+                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "clusters" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
+                title="Category Clusters"
+              >
+                Clusters
+              </button>
               <button
                 onClick={() => setViewMode("grid")}
                 className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "grid" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
@@ -172,22 +213,24 @@ function App() {
                 label="Start now"
                 tip="Deployment window closing — must start soon to be ready by 2030. Click to toggle."
               />
-              {viewMode === "grid" && (
-                <>
-                  <ToggleLegendItem
-                    badge="requires"
-                    swatch={<span className="text-sky-400 text-[10px] leading-none">→</span>}
-                    label="Requires"
-                    tip="Hover/select a block: solid arrows point from its prerequisites into it. A deployed block with a missing prerequisite is capped (dotted sky ring). Click to toggle."
-                  />
-                  <ToggleLegendItem
-                    badge="enhances"
-                    swatch={<span className="text-sky-400 text-[10px] leading-none tracking-tighter">⇢</span>}
-                    label="Enhances"
-                    tip="Dashed lines point to blocks this one makes more effective. Click to toggle."
-                  />
-                </>
-              )}
+              <ToggleLegendItem
+                badge="requires"
+                swatch={<span className="text-sky-400 text-[10px] leading-none">→</span>}
+                label="Requires"
+                tip="Hover/select a block: solid arrows point from its prerequisites into it. A deployed block with a missing prerequisite is capped (dotted sky ring). Click to toggle."
+              />
+              <ToggleLegendItem
+                badge="enhances"
+                swatch={<span className="text-sky-400 text-[10px] leading-none tracking-tighter">⇢</span>}
+                label="Enhances"
+                tip="Dashed lines point to blocks this one makes more effective. Click to toggle."
+              />
+              <ToggleLegendItem
+                badge="allRelations"
+                swatch={<span className="text-sky-400 text-[10px] leading-none">✦</span>}
+                label="Show all relations"
+                tip="Draw the whole dependency web at once (dimmed); hovering a block still highlights just its own edges. Click to toggle."
+              />
               <ToggleLegendItem
                 badge="contested"
                 swatch={<span className="w-2 h-2 rounded-full bg-gray-800 border border-slate-400 text-[8px] leading-none text-slate-300 flex items-center justify-center font-bold">?</span>}
@@ -202,56 +245,30 @@ function App() {
               />
             </div>
           </div>
-          <ChainStrip />
+          <div className="pointer-events-auto">
+            <ChainStrip />
           </div>
-
-          {/* Pannable canvas viewport: hides its scrollbars; trackpad scrolls in
-              any direction, and dragging empty space pans it like a map. */}
-          <div
-            ref={panRef}
-            onPointerDown={onPanPointerDown}
-            className={`relative flex-1 overflow-auto no-scrollbar px-4 pb-4 ${
-              dragging ? "cursor-grabbing" : overflowing ? "cursor-grab" : ""
-            }`}
-          >
-            <div
-              className="w-full"
-              style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
-            >
-              {viewMode === "grid" ? (
-                <BlockGrid
-                  onSelectBlock={selectBlock}
-                  selectedBlock={selectedBlock}
-                  onClearSelection={() => setSelectedBlock(null)}
-                />
-              ) : (
-                <DefenseRings
-                  onSelectBlock={selectBlock}
-                  onClearSelection={() => setSelectedBlock(null)}
-                />
-              )}
-            </div>
           </div>
         </div>
 
-        {/* Zoom control — stable bottom-left corner (map-style), never moves */}
+        {/* Zoom control — floats over the map, stable bottom-left corner */}
         <div className="absolute bottom-4 left-4 z-20 flex items-center bg-gray-900/90 border border-gray-700 rounded-lg backdrop-blur-sm shadow-lg overflow-hidden">
           <button
-            onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.1) * 10) / 10))}
+            onClick={panZoom.zoomOut}
             className="text-base text-gray-300 hover:text-white hover:bg-gray-800 w-7 h-7 flex items-center justify-center transition-colors"
             title="Zoom out"
           >
             −
           </button>
           <button
-            onClick={() => setZoom(1)}
+            onClick={panZoom.reset}
             className="text-[11px] text-gray-400 hover:text-gray-200 w-12 h-7 flex items-center justify-center border-x border-gray-700 transition-colors"
-            title="Reset to 100%"
+            title="Reset view"
           >
-            {Math.round(zoom * 100)}%
+            {Math.round(panZoom.scale * 100)}%
           </button>
           <button
-            onClick={() => setZoom((z) => Math.min(2, Math.round((z + 0.1) * 10) / 10))}
+            onClick={panZoom.zoomIn}
             className="text-base text-gray-300 hover:text-white hover:bg-gray-800 w-7 h-7 flex items-center justify-center transition-colors"
             title="Zoom in"
           >

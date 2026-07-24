@@ -46,7 +46,10 @@ export const LAYER_ALIAS_MAP: Record<string, string> = {
 };
 
 export const RING_CENTER = { x: 330, y: 330 };
-export const RING_RADII = [54, 88, 122, 156, 192, 226, 260, 294];
+// Radii start high enough that even the innermost ring can hold a compact,
+// non-overlapping run of its blocks (the smallest ring must fit up to 8-9
+// hexes); the outer ring still clears the 660 viewBox.
+export const RING_RADII = [96, 124, 152, 180, 208, 236, 264, 292];
 export const RING_BLOCK_SIZE = 17;
 export const RING_SVG_SIZE = 660;
 
@@ -54,9 +57,14 @@ export const RING_SVG_SIZE = 660;
  * clear of blocks — so the eight labels never stack into one column. */
 export const LABEL_SPOKE_ANGLE = -Math.PI / 4;
 
-/** Half-width of the wedge kept clear around the NE label spoke, so blocks never
- * sit on top of the diagonal ring labels. Everything else is usable. */
-const LABEL_WEDGE_HALF = Math.PI / 12; // ±15°
+/** Half-width of the wedge kept clear around the NE label spoke, so a cluster
+ * never sits on top of the diagonal ring labels. Everything else is usable. */
+const LABEL_WEDGE_HALF = Math.PI / 10; // ±18°
+
+/** Arc-length gap between adjacent blocks within a ring's run (px). Constant
+ * across rings (angular step scales by 1/radius), so every cluster is a compact,
+ * evenly-spaced run whether on an inner or outer ring. */
+const BLOCK_ARC_GAP = 38;
 
 export function resolveLayer(raw: string): LayerId | null {
   if ((LAYER_ORDER as readonly string[]).includes(raw)) return raw as LayerId;
@@ -65,43 +73,60 @@ export function resolveLayer(raw: string): LayerId | null {
   return null;
 }
 
-/** Per-ring rotation (fraction of a slot) so rings don't align their block
- * angles — avoids radial "spokes" of stacked blocks across rings. */
-const RING_PHASE = 0.37;
+const RING_COUNT = RING_RADII.length;
+/** Coprime with RING_COUNT (8): stepping the ring index by this around the
+ * circle scatters the clusters so consecutive rings land far apart (their
+ * relation arcs cross), instead of neighbouring rings sitting side by side. */
+const RING_SCATTER_STRIDE = 3;
 
 /**
- * Largest step < total that is coprime with `total`, so index*step (mod total)
- * visits every slot exactly once while jumping ~half the ring each time. That
- * scatters consecutive indices to opposite sides.
+ * Angle where ring `ringIdx`'s cluster is CENTERED. Ring centers are spread
+ * around the usable arc (all but a wedge for the NE labels) but permuted by a
+ * coprime stride, so adjacent rings don't sit next to each other — their runs
+ * land on scattered, far-apart arcs.
  */
-function scatterStride(total: number): number {
-  if (total < 3) return 1;
-  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-  // Start near total/2 (biggest jump) and walk down to the first coprime step.
-  for (let s = Math.floor(total / 2); s >= 1; s--) {
-    if (gcd(s, total) === 1) return s;
-  }
-  return 1;
+function ringCenterAngle(ringIdx: number): number {
+  const usable = Math.PI * 2 - 2 * LABEL_WEDGE_HALF;
+  const start = LABEL_SPOKE_ANGLE + LABEL_WEDGE_HALF;
+  const scattered = (ringIdx * RING_SCATTER_STRIDE) % RING_COUNT;
+  // +0.5 centers the cluster in its cell.
+  return start + ((scattered + 0.5) / RING_COUNT) * usable;
 }
 
 /**
- * Angle of the nth block on a given ring. Blocks fill EVENLY-spaced slots across
- * almost the whole ring (all but a small wedge kept clear for the NE labels), so
- * they never overlap or sit on a label. But the index→slot mapping is permuted by
- * a coprime stride, so successive block indices land on opposite sides — related
- * blocks (usually adjacent in the data) end up across the circle from each other
- * and their relation arcs cross the middle. Deterministic and stable.
+ * Angle of the nth block on a given ring. Each ring's blocks form ONE compact
+ * sequential run (adjacent hexagons at a constant arc-length gap), centered on
+ * the ring's scattered center angle. The runs are scattered around the circle
+ * (see ringCenterAngle) rather than laid out in ring order, so relations between
+ * blocks on different rings cross the middle. Deterministic and stable.
  */
 export function blockAngle(ringIdx: number, index: number, total: number): number {
-  const usable = Math.PI * 2 - 2 * LABEL_WEDGE_HALF;
-  const start = LABEL_SPOKE_ANGLE + LABEL_WEDGE_HALF;
-  if (total <= 1) return start + usable / 2;
-  // Permute which evenly-spaced slot this index occupies.
-  const slot = (index * scatterStride(total)) % total;
-  // Evenly space slots across the usable arc; +0.5 centers them in their cells,
-  // and the per-ring phase offsets each ring so they don't align.
-  const frac = (slot + 0.5 + ringIdx * RING_PHASE) / total;
-  return start + (frac % 1) * usable;
+  const center = ringCenterAngle(ringIdx);
+  if (total <= 1) return center;
+  const r = RING_RADII[ringIdx];
+
+  // Keep every run a compact cluster: cap its total arc well under a full turn
+  // (a big count on a small inner ring packs a touch tighter rather than
+  // wrapping the whole ring). Constant pixel gap otherwise.
+  const usableStart = LABEL_SPOKE_ANGLE + LABEL_WEDGE_HALF;
+  const usableSpan = Math.PI * 2 - 2 * LABEL_WEDGE_HALF;
+  const maxRunArc = Math.min(usableSpan, Math.PI * 1.1); // ≤ ~200°
+  const step = Math.min(BLOCK_ARC_GAP / r, maxRunArc / (total - 1));
+  const runArc = (total - 1) * step;
+
+  // Centered run around the scattered center, then clamp the whole run inside
+  // the usable arc so it never crosses the label wedge.
+  let runStart = center - runArc / 2;
+  const norm = (a: number) => ((a - usableStart) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+  const startFrac = norm(runStart); // 0..2π from the usable-arc start
+  const maxFrac = usableSpan - runArc;
+  if (startFrac > maxFrac) {
+    // Run would spill past the usable arc's end (into the wedge) — pull it back.
+    runStart = usableStart + Math.min(startFrac, maxFrac);
+    // If the center sat inside the wedge itself, clamp to the near edge.
+    if (startFrac > usableSpan) runStart = usableStart;
+  }
+  return runStart + index * step;
 }
 
 export function blockPositionOnRing(

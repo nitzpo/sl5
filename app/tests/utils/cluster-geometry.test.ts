@@ -94,7 +94,7 @@ describe("cluster-geometry", () => {
     expect(l.groupLabel("network").placement).toBe("above");
   });
 
-  it("spreads clusters wider than tall (landscape) and off the vertical axis", () => {
+  it("spreads clusters wide and short (landscape), none straight up/down", () => {
     const many: Block[] = [
       ...Array.from({ length: 7 }, (_, i) => mk(`NET-${i}`, "network")),
       ...Array.from({ length: 10 }, (_, i) => mk(`HW-${i}`, "machine")),
@@ -104,10 +104,10 @@ describe("cluster-geometry", () => {
       ...Array.from({ length: 8 }, (_, i) => mk(`AI-${i}`, "ai_specific")),
     ];
     const l = buildClusterLayout(many, CATEGORY_ORDER, (b) => b.category);
-    // Wider than tall.
-    expect(l.bounds.width).toBeGreaterThan(l.bounds.height);
-    // No cluster center sits exactly on the vertical axis through the origin
-    // (the tilt/stagger pushes them diagonally).
+    // Distinctly wider than tall (screens are landscape).
+    expect(l.bounds.width).toBeGreaterThan(l.bounds.height * 1.3);
+    // The half-step offset means no cluster sits straight up or straight down
+    // (which would waste vertical space) — every center is off the vertical axis.
     for (const g of l.groups) {
       expect(Math.abs(l.groupCenter(g).x)).toBeGreaterThan(1);
     }

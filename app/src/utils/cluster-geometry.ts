@@ -23,10 +23,9 @@ export const CENTER_NODE_RADIUS = 34;
 const RING_ARC_STEP = 58;
 /** Gap between the central node and the nearest cluster edge. */
 const CENTER_MARGIN = 34;
-/** Horizontal stretch of the cluster ellipse (screens are wide). */
-const CLUSTER_ELLIPSE_ASPECT = 1.7;
-/** Rotate the whole cluster ring slightly so clusters sit diagonally. */
-const START_TILT = -0.18;
+/** Horizontal stretch of the cluster ellipse (screens are wide, so we spread
+ * clusters wide and keep the vertical extent compact). */
+const CLUSTER_ELLIPSE_ASPECT = 2.0;
 
 /** Where a cluster's label sits, and how it's anchored vertically. */
 export interface GroupLabel {
@@ -162,11 +161,12 @@ export function buildClusterLayout(
   const ry = baseRadius;
   const rx = baseRadius * CLUSTER_ELLIPSE_ASPECT;
 
-  // Offset the start angle so clusters sit diagonally (not one straight up),
-  // which packs a landscape rectangle better. For an even count, half the
-  // step lands two clusters symmetrically off the top; odd counts already
-  // stagger. START_TILT nudges the whole ring off the vertical axis.
-  const startAngle = -Math.PI / 2 + START_TILT + (n % 2 === 0 ? Math.PI / n : 0);
+  // Distribute clusters around the ellipse, but offset by HALF a step so that
+  // for even counts NO cluster sits straight up or straight down — they straddle
+  // the horizontal sides instead. That keeps the vertical extent compact (the
+  // extremes land at ±half-step off the poles) and gives the wide, diagonal
+  // spread the layout wants without rotating the whole ring.
+  const startAngle = -Math.PI / 2 + Math.PI / n;
 
   const centers = new Map<string, { x: number; y: number }>();
   groups.forEach((g, i) => {
@@ -207,9 +207,14 @@ export function buildClusterLayout(
     if (centerLabelFits(offsets, labelTextOf(g))) {
       labels.set(g, { x: center.x, y: center.y, placement: "center" });
     } else {
-      // Above the ring — the single/paired hexes sit at top/bottom, so a label
-      // above the ring's top clears them.
-      labels.set(g, { x: center.x, y: center.y - r - 12, placement: "above" });
+      // Above the ring, clear of the topmost hex (hex reaches up to r + hexSize
+      // above center) plus a little breathing room — so the label never sits on
+      // a hexagon the way a too-close offset would.
+      labels.set(g, {
+        x: center.x,
+        y: center.y - r - CLUSTER_BLOCK_SIZE - 12,
+        placement: "above",
+      });
     }
   }
 
@@ -225,10 +230,12 @@ export function buildClusterLayout(
     const c = centers.get(g)!;
     const r = radii.get(g)!;
     const reach = r + hexPad;
-    const topExtra = labels.get(g)!.placement === "above" ? 16 : 0;
+    const label = labels.get(g)!;
+    // An "above" label sits higher than the ring; include it in the top extent.
+    const top = label.placement === "above" ? Math.min(c.y - reach, label.y - 10) : c.y - reach;
     minX = Math.min(minX, c.x - reach);
     maxX = Math.max(maxX, c.x + reach);
-    minY = Math.min(minY, c.y - reach - topExtra);
+    minY = Math.min(minY, top);
     maxY = Math.max(maxY, c.y + reach);
   }
   // Guard against a degenerate empty layout.

@@ -15,7 +15,7 @@ import { useViewStore } from "./store/view";
 import type { BadgeKey } from "./store/view";
 import type { Block } from "./engine/types";
 
-type ViewMode = "clusters" | "layers" | "grid" | "rings";
+type ViewMode = "clusters" | "grid" | "rings";
 
 function App() {
   const loadData = useSimulationStore((s) => s.loadData);
@@ -144,10 +144,10 @@ function App() {
           {/* Map-style canvas: fills the area. Each view owns an <svg> whose
               single transform group is moved by wheel-zoom and drag-to-pan. */}
           <div className="absolute inset-0 overflow-hidden">
-            {viewMode === "clusters" || viewMode === "layers" ? (
+            {viewMode === "clusters" ? (
               <ClusterView
                 panZoom={panZoom}
-                grouping={viewMode === "layers" ? "layer" : "category"}
+                grouping="category"
                 onSelectBlock={selectBlock}
                 selectedBlock={selectedBlock}
                 onClearSelection={() => setSelectedBlock(null)}
@@ -182,13 +182,6 @@ function App() {
                 title="Category Clusters"
               >
                 Clusters
-              </button>
-              <button
-                onClick={() => setViewMode("layers")}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "layers" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
-                title="Defense-in-depth Layers"
-              >
-                Layers
               </button>
               <button
                 onClick={() => setViewMode("grid")}

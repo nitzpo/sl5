@@ -32,10 +32,10 @@ const CLUSTER_ELLIPSE_ASPECT = 1.4;
 /** Vertical squeeze of the ellipse: pulls the top/bottom clusters inward so the
  * composition is a touch flatter than a circle without wasting vertical space. */
 const CLUSTER_ELLIPSE_VSQUEEZE = 0.9;
-/** Minimum gap between two cluster edges — kept small so clusters sit close and
- * the middle of the composition stays tight (they never overlap). If placement
- * brings any pair closer than this, the ellipse inflates uniformly to meet it. */
-const CLUSTER_MIN_GAP = 22;
+/** Minimum gap between two cluster edges — enough that clusters read as
+ * separate without splaying apart (they never overlap). If placement brings any
+ * pair closer than this, the ellipse inflates uniformly to meet it. */
+const CLUSTER_MIN_GAP = 34;
 
 /** Where a cluster's label sits, and how it's anchored vertically. */
 export interface GroupLabel {

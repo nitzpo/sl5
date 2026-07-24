@@ -125,14 +125,17 @@ export function ClusterView({
           );
         })}
 
-        {/* Cluster ring hulls + labels (under the blocks). The label sits in the
-            middle of the ring where there's room, and moves above the ring for
-            small clusters where a centered label would fall on a hexagon. */}
+        {/* Cluster ring hulls + labels (under the blocks). Every label sits in
+            the middle of its ring on a subtle backing pill, so it reads clearly
+            over whatever's behind it and all clusters look consistent. */}
         {layout.groups.map((g) => {
           const center = layout.groupCenter(g);
           const r = layout.groupRadius(g);
           const color = groupColor(g);
-          const label = layout.groupLabel(g);
+          const name = groupName(g);
+          // Backing pill sized to the text (≈7.4px/char at 13px semibold).
+          const pillW = name.length * 7.4 + 14;
+          const pillH = 20;
           return (
             <g key={`hull-${g}`} className="pointer-events-none">
               <circle
@@ -145,17 +148,26 @@ export function ClusterView({
                 strokeOpacity={0.25}
                 strokeWidth={1}
               />
+              <rect
+                x={center.x - pillW / 2}
+                y={center.y - pillH / 2}
+                width={pillW}
+                height={pillH}
+                rx={5}
+                fill="#0b0f19"
+                opacity={0.72}
+              />
               <text
-                x={label.x}
-                y={label.y}
+                x={center.x}
+                y={center.y}
                 textAnchor="middle"
-                dominantBaseline={label.placement === "center" ? "middle" : "auto"}
+                dominantBaseline="middle"
                 fontSize={13}
                 fontWeight={600}
-                fill={grouping === "layer" ? color : "#cbd5e1"}
-                opacity={grouping === "layer" ? 0.95 : 0.9}
+                fill={color === "#8b5cf6" ? "#cbd5e1" : color}
+                opacity={0.95}
               >
-                {groupName(g)}
+                {name}
               </text>
             </g>
           );

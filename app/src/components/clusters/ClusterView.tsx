@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Block, BlockState } from "../../engine/types";
 import { computeDecisionWindows } from "../../utils/decision-windows";
@@ -42,6 +42,8 @@ export function ClusterView({
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
   const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
+  const selectedChainId = useSimulationStore((s) => s.selectedChainId);
+  const attackChains = useSimulationStore((s) => s.attackChains);
 
   const [hoveredBlock, setHoveredBlock] = useState<Block | null>(null);
   const [hoverRect, setHoverRect] = useState<DOMRect | null>(null);
@@ -84,6 +86,38 @@ export function ClusterView({
 
   const hexSize = CLUSTER_BLOCK_SIZE;
   const pos = layout.pos;
+
+  // When an attack chain is selected, auto-zoom so its stopper blocks all fit in
+  // the visible view. The chain strip floats over the top of the canvas, so we
+  // reserve room there (insetTop) to keep the framed blocks from hiding under it.
+  const { fitBounds } = panZoom;
+  useEffect(() => {
+    if (!selectedChainId) return;
+    const chain = attackChains.find((c) => c.id === selectedChainId);
+    if (!chain) return;
+    const blockMap = new Map(blocks.map((b) => [b.id, b]));
+    const pts = chain.stoppers
+      .map((id) => blockMap.get(id))
+      .filter((b): b is Block => !!b)
+      .map((b) => layout.pos(b));
+    if (pts.length === 0) return;
+
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    for (const p of pts) {
+      minX = Math.min(minX, p.x - hexSize);
+      minY = Math.min(minY, p.y - hexSize);
+      maxX = Math.max(maxX, p.x + hexSize);
+      maxY = Math.max(maxY, p.y + hexSize);
+    }
+    fitBounds(
+      { minX, minY, width: maxX - minX, height: maxY - minY },
+      { padding: 50, insetTop: 130 }
+    );
+    // Re-fit when the selected chain or the layout (view/group) changes.
+  }, [selectedChainId, attackChains, blocks, layout, hexSize, fitBounds]);
 
   const clearSelection = () => {
     setSelectedChain(null);

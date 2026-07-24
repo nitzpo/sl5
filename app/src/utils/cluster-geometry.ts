@@ -35,10 +35,13 @@ const CLUSTER_ELLIPSE_VSQUEEZE = 0.9;
 /** Minimum gap between two cluster edges — enough that clusters read as
  * separate without splaying apart (they never overlap). If placement brings any
  * pair closer than this, the ellipse inflates uniformly to meet it. */
-const CLUSTER_MIN_GAP = 34;
+const CLUSTER_MIN_GAP = 46;
 /** Horizontal pull toward center for the off-axis clusters (the upper/lower
- * ones), leaving the far left/right clusters in place. 1 = no pull. */
-const CLUSTER_MID_PULL = 0.6;
+ * ones). 1 = no pull. */
+const CLUSTER_MID_PULL = 0.9;
+/** Horizontal push outward for the far left/right clusters (the ones on the
+ * horizontal axis), so they sit wider than the tucked-in middle ones. 1 = none. */
+const CLUSTER_EDGE_PUSH = 1.28;
 
 /** Where a cluster's label sits, and how it's anchored vertically. */
 export interface GroupLabel {
@@ -187,7 +190,8 @@ export function buildClusterLayout(
   // scaled by how off-axis a cluster is, so the extremes are untouched.
   const cosAt = (i: number) => Math.cos(angleOf(i));
   const isExtreme = (i: number) => Math.abs(cosAt(i)) > 0.99;
-  const xPull = (i: number) => (isExtreme(i) ? 1 : CLUSTER_MID_PULL);
+  // Extremes push outward; off-axis clusters tuck inward.
+  const xPull = (i: number) => (isExtreme(i) ? CLUSTER_EDGE_PUSH : CLUSTER_MID_PULL);
   const centerAt = (i: number) => ({
     x: CLUSTER_CENTER.x + rx * cosAt(i) * xPull(i),
     y: CLUSTER_CENTER.y + ry * Math.sin(angleOf(i)),

@@ -57,6 +57,11 @@ export interface PanZoomState {
   zoomIn: () => void;
   zoomOut: () => void;
   reset: () => void;
+  /** Frame a world-space rectangle within the visible canvas. */
+  fitBounds: (
+    rect: { minX: number; minY: number; width: number; height: number },
+    opts?: { padding?: number; insetTop?: number }
+  ) => void;
 }
 
 /**
@@ -204,6 +209,58 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   const zoomOut = useCallback(() => zoomByStep(1 / ZOOM_STEP), [zoomByStep]);
   const reset = useCallback(() => setView({ tx: 0, ty: 0, scale: 1 }), []);
 
+  /**
+   * Frame a world-space rectangle (in the SVG's viewBox coordinates) within the
+   * visible canvas: scale so it fits, then translate so its center sits at the
+   * center of the visible area. `padding` (viewBox units) is the breathing room
+   * left around the rect; `insetTop` reserves space at the top of the viewport
+   * (e.g. for the floating chain strip) so the framed content isn't hidden under
+   * it.
+   */
+  const fitBounds = useCallback(
+    (
+      rect: { minX: number; minY: number; width: number; height: number },
+      opts?: { padding?: number; insetTop?: number }
+    ) => {
+      const el = ref.current;
+      if (!el || rect.width <= 0 || rect.height <= 0) return;
+      const vb = el.viewBox?.baseVal;
+      const client = el.getBoundingClientRect();
+      if (!vb || client.width === 0 || client.height === 0) return;
+
+      const padding = opts?.padding ?? 40;
+      // How many viewBox units map to one client px (viewBox is fit with "meet",
+      // so the smaller ratio governs both axes uniformly).
+      const unitsPerPx = Math.max(vb.width / client.width, vb.height / client.height);
+      // Reserve the top inset (given in client px) as viewBox units.
+      const insetTopVb = (opts?.insetTop ?? 0) * unitsPerPx;
+
+      // Visible region in viewBox units, minus the top inset.
+      const availW = vb.width - padding * 2;
+      const availH = vb.height - insetTopVb - padding * 2;
+      if (availW <= 0 || availH <= 0) return;
+
+      // Scale to fit the rect into the available region (clamped).
+      const scale = clampScale(Math.min(availW / rect.width, availH / rect.height));
+
+      // Center of the available region in viewBox coords (shifted down by the
+      // top inset so the rect sits below the chain strip).
+      const availCX = vb.x + vb.width / 2;
+      const availCY = vb.y + insetTopVb + (vb.height - insetTopVb) / 2;
+      // Center of the rect in world (viewBox) coords.
+      const rectCX = rect.minX + rect.width / 2;
+      const rectCY = rect.minY + rect.height / 2;
+
+      // Want: availCenter = tx + rectCenter * scale  →  tx = availCenter − rectCenter*scale
+      setView({
+        tx: availCX - rectCX * scale,
+        ty: availCY - rectCY * scale,
+        scale,
+      });
+    },
+    []
+  );
+
   return {
     ref,
     transform: `translate(${view.tx} ${view.ty}) scale(${view.scale})`,
@@ -214,5 +271,6 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
     zoomIn,
     zoomOut,
     reset,
+    fitBounds,
   };
 }

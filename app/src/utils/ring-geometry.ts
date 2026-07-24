@@ -54,6 +54,20 @@ export const RING_SVG_SIZE = 660;
  * clear of blocks — so the eight labels never stack into one column. */
 export const LABEL_SPOKE_ANGLE = -Math.PI / 4;
 
+/**
+ * Usable arc for block clusters: from due-East (0) clockwise 270° to due-North,
+ * leaving the top-right quartile empty (that's where the diagonal layer labels
+ * live). SVG y is down, so increasing angle sweeps clockwise: 0=E, π/2=S, π=W,
+ * 3π/2=N.
+ */
+const CLUSTER_ARC_START = 0; // due East
+const CLUSTER_ARC_SPAN = (3 * Math.PI) / 2; // 270°, E → S → W → N
+
+/** Target arc-length gap between adjacent blocks within a cluster (px). Held
+ * constant across rings by scaling the angular step by 1/radius, so a cluster
+ * reads as an evenly-spaced run whether it's on an inner or outer ring. */
+const BLOCK_ARC_GAP = 40;
+
 export function resolveLayer(raw: string): LayerId | null {
   if ((LAYER_ORDER as readonly string[]).includes(raw)) return raw as LayerId;
   const mapped = LAYER_ALIAS_MAP[raw];
@@ -61,14 +75,40 @@ export function resolveLayer(raw: string): LayerId | null {
   return null;
 }
 
-export function blockAngle(index: number, total: number): number {
-  // Keep a wedge clear around the label spoke; distribute blocks evenly over
-  // the rest. No per-ring rotation jitter — stable, comparable positions.
-  const excludeHalf = Math.PI / 10;
-  const availableArc = Math.PI * 2 - excludeHalf * 2;
-  const startAngle = LABEL_SPOKE_ANGLE + excludeHalf;
-  const pos = ((index + 0.5) / total) * availableArc;
-  return startAngle + pos;
+const RING_COUNT = RING_RADII.length;
+
+/**
+ * Angle of the nth block on a given ring. Each ring gets its own angular slot
+ * evenly spaced across the 270° usable arc, and its blocks run SEQUENTIALLY
+ * within it at a constant arc-length gap (so inner and outer clusters are spaced
+ * the same in pixels). The run is centered in its slot but clamped to the usable
+ * arc, so no cluster spills into the empty top-right quartile (the label wedge).
+ * The result: each layer reads as one compact cluster, and the clusters spiral
+ * outward around the circle instead of every ring wrapping the whole round.
+ */
+export function blockAngle(ringIdx: number, index: number, total: number): number {
+  const r = RING_RADII[ringIdx];
+  // Constant pixel gap → smaller angular step on bigger rings. But a small inner
+  // ring may not fit its blocks at that gap; cap the run to the usable arc (with
+  // a little margin) so it never wraps into the empty top-right — inner clusters
+  // just pack a bit tighter, which reads fine at that radius.
+  const maxRunArc = CLUSTER_ARC_SPAN * 0.96;
+  const step = total > 1 ? Math.min(BLOCK_ARC_GAP / r, maxRunArc / (total - 1)) : 0;
+  const runArc = (total - 1) * step;
+
+  // This ring's slot within the usable arc.
+  const slotStart = CLUSTER_ARC_START + (ringIdx / RING_COUNT) * CLUSTER_ARC_SPAN;
+  const slotEnd = CLUSTER_ARC_START + ((ringIdx + 1) / RING_COUNT) * CLUSTER_ARC_SPAN;
+  const slotCenter = (slotStart + slotEnd) / 2;
+
+  // Center the run in the slot, then clamp so the whole run stays inside the
+  // usable arc [START, START+SPAN] — never entering the top-right quartile.
+  let runStart = slotCenter - runArc / 2;
+  const minStart = CLUSTER_ARC_START;
+  const maxStart = CLUSTER_ARC_START + CLUSTER_ARC_SPAN - runArc;
+  runStart = Math.max(minStart, Math.min(maxStart, runStart));
+
+  return runStart + index * step;
 }
 
 export function blockPositionOnRing(
@@ -76,7 +116,7 @@ export function blockPositionOnRing(
   blockIdx: number,
   totalOnRing: number
 ): { x: number; y: number } {
-  const angle = blockAngle(blockIdx, totalOnRing);
+  const angle = blockAngle(ringIdx, blockIdx, totalOnRing);
   const r = RING_RADII[ringIdx];
   return {
     x: RING_CENTER.x + r * Math.cos(angle),

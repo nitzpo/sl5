@@ -21,20 +21,21 @@ export const CENTER_NODE_RADIUS = 34;
 
 /** Min spacing between adjacent hex centers on a cluster ring. */
 const RING_ARC_STEP = 58;
-/** Gap between the central node and the nearest cluster edge. */
-const CENTER_MARGIN = 34;
-/** Horizontal stretch of the cluster ellipse (screens are wide, so we spread
- * clusters wide and keep the vertical extent compact). Tuned so the whole
- * composition is close to a typical landscape canvas (~1.9:1) — wide enough to
- * fill the width, not so wide it leaves dead space on the sides. */
-const CLUSTER_ELLIPSE_ASPECT = 1.8;
+/** Gap between the central node and the nearest cluster edge. Small: the model
+ * node is compact, so clusters can sit close to it without crowding — this keeps
+ * the middle of the composition from feeling empty. */
+const CENTER_MARGIN = 8;
+/** Horizontal stretch of the cluster ellipse. Kept modest so the left and right
+ * columns of clusters don't get pushed far apart — a large aspect opens a big
+ * empty gap across the middle around the model node. */
+const CLUSTER_ELLIPSE_ASPECT = 1.4;
 /** Vertical squeeze of the ellipse: pulls the top/bottom clusters inward so the
- * composition is flatter and uses less vertical space. */
-const CLUSTER_ELLIPSE_VSQUEEZE = 0.8;
-/** Minimum gap between two cluster edges. If squeezing brings any adjacent pair
- * closer than this, the ellipse is inflated uniformly until it's met — so a flat
- * squeeze never crams clusters together (matters most in the uneven 8-layer view). */
-const CLUSTER_MIN_GAP = 56;
+ * composition is a touch flatter than a circle without wasting vertical space. */
+const CLUSTER_ELLIPSE_VSQUEEZE = 0.9;
+/** Minimum gap between two cluster edges — kept small so clusters sit close and
+ * the middle of the composition stays tight (they never overlap). If placement
+ * brings any pair closer than this, the ellipse inflates uniformly to meet it. */
+const CLUSTER_MIN_GAP = 22;
 
 /** Where a cluster's label sits, and how it's anchored vertically. */
 export interface GroupLabel {
@@ -160,12 +161,12 @@ export function buildClusterLayout(
   // collide (see the constant's note).
   const maxClusterR = Math.max(...groups.map((g) => radii.get(g)!), 0);
   const n = Math.max(groups.length, 1);
-  // Base radius: adjacent centers must be far enough apart that clusters don't
-  // touch, and every cluster must clear the central node.
-  const minSep = 2 * maxClusterR + 24;
-  const byNeighbors = n > 1 ? minSep / (2 * Math.sin(Math.PI / n)) : 0;
-  const byCenter = CENTER_NODE_RADIUS + CENTER_MARGIN + maxClusterR;
-  const baseRadius = Math.max(byNeighbors, byCenter);
+  // Base radius: just enough that every cluster clears the central node. We do
+  // NOT pre-space for the biggest cluster here — that pushes every cluster far
+  // out and leaves a big hole in the middle. Instead the per-pair gap floor
+  // below expands the ellipse only as much as the actual adjacent clusters need,
+  // so clusters sit as close to the center as their real sizes allow.
+  const baseRadius = CENTER_NODE_RADIUS + CENTER_MARGIN + maxClusterR;
 
   // Distribute clusters around the ellipse, offset by HALF a step so that for
   // even counts NO cluster sits straight up or straight down — they straddle the
@@ -174,20 +175,17 @@ export function buildClusterLayout(
   const startAngle = -Math.PI / 2 + Math.PI / n;
   const angleOf = (i: number) => startAngle + (i / n) * Math.PI * 2;
 
-  // Squeezing the ellipse vertically pulls some adjacent clusters closer than a
-  // circle would, and clusters vary in size (the 8-layer view especially). So
-  // after laying them out, inflate the ellipse uniformly (preserving the flat
-  // aspect) until the tightest adjacent-cluster gap meets a floor — no cramping,
-  // whatever the grouping.
   let rx = baseRadius * CLUSTER_ELLIPSE_ASPECT;
   let ry = baseRadius * CLUSTER_ELLIPSE_VSQUEEZE;
   const centerAt = (i: number) => ({
     x: CLUSTER_CENTER.x + rx * Math.cos(angleOf(i)),
     y: CLUSTER_CENTER.y + ry * Math.sin(angleOf(i)),
   });
-  // The pair whose gap is tightest, and the uniform scale that would lift it to
-  // the floor. Scaling rx,ry by s scales the center-to-center distance by s
-  // while cluster radii stay fixed, so gap(s) = s·dist0 − r_i − r_j; solve for s.
+
+  // Guarantee a minimum gap between adjacent clusters. Scaling rx,ry by s scales
+  // every center-to-center distance by s while cluster radii stay fixed, so for
+  // the tightest pair gap(s) = s·dist0 − rSum; solve for the s that lifts it to
+  // the floor. Applied uniformly so the ellipse keeps its shape.
   if (n > 1) {
     let worstScale = 1;
     for (let i = 0; i < n; i++) {
@@ -196,8 +194,7 @@ export function buildClusterLayout(
         const b = centerAt(j);
         const dist0 = Math.hypot(a.x - b.x, a.y - b.y);
         const rSum = radii.get(groups[i])! + radii.get(groups[j])!;
-        const gap = dist0 - rSum;
-        if (gap < CLUSTER_MIN_GAP && dist0 > 0) {
+        if (dist0 - rSum < CLUSTER_MIN_GAP && dist0 > 0) {
           worstScale = Math.max(worstScale, (CLUSTER_MIN_GAP + rSum) / dist0);
         }
       }

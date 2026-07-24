@@ -45,13 +45,14 @@ export const LAYER_ALIAS_MAP: Record<string, string> = {
   input_boundary: "network_boundary",
 };
 
-export const RING_CENTER = { x: 330, y: 330 };
-// Radii start high enough that even the innermost ring can hold a compact,
-// non-overlapping run of its blocks (the smallest ring must fit up to 8-9
-// hexes); the outer ring still clears the 660 viewBox.
-export const RING_RADII = [96, 124, 152, 180, 208, 236, 264, 292];
+export const RING_SVG_SIZE = 700;
+export const RING_CENTER = { x: RING_SVG_SIZE / 2, y: RING_SVG_SIZE / 2 };
+// Radii: the radial step (34) is >= the hex diameter, so blocks on adjacent
+// rings can't collide even at the same angle; the inner radius is high enough
+// that even the busiest ring holds a compact, non-overlapping run; the outer
+// ring + hex still clears the viewBox.
+export const RING_RADII = [76, 110, 144, 178, 212, 246, 280, 314];
 export const RING_BLOCK_SIZE = 17;
-export const RING_SVG_SIZE = 660;
 
 /** Layer labels sit along this radial spoke (north-east), inside a wedge kept
  * clear of blocks — so the eight labels never stack into one column. */
@@ -110,22 +111,21 @@ export function blockAngle(ringIdx: number, index: number, total: number): numbe
   // wrapping the whole ring). Constant pixel gap otherwise.
   const usableStart = LABEL_SPOKE_ANGLE + LABEL_WEDGE_HALF;
   const usableSpan = Math.PI * 2 - 2 * LABEL_WEDGE_HALF;
-  const maxRunArc = Math.min(usableSpan, Math.PI * 1.1); // ≤ ~200°
-  const step = Math.min(BLOCK_ARC_GAP / r, maxRunArc / (total - 1));
+  // Prefer the constant pixel gap; only if the run wouldn't fit the usable arc
+  // does it pack tighter. (Capping the arc more aggressively would force inner
+  // rings to overlap — a big count on a small ring genuinely needs most of the
+  // arc to stay non-overlapping.)
+  const step = Math.min(BLOCK_ARC_GAP / r, usableSpan / (total - 1));
   const runArc = (total - 1) * step;
 
-  // Centered run around the scattered center, then clamp the whole run inside
-  // the usable arc so it never crosses the label wedge.
-  let runStart = center - runArc / 2;
+  // Clamp the CENTER (as a fraction of the usable arc from its start) so the
+  // whole run stays inside the usable arc — keeping the run centered on its
+  // scattered center as closely as the arc allows, rather than snapping to an
+  // edge. runArc ≤ usableSpan by construction, so [half, span−half] is valid.
   const norm = (a: number) => ((a - usableStart) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-  const startFrac = norm(runStart); // 0..2π from the usable-arc start
-  const maxFrac = usableSpan - runArc;
-  if (startFrac > maxFrac) {
-    // Run would spill past the usable arc's end (into the wedge) — pull it back.
-    runStart = usableStart + Math.min(startFrac, maxFrac);
-    // If the center sat inside the wedge itself, clamp to the near edge.
-    if (startFrac > usableSpan) runStart = usableStart;
-  }
+  const half = runArc / 2;
+  const centerFrac = Math.max(half, Math.min(usableSpan - half, norm(center)));
+  const runStart = usableStart + centerFrac - half;
   return runStart + index * step;
 }
 

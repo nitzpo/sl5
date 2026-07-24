@@ -44,8 +44,12 @@ export interface ViewTransform {
 }
 
 export interface PanZoomState {
-  /** Attach to the <svg> element (used to map client → SVG coordinates). */
-  ref: React.RefObject<SVGSVGElement | null>;
+  /**
+   * Attach to the <svg> element. A callback ref (not a RefObject) so the native
+   * wheel listener attaches to whatever SVG is currently mounted and re-attaches
+   * when the element is swapped (e.g. switching views mounts a new <svg>).
+   */
+  ref: (el: SVGSVGElement | null) => void;
   /** The current transform, as an SVG `transform` attribute string. */
   transform: string;
   /** Current scale factor (for a "100%" readout). */
@@ -76,6 +80,9 @@ export interface PanZoomState {
  * the previous view was panned to.
  */
 export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
+  // Internal element ref for coordinate math (CTM reads, pointer handlers). The
+  // exposed `ref` is a callback (see below) that keeps this in sync AND rebinds
+  // the native wheel listener as the SVG mounts / is replaced.
   const ref = useRef<SVGSVGElement | null>(null);
   const [view, setView] = useState<ViewTransform>({ tx: 0, ty: 0, scale: 1 });
   const [dragging, setDragging] = useState(false);
@@ -144,26 +151,33 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   // synthetic onWheel is passive, so e.preventDefault() there is a no-op and page
   // scroll would leak through during zoom (and warn). A native listener works.
   // Latest zoomAt/clientToSvg kept in a ref (synced in an effect, not during
-  // render) so the wheel listener stays attached across renders.
+  // render) so the handler always calls the current versions.
   const zoomAtRef = useRef(zoomAt);
   const clientToSvgRef = useRef(clientToSvg);
   useEffect(() => {
     zoomAtRef.current = zoomAt;
     clientToSvgRef.current = clientToSvg;
   }, [zoomAt, clientToSvg]);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const { x, y } = clientToSvgRef.current(e.clientX, e.clientY);
-      // Trackpad pinch and mouse wheel both arrive as deltaY; normalize to a
-      // gentle multiplicative zoom per notch.
-      const factor = Math.exp(-e.deltaY * 0.0015);
-      zoomAtRef.current(x, y, factor);
-    };
-    el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => el.removeEventListener("wheel", handleWheel);
+
+  // Stable wheel handler (reads the refs above, so it never needs re-creating).
+  const handleWheelRef = useRef((e: WheelEvent) => {
+    e.preventDefault();
+    const { x, y } = clientToSvgRef.current(e.clientX, e.clientY);
+    // Trackpad pinch and mouse wheel both arrive as deltaY; normalize to a
+    // gentle multiplicative zoom per notch.
+    const factor = Math.exp(-e.deltaY * 0.0015);
+    zoomAtRef.current(x, y, factor);
+  });
+
+  // Callback ref: React calls it with the element on mount and `null` on unmount
+  // (and both, old→new, when the element is swapped). We bind the native wheel
+  // listener to whatever <svg> is currently mounted — so wheel-zoom works on the
+  // first render and keeps working after switching views replaces the SVG.
+  const setRef = useCallback((el: SVGSVGElement | null) => {
+    const prev = ref.current;
+    if (prev) prev.removeEventListener("wheel", handleWheelRef.current);
+    ref.current = el;
+    if (el) el.addEventListener("wheel", handleWheelRef.current, { passive: false });
   }, []);
 
   // Set for one click after a real pan drag ends, so the trailing synthetic
@@ -296,7 +310,7 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   );
 
   return {
-    ref,
+    ref: setRef,
     transform: `translate(${view.tx} ${view.ty}) scale(${view.scale})`,
     scale: view.scale,
     dragging,

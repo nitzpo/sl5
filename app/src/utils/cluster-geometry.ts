@@ -25,7 +25,14 @@ const RING_ARC_STEP = 58;
 const CENTER_MARGIN = 34;
 /** Horizontal stretch of the cluster ellipse (screens are wide, so we spread
  * clusters wide and keep the vertical extent compact). */
-const CLUSTER_ELLIPSE_ASPECT = 2.0;
+const CLUSTER_ELLIPSE_ASPECT = 2.4;
+/** Vertical squeeze of the ellipse: pulls the top/bottom clusters inward so the
+ * composition is flatter and uses less vertical space. */
+const CLUSTER_ELLIPSE_VSQUEEZE = 0.7;
+/** Minimum gap between two cluster edges. If squeezing brings any adjacent pair
+ * closer than this, the ellipse is inflated uniformly until it's met — so a flat
+ * squeeze never crams clusters together (matters most in the uneven 8-layer view). */
+const CLUSTER_MIN_GAP = 56;
 
 /** Where a cluster's label sits, and how it's anchored vertically. */
 export interface GroupLabel {
@@ -145,10 +152,10 @@ export function buildClusterLayout(
   for (const g of groups) radii.set(g, ringRadius(byGroup.get(g)!.length));
 
   // Cluster centers sit on an ELLIPSE around the model node. Screens are wide,
-  // so we stretch the horizontal radius (ASPECT) and keep the vertical radius
-  // at the collision-safe minimum — the composition spreads wide and short to
-  // fill a landscape canvas instead of a tall square. Stretching only widens
-  // gaps, so it never introduces cluster collisions.
+  // so we stretch the horizontal radius (ASPECT) and squeeze the vertical one
+  // (VSQUEEZE) — the composition spreads wide and short to fill a landscape
+  // canvas instead of a tall square. The squeeze is bounded so clusters never
+  // collide (see the constant's note).
   const maxClusterR = Math.max(...groups.map((g) => radii.get(g)!), 0);
   const n = Math.max(groups.length, 1);
   // Base radius: adjacent centers must be far enough apart that clusters don't
@@ -158,23 +165,48 @@ export function buildClusterLayout(
   const byCenter = CENTER_NODE_RADIUS + CENTER_MARGIN + maxClusterR;
   const baseRadius = Math.max(byNeighbors, byCenter);
 
-  const ry = baseRadius;
-  const rx = baseRadius * CLUSTER_ELLIPSE_ASPECT;
-
-  // Distribute clusters around the ellipse, but offset by HALF a step so that
-  // for even counts NO cluster sits straight up or straight down — they straddle
-  // the horizontal sides instead. That keeps the vertical extent compact (the
-  // extremes land at ±half-step off the poles) and gives the wide, diagonal
-  // spread the layout wants without rotating the whole ring.
+  // Distribute clusters around the ellipse, offset by HALF a step so that for
+  // even counts NO cluster sits straight up or straight down — they straddle the
+  // horizontal sides. That keeps the vertical extent compact and gives the wide,
+  // diagonal spread without rotating the whole ring.
   const startAngle = -Math.PI / 2 + Math.PI / n;
+  const angleOf = (i: number) => startAngle + (i / n) * Math.PI * 2;
+
+  // Squeezing the ellipse vertically pulls some adjacent clusters closer than a
+  // circle would, and clusters vary in size (the 8-layer view especially). So
+  // after laying them out, inflate the ellipse uniformly (preserving the flat
+  // aspect) until the tightest adjacent-cluster gap meets a floor — no cramping,
+  // whatever the grouping.
+  let rx = baseRadius * CLUSTER_ELLIPSE_ASPECT;
+  let ry = baseRadius * CLUSTER_ELLIPSE_VSQUEEZE;
+  const centerAt = (i: number) => ({
+    x: CLUSTER_CENTER.x + rx * Math.cos(angleOf(i)),
+    y: CLUSTER_CENTER.y + ry * Math.sin(angleOf(i)),
+  });
+  // The pair whose gap is tightest, and the uniform scale that would lift it to
+  // the floor. Scaling rx,ry by s scales the center-to-center distance by s
+  // while cluster radii stay fixed, so gap(s) = s·dist0 − r_i − r_j; solve for s.
+  if (n > 1) {
+    let worstScale = 1;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const a = centerAt(i);
+        const b = centerAt(j);
+        const dist0 = Math.hypot(a.x - b.x, a.y - b.y);
+        const rSum = radii.get(groups[i])! + radii.get(groups[j])!;
+        const gap = dist0 - rSum;
+        if (gap < CLUSTER_MIN_GAP && dist0 > 0) {
+          worstScale = Math.max(worstScale, (CLUSTER_MIN_GAP + rSum) / dist0);
+        }
+      }
+    }
+    rx *= worstScale;
+    ry *= worstScale;
+  }
 
   const centers = new Map<string, { x: number; y: number }>();
   groups.forEach((g, i) => {
-    const angle = startAngle + (i / n) * Math.PI * 2;
-    centers.set(g, {
-      x: CLUSTER_CENTER.x + rx * Math.cos(angle),
-      y: CLUSTER_CENTER.y + ry * Math.sin(angle),
-    });
+    centers.set(g, centerAt(i));
   });
 
   // Precompute each block's absolute position, and its offset from the cluster

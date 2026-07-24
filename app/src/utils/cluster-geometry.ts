@@ -36,6 +36,9 @@ const CLUSTER_ELLIPSE_VSQUEEZE = 0.9;
  * separate without splaying apart (they never overlap). If placement brings any
  * pair closer than this, the ellipse inflates uniformly to meet it. */
 const CLUSTER_MIN_GAP = 34;
+/** Horizontal pull toward center for the off-axis clusters (the upper/lower
+ * ones), leaving the far left/right clusters in place. 1 = no pull. */
+const CLUSTER_MID_PULL = 0.6;
 
 /** Where a cluster's label sits, and how it's anchored vertically. */
 export interface GroupLabel {
@@ -177,15 +180,24 @@ export function buildClusterLayout(
 
   let rx = baseRadius * CLUSTER_ELLIPSE_ASPECT;
   let ry = baseRadius * CLUSTER_ELLIPSE_VSQUEEZE;
+
+  // Pull the off-axis clusters horizontally toward the center, leaving the two
+  // that sit at the horizontal extremes (|cos| ≈ 1) in place. This tucks the
+  // upper/lower clusters in without moving the far left/right ones. The pull is
+  // scaled by how off-axis a cluster is, so the extremes are untouched.
+  const cosAt = (i: number) => Math.cos(angleOf(i));
+  const isExtreme = (i: number) => Math.abs(cosAt(i)) > 0.99;
+  const xPull = (i: number) => (isExtreme(i) ? 1 : CLUSTER_MID_PULL);
   const centerAt = (i: number) => ({
-    x: CLUSTER_CENTER.x + rx * Math.cos(angleOf(i)),
+    x: CLUSTER_CENTER.x + rx * cosAt(i) * xPull(i),
     y: CLUSTER_CENTER.y + ry * Math.sin(angleOf(i)),
   });
 
   // Guarantee a minimum gap between adjacent clusters. Scaling rx,ry by s scales
   // every center-to-center distance by s while cluster radii stay fixed, so for
   // the tightest pair gap(s) = s·dist0 − rSum; solve for the s that lifts it to
-  // the floor. Applied uniformly so the ellipse keeps its shape.
+  // the floor. Applied uniformly so the layout keeps its shape (including the
+  // horizontal pull, which centerAt has already baked in).
   if (n > 1) {
     let worstScale = 1;
     for (let i = 0; i < n; i++) {

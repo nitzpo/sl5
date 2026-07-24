@@ -54,19 +54,9 @@ export const RING_SVG_SIZE = 660;
  * clear of blocks — so the eight labels never stack into one column. */
 export const LABEL_SPOKE_ANGLE = -Math.PI / 4;
 
-/**
- * Usable arc for block clusters: from due-East (0) clockwise 270° to due-North,
- * leaving the top-right quartile empty (that's where the diagonal layer labels
- * live). SVG y is down, so increasing angle sweeps clockwise: 0=E, π/2=S, π=W,
- * 3π/2=N.
- */
-const CLUSTER_ARC_START = 0; // due East
-const CLUSTER_ARC_SPAN = (3 * Math.PI) / 2; // 270°, E → S → W → N
-
-/** Target arc-length gap between adjacent blocks within a cluster (px). Held
- * constant across rings by scaling the angular step by 1/radius, so a cluster
- * reads as an evenly-spaced run whether it's on an inner or outer ring. */
-const BLOCK_ARC_GAP = 40;
+/** Half-width of the wedge kept clear around the NE label spoke, so blocks never
+ * sit on top of the diagonal ring labels. Everything else is usable. */
+const LABEL_WEDGE_HALF = Math.PI / 12; // ±15°
 
 export function resolveLayer(raw: string): LayerId | null {
   if ((LAYER_ORDER as readonly string[]).includes(raw)) return raw as LayerId;
@@ -75,40 +65,43 @@ export function resolveLayer(raw: string): LayerId | null {
   return null;
 }
 
-const RING_COUNT = RING_RADII.length;
+/** Per-ring rotation (fraction of a slot) so rings don't align their block
+ * angles — avoids radial "spokes" of stacked blocks across rings. */
+const RING_PHASE = 0.37;
 
 /**
- * Angle of the nth block on a given ring. Each ring gets its own angular slot
- * evenly spaced across the 270° usable arc, and its blocks run SEQUENTIALLY
- * within it at a constant arc-length gap (so inner and outer clusters are spaced
- * the same in pixels). The run is centered in its slot but clamped to the usable
- * arc, so no cluster spills into the empty top-right quartile (the label wedge).
- * The result: each layer reads as one compact cluster, and the clusters spiral
- * outward around the circle instead of every ring wrapping the whole round.
+ * Largest step < total that is coprime with `total`, so index*step (mod total)
+ * visits every slot exactly once while jumping ~half the ring each time. That
+ * scatters consecutive indices to opposite sides.
+ */
+function scatterStride(total: number): number {
+  if (total < 3) return 1;
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  // Start near total/2 (biggest jump) and walk down to the first coprime step.
+  for (let s = Math.floor(total / 2); s >= 1; s--) {
+    if (gcd(s, total) === 1) return s;
+  }
+  return 1;
+}
+
+/**
+ * Angle of the nth block on a given ring. Blocks fill EVENLY-spaced slots across
+ * almost the whole ring (all but a small wedge kept clear for the NE labels), so
+ * they never overlap or sit on a label. But the index→slot mapping is permuted by
+ * a coprime stride, so successive block indices land on opposite sides — related
+ * blocks (usually adjacent in the data) end up across the circle from each other
+ * and their relation arcs cross the middle. Deterministic and stable.
  */
 export function blockAngle(ringIdx: number, index: number, total: number): number {
-  const r = RING_RADII[ringIdx];
-  // Constant pixel gap → smaller angular step on bigger rings. But a small inner
-  // ring may not fit its blocks at that gap; cap the run to the usable arc (with
-  // a little margin) so it never wraps into the empty top-right — inner clusters
-  // just pack a bit tighter, which reads fine at that radius.
-  const maxRunArc = CLUSTER_ARC_SPAN * 0.96;
-  const step = total > 1 ? Math.min(BLOCK_ARC_GAP / r, maxRunArc / (total - 1)) : 0;
-  const runArc = (total - 1) * step;
-
-  // This ring's slot within the usable arc.
-  const slotStart = CLUSTER_ARC_START + (ringIdx / RING_COUNT) * CLUSTER_ARC_SPAN;
-  const slotEnd = CLUSTER_ARC_START + ((ringIdx + 1) / RING_COUNT) * CLUSTER_ARC_SPAN;
-  const slotCenter = (slotStart + slotEnd) / 2;
-
-  // Center the run in the slot, then clamp so the whole run stays inside the
-  // usable arc [START, START+SPAN] — never entering the top-right quartile.
-  let runStart = slotCenter - runArc / 2;
-  const minStart = CLUSTER_ARC_START;
-  const maxStart = CLUSTER_ARC_START + CLUSTER_ARC_SPAN - runArc;
-  runStart = Math.max(minStart, Math.min(maxStart, runStart));
-
-  return runStart + index * step;
+  const usable = Math.PI * 2 - 2 * LABEL_WEDGE_HALF;
+  const start = LABEL_SPOKE_ANGLE + LABEL_WEDGE_HALF;
+  if (total <= 1) return start + usable / 2;
+  // Permute which evenly-spaced slot this index occupies.
+  const slot = (index * scatterStride(total)) % total;
+  // Evenly space slots across the usable arc; +0.5 centers them in their cells,
+  // and the per-ring phase offsets each ring so they don't align.
+  const frac = (slot + 0.5 + ringIdx * RING_PHASE) / total;
+  return start + (frac % 1) * usable;
 }
 
 export function blockPositionOnRing(

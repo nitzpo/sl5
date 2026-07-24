@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { loadScenarios, type SavedScenario } from "../../store/persistence";
-import { HEADER_BTN } from "./Header";
+import { HEADER_BTN } from "./header-button";
 
 export function ScenariosDropdown() {
   const [open, setOpen] = useState(false);

@@ -59,18 +59,30 @@ export function DefenseRings({
     return new Set(chain?.stoppers ?? []);
   }, [attackChains, selectedChainId]);
 
+  // Ring order: fewest blocks innermost, most blocks outermost — the rings grow
+  // as they go out, which reads more cleanly. Ties keep the canonical order.
+  const ringOrder = useMemo(() => {
+    return LAYER_ORDER.map((layerId, i) => ({
+      layerId,
+      count: (blocksByLayer[layerId] ?? []).length,
+      i,
+    }))
+      .sort((a, b) => a.count - b.count || a.i - b.i)
+      .map((e) => e.layerId);
+  }, [blocksByLayer]);
+
   // Position lookup mirroring RingLayer's placement, so the shared dependency /
   // chain overlays can draw arcs between blocks on their rings.
   const posMap = useMemo(() => {
     const map = new Map<string, { x: number; y: number }>();
-    LAYER_ORDER.forEach((layerId, ringIdx) => {
+    ringOrder.forEach((layerId, ringIdx) => {
       const layerBlocks = blocksByLayer[layerId] ?? [];
       layerBlocks.forEach((block, idx) => {
         map.set(block.id, blockPositionOnRing(ringIdx, idx, layerBlocks.length));
       });
     });
     return map;
-  }, [blocksByLayer]);
+  }, [blocksByLayer, ringOrder]);
 
   const pos = (block: Block) => posMap.get(block.id) ?? RING_CENTER;
 
@@ -135,8 +147,8 @@ export function DefenseRings({
         {/* Attack chain overlay */}
         <ChainOverlay blocks={blocks} hexSize={RING_BLOCK_SIZE} pos={pos} />
 
-        {/* Rings with blocks */}
-        {LAYER_ORDER.map((layerId, idx) => {
+        {/* Rings with blocks — fewest-blocks ring innermost, most outermost */}
+        {ringOrder.map((layerId, idx) => {
           const layerStatus = defenseLayerStatus[layerId] ?? { active: false, strength: 0 };
           const layerBlocks = blocksByLayer[layerId] ?? [];
           return (

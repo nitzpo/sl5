@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { loadScenarios, type SavedScenario } from "../../store/persistence";
+import { HEADER_BTN } from "./Header";
 
 export function ScenariosDropdown() {
   const [open, setOpen] = useState(false);
@@ -83,9 +84,10 @@ export function ScenariosDropdown() {
     <div className="relative flex items-center" ref={ref}>
       <button
         onClick={() => (open ? setOpen(false) : openDropdown())}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        aria-expanded={open}
+        className={`${HEADER_BTN} ${open ? "bg-gray-800 border-gray-600 text-white" : ""}`}
       >
-        Scenarios
+        Scenarios <span className="text-[9px] text-gray-500">▾</span>
       </button>
 
       {open && (

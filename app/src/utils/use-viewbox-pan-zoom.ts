@@ -53,7 +53,13 @@ export interface PanZoomState {
   /** True while an active pan drag is in progress. */
   dragging: boolean;
   onPointerDown: (e: React.PointerEvent) => void;
-  onWheel: (e: React.WheelEvent) => void;
+  /**
+   * Returns true if this click immediately followed a pan drag and should be
+   * ignored (a drag past DRAG_THRESHOLD still fires a synthetic click, which
+   * would otherwise clear the selection). Call it at the top of the canvas's
+   * background-click handler and bail when it returns true.
+   */
+  consumeClickAfterDrag: () => boolean;
   zoomIn: () => void;
   zoomOut: () => void;
   reset: () => void;
@@ -134,17 +140,42 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
     []
   );
 
-  const onWheel = useCallback(
-    (e: React.WheelEvent) => {
+  // Zoom-to-cursor via a NATIVE wheel listener with { passive: false }. React's
+  // synthetic onWheel is passive, so e.preventDefault() there is a no-op and page
+  // scroll would leak through during zoom (and warn). A native listener works.
+  // Latest zoomAt/clientToSvg kept in a ref (synced in an effect, not during
+  // render) so the wheel listener stays attached across renders.
+  const zoomAtRef = useRef(zoomAt);
+  const clientToSvgRef = useRef(clientToSvg);
+  useEffect(() => {
+    zoomAtRef.current = zoomAt;
+    clientToSvgRef.current = clientToSvg;
+  }, [zoomAt, clientToSvg]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const { x, y } = clientToSvg(e.clientX, e.clientY);
+      const { x, y } = clientToSvgRef.current(e.clientX, e.clientY);
       // Trackpad pinch and mouse wheel both arrive as deltaY; normalize to a
       // gentle multiplicative zoom per notch.
       const factor = Math.exp(-e.deltaY * 0.0015);
-      zoomAt(x, y, factor);
-    },
-    [clientToSvg, zoomAt]
-  );
+      zoomAtRef.current(x, y, factor);
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // Set for one click after a real pan drag ends, so the trailing synthetic
+  // click on the canvas doesn't clear the selection.
+  const didDragRef = useRef(false);
+  const consumeClickAfterDrag = useCallback(() => {
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return true;
+    }
+    return false;
+  }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return; // left button only
@@ -179,6 +210,9 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
       if (active && node?.hasPointerCapture(pointerId)) {
         node.releasePointerCapture(pointerId);
       }
+      // Mark that a real drag happened so the trailing synthetic click is
+      // swallowed by consumeClickAfterDrag instead of clearing the selection.
+      if (active) didDragRef.current = true;
       setDragging(false);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
@@ -267,7 +301,7 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
     scale: view.scale,
     dragging,
     onPointerDown,
-    onWheel,
+    consumeClickAfterDrag,
     zoomIn,
     zoomOut,
     reset,

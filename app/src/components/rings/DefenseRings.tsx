@@ -86,14 +86,14 @@ export function DefenseRings({
         viewBox={{ minX: 0, minY: 0, width: RING_SVG_SIZE, height: RING_SVG_SIZE }}
         onBackgroundClick={clearSelection}
       >
-        {/* Background click-catcher: clears selection when clicking empty space */}
+        {/* Transparent backdrop. Clearing is handled by PanZoomCanvas's guarded
+            click (ignores the trailing click after a pan), so no handler here. */}
         <rect
           x={0}
           y={0}
           width={RING_SVG_SIZE}
           height={RING_SVG_SIZE}
           fill="transparent"
-          onClick={clearSelection}
         />
         {/* Center asset indicator */}
         <circle

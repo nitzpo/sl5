@@ -7,6 +7,10 @@ interface HeaderProps {
   onShowIntro: () => void;
 }
 
+/** Shared header-button style: bordered chip so it clearly reads as a button. */
+export const HEADER_BTN =
+  "flex items-center gap-1 text-xs text-gray-300 border border-gray-700 bg-gray-900 hover:bg-gray-800 hover:text-white hover:border-gray-600 px-2.5 py-1 rounded-md transition-colors";
+
 export function Header({ onShowIntro }: HeaderProps) {
   const year = useSimulationStore((s) => s.year);
   const setYear = useSimulationStore((s) => s.setYear);
@@ -42,7 +46,7 @@ export function Header({ onShowIntro }: HeaderProps) {
         <span className="text-xs text-violet-400 truncate max-w-[150px]">{scenarioName}</span>
       )}
 
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex items-center gap-1.5">
       {/* Scenarios */}
       <ScenariosDropdown />
 
@@ -53,24 +57,22 @@ export function Header({ onShowIntro }: HeaderProps) {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         }}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        className={HEADER_BTN}
       >
-        {copied ? "Copied!" : "Share"}
+        {copied ? "✓ Copied" : "Share"}
       </button>
 
       {/* Reset */}
-      <button
-        onClick={resetToBaseline}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
-      >
+      <button onClick={resetToBaseline} className={HEADER_BTN}>
         Reset
       </button>
 
       {/* Help */}
       <button
         onClick={onShowIntro}
-        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800"
+        className={`${HEADER_BTN} w-7 justify-center`}
         title="How to use"
+        aria-label="How to use"
       >
         ?
       </button>

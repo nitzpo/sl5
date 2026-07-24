@@ -131,14 +131,15 @@ export function ClusterView({
         viewBox={layout.bounds}
         onBackgroundClick={clearSelection}
       >
-        {/* Background click-catcher spanning the world bounds */}
+        {/* Transparent backdrop over the world bounds. Clearing selection is
+            handled by PanZoomCanvas's guarded click (which ignores the trailing
+            click after a pan), so this rect carries no click handler of its own. */}
         <rect
           x={layout.bounds.minX}
           y={layout.bounds.minY}
           width={layout.bounds.width}
           height={layout.bounds.height}
           fill="transparent"
-          onClick={clearSelection}
         />
 
         {/* Spokes from the central asset out to each cluster (subtle) */}

@@ -30,7 +30,15 @@ export function PanZoomCanvas({
   children,
 }: PanZoomCanvasProps) {
   const { minX, minY, width, height } = viewBox;
-  const { ref, transform, dragging, onPointerDown, onWheel } = state;
+  const { ref, transform, dragging, onPointerDown, consumeClickAfterDrag } = state;
+
+  // Wheel zoom is handled by a native non-passive listener inside the hook (a
+  // React onWheel is passive and can't preventDefault). A pan drag ends in a
+  // trailing synthetic click, so swallow that one click instead of clearing.
+  const handleClick = () => {
+    if (consumeClickAfterDrag()) return;
+    onBackgroundClick?.();
+  };
 
   return (
     <svg
@@ -41,8 +49,7 @@ export function PanZoomCanvas({
         dragging ? "cursor-grabbing" : "cursor-grab"
       } ${className ?? ""}`}
       onPointerDown={onPointerDown}
-      onWheel={onWheel}
-      onClick={onBackgroundClick}
+      onClick={handleClick}
     >
       <g transform={transform}>{children}</g>
     </svg>

@@ -78,14 +78,14 @@ export function BlockGrid({ panZoom, onSelectBlock, selectedBlock = null, onClea
         viewBox={{ minX: 0, minY: 0, width, height }}
         onBackgroundClick={clearSelection}
       >
-        {/* Background click-catcher: clears selection when clicking empty space */}
+        {/* Transparent backdrop. Clearing is handled by PanZoomCanvas's guarded
+            click (ignores the trailing click after a pan), so no handler here. */}
         <rect
           x={0}
           y={0}
           width={width}
           height={height}
           fill="transparent"
-          onClick={clearSelection}
         />
         {CATEGORY_ORDER.map((category) => {
           const catBlocks = blocksByCategory[category] ?? [];

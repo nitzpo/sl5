@@ -73,7 +73,7 @@ export function ClusterView({
     return buildClusterLayout(blocks, CATEGORY_ORDER, (b) => b.category);
   }, [blocks, grouping]);
 
-  const groupLabel = (g: string) =>
+  const groupName = (g: string) =>
     grouping === "layer" ? LAYER_LABELS[g] ?? g : CATEGORY_LABELS[g as keyof typeof CATEGORY_LABELS] ?? g;
   const groupColor = (g: string) =>
     grouping === "layer" ? LAYER_COLORS[g] ?? "#6b7280" : "#8b5cf6";
@@ -121,11 +121,14 @@ export function ClusterView({
           );
         })}
 
-        {/* Cluster ring hulls + labels (under the blocks) */}
+        {/* Cluster ring hulls + labels (under the blocks). The label sits in the
+            middle of the ring where there's room, and moves above the ring for
+            small clusters where a centered label would fall on a hexagon. */}
         {layout.groups.map((g) => {
           const center = layout.groupCenter(g);
           const r = layout.groupRadius(g);
           const color = groupColor(g);
+          const label = layout.groupLabel(g);
           return (
             <g key={`hull-${g}`} className="pointer-events-none">
               <circle
@@ -139,15 +142,16 @@ export function ClusterView({
                 strokeWidth={1}
               />
               <text
-                x={center.x}
-                y={center.y - r - 10}
+                x={label.x}
+                y={label.y}
                 textAnchor="middle"
+                dominantBaseline={label.placement === "center" ? "middle" : "auto"}
                 fontSize={13}
                 fontWeight={600}
-                fill={grouping === "layer" ? color : "#9ca3af"}
-                opacity={grouping === "layer" ? 0.9 : 1}
+                fill={grouping === "layer" ? color : "#cbd5e1"}
+                opacity={grouping === "layer" ? 0.95 : 0.9}
               >
-                {groupLabel(g)}
+                {groupName(g)}
               </text>
             </g>
           );

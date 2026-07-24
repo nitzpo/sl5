@@ -19,12 +19,18 @@ export const CLUSTER_BLOCK_SIZE = 19;
 /** Center-node radius reserved at the middle. */
 export const CENTER_NODE_RADIUS = 34;
 
-/** Angular gap (radians) kept clear at the top of a cluster ring for its label. */
-const LABEL_GAP = 0.5;
 /** Min spacing between adjacent hex centers on a cluster ring. */
 const RING_ARC_STEP = 58;
 /** Gap between the central node and the nearest cluster edge. */
 const CENTER_MARGIN = 34;
+
+/** Where a cluster's label sits, and how it's anchored vertically. */
+export interface GroupLabel {
+  x: number;
+  y: number;
+  /** "center" → baseline-middle inside the ring; "above" → sits over the ring. */
+  placement: "center" | "above";
+}
 
 export interface ClusterLayout {
   /** Absolute position of a block. */
@@ -33,11 +39,19 @@ export interface ClusterLayout {
   groupCenter: (group: string) => { x: number; y: number };
   /** Ring radius of a group's cluster. */
   groupRadius: (group: string) => number;
+  /** Label position + placement for a group's cluster. */
+  groupLabel: (group: string) => GroupLabel;
   /** Ordered groups that actually have blocks. */
   groups: string[];
   /** World bounds enclosing the whole composition. */
   bounds: { minX: number; minY: number; width: number; height: number };
 }
+
+/** Approx vertical half-extent of a cluster label (≈13px font). */
+const LABEL_HALF_HEIGHT = 9;
+/** A centered label needs this much clear radius from the ring center to the
+ * innermost hex edge; below it, the ring is too small and the label goes above. */
+const CENTER_LABEL_MIN_CLEARANCE = LABEL_HALF_HEIGHT + 6;
 
 /** Radius of a cluster ring holding `count` blocks (evenly spaced, no overlap). */
 function ringRadius(count: number): number {
@@ -48,13 +62,21 @@ function ringRadius(count: number): number {
   return Math.max(byArc, CLUSTER_BLOCK_SIZE * 2);
 }
 
-/** Angle of the nth block on a cluster ring (top gap reserved for the label). */
+/** Angle of the nth block on a cluster ring (full circle — label is centered). */
 function blockAngleOnRing(index: number, count: number): number {
   if (count === 1) return -Math.PI / 2;
-  // Distribute over the circle minus a wedge at top (−π/2) for the label.
-  const start = -Math.PI / 2 + LABEL_GAP / 2;
-  const arc = Math.PI * 2 - LABEL_GAP;
-  return start + (index / count) * arc;
+  // Start at the top and distribute evenly over the whole circle.
+  return -Math.PI / 2 + (index / count) * Math.PI * 2;
+}
+
+/**
+ * A centered label is clear when the ring is big enough that the empty middle
+ * clears the hexes sitting on the ring. Otherwise it goes above the ring.
+ */
+function centerLabelFits(radius: number): boolean {
+  // Distance from center to the inner edge of a hex on the ring.
+  const innerClear = radius - CLUSTER_BLOCK_SIZE;
+  return innerClear >= CENTER_LABEL_MIN_CLEARANCE;
 }
 
 /**
@@ -120,9 +142,24 @@ export function buildClusterLayout(
     });
   }
 
+  // Label placement per cluster: centered inside a roomy ring, else above a
+  // ring too small to hold the label clear of its hexes.
+  const labels = new Map<string, GroupLabel>();
+  for (const g of groups) {
+    const center = centers.get(g)!;
+    const r = radii.get(g)!;
+    if (centerLabelFits(r)) {
+      labels.set(g, { x: center.x, y: center.y, placement: "center" });
+    } else {
+      // Above the ring — the single/paired hexes sit at top/bottom, so a label
+      // above the ring's top clears them.
+      labels.set(g, { x: center.x, y: center.y - r - 12, placement: "above" });
+    }
+  }
+
   // World bounds: farthest cluster reach + label/hex headroom.
   const reach = clusterRingRadius + maxClusterR;
-  const pad = CLUSTER_BLOCK_SIZE + 28; // hex + label + cluster label above
+  const pad = CLUSTER_BLOCK_SIZE + 28; // hex + block label + cluster label above
   const half = reach + pad;
   const bounds = {
     minX: CLUSTER_CENTER.x - half,
@@ -135,6 +172,7 @@ export function buildClusterLayout(
     pos: (b) => posMap.get(b.id) ?? CLUSTER_CENTER,
     groupCenter: (g) => centers.get(g) ?? CLUSTER_CENTER,
     groupRadius: (g) => radii.get(g) ?? 0,
+    groupLabel: (g) => labels.get(g) ?? { x: 0, y: 0, placement: "center" },
     groups,
     bounds,
   };

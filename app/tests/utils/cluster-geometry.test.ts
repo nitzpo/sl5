@@ -62,6 +62,25 @@ describe("cluster-geometry", () => {
     }
   });
 
+  it("centers the label inside a roomy ring", () => {
+    const l = layout();
+    // network has 3 blocks → roomy enough to center.
+    const label = l.groupLabel("network");
+    const center = l.groupCenter("network");
+    expect(label.placement).toBe("center");
+    expect(label.x).toBeCloseTo(center.x, 6);
+    expect(label.y).toBeCloseTo(center.y, 6);
+  });
+
+  it("moves the label above the ring for a single-block cluster", () => {
+    // personnel + ai_specific each have exactly one block here.
+    const l = layout();
+    const label = l.groupLabel("personnel");
+    const center = l.groupCenter("personnel");
+    expect(label.placement).toBe("above");
+    expect(label.y).toBeLessThan(center.y); // sits above the ring center
+  });
+
   it("supports an alternate grouping (single group)", () => {
     const l = buildClusterLayout(blocks, ["all"], () => "all");
     expect(l.groups).toEqual(["all"]);

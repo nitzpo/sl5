@@ -24,11 +24,13 @@ const RING_ARC_STEP = 58;
 /** Gap between the central node and the nearest cluster edge. */
 const CENTER_MARGIN = 34;
 /** Horizontal stretch of the cluster ellipse (screens are wide, so we spread
- * clusters wide and keep the vertical extent compact). */
-const CLUSTER_ELLIPSE_ASPECT = 2.4;
+ * clusters wide and keep the vertical extent compact). Tuned so the whole
+ * composition is close to a typical landscape canvas (~1.9:1) — wide enough to
+ * fill the width, not so wide it leaves dead space on the sides. */
+const CLUSTER_ELLIPSE_ASPECT = 1.8;
 /** Vertical squeeze of the ellipse: pulls the top/bottom clusters inward so the
  * composition is flatter and uses less vertical space. */
-const CLUSTER_ELLIPSE_VSQUEEZE = 0.7;
+const CLUSTER_ELLIPSE_VSQUEEZE = 0.8;
 /** Minimum gap between two cluster edges. If squeezing brings any adjacent pair
  * closer than this, the ellipse is inflated uniformly until it's met — so a flat
  * squeeze never crams clusters together (matters most in the uneven 8-layer view). */

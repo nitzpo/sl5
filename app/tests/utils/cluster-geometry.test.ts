@@ -8,12 +8,13 @@ function mk(id: string, category: Category): Block {
   return { id, category } as Block;
 }
 
+// Realistic-ish sizes: network is a roomy 7-block cluster (centers its label),
+// personnel is a single block (label lifts above), ai_specific has a couple.
 const blocks: Block[] = [
-  mk("NET-01", "network"),
-  mk("NET-02", "network"),
-  mk("NET-03", "network"),
+  ...Array.from({ length: 7 }, (_, i) => mk(`NET-0${i}`, "network" as Category)),
   mk("PER-01", "personnel"),
   mk("AI-01", "ai_specific"),
+  mk("AI-02", "ai_specific"),
 ];
 
 function layout() {
@@ -81,14 +82,45 @@ describe("cluster-geometry", () => {
     expect(label.y).toBeLessThan(center.y); // sits above the ring center
   });
 
+  it("lifts a label that is too WIDE to fit even a roomy ring", () => {
+    // Same 3-block network ring, but a very long title: a centered box would
+    // overlap the side hexes horizontally, so it must be lifted above.
+    const l = buildClusterLayout(
+      blocks,
+      CATEGORY_ORDER,
+      (b) => b.category,
+      (g) => (g === "network" ? "A Very Long Cluster Title Indeed" : g)
+    );
+    expect(l.groupLabel("network").placement).toBe("above");
+  });
+
+  it("spreads clusters wider than tall (landscape) and off the vertical axis", () => {
+    const many: Block[] = [
+      ...Array.from({ length: 7 }, (_, i) => mk(`NET-${i}`, "network")),
+      ...Array.from({ length: 10 }, (_, i) => mk(`HW-${i}`, "machine")),
+      ...Array.from({ length: 7 }, (_, i) => mk(`PHY-${i}`, "physical")),
+      ...Array.from({ length: 8 }, (_, i) => mk(`PER-${i}`, "personnel")),
+      ...Array.from({ length: 7 }, (_, i) => mk(`SC-${i}`, "supply_chain")),
+      ...Array.from({ length: 8 }, (_, i) => mk(`AI-${i}`, "ai_specific")),
+    ];
+    const l = buildClusterLayout(many, CATEGORY_ORDER, (b) => b.category);
+    // Wider than tall.
+    expect(l.bounds.width).toBeGreaterThan(l.bounds.height);
+    // No cluster center sits exactly on the vertical axis through the origin
+    // (the tilt/stagger pushes them diagonally).
+    for (const g of l.groups) {
+      expect(Math.abs(l.groupCenter(g).x)).toBeGreaterThan(1);
+    }
+  });
+
   it("supports an alternate grouping (single group)", () => {
     const l = buildClusterLayout(blocks, ["all"], () => "all");
     expect(l.groups).toEqual(["all"]);
-    // All 5 blocks share one ring → 5 distinct positions.
+    // All blocks share one ring → one distinct position each.
     const keys = new Set(blocks.map((b) => {
       const p = l.pos(b);
       return `${p.x.toFixed(2)},${p.y.toFixed(2)}`;
     }));
-    expect(keys.size).toBe(5);
+    expect(keys.size).toBe(blocks.length);
   });
 });

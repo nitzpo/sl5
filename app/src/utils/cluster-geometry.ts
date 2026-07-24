@@ -23,6 +23,10 @@ export const CENTER_NODE_RADIUS = 34;
 const RING_ARC_STEP = 58;
 /** Gap between the central node and the nearest cluster edge. */
 const CENTER_MARGIN = 34;
+/** Horizontal stretch of the cluster ellipse (screens are wide). */
+const CLUSTER_ELLIPSE_ASPECT = 1.7;
+/** Rotate the whole cluster ring slightly so clusters sit diagonally. */
+const START_TILT = -0.18;
 
 /** Where a cluster's label sits, and how it's anchored vertically. */
 export interface GroupLabel {
@@ -47,11 +51,20 @@ export interface ClusterLayout {
   bounds: { minX: number; minY: number; width: number; height: number };
 }
 
-/** Approx vertical half-extent of a cluster label (≈13px font). */
-const LABEL_HALF_HEIGHT = 9;
-/** A centered label needs this much clear radius from the ring center to the
- * innermost hex edge; below it, the ring is too small and the label goes above. */
-const CENTER_LABEL_MIN_CLEARANCE = LABEL_HALF_HEIGHT + 6;
+/** Font size of a cluster label; drives the estimated label box. */
+const LABEL_FONT_SIZE = 13;
+/** Approx half-height of the label box (font + a little breathing room). */
+const LABEL_HALF_HEIGHT = LABEL_FONT_SIZE / 2 + 3;
+/** Approx width per character at LABEL_FONT_SIZE (semibold) — an upper-ish
+ * bound so we err toward lifting a label rather than overlapping a hex. */
+const LABEL_CHAR_WIDTH = 7.6;
+/** Padding kept between the label box and any hexagon. */
+const LABEL_HEX_PADDING = 6;
+
+/** Estimated half-extent (width, height) of a centered label box. */
+function labelHalfExtent(text: string): { hw: number; hh: number } {
+  return { hw: (text.length * LABEL_CHAR_WIDTH) / 2, hh: LABEL_HALF_HEIGHT };
+}
 
 /** Radius of a cluster ring holding `count` blocks (evenly spaced, no overlap). */
 function ringRadius(count: number): number {
@@ -70,13 +83,36 @@ function blockAngleOnRing(index: number, count: number): number {
 }
 
 /**
- * A centered label is clear when the ring is big enough that the empty middle
- * clears the hexes sitting on the ring. Otherwise it goes above the ring.
+ * Whether a centered label box (centered on the ring center) clears every hex
+ * on the ring. Tests the actual block positions against the label's estimated
+ * width AND height — so a wide label like "Monitoring" is lifted when side
+ * hexes would intrude, not just when the ring is vertically small.
+ *
+ * @param positions block centers relative to the cluster center
  */
-function centerLabelFits(radius: number): boolean {
-  // Distance from center to the inner edge of a hex on the ring.
-  const innerClear = radius - CLUSTER_BLOCK_SIZE;
-  return innerClear >= CENTER_LABEL_MIN_CLEARANCE;
+function centerLabelFits(
+  positions: Array<{ dx: number; dy: number }>,
+  text: string
+): boolean {
+  const { hw, hh } = labelHalfExtent(text);
+  // Treat each hex as a disc of radius CLUSTER_BLOCK_SIZE; the label as an
+  // axis-aligned box. Overlap when the hex center is within (box + hexR + pad)
+  // on both axes — the standard circle-vs-rounded-box closest-point test.
+  const padX = hw + CLUSTER_BLOCK_SIZE + LABEL_HEX_PADDING;
+  const padY = hh + CLUSTER_BLOCK_SIZE + LABEL_HEX_PADDING;
+  for (const { dx, dy } of positions) {
+    // Closest point on the label box to the hex center, then distance.
+    const cx = Math.max(-hw, Math.min(hw, dx));
+    const cy = Math.max(-hh, Math.min(hh, dy));
+    const distX = Math.abs(dx - cx);
+    const distY = Math.abs(dy - cy);
+    // Quick reject via bounding pads, then precise circle-box distance.
+    if (Math.abs(dx) < padX && Math.abs(dy) < padY) {
+      const gap = Math.hypot(distX, distY);
+      if (gap < CLUSTER_BLOCK_SIZE + LABEL_HEX_PADDING) return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -85,11 +121,14 @@ function centerLabelFits(radius: number): boolean {
  * @param blocks all blocks
  * @param orderedGroups the full group order (e.g. CATEGORY_ORDER or LAYER_ORDER)
  * @param groupOf maps a block to its group key
+ * @param labelTextOf the display label for a group (used to size the label box
+ *   so a wide title is lifted above the ring instead of overlapping side hexes)
  */
 export function buildClusterLayout(
   blocks: Block[],
   orderedGroups: readonly string[],
-  groupOf: (block: Block) => string
+  groupOf: (block: Block) => string,
+  labelTextOf: (group: string) => string = (g) => g
 ): ClusterLayout {
   // Bucket blocks by group, preserving catalog order within each.
   const byGroup = new Map<string, Block[]>();
@@ -106,49 +145,66 @@ export function buildClusterLayout(
   const radii = new Map<string, number>();
   for (const g of groups) radii.set(g, ringRadius(byGroup.get(g)!.length));
 
-  // Cluster centers sit on a circle whose radius leaves room for the biggest
-  // cluster plus the center node — tight enough to fill the canvas, loose
-  // enough that adjacent clusters don't collide.
+  // Cluster centers sit on an ELLIPSE around the model node. Screens are wide,
+  // so we stretch the horizontal radius (ASPECT) and keep the vertical radius
+  // at the collision-safe minimum — the composition spreads wide and short to
+  // fill a landscape canvas instead of a tall square. Stretching only widens
+  // gaps, so it never introduces cluster collisions.
   const maxClusterR = Math.max(...groups.map((g) => radii.get(g)!), 0);
   const n = Math.max(groups.length, 1);
-  // Chord between adjacent centers must exceed the two touching cluster radii.
+  // Base radius: adjacent centers must be far enough apart that clusters don't
+  // touch, and every cluster must clear the central node.
   const minSep = 2 * maxClusterR + 24;
   const byNeighbors = n > 1 ? minSep / (2 * Math.sin(Math.PI / n)) : 0;
   const byCenter = CENTER_NODE_RADIUS + CENTER_MARGIN + maxClusterR;
-  const clusterRingRadius = Math.max(byNeighbors, byCenter);
+  const baseRadius = Math.max(byNeighbors, byCenter);
+
+  const ry = baseRadius;
+  const rx = baseRadius * CLUSTER_ELLIPSE_ASPECT;
+
+  // Offset the start angle so clusters sit diagonally (not one straight up),
+  // which packs a landscape rectangle better. For an even count, half the
+  // step lands two clusters symmetrically off the top; odd counts already
+  // stagger. START_TILT nudges the whole ring off the vertical axis.
+  const startAngle = -Math.PI / 2 + START_TILT + (n % 2 === 0 ? Math.PI / n : 0);
 
   const centers = new Map<string, { x: number; y: number }>();
   groups.forEach((g, i) => {
-    // Start at the top, go clockwise.
-    const angle = -Math.PI / 2 + (i / n) * Math.PI * 2;
+    const angle = startAngle + (i / n) * Math.PI * 2;
     centers.set(g, {
-      x: CLUSTER_CENTER.x + clusterRingRadius * Math.cos(angle),
-      y: CLUSTER_CENTER.y + clusterRingRadius * Math.sin(angle),
+      x: CLUSTER_CENTER.x + rx * Math.cos(angle),
+      y: CLUSTER_CENTER.y + ry * Math.sin(angle),
     });
   });
 
-  // Precompute each block's absolute position.
+  // Precompute each block's absolute position, and its offset from the cluster
+  // center (used to test whether a centered label clears the hexes).
   const posMap = new Map<string, { x: number; y: number }>();
+  const offsetsByGroup = new Map<string, Array<{ dx: number; dy: number }>>();
   for (const g of groups) {
     const arr = byGroup.get(g)!;
     const center = centers.get(g)!;
     const r = radii.get(g)!;
+    const offsets: Array<{ dx: number; dy: number }> = [];
     arr.forEach((b, idx) => {
       const a = blockAngleOnRing(idx, arr.length);
-      posMap.set(b.id, {
-        x: center.x + r * Math.cos(a),
-        y: center.y + r * Math.sin(a),
-      });
+      const dx = r * Math.cos(a);
+      const dy = r * Math.sin(a);
+      posMap.set(b.id, { x: center.x + dx, y: center.y + dy });
+      offsets.push({ dx, dy });
     });
+    offsetsByGroup.set(g, offsets);
   }
 
-  // Label placement per cluster: centered inside a roomy ring, else above a
-  // ring too small to hold the label clear of its hexes.
+  // Label placement per cluster: centered inside the ring when the title clears
+  // every hex (tested against actual block positions AND the label's width),
+  // else lifted above a ring too small/crowded to hold it clear.
   const labels = new Map<string, GroupLabel>();
   for (const g of groups) {
     const center = centers.get(g)!;
     const r = radii.get(g)!;
-    if (centerLabelFits(r)) {
+    const offsets = offsetsByGroup.get(g)!;
+    if (centerLabelFits(offsets, labelTextOf(g))) {
       labels.set(g, { x: center.x, y: center.y, placement: "center" });
     } else {
       // Above the ring — the single/paired hexes sit at top/bottom, so a label
@@ -157,15 +213,37 @@ export function buildClusterLayout(
     }
   }
 
-  // World bounds: farthest cluster reach + label/hex headroom.
-  const reach = clusterRingRadius + maxClusterR;
-  const pad = CLUSTER_BLOCK_SIZE + 28; // hex + block label + cluster label above
-  const half = reach + pad;
+  // World bounds: derive from actual cluster extents so the (wide) ellipse
+  // yields a wide rectangle, not a square. Each cluster reaches its ring radius
+  // plus hex + block-label headroom; an "above" title adds a little more on top.
+  const hexPad = CLUSTER_BLOCK_SIZE + 16; // hex half + short label under it
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const g of groups) {
+    const c = centers.get(g)!;
+    const r = radii.get(g)!;
+    const reach = r + hexPad;
+    const topExtra = labels.get(g)!.placement === "above" ? 16 : 0;
+    minX = Math.min(minX, c.x - reach);
+    maxX = Math.max(maxX, c.x + reach);
+    minY = Math.min(minY, c.y - reach - topExtra);
+    maxY = Math.max(maxY, c.y + reach);
+  }
+  // Guard against a degenerate empty layout.
+  if (!isFinite(minX)) {
+    minX = -100;
+    minY = -100;
+    maxX = 100;
+    maxY = 100;
+  }
+  const margin = 12;
   const bounds = {
-    minX: CLUSTER_CENTER.x - half,
-    minY: CLUSTER_CENTER.y - half,
-    width: half * 2,
-    height: half * 2,
+    minX: minX - margin,
+    minY: minY - margin,
+    width: maxX - minX + margin * 2,
+    height: maxY - minY + margin * 2,
   };
 
   return {

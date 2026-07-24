@@ -60,6 +60,10 @@ export function ClusterView({
   // Layer: first resolvable defense-in-depth layer (fallback monitoring), which
   // matches how the Rings view assigns blocks to layers.
   const layout = useMemo(() => {
+    const nameOf = (g: string) =>
+      grouping === "layer"
+        ? LAYER_LABELS[g] ?? g
+        : CATEGORY_LABELS[g as keyof typeof CATEGORY_LABELS] ?? g;
     if (grouping === "layer") {
       const groupOf = (b: Block) => {
         for (const lc of b.defense_in_depth?.layer_contributions ?? []) {
@@ -68,9 +72,9 @@ export function ClusterView({
         }
         return "monitoring_detection";
       };
-      return buildClusterLayout(blocks, LAYER_ORDER, groupOf);
+      return buildClusterLayout(blocks, LAYER_ORDER, groupOf, nameOf);
     }
-    return buildClusterLayout(blocks, CATEGORY_ORDER, (b) => b.category);
+    return buildClusterLayout(blocks, CATEGORY_ORDER, (b) => b.category, nameOf);
   }, [blocks, grouping]);
 
   const groupName = (g: string) =>

@@ -47,34 +47,10 @@ export function BottomPanel() {
 
   return (
     <div className="relative z-20 border-t border-gray-800 bg-gray-950/95 backdrop-blur-sm">
-      {/* Tab bar — always visible. Two labelled tabs make the panels discoverable
-          (the old single collapse was too hidden); the readouts ride along on the
-          right. Only one panel opens at a time, so the canvas stays visible. */}
-      <div className="flex items-center justify-between px-3 py-1">
-        <div className="flex items-center gap-1">
-          <TabButton
-            label="Timeline"
-            icon="⏱"
-            active={tab === "timeline"}
-            onClick={() => toggle("timeline")}
-          />
-          <TabButton
-            label="Parameters"
-            icon="⚙"
-            active={tab === "parameters"}
-            onClick={() => toggle("parameters")}
-          />
-          {tab !== null && (
-            <button
-              onClick={() => setTab(null)}
-              className="ml-1 text-[11px] text-gray-500 hover:text-gray-300 px-1.5 py-0.5"
-              title="Hide panel"
-            >
-              ✕ Hide
-            </button>
-          )}
-        </div>
-
+      {/* Tab bar — small readouts on the LEFT, the two tab controls on the RIGHT.
+          The tabs are pill-styled inside a track so they clearly read as
+          buttons; only one panel opens at a time, so the canvas stays visible. */}
+      <div className="flex items-center justify-between px-3 py-1.5">
         <div className="flex items-center gap-3">
           {/* Live readouts — always visible so the key numbers are never hidden */}
           <span className="flex items-center gap-2.5 text-[11px] font-mono">
@@ -98,6 +74,32 @@ export function BottomPanel() {
               className="text-[11px] font-medium text-violet-300 hover:text-violet-200"
             >
               ▶ Play story
+            </button>
+          )}
+        </div>
+
+        {/* Tab controls — a segmented pill group so it's obviously interactive */}
+        <div className="flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-lg p-0.5">
+          <TabButton
+            label="Timeline"
+            icon="⏱"
+            active={tab === "timeline"}
+            onClick={() => toggle("timeline")}
+          />
+          <TabButton
+            label="Parameters"
+            icon="⚙"
+            active={tab === "parameters"}
+            onClick={() => toggle("parameters")}
+          />
+          {tab !== null && (
+            <button
+              onClick={() => setTab(null)}
+              className="text-gray-500 hover:text-gray-200 hover:bg-gray-800 w-6 h-6 flex items-center justify-center rounded-md transition-colors"
+              title="Hide panel"
+              aria-label="Hide panel"
+            >
+              ✕
             </button>
           )}
         </div>
@@ -134,10 +136,10 @@ function TabButton({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`flex items-center gap-1.5 px-3 py-1 text-xs rounded-t transition-colors ${
+      className={`flex items-center gap-1.5 px-3 py-1 text-xs rounded-md transition-colors ${
         active
-          ? "bg-gray-900 text-gray-100 border-b-2 border-violet-500"
-          : "text-gray-400 hover:text-gray-200 hover:bg-gray-900/50 border-b-2 border-transparent"
+          ? "bg-violet-600 text-white shadow-sm"
+          : "text-gray-300 hover:text-white hover:bg-gray-800"
       }`}
     >
       <span className="text-[11px]">{icon}</span>

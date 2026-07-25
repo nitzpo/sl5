@@ -65,6 +65,7 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
 
         <div className="text-xs text-gray-500 space-y-1 mb-5 border-l-2 border-gray-700 pl-3">
           <p><span className="text-gray-300 font-medium">Click</span> a hexagon for details · <span className="text-gray-300 font-medium">right-click</span> to advance its state</p>
+          <p><span className="text-gray-300 font-medium">Scroll to zoom, drag to pan</span> the map · switch Clusters / Grid / Rings views</p>
           <p><span className="text-gray-300 font-medium">Drag the year</span> to watch AI erode probabilistic defenses</p>
           <p><span className="text-gray-300 font-medium">Sliders</span> set the world: budget, cooperation, AI timeline</p>
         </div>

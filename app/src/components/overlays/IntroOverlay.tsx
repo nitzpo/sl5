@@ -1,29 +1,39 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SCRIPTS } from "../../timelapse/scripts";
+import type { TimeLapseScript } from "../../timelapse/types";
 import { usePlaybackStore } from "../../timelapse/playback-store";
 
 interface IntroOverlayProps {
   onClose: () => void;
 }
 
+// First-time viewers pick from the authored stories only; "Your Current Config"
+// (a passthrough that just advances time on an existing posture) is an advanced
+// option that makes no sense before you've built anything.
+const STORY_CHOICES = SCRIPTS.filter((s) => s.type !== "passthrough");
+
 export function IntroOverlay({ onClose }: IntroOverlayProps) {
   const startScript = usePlaybackStore((s) => s.startScript);
+  const [choosingStory, setChoosingStory] = useState(false);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        // First Escape backs out of the story chooser; a second closes the intro.
+        if (choosingStory) setChoosingStory(false);
+        else onClose();
+      }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  }, [onClose, choosingStory]);
 
   function dismiss() {
     localStorage.setItem("sl5_intro_seen", "1");
     onClose();
   }
 
-  function watchStory() {
-    const script = SCRIPTS.find((s) => s.id === "reactive-ciso") ?? SCRIPTS[0];
+  function playStory(script: TimeLapseScript) {
     dismiss();
     startScript(script);
   }
@@ -48,20 +58,50 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
           adversary capabilities outpace you.
         </p>
 
-        <div className="flex gap-3 mb-5">
-          <button
-            onClick={watchStory}
-            className="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
-          >
-            ▶ Watch the 1-min story
-          </button>
-          <button
-            onClick={dismiss}
-            className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2.5 rounded-lg font-medium transition-colors"
-          >
-            Explore freely
-          </button>
-        </div>
+        {choosingStory ? (
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">Choose a story to watch</span>
+              <button
+                onClick={() => setChoosingStory(false)}
+                className="text-xs text-gray-500 hover:text-gray-300"
+              >
+                ← Back
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {STORY_CHOICES.map((script) => (
+                <button
+                  key={script.id}
+                  onClick={() => playStory(script)}
+                  className="w-full text-left px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors group"
+                >
+                  <div className="text-sm text-gray-100 group-hover:text-white font-medium">
+                    ▶ {script.name}
+                  </div>
+                  <div className="text-[11px] text-gray-500 group-hover:text-gray-400">
+                    {script.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3 mb-5">
+            <button
+              onClick={() => setChoosingStory(true)}
+              className="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
+            >
+              ▶ Watch the 1-min story
+            </button>
+            <button
+              onClick={dismiss}
+              className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2.5 rounded-lg font-medium transition-colors"
+            >
+              Explore freely
+            </button>
+          </div>
+        )}
 
         <div className="text-xs text-gray-500 space-y-1 mb-5 border-l-2 border-gray-700 pl-3">
           <p><span className="text-gray-300 font-medium">Click</span> a hexagon for details · <span className="text-gray-300 font-medium">right-click</span> to advance its state</p>

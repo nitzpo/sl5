@@ -24,10 +24,10 @@ function App() {
   const [scoreOpen, setScoreOpen] = useState(true);
   const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("sl5_intro_seen"));
 
-  // Selecting a block reveals its detail in the score panel (open it if collapsed).
+  // Selecting a block opens its own innermost Block Detail panel (handled in
+  // RightPanels); it no longer touches the Security Posture panel's open state.
   const selectBlock = (block: Block | null) => {
     setSelectedBlock(block);
-    if (block) setScoreOpen(true);
   };
   const [viewMode, setViewMode] = useState<ViewMode>("clusters");
   // One shared map-style pan/zoom engine; the view mode is its reset key so

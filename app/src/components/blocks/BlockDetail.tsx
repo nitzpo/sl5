@@ -5,72 +5,104 @@ import { DEFENSE_COLORS, STATE_LABELS, STATE_ICONS } from "../../utils/colors";
 import { BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { formatCost, formatDeployRange } from "../../utils/format";
 
+// Maturity order (matches STATE_LABELS / STATE_FILL_FRACTION progression).
+const STATE_STEPS: BlockState[] = [
+  "not_started",
+  "investing",
+  "implementing",
+  "deployed",
+  "mature",
+];
+
+// Compact labels so 5 segments fit the narrow panel.
+const STATE_SHORT: Record<BlockState, string> = {
+  not_started: "None",
+  investing: "Invest",
+  implementing: "Build",
+  deployed: "Deploy",
+  mature: "Mature",
+};
+
 interface BlockDetailProps {
   block: Block;
-  onClose: () => void;
   onNavigate?: (blockId: string) => void;
 }
 
-export function BlockDetail({ block, onClose, onNavigate }: BlockDetailProps) {
+export function BlockDetail({ block, onNavigate }: BlockDetailProps) {
   const blockStates = useSimulationStore((s) => s.blockStates);
   const setBlockState = useSimulationStore((s) => s.setBlockState);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
 
   const state = (blockStates[block.id] ?? "not_started") as BlockState;
+  const currentStateIndex = STATE_STEPS.indexOf(state);
   const eff = blockEffectiveness(block, state, year, sliders);
   const color = DEFENSE_COLORS[block.defense_type];
 
   return (
     <div className="p-2.5 text-sm space-y-2.5">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-gray-100">
-            {block.id}: {block.name}
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span
-              className="inline-block w-3 h-3 rounded-sm"
-              style={{ backgroundColor: color }}
-            />
-            <span className="text-xs text-gray-400 capitalize">
-              {block.defense_type.replace("_", " ")}
-            </span>
-            <span className="text-xs text-gray-500">|</span>
-            <span className="text-xs text-gray-400">
-              Rec. SL{block.sl_requirement.first_recommended} | Req. SL{block.sl_requirement.first_required}
-            </span>
-          </div>
+      <div>
+        <h3 className="text-base font-semibold text-gray-100">
+          {block.id}: {block.name}
+        </h3>
+        <div className="flex items-center gap-2 mt-1">
+          <span
+            className="inline-block w-3 h-3 rounded-sm"
+            style={{ backgroundColor: color }}
+          />
+          <span className="text-xs text-gray-400 capitalize">
+            {block.defense_type.replace("_", " ")}
+          </span>
+          <span className="text-xs text-gray-500">|</span>
+          <span className="text-xs text-gray-400">
+            Rec. SL{block.sl_requirement.first_recommended} | Req. SL{block.sl_requirement.first_required}
+          </span>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-300 text-lg leading-none"
-        >
-          x
-        </button>
       </div>
 
       <p className="text-gray-400 text-xs leading-relaxed">
         {block.description}
       </p>
 
-      {/* State selector */}
+      {/* State control — a connected segmented progress bar. Segments up to and
+          including the current state fill (in the block's defense-type color) so
+          maturity reads as gradual left→right progress; clicking any segment sets
+          that state. */}
       <div>
         <label className="text-xs text-gray-500 block mb-1">State</label>
-        <div className="flex flex-wrap gap-1">
-          {(Object.keys(STATE_LABELS) as BlockState[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setBlockState(block.id, s)}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
-                state === s
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-              }`}
-            >
-              {STATE_LABELS[s]}
-            </button>
-          ))}
+        <div className="flex rounded-md overflow-hidden border border-gray-700">
+          {STATE_STEPS.map((s, i) => {
+            const filled = i <= currentStateIndex;
+            const isCurrent = i === currentStateIndex;
+            return (
+              <button
+                key={s}
+                onClick={() => setBlockState(block.id, s)}
+                aria-label={STATE_LABELS[s]}
+                aria-pressed={isCurrent}
+                title={STATE_LABELS[s]}
+                className={`flex-1 px-1 py-1 text-[10px] leading-tight text-center transition-colors ${
+                  i > 0 ? "border-l border-gray-700" : ""
+                } ${
+                  filled
+                    ? isCurrent
+                      ? "text-white font-semibold"
+                      : "text-gray-100"
+                    : "bg-gray-800 text-gray-500 hover:bg-gray-700"
+                }`}
+                style={
+                  filled
+                    ? {
+                        backgroundColor: color,
+                        opacity: isCurrent ? 1 : 0.55,
+                      }
+                    : undefined
+                }
+              >
+                {STATE_SHORT[s]}
+              </button>
+            );
+          })}
         </div>
       </div>
 

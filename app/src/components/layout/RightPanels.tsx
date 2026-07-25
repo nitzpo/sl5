@@ -103,15 +103,45 @@ export function RightPanels({
           </div>
         </div>
       ) : (
-        <button
-          onClick={() => togglePerspective(true)}
-          className="w-6 border-l border-gray-800 bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition-colors"
-          title="Show perspective panel"
-        >
-          <span className="text-[10px] text-gray-500 [writing-mode:vertical-lr] rotate-180">
-            {PERSPECTIVES.find((p) => p.key === perspective)?.label ?? "View"}
-          </span>
-        </button>
+        // Collapsed: a rail of vertical tabs — one per perspective — so it's
+        // clear the panel holds several analyses, not just the current one.
+        // Clicking a tab both expands the panel and switches to that view.
+        <div className="w-8 border-l border-gray-800 bg-gray-900 flex flex-col items-stretch">
+          <button
+            onClick={() => togglePerspective(true)}
+            className="h-7 shrink-0 flex items-center justify-center text-gray-600 hover:text-gray-300 hover:bg-gray-800 transition-colors border-b border-gray-800"
+            title="Expand panel"
+          >
+            <span className="text-xs leading-none">‹</span>
+          </button>
+          {PERSPECTIVES.map(({ key, label }) => {
+            const active = perspective === key;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  setPerspective(key);
+                  togglePerspective(true);
+                }}
+                aria-pressed={active}
+                title={`${label} view`}
+                className={`flex-1 flex items-center justify-center transition-colors ${
+                  active
+                    ? "bg-gray-800 text-gray-100"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/60"
+                }`}
+              >
+                <span
+                  className={`text-[10px] [writing-mode:vertical-lr] rotate-180 tracking-wide ${
+                    active ? "font-semibold" : ""
+                  }`}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {/* Security Posture panel (outermost, right side) */}

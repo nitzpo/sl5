@@ -46,7 +46,7 @@ Everything runs client-side from JSON data — no backend.
   ```
 
   The **capability gate** asks whether the adversary can even attempt the chain — it is steep (≈85% at the chain's minimum OC, ≈10% one tier below), so OC tiers are qualitative jumps, and AI capability lifts an adversary's *effective* OC over time, reopening gates from below. The per-block **get-past** term falls from 1 (absent) toward ~0 as a defense matures — so improving a defense can *never* raise breach probability (asserted by property tests). Hard stops are deterministic; probabilistic defenses weaken against stronger adversaries. AI is counted exactly once per number: breach takes AI's attacker-side lift through effective OC, while the SL score takes the defender-side erosion of probabilistic blocks. Independent deployed layers earn a defense-in-depth discount; a layer whose blocks share a failure mode (`shared_dependencies`) earns half credit.
-- **Security Level** is a hybrid of weakest-link and harmonic-mean per-category scores.
+- **Security Level** blends the weakest category with the average: `SL = 0.3·min(categories) + 0.7·mean(categories)`. Each category is scored over the blocks that any attack chain actually references, so coverage of the modeled threat drives the score rather than raw catalog depth.
 - **Budget** is binding and order-aware: blocks are funded in the order you advanced them, so activating one more block can only cap *that* block, never evict an earlier commitment. The **risk-tolerance** slider sets the planning cost basis (aggressive = optimistic costs, conservative = worst-case).
 
 The methodology and calibration are documented in [`research/`](research/) — see `scoring-model.md`, `design-decisions.md`, `distillation-analysis.md`, and `formula-calibration-results.md`. Note that those documents describe the earlier Python-prototype generation of the model; where they differ from the shipped engine (`app/src/engine/`), the engine and this README are authoritative. JSON schemas live in [`research/schema/`](research/schema/).
@@ -88,13 +88,13 @@ Requires Node 20+. The app is desktop-only (it gates small screens).
 .
 ├── app/                      # the React + TypeScript + Vite app (the explorable)
 │   ├── src/
-│   │   ├── components/        # SVG views: grid, rings, analysis panels, timeline
+│   │   ├── components/        # SVG views: clusters (default), grid, rings, analysis, timeline
 │   │   ├── engine/            # scoring, breach, budget, AI-curve, distillation
 │   │   ├── store/             # Zustand state (simulation, derived, view, persistence)
 │   │   ├── timelapse/         # scripted scenario playback
-│   │   └── utils/             # geometry, colors, decision windows
+│   │   └── utils/             # geometry, ring/cluster layout, pan-zoom, colors, decision windows
 │   ├── public/data/           # canonical block + attack-chain data (JSON)
-│   └── tests/engine/          # vitest unit tests for the scoring/breach engines
+│   └── tests/                 # vitest unit tests (engine scoring/breach + layout geometry)
 ├── research/                 # methodology, design notes, JSON schemas, source material
 └── .github/workflows/        # GitHub Pages deploy
 ```

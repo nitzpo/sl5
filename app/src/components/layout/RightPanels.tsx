@@ -114,33 +114,21 @@ export function RightPanels({
           >
             <span className="text-xs leading-none">‹</span>
           </button>
-          {PERSPECTIVES.map(({ key, label }) => {
-            const active = perspective === key;
-            return (
-              <button
-                key={key}
-                onClick={() => {
-                  setPerspective(key);
-                  togglePerspective(true);
-                }}
-                aria-pressed={active}
-                title={`${label} view`}
-                className={`flex-1 flex items-center justify-center transition-colors ${
-                  active
-                    ? "bg-gray-800 text-gray-100"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/60"
-                }`}
-              >
-                <span
-                  className={`text-[10px] [writing-mode:vertical-lr] rotate-180 tracking-wide ${
-                    active ? "font-semibold" : ""
-                  }`}
-                >
-                  {label}
-                </span>
-              </button>
-            );
-          })}
+          {PERSPECTIVES.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => {
+                setPerspective(key);
+                togglePerspective(true);
+              }}
+              title={`${label} view`}
+              className="flex-1 flex items-center justify-center text-gray-500 hover:text-gray-300 hover:bg-gray-800/60 transition-colors"
+            >
+              <span className="text-[10px] [writing-mode:vertical-lr] rotate-180 tracking-wide">
+                {label}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 

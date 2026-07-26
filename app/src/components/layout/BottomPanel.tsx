@@ -2,14 +2,12 @@ import { useEffect, useState } from "react";
 import { GlobalSliders } from "../sliders/GlobalSliders";
 import { TimelineTrack } from "../timeline/TimelineTrack";
 import { PlaybackBar } from "../timelapse/PlaybackBar";
+import { ScriptSelector } from "../timelapse/ScriptSelector";
 import { usePlaybackStore } from "../../timelapse/playback-store";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { formatProbability, formatSl } from "../../utils/format";
 import { breachLevel, LEVEL_TEXT } from "../../utils/colors";
-import { SCRIPTS } from "../../timelapse/scripts";
-
-const DEFAULT_SCRIPT = SCRIPTS.find((s) => s.id === "reactive-ciso") ?? SCRIPTS[0];
 
 /** Which bottom section is open. `null` = both hidden (canvas gets full height). */
 type BottomTab = "timeline" | "parameters" | null;
@@ -18,8 +16,8 @@ export function BottomPanel() {
   // Nothing open by default so the canvas gets the vertical space; a tab opens on
   // demand and the Timeline tab auto-opens when a story starts.
   const [tab, setTab] = useState<BottomTab>(null);
+  const [showSelector, setShowSelector] = useState(false);
   const playbackState = usePlaybackStore((s) => s.state);
-  const startScript = usePlaybackStore((s) => s.startScript);
   const activeScript = usePlaybackStore((s) => s.activeScript);
   const playbackT = usePlaybackStore((s) => s.playbackT);
   const year = useSimulationStore((s) => s.year);
@@ -66,15 +64,17 @@ export function BottomPanel() {
             </span>
           )}
           {playbackState === "idle" && (
-            <button
-              onClick={() => {
-                setTab("timeline");
-                startScript(activeScript ?? DEFAULT_SCRIPT);
-              }}
-              className="text-[11px] font-medium text-violet-300 hover:text-violet-200"
-            >
-              ▶ Play story
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowSelector((v) => !v)}
+                className="text-[11px] font-medium text-violet-300 hover:text-violet-200"
+              >
+                ▶ Play story
+              </button>
+              {showSelector && (
+                <ScriptSelector hideAdvanced onClose={() => setShowSelector(false)} />
+              )}
+            </div>
           )}
         </div>
 

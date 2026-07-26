@@ -4,9 +4,13 @@ import { usePlaybackStore } from "../../timelapse/playback-store";
 
 interface ScriptSelectorProps {
   onClose: () => void;
+  /** Hide advanced scenarios (e.g. "Your Current Config") aimed at power users;
+   *  used for the first-time entry points so newcomers see only the guided
+   *  stories. */
+  hideAdvanced?: boolean;
 }
 
-export function ScriptSelector({ onClose }: ScriptSelectorProps) {
+export function ScriptSelector({ onClose, hideAdvanced }: ScriptSelectorProps) {
   const startScript = usePlaybackStore((s) => s.startScript);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -20,13 +24,20 @@ export function ScriptSelector({ onClose }: ScriptSelectorProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [onClose]);
 
+  // "Your Current Config" is a passthrough scenario — it just advances time on
+  // whatever the user has already built, which only makes sense once you have a
+  // posture. Newcomers get the authored stories only.
+  const scripts = hideAdvanced
+    ? SCRIPTS.filter((s) => s.type !== "passthrough")
+    : SCRIPTS;
+
   return (
     <div
       ref={ref}
       className="absolute bottom-full mb-2 left-0 w-72 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-2 z-50"
     >
       <div className="text-xs text-gray-400 px-2 py-1 mb-1">Choose a scenario</div>
-      {SCRIPTS.map((script) => (
+      {scripts.map((script) => (
         <button
           key={script.id}
           onClick={() => {

@@ -274,12 +274,20 @@ wishlist. That single value was the largest cause of security being too cheap.
 Measured at **2030 against an OC4 adversary**, worst chain, all four narrative
 stories (pinned by `tests/engine/scripts.test.ts`):
 
-| Scenario | Breach | Spend vs budget | Worst chain |
-|---|---|---|---|
-| Do Nothing | 100.0% | $0M | patient-distillation |
-| Budget-Constrained | 99.4% | $91M / $100M | zero-day-cascade |
-| Reactive CISO | 43.9% | $354M / $400M | poisoned-chip |
-| Proactive Program | 22.1% | $1,624M / $800M | long-game |
+| Scenario | Breach | Spend vs budget | Capped | Worst chain |
+|---|---|---|---|---|
+| Do Nothing | 100.0% | $0M | — | patient-distillation |
+| Budget-Constrained | 99.4% | $196M / $200M | 0 | zero-day-cascade |
+| Reactive CISO | 43.9% | $620M / $700M | 0 | poisoned-chip |
+| Proactive Program | 22.1% | $1,624M / $800M | 20 | long-game |
+
+All four plan at the **same** `risk_tolerance: 0.65` (asserted by a test), so the
+cost basis is one rule rather than per-story special pleading. Only Proactive
+overruns, and that is deliberate. Budget-Constrained's and Reactive's budgets are
+sized to cover their own plans at that basis — raising either changes no outcome
+(measured: Reactive is identical from $600M to $800M; Budget-Constrained is 99.4%
+at every combination from $100M/1.0 to $200M/0.65, because its number comes from
+hard stops it cannot afford *at all*, not from the cost basis).
 
 Proactive's trajectory is a decline, not a cliff: `100 → 59 → 28 → 20%` by 2027,
 then a slow *rise* to 22.1% as AI erodes the probabilistic controls faster than
@@ -293,7 +301,7 @@ Three things make Proactive's 22% honest rather than an artifact:
    controls, three of them capped. It is not sitting on the residual floor.
 3. 16 blocks are never funded at all.
 
-Budget-Constrained lands next to Do Nothing because $100M funds none of the
+Budget-Constrained lands next to Do Nothing because $200M funds none of the
 three hard stops on `zero-day-cascade` (NET-01 $50M, HW-07 $50M + its $100M
 HW-01 prerequisite, HW-09). Its personnel spend does cut `long-game` to 12% and
 `alignment-researcher` to 4% — but breach is a max, so the one open path sets
@@ -310,9 +318,22 @@ small to buy any structural control buys very little breach reduction.
   15–32%.
 - **Affordability** (`scripts.test.ts`) — no story may plan more than 2.5× its
   budget, or the posture it narrates bears no relation to what it can pay for.
+- **Shared cost basis** (`scripts.test.ts`) — every scripted story plans at
+  `risk_tolerance: 0.65`.
 - **No stuck deployments** (`scripts.test.ts`) — a block a story starts by 2026
   must actually reach `deployed` by 2030, catching lead-time/prerequisite
   authoring errors.
+
+### Known limitation: Do Nothing is flat at the default adversary
+
+The app defaults to OC4. Undefended against OC4, the worst chain is already 100%
+in 2024 and stays there for all 13 playback steps, so the Do Nothing story plays
+as a flat line while its captions narrate a rising threat. The rise is real, just
+not at that tier — undefended goes 10% → 94% at OC1, and 10% → 76% at OC2 with
+the model air-gapped. Fixing it properly needs either a per-script `adversaryOc`
+override (scripts currently cannot set one) or captions rewritten to describe
+what OC4 actually shows: everything is open from the start, and AI only widens
+the margin.
 
 ---
 

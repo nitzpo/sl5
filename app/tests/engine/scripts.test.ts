@@ -31,6 +31,18 @@ describe("time-lapse scripts", () => {
     }
   });
 
+  it("all plan at the same risk tolerance", () => {
+    // One cost basis for every story. Proactive plans at 0.65 and deliberately
+    // overruns; if another story planned at 1.0 it would be budgeting every
+    // program at its best-case price — the exact thing that made security too
+    // cheap — so the model would be punishing optimism in one story and
+    // rewarding it in another.
+    for (const script of SCRIPTS) {
+      if (script.type !== "scripted" || !script.deployments?.length) continue;
+      expect(script.sliderOverrides?.risk_tolerance, `${script.id}`).toBe(0.65);
+    }
+  });
+
   it("cost out against the risk tolerance they actually plan at", () => {
     // Stories are costed at their OWN `risk_tolerance`, which selects where in
     // each block's authored min–max range the plan is budgeted (see

@@ -65,10 +65,17 @@ export const SCRIPTS: TimeLapseScript[] = [
     ],
     annotations: [
       { atYear: 2024, message: "2024: hard-stops go in first, ahead of the AI curve." },
+      // The single largest move in any story (−28 points) previously had no
+      // beat on it at all.
+      { atYear: 2024.5, message: "The air gap alone closes the cheapest paths — the biggest single drop this program will get" },
       { atYear: 2025, message: "Foundations + hard-stops in place — prerequisite chains satisfied, many attack paths already blocked" },
+      { atYear: 2025.5, message: "$800M is now committed. Everything from here competes for money that's gone." },
       { atYear: 2026, message: "First blocks reaching deployed. AI still at 35%." },
-      { atYear: 2027.5, message: "Core defenses mature. Resilient even as AI passes 70%." },
-      { atYear: 2029, message: "Full program mature — hard-stops hold regardless of AI capability" },
+      // The inflection: this is where the curve stops falling and turns back
+      // up. Narrating it as "resilient" was actively misleading.
+      { atYear: 2027, message: "Best it gets: ~20%. The unfunded tail is stuck at implementing.", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2028, message: "Now it drifts back up — AI erodes the personnel controls faster than a capped budget can replace them", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2029.5, message: "Hard-stops still hold, but ~22% residual is what $800M actually buys against OC4" },
     ],
   },
   {
@@ -76,10 +83,12 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Reactive CISO",
     description: "Deploy defenses only after threats materialize. Always a step behind.",
     type: "scripted",
-    // High enough to fund the ~$346M of panic deployments below — the
-    // reactive failure mode here is lateness, not underfunding.
-    // risk_tolerance 1.0: story deployments are authored at optimistic costs
-    sliderOverrides: { budget_millions: 400, org_transformation: 0.3, risk_tolerance: 1.0 },
+    // Every story plans at the same risk_tolerance (0.65) so the cost basis is
+    // one rule, not per-story special pleading. This budget then covers the
+    // ~$620M the panic deployments below actually cost at that basis: the
+    // reactive failure mode is lateness, NOT underfunding, so nothing here
+    // should cap. Raising it further changes no outcome (measured).
+    sliderOverrides: { budget_millions: 700, org_transformation: 0.3, risk_tolerance: 0.65 },
     deployments: [
       // After first network probe detected ~mid-2025
       { blockId: "NET-02", startYear: 2025.5 },
@@ -110,6 +119,9 @@ export const SCRIPTS: TimeLapseScript[] = [
     ],
     annotations: [
       { atYear: 2024, message: "2024: no defenses yet — we deploy only after each threat lands." },
+      // Was three silent steps waiting for the first incident. The waiting IS
+      // the story here, so it should be said out loud.
+      { atYear: 2025, message: "Nothing has happened yet, so nothing gets funded. The budget is intact and so is the exposure." },
       { atYear: 2025.5, message: "Network probe detected — scrambling to deploy firewall controls" },
       { atYear: 2026.5, message: "Breach attempt. Starting air-gap project — won't deploy until 2028.5", highlight: { type: "block", id: "NET-01" } },
       { atYear: 2027, message: "Insider incident. Personnel controls start but AI already at 65%" },
@@ -119,34 +131,42 @@ export const SCRIPTS: TimeLapseScript[] = [
   {
     id: "budget-constrained",
     name: "Budget-Constrained",
-    description: "$100M limit. Pick the highest-impact blocks only.",
+    description: "$200M limit. Pick the highest-impact blocks only.",
     type: "scripted",
-    sliderOverrides: { budget_millions: 100, org_transformation: 0.4, risk_tolerance: 1.0 },
+    // Plans at the shared risk_tolerance 0.65 like every other story. The same
+    // 12 blocks cost ~$196M at that basis (they were ~$91M at optimistic
+    // minimums), so the cap moves to $200M for the identical program — the
+    // constraint is which blocks you can afford at all, not the cost basis.
+    // Outcome is unchanged either way (measured: 99.4% at both).
+    sliderOverrides: { budget_millions: 200, org_transformation: 0.4, risk_tolerance: 0.65 },
     deployments: [
-      // Highest-impact blocks that fit ~$100M of upfront capital
-      // (optimistic costs; running total in comments). Every deployed block's
-      // prerequisites are funded so nothing ships permanently capped:
+      // Highest-impact blocks that fit ~$196M of upfront capital at rt 0.65
+      // (running total in comments). Every deployed block's prerequisites are
+      // funded so nothing ships permanently capped:
       //  - PER-01 unlocks PER-02/03/04; PER-06 unlocks the AI containment blocks.
       //  - NET-04/05 (need the $20M NET-02 enclave) and HW/PHY hard-stops (need
       //    the $100M+ HW-01 / $200M PHY-01 foundations) are deliberately left
       //    out — the honest gaps this budget can't close. NET-03 stands alone.
-      { blockId: "PER-01", startYear: 2024.5 },   // $10M  → $10M
-      { blockId: "PER-06", startYear: 2024.5 },   // $3M   → $13M
-      { blockId: "PER-02", startYear: 2025 },      // $2M   → $15M
-      { blockId: "NET-03", startYear: 2025 },      // $5M   → $20M
-      { blockId: "PER-07", startYear: 2025.5 },    // $1M   → $21M
-      { blockId: "AI-04", startYear: 2025.5 },     // $5M   → $26M
-      { blockId: "PER-03", startYear: 2026 },      // $10M  → $36M
-      { blockId: "AI-06", startYear: 2026 },       // $5M   → $41M
-      { blockId: "PHY-06", startYear: 2026.5 },    // $20M  → $61M
-      { blockId: "AI-01", startYear: 2026.5 },     // $20M  → $81M
-      { blockId: "PER-08", startYear: 2027 },      // $5M   → $86M
-      { blockId: "PER-04", startYear: 2027 },      // $5M   → $91M
+      { blockId: "PER-01", startYear: 2024.5 },    // $21M  → $21M
+      { blockId: "PER-06", startYear: 2024.5 },    // $6M   → $27M
+      { blockId: "PER-02", startYear: 2025 },      // $5M   → $31M
+      { blockId: "NET-03", startYear: 2025 },      // $14M  → $45M
+      { blockId: "PER-07", startYear: 2025.5 },    // $2M   → $48M
+      { blockId: "AI-04", startYear: 2025.5 },     // $10M  → $58M
+      { blockId: "PER-03", startYear: 2026 },      // $17M  → $75M
+      { blockId: "AI-06", startYear: 2026 },       // $14M  → $89M
+      { blockId: "PHY-06", startYear: 2026.5 },    // $41M  → $130M
+      { blockId: "AI-01", startYear: 2026.5 },     // $48M  → $178M
+      { blockId: "PER-08", startYear: 2027 },      // $9M   → $186M
+      { blockId: "PER-04", startYear: 2027 },      // $10M  → $196M
     ],
     annotations: [
-      { atYear: 2024, message: "2024: a $100M cap — only the highest-impact blocks make the cut." },
-      { atYear: 2025.5, message: "Budget nearly exhausted at ~$100M — major gaps remain" },
-      { atYear: 2027, message: "No air gap, no physical perimeter, no hardware encryption. Multiple chains viable.", highlight: { type: "chain", id: "quiet-tap" } },
+      { atYear: 2024, message: "2024: a $200M cap — only the highest-impact blocks make the cut." },
+      { atYear: 2025.5, message: "Cheap personnel controls land first — the one dip this story gets" },
+      // The reversal is this story's real lesson and it was previously
+      // unnarrated: breach bottoms out ~93% then climbs back toward 99%.
+      { atYear: 2026, message: "And now it rises again: AI erodes these probabilistic controls faster than the budget can add more" },
+      { atYear: 2027, message: "No air gap, no physical perimeter, no hardware encryption — every structural control is unaffordable.", highlight: { type: "chain", id: "zero-day-cascade" } },
       { atYear: 2028.5, message: "Supply chain completely unprotected — Poisoned Chip exploitable", highlight: { type: "chain", id: "poisoned-chip" } },
     ],
   },

@@ -36,9 +36,17 @@ effectiveness = stateEffectiveness(state)
 | `not_started` | 0.00 |
 | `investing` | 0.10 |
 | `implementing` | 0.40 |
-| `partially_deployed` | 0.60 |
 | `deployed` | 0.85 |
 | `mature` | 1.00 |
+
+Those five are the whole `BlockState` union (`engine/types.ts`) and the whole
+advancement cycle the UI can reach. `STATE_EFFECTIVENESS` carries one extra key,
+`partially_deployed` → 0.60, which is **not** a `BlockState`: it survives because
+19 blocks in `public/data/blocks-*.json` still declare it as their
+`baseline_state`, and `getStateEffectiveness` accepts a bare `string`. The store
+coerces any baseline outside the cycle to `not_started`
+(`store/simulation.ts:baselineStatesFor`), so the running app never scores a
+block at 0.60 — only direct-from-data callers such as `scoring.test.ts` do.
 
 **AI degradation** = `ai_oc_shift × aiCapability(year) × 0.1`, and is **zero for
 hard stops**. A probabilistic block with `ai_oc_shift: 3` loses 30% of its
@@ -74,23 +82,33 @@ lift is already inside `effectiveOc`; erosion would double-count it.
 
 ### Threat-relevant scoping
 
-Category scores are computed over `relevantBlockIds(chains, allBlocks)` — the
-blocks any chain exploits or is stopped by, **plus** the supporting defenses
-around them (Part 3). Scoring over the full 47-block catalog would divide a
-category's real coverage by exotic controls no modelled threat exercises, so a
-well-defended category read as a D.
+`relevantBlockIds(chains, allBlocks)` returns a **weight per block**, not a flat
+set: the blocks any chain exploits or is stopped by at weight **1**, plus the
+supporting defenses around them (Part 3) at weight **`SUPPORTING_WEIGHT` = 0.34**.
+A block both named on one chain and supporting on another keeps the named weight.
+45 of 47 blocks land in the map (19 named, 26 supporting).
 
-Passing `allBlocks` matters for consistency: supporting blocks lower breach, so
-they must also count toward SL. Otherwise deploying a block could improve the
-attacker-facing number while leaving the defender-facing one flat.
+Two things this buys:
+
+- **Scoping** — scoring over the full 47-block catalog would divide a category's
+  real coverage by exotic controls no modelled threat exercises, so a
+  well-defended category read as a D.
+- **Agreement with breach** — supporting blocks lower breach at 0.34, so they must
+  count toward SL *at the same weight*. A flat set gave a supporting block the
+  same influence over a category mean that breach gives it a third of, so the two
+  numbers disagreed about what deploying it was worth. The constant lives in
+  `supporting.ts` and is imported by both.
 
 ### Per category
 
 ```
-categoryScore = floor + mean(effectiveness over relevant blocks in cat) × (5 − floor)
+categoryScore = floor + (Σ wᵢ · effᵢ / Σ wᵢ) × (5 − floor)
 ```
 
-with `baseline_floor = 1.0` — an org with nothing deployed is at SL1, not SL0.
+a **weighted** mean over the category's relevant blocks, with
+`baseline_floor = 1.0` — an org with nothing deployed is at SL1, not SL0. Callers
+with no chain context (`relevantIds` omitted) score the full category at equal
+weight.
 
 Two distinct empty cases: no chain context at all → score over the whole
 category (back-compat); chain context but no relevant block in this category →
@@ -158,12 +176,20 @@ resist  = clamp(0.98 − 0.12 × bypass, 0.86, 0.98)   if hard_stop
         = clamp(1.00 − 0.60 × bypass, 0.35, 0.95)   otherwise
 ```
 
+`bypass` is a sigmoid, so it is open on (0, 1) and never reaches either end. The
+*reachable* bands are therefore set by the expressions, not the clamps:
+hard stops run **0.98 → 0.86** (the clamp binds, since `0.98 − 0.12` = 0.86) and
+probabilistic controls run **0.95 → 0.40** (the ceiling clamp binds, the floor
+does not — `1.00 − 0.60 × bypass` asymptotes at 0.40). `PROB_RESIST_FLOOR = 0.35`
+is a guard kept under the asymptote so retuning `PROB_BYPASS_SCALE` cannot
+silently yield a negative resist.
+
 Monotonic by construction: an absent block returns 1 (no obstacle), and as
 effectiveness rises the term falls toward `1 − resist`. Improving a defense can
 never raise breach.
 
 **Both types erode; hard stops just erode far less** — a narrow 0.98→0.86 band
-against the probabilistic 0.95→0.35. Hard stops were previously OC-independent,
+against the probabilistic 0.95→0.40. Hard stops were previously OC-independent,
 which meant NET-01 presented an identical wall to OC3 and OC6, and made "buy the
 hard stops" a complete answer to arbitrarily capable adversaries. A top-tier
 adversary bribes someone to carry a drive across the air gap. The narrow band is
@@ -180,9 +206,9 @@ Three tiers:
    Everything the data says stops this chain is mechanically real, not
    narrative decoration.
 2. **Supporting defenses** — same `summary_group` as a named step (see
-   `supporting.ts`). Weight `0.34`, applied as
+   `supporting.ts`). Weight `SUPPORTING_WEIGHT = 0.34`, applied as
    `pass *= 1 − 0.34 × (1 − getPast)`, so a mature supporting block removes about
-   a third of what a named one would.
+   a third of what a named one would. The SL score uses the same weight (Part 2).
 3. **Everything else** — no effect on this chain.
 
 Supporting defenses exist because chains name only 3–5 steps (longer chains stop
@@ -274,12 +300,18 @@ wishlist. That single value was the largest cause of security being too cheap.
 Measured at **2030 against an OC4 adversary**, worst chain, all four narrative
 stories (pinned by `tests/engine/scripts.test.ts`):
 
-| Scenario | Breach | Spend vs budget | Capped | Worst chain |
-|---|---|---|---|---|
-| Do Nothing | 100.0% | $0M | — | patient-distillation |
-| Budget-Constrained | 99.4% | $196M / $200M | 0 | zero-day-cascade |
-| Reactive CISO | 43.9% | $620M / $700M | 0 | poisoned-chip |
-| Proactive Program | 22.1% | $1,624M / $800M | 20 | long-game |
+| Scenario | Breach | SL | Spend vs budget | Capped | Worst chain |
+|---|---|---|---|---|---|
+| Do Nothing | 100.0% | 1.00 | $0M | — | patient-distillation |
+| Budget-Constrained | 99.4% | 1.51 | $196M / $200M | 0 | zero-day-cascade |
+| Reactive CISO | 43.9% | 1.80 | $620M / $700M | 0 | poisoned-chip |
+| Proactive Program | 22.1% | 2.46 | $1,624M / $800M | 20 | long-game |
+
+Both numbers order the stories the same way, which is the point of weighting SL
+and breach identically (Part 2) — but note how far apart they read: the Proactive
+program's 22% breach comes with an SL of only **2.46**. Cutting the worst path's
+odds by 78% does not buy an SL4 posture, because SL measures coverage across the
+whole threat model and 20 of its blocks are capped at `implementing`.
 
 All four plan at the **same** `risk_tolerance: 0.65` (asserted by a test), so the
 cost basis is one rule rather than per-story special pleading. Only Proactive

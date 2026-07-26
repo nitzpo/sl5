@@ -31,6 +31,17 @@ const EXTRA_GROUP_CHAINS: Record<string, string[]> = {
   supply_chain_integrity: ["poisoned-chip"],
 };
 
+/**
+ * How much a supporting defense counts relative to a named step. Enough that
+ * deploying the family around a step is clearly worth doing; not so much that it
+ * swamps the steps the story actually names.
+ *
+ * Lives here so breach and SL apply the SAME weight: breach folds it into the
+ * get-past product, SL uses it as the block's weight in the category mean. If
+ * they diverged, a supporting block would move one number more than the other.
+ */
+export const SUPPORTING_WEIGHT = 0.34;
+
 export function supportingBlocks(chain: AttackChain, allBlocks: Block[]): Block[] {
   const named = new Set<string>([...chain.blocks_exploited, ...(chain.stoppers ?? [])]);
   const groups = new Set<string>();

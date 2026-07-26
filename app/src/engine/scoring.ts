@@ -1,6 +1,6 @@
 import type { AttackChain, Block, BlockState, Category, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
-import { supportingBlocks } from "./supporting";
+import { SUPPORTING_WEIGHT, supportingBlocks } from "./supporting";
 
 export interface ScoringConfig {
   /** Overall SL = weakest_link_weight·min(categories) + (1−weakest_link_weight)·mean.
@@ -18,30 +18,54 @@ const DEFAULT_CONFIG: ScoringConfig = {
 };
 
 /**
- * The blocks that actually matter to the threat model: every block any attack
- * chain exploits or is stopped by, plus — when the block catalog is supplied —
- * the supporting defenses around them (same `summary_group`). Category scores
- * are measured over these, not the full catalog, so deep catalogs of exotic
- * controls no threat exercises don't dilute a category's real coverage.
+ * How much each block counts toward the SL score, keyed by block id.
+ *
+ * A `Map` rather than a `Set` because relevance is not binary: a named chain step
+ * counts fully (1), a supporting defense from the same family counts at
+ * `SUPPORTING_WEIGHT`. `Set` membership gave a supporting block the same
+ * influence over a category mean that breach gives it a third of — so the two
+ * numbers disagreed about what deploying it was worth.
+ */
+export type RelevanceWeights = Map<string, number>;
+
+/**
+ * The blocks that actually matter to the threat model, with their weight: every
+ * block any attack chain exploits or is stopped by at full weight, plus — when the
+ * block catalog is supplied — the supporting defenses around them (same
+ * `summary_group`) at `SUPPORTING_WEIGHT`. Category scores are measured over
+ * these, not the full catalog, so deep catalogs of exotic controls no threat
+ * exercises don't dilute a category's real coverage.
  *
  * Including supporting blocks keeps SL consistent with breach, which counts them
- * too: without it, a block could lower breach while leaving SL untouched.
+ * too: without it, a block could lower breach while leaving SL untouched. Using
+ * the same weight keeps them consistent about how *much* it is worth.
+ *
+ * A block that is both named on one chain and supporting on another keeps the
+ * higher (named) weight.
  */
-export function relevantBlockIds(chains?: AttackChain[], allBlocks?: Block[]): Set<string> {
-  const ids = new Set<string>();
-  if (!chains) return ids;
+export function relevantBlockIds(chains?: AttackChain[], allBlocks?: Block[]): RelevanceWeights {
+  const weights: RelevanceWeights = new Map();
+  if (!chains) return weights;
   for (const chain of chains) {
-    for (const id of chain.blocks_exploited ?? []) ids.add(id);
-    for (const id of chain.stoppers ?? []) ids.add(id);
+    for (const id of chain.blocks_exploited ?? []) weights.set(id, 1);
+    for (const id of chain.stoppers ?? []) weights.set(id, 1);
   }
   if (allBlocks) {
     for (const chain of chains) {
-      for (const b of supportingBlocks(chain, allBlocks)) ids.add(b.id);
+      for (const b of supportingBlocks(chain, allBlocks)) {
+        if (!weights.has(b.id)) weights.set(b.id, SUPPORTING_WEIGHT);
+      }
     }
   }
-  return ids;
+  return weights;
 }
 
+// Keyed by `string`, not `BlockState`, on purpose: `partially_deployed` is NOT a
+// BlockState and is unreachable through the UI's advancement cycle. It stays
+// because 19 blocks in public/data still declare it as their `baseline_state`,
+// and callers that read those files directly (scoring.test.ts) need a sane value.
+// The store coerces any out-of-cycle baseline to `not_started`, so the running app
+// never scores a block at 0.6.
 const STATE_EFFECTIVENESS: Record<string, number> = {
   not_started: 0.0,
   investing: 0.1,
@@ -125,14 +149,16 @@ export function blockEffectiveness(
 /**
  * Score for a single category (0-5 SL scale).
  *
- * The score measures coverage over the category's *threat-relevant* blocks —
- * those any attack chain exploits or is stopped by (`relevantIds`). Scoring over
- * the whole catalog instead would divide by exotic controls no threat exercises,
- * making a well-covered category look like a D.
+ * The score is a WEIGHTED mean of effectiveness over the category's
+ * *threat-relevant* blocks (`relevantIds`): named chain steps at full weight,
+ * supporting defenses at `SUPPORTING_WEIGHT` — matching how breach counts them,
+ * so the two numbers agree about what a block is worth. Scoring over the whole
+ * catalog instead would divide by exotic controls no threat exercises, making a
+ * well-covered category look like a D.
  *
  * Two "no relevant blocks" cases are handled distinctly:
- *  - `relevantIds` omitted → no chain context; score over the full category
- *    (back-compat for callers/tests without chains);
+ *  - `relevantIds` omitted → no chain context; score over the full category at
+ *    equal weight (back-compat for callers/tests without chains);
  *  - `relevantIds` given but this category has none of them → the category has
  *    no exposure in the current threat model, so return the neutral baseline
  *    floor rather than diluting with the full catalog (which would re-introduce
@@ -143,25 +169,32 @@ export function categoryScore(
   blockStates: Record<string, BlockState | string>,
   year: number,
   sliders: Sliders | number = 0.5,
-  relevantIds?: Set<string>,
+  relevantIds?: RelevanceWeights,
   baselineFloor: number = DEFAULT_CONFIG.baseline_floor
 ): number {
   if (blocksInCategory.length === 0) return baselineFloor;
 
   const pool = relevantIds
-    ? blocksInCategory.filter((b) => relevantIds.has(b.id))
-    : blocksInCategory;
+    ? blocksInCategory
+        .filter((b) => relevantIds.has(b.id))
+        .map((b) => ({ block: b, weight: relevantIds.get(b.id)! }))
+    : blocksInCategory.map((b) => ({ block: b, weight: 1 }));
   // Chain context, but no threat-relevant block in this category: not scoreable
   // against the threat model — stay at the neutral floor, don't fall back to the
   // full catalog (that would dilute) and don't fabricate a perfect 5.0.
   if (pool.length === 0) return baselineFloor;
 
-  const total = pool.reduce((sum, block) => {
+  let weighted = 0;
+  let weightSum = 0;
+  for (const { block, weight } of pool) {
+    if (weight <= 0) continue;
     const state = blockStates[block.id] ?? "not_started";
-    return sum + blockEffectiveness(block, state, year, sliders);
-  }, 0);
+    weighted += weight * blockEffectiveness(block, state, year, sliders);
+    weightSum += weight;
+  }
+  if (weightSum <= 0) return baselineFloor;
 
-  const raw = total / pool.length;
+  const raw = weighted / weightSum;
   return baselineFloor + raw * (5.0 - baselineFloor);
 }
 
@@ -187,16 +220,17 @@ export function overallSlScore(
 /**
  * Compute all category scores from blocks and states.
  *
- * Pass `relevantIds` (from `relevantBlockIds(chains)`) so each category is scored
- * over its threat-relevant blocks. Omit it and categories score over the full
- * catalog (back-compat for tests / callers without chain context).
+ * Pass `relevantIds` (from `relevantBlockIds(chains, blocks)`) so each category is
+ * scored over its threat-relevant blocks at their relevance weight. Omit it and
+ * categories score over the full catalog at equal weight (back-compat for tests /
+ * callers without chain context).
  */
 export function computeCategoryScores(
   blocks: Block[],
   blockStates: Record<string, BlockState | string>,
   year: number,
   sliders: Sliders | number = 0.5,
-  relevantIds?: Set<string>,
+  relevantIds?: RelevanceWeights,
   baselineFloor: number = DEFAULT_CONFIG.baseline_floor
 ): Record<Category, number> {
   const categories: Record<Category, Block[]> = {

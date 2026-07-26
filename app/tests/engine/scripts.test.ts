@@ -61,7 +61,10 @@ describe("time-lapse scripts", () => {
       const rt = script.sliderOverrides?.risk_tolerance ?? 0.5;
       const total = script.deployments.reduce((sum, dep) => {
         const block = blockById.get(dep.blockId);
-        return sum + (block ? blockCostBasis(block, rt) : 0);
+        // A missing block must fail loudly: silently contributing $0 would let a
+        // typo'd blockId make an unaffordable plan look affordable.
+        expect(block, `${script.id}: unknown block ${dep.blockId}`).toBeDefined();
+        return sum + blockCostBasis(block!, rt);
       }, 0);
       expect(
         total,
@@ -109,6 +112,9 @@ describe("time-lapse scripts", () => {
     const nothing = worst("do-nothing");
 
     expect(nothing).toBeGreaterThan(0.95);
+    // The top of the ordering, pinned relatively too: doing nothing must never
+    // come out better than spending $200M badly.
+    expect(nothing).toBeGreaterThan(constrained);
     expect(constrained).toBeGreaterThan(reactive);
     expect(reactive).toBeGreaterThan(proactive * 1.5); // substantially better, not marginally
     // Proactive: a ~$1.6B plan on an $800M budget still leaves real exposure.

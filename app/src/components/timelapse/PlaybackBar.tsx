@@ -2,7 +2,7 @@ import { useState } from "react";
 import { usePlaybackStore } from "../../timelapse/playback-store";
 import { usePlaybackLoop } from "../../timelapse/use-playback-loop";
 import { useSimulationStore } from "../../store/simulation";
-import { useSimulationResults } from "../../store/derived";
+import { useBudgetStatus, useSimulationResults } from "../../store/derived";
 import { formatCost, formatProbability, formatSl } from "../../utils/format";
 import { breachLevel, LEVEL_TEXT, SEMANTIC } from "../../utils/colors";
 import { ScriptSelector } from "./ScriptSelector";
@@ -14,8 +14,9 @@ const SPEED_CYCLE: PlaybackSpeed[] = [0.5, 1, 2, 4];
  * can't actually pay for. Turns "why is this program still at 22%?" from a
  * hover-the-right-hex discovery into something visible on the transport bar. */
 function SpendChip() {
-  const { spentMillions, budgetExceededIds } = useSimulationResults();
-  const budget = useSimulationStore((s) => s.sliders.budget_millions);
+  // useBudgetStatus, not useSimulationResults: this renders on every playback
+  // frame and only needs the budget slice, not the SL scores and OC sweeps.
+  const { spentMillions, budgetExceededIds, budgetMillions: budget } = useBudgetStatus();
   if (spentMillions <= 0) return null;
   const capped = budgetExceededIds.size;
   return (
@@ -71,11 +72,11 @@ function EndSummary({ onReplay }: { onReplay: () => void }) {
           </>
         )}{" "}
         <span className="text-gray-500">
-          Spent{" "}
+          Planned spend{" "}
           <span style={{ color: cappedCount > 0 ? SEMANTIC.overBudget : undefined }}>
             {formatCost(spentMillions)}
           </span>{" "}
-          of {formatCost(budget)}
+          against a {formatCost(budget)} budget
           {cappedCount > 0 && (
             <>
               {" "}— {cappedCount} block{cappedCount === 1 ? "" : "s"} capped at

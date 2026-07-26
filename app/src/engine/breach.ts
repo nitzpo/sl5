@@ -1,7 +1,7 @@
 import type { AttackChain, Block, BlockState, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
 import { blockEffectiveness } from "./scoring";
-import { supportingBlocks } from "./supporting";
+import { SUPPORTING_WEIGHT, supportingBlocks } from "./supporting";
 import { resolveLayer } from "../utils/ring-geometry";
 
 const DEFAULT_SIGMOID_STEEPNESS = 1.5;
@@ -21,12 +21,18 @@ const GATE_OFFSET = 0.45;
 // bribes someone to carry a drive across the gap. Resist falls from
 // HARD_STOP_RESIST_CEIL toward HARD_STOP_RESIST_FLOOR as effective OC rises past
 // the block's exploitation threshold — a much narrower band than the
-// probabilistic one, which is what still makes hard stops the best buy.
+// probabilistic one (0.98→0.86 against 0.95→0.40), which is what still makes
+// hard stops the best buy.
 const HARD_STOP_BYPASS_SCALE = 0.12;
 const HARD_STOP_RESIST_FLOOR = 0.86;
 const HARD_STOP_RESIST_CEIL = 0.98;
-const PROB_BYPASS_SCALE = 0.6;        // probabilistic defenses lose up to this much resist vs strong OC
-const PROB_RESIST_FLOOR = 0.35;       // even vs a much stronger adversary, a mature prob. defense resists this much
+// Probabilistic defenses lose up to PROB_BYPASS_SCALE of their resist against a
+// strong adversary, so `1 − scale × bypass` asymptotes at 0.40 — that, not the
+// clamp below, is the effective floor. PROB_RESIST_FLOOR is a defensive bound
+// kept strictly under the asymptote so retuning the scale can't silently produce
+// a negative resist.
+const PROB_BYPASS_SCALE = 0.6;
+const PROB_RESIST_FLOOR = 0.35;
 const PROB_RESIST_CEIL = 0.95;        // vs a much weaker adversary, resists this much (not 100% — nothing is perfect)
 
 // Defense-in-depth: each additional effective layer multiplies breach by this.
@@ -42,12 +48,6 @@ const CORRELATED_LAYER_WEIGHT = 0.5;
 // Blocks still implementing provide partial depth, so the discount phases in
 // smoothly instead of jumping at the implementing→deployed transition.
 const IMPLEMENTING_LAYER_WEIGHT = 0.5;
-
-// How much a supporting defense (same family as a named step — see
-// `supporting.ts`) counts relative to a named one. Enough that deploying the
-// family around a step is clearly worth doing; not so much that it swamps the
-// steps the story actually names.
-const SUPPORTING_WEIGHT = 0.34;
 
 // --- Irreducible residual risk ---
 // No posture drives a live chain to zero. Even a fully mature program faces the
@@ -102,7 +102,7 @@ export function blockExploitProbability(
   if (eff <= 0) return 1.0;
 
   // Both defense types erode against a stronger adversary; hard stops just erode
-  // far less (a narrow 0.98→0.86 band vs the probabilistic 0.95→0.35).
+  // far less (a narrow 0.98→0.86 band vs the probabilistic 0.95→0.40).
   const threshold = block.adversary_exploitation.oc_threshold_to_exploit;
   const bypass = sigmoidProbability(effectiveOc - threshold);
   const resist =

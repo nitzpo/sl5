@@ -6,12 +6,21 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Proactive Program",
     description: "Start early. Hard-stops first. Ahead of the AI curve.",
     type: "scripted",
-    // Budget covers the full program: the deployments below sum to ~$791M
-    // at optimistic upfront costs (a multi-hundred-million-dollar program is
-    // the point of this story — see the README's framing). gov_cooperation is
-    // set high: a program this well-resourced assumes government partnership,
-    // so personnel/supply-chain controls aren't govMult-penalized.
-    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 1.0 },
+    // A well-funded program that still cannot buy everything — the point of
+    // this story is a serious attempt, not a solved problem.
+    //
+    // risk_tolerance 0.65 (not 1.0) is what makes the $800M bite: cost basis is
+    // `min + (1 - rt) * (max - min)`, so planning at 1.0 budgeted all ~31
+    // programs at their best-case price and $800M bought the entire wishlist.
+    // At 0.65 the plan costs ~$1,624M against $800M, so the funding queue caps
+    // the tail at `implementing` — mostly the personnel program, which is why
+    // `long-game` stays the dominant chain (~22% vs OC4 at 2030) instead of the
+    // whole board collapsing to the residual floor.
+    //
+    // gov_cooperation is set high: a program this well-resourced assumes
+    // government partnership, so personnel/supply-chain controls aren't
+    // govMult-penalized.
+    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 0.65 },
     deployments: [
       // Foundations first (2024) — zero-prereq blocks that everything else
       // requires. PER-01 gates PER-02/03/04/05 and PER-06; PER-06 gates
@@ -35,24 +44,24 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "AI-06", startYear: 2024.5 },
       { blockId: "AI-04", startYear: 2024.5 },
       // AI + supply chain 2025
-      { blockId: "AI-01", startYear: 2025 },
-      { blockId: "AI-03", startYear: 2025 },
+      { blockId: "AI-01", startYear: 2025.5 },
+      { blockId: "AI-03", startYear: 2026 },
       { blockId: "SC-02", startYear: 2025 },
-      { blockId: "SC-04", startYear: 2025 },
-      { blockId: "SC-05", startYear: 2025 },
+      { blockId: "SC-04", startYear: 2026 },
+      { blockId: "SC-05", startYear: 2026.5 },
       { blockId: "PER-03", startYear: 2025 },
-      { blockId: "PER-04", startYear: 2025 },
+      { blockId: "PER-04", startYear: 2025.5 },
       // Hardware and remaining coverage 2025.5
       { blockId: "HW-03", startYear: 2025.5 },
-      { blockId: "HW-06", startYear: 2025.5 },
-      { blockId: "HW-07", startYear: 2025.5 },
-      { blockId: "PHY-06", startYear: 2025.5 },
-      { blockId: "NET-05", startYear: 2025.5 },
+      { blockId: "HW-06", startYear: 2026.5 },
+      { blockId: "HW-07", startYear: 2026 },
+      { blockId: "PHY-06", startYear: 2026.5 },
+      { blockId: "NET-05", startYear: 2027 },
       // Long-lead items
       { blockId: "AI-02", startYear: 2025 },
-      { blockId: "SC-06", startYear: 2026 },
-      { blockId: "PER-05", startYear: 2026 },
-      { blockId: "PHY-03", startYear: 2026 },
+      { blockId: "SC-06", startYear: 2027 },
+      { blockId: "PER-05", startYear: 2026.5 },
+      { blockId: "PHY-03", startYear: 2027.5 },
     ],
     annotations: [
       { atYear: 2024, message: "2024: hard-stops go in first, ahead of the AI curve." },

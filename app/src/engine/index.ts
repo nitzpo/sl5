@@ -15,6 +15,7 @@ export {
   chainBreachProbability,
   computeBreachProbabilities,
 } from "./breach";
+export { supportingBlocks } from "./supporting";
 export { applyBudgetConstraint, blockCostBasis } from "./budget";
 export { applyDependencyConstraint } from "./dependencies";
 export {

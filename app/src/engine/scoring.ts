@@ -1,5 +1,6 @@
 import type { AttackChain, Block, BlockState, Category, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
+import { supportingBlocks } from "./supporting";
 
 export interface ScoringConfig {
   /** Overall SL = weakest_link_weight·min(categories) + (1−weakest_link_weight)·mean.
@@ -18,16 +19,25 @@ const DEFAULT_CONFIG: ScoringConfig = {
 
 /**
  * The blocks that actually matter to the threat model: every block any attack
- * chain exploits or is stopped by. Category scores are measured over these, not
- * the full catalog — otherwise deep catalogs of exotic, never-deployed controls
- * dilute a category's score and make real coverage look worse than it is.
+ * chain exploits or is stopped by, plus — when the block catalog is supplied —
+ * the supporting defenses around them (same `summary_group`). Category scores
+ * are measured over these, not the full catalog, so deep catalogs of exotic
+ * controls no threat exercises don't dilute a category's real coverage.
+ *
+ * Including supporting blocks keeps SL consistent with breach, which counts them
+ * too: without it, a block could lower breach while leaving SL untouched.
  */
-export function relevantBlockIds(chains?: AttackChain[]): Set<string> {
+export function relevantBlockIds(chains?: AttackChain[], allBlocks?: Block[]): Set<string> {
   const ids = new Set<string>();
   if (!chains) return ids;
   for (const chain of chains) {
     for (const id of chain.blocks_exploited ?? []) ids.add(id);
     for (const id of chain.stoppers ?? []) ids.add(id);
+  }
+  if (allBlocks) {
+    for (const chain of chains) {
+      for (const b of supportingBlocks(chain, allBlocks)) ids.add(b.id);
+    }
   }
   return ids;
 }

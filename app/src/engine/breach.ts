@@ -1,6 +1,7 @@
 import type { AttackChain, Block, BlockState, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
 import { blockEffectiveness } from "./scoring";
+import { supportingBlocks } from "./supporting";
 import { resolveLayer } from "../utils/ring-geometry";
 
 const DEFAULT_SIGMOID_STEEPNESS = 1.5;
@@ -14,19 +15,53 @@ const DEFAULT_SIGMOID_STEEPNESS = 1.5;
 const GATE_STEEPNESS = 4.0;
 const GATE_OFFSET = 0.45;
 // How reliably a fully-deployed defense resists, by type:
-const HARD_STOP_RESIST = 0.98;        // deterministic, OC-independent → mature hard stop get-past ≈ 0.02
+// Hard stops are structural (an air gap either exists or it doesn't), so they
+// resist far better than probabilistic controls and degrade only slowly with
+// adversary capability. They are NOT absolute, though: a top-tier adversary
+// bribes someone to carry a drive across the gap. Resist falls from
+// HARD_STOP_RESIST_CEIL toward HARD_STOP_RESIST_FLOOR as effective OC rises past
+// the block's exploitation threshold — a much narrower band than the
+// probabilistic one, which is what still makes hard stops the best buy.
+const HARD_STOP_BYPASS_SCALE = 0.12;
+const HARD_STOP_RESIST_FLOOR = 0.86;
+const HARD_STOP_RESIST_CEIL = 0.98;
 const PROB_BYPASS_SCALE = 0.6;        // probabilistic defenses lose up to this much resist vs strong OC
 const PROB_RESIST_FLOOR = 0.35;       // even vs a much stronger adversary, a mature prob. defense resists this much
 const PROB_RESIST_CEIL = 0.95;        // vs a much weaker adversary, resists this much (not 100% — nothing is perfect)
 
 // Defense-in-depth: each additional effective layer multiplies breach by this.
-const PER_ADDITIONAL_LAYER_FACTOR = 0.6;
+// Deliberately mild, because the per-block `∏ getPast` product ALREADY rewards
+// having more layers — this factor is only a small extra credit for those layers
+// being *independent* (different failure modes), not a second helping of depth.
+// It was 0.6, which double-counted depth hard enough that a chain collapsed to
+// near-zero once a handful of blocks matured.
+const PER_ADDITIONAL_LAYER_FACTOR = 0.85;
 // A layer whose block shares a failure mode with another block on the chain
 // (same `shared_dependencies` entry) earns only half a layer of depth credit.
 const CORRELATED_LAYER_WEIGHT = 0.5;
 // Blocks still implementing provide partial depth, so the discount phases in
 // smoothly instead of jumping at the implementing→deployed transition.
 const IMPLEMENTING_LAYER_WEIGHT = 0.5;
+
+// How much a supporting defense (same family as a named step — see
+// `supporting.ts`) counts relative to a named one. Enough that deploying the
+// family around a step is clearly worth doing; not so much that it swamps the
+// steps the story actually names.
+const SUPPORTING_WEIGHT = 0.34;
+
+// --- Irreducible residual risk ---
+// No posture drives a live chain to zero. Even a fully mature program faces the
+// insider who is never caught, the zero-day nobody has found, and the failure
+// mode nobody modelled — and the SL5 premise is explicitly that full SL5 may not
+// be achievable at all. Without a floor, maturing a chain's handful of named
+// blocks drove it to ~0.1%, which read as "solved" and made near-perfect defense
+// look cheap.
+//
+// The floor is scaled by the capability gate, so it is a floor on chains the
+// adversary can actually attempt: an OC2 actor does not get a free 3% shot at a
+// chain that needs OC4+. It is NOT applied to a chain held inert by a
+// precondition (external serving), which stays exactly 0.
+const RESIDUAL_RISK = 0.03;
 
 function clamp(x: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, x));
@@ -66,17 +101,22 @@ export function blockExploitProbability(
   const eff = blockEffectiveness(block, state, year, sliders, { aiErosion: false });
   if (eff <= 0) return 1.0;
 
-  let resist: number;
-  if (block.defense_type === "hard_stop") {
-    resist = HARD_STOP_RESIST;
-  } else {
-    const threshold = block.adversary_exploitation.oc_threshold_to_exploit;
-    resist = clamp(
-      1 - PROB_BYPASS_SCALE * sigmoidProbability(effectiveOc - threshold),
-      PROB_RESIST_FLOOR,
-      PROB_RESIST_CEIL
-    );
-  }
+  // Both defense types erode against a stronger adversary; hard stops just erode
+  // far less (a narrow 0.98→0.86 band vs the probabilistic 0.95→0.35).
+  const threshold = block.adversary_exploitation.oc_threshold_to_exploit;
+  const bypass = sigmoidProbability(effectiveOc - threshold);
+  const resist =
+    block.defense_type === "hard_stop"
+      ? clamp(
+          HARD_STOP_RESIST_CEIL - HARD_STOP_BYPASS_SCALE * bypass,
+          HARD_STOP_RESIST_FLOOR,
+          HARD_STOP_RESIST_CEIL
+        )
+      : clamp(
+          1 - PROB_BYPASS_SCALE * bypass,
+          PROB_RESIST_FLOOR,
+          PROB_RESIST_CEIL
+        );
   return 1 - eff * resist;
 }
 
@@ -113,7 +153,8 @@ function primaryLayer(block: Block): string | null {
 
 /**
  * Defense-in-depth discount: breach probability is multiplied by
- * 0.6^(depth − 1), where depth sums per-layer credit over the chain's defenses.
+ * PER_ADDITIONAL_LAYER_FACTOR^(depth − 1), where depth sums per-layer credit
+ * over the chain's defenses.
  *
  * Monotone by construction — advancing or adding a block can only raise depth:
  *  - each block credits at most its PRIMARY layer (no self-depth from one block);
@@ -215,9 +256,24 @@ export function chainBreachProbability(
     pass *= blockExploitProbability(block, state, effectiveOc, year, sliders);
   }
 
+  // Supporting defenses (same defense family, not narrative steps) count at
+  // reduced weight: the get-past term is interpolated toward 1, so a mature
+  // supporting block removes ~a third of what a named block would.
+  for (const block of supportingBlocks(chain, allBlocks)) {
+    const state = blockStates[block.id] ?? "not_started";
+    const getPast = blockExploitProbability(block, state, effectiveOc, year, sliders);
+    pass *= 1 - SUPPORTING_WEIGHT * (1 - getPast);
+  }
+
   pass *= defenseInDepthDiscount(defenseBlocks, blockStates);
 
-  return clamp(gate * pass, 0, 1);
+  // Defenses can drive the modelled paths arbitrarily low, but never below the
+  // residual: gate × RESIDUAL_RISK is the floor for an adversary who can attempt
+  // this chain at all. Monotonicity is preserved — the floor depends only on the
+  // adversary and the chain, never on block states, so advancing a block still
+  // cannot raise the result.
+  const floor = gate * RESIDUAL_RISK;
+  return clamp(Math.max(gate * pass, floor), 0, 1);
 }
 
 /**

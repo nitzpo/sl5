@@ -49,7 +49,7 @@ export function useSimulationResults() {
 
   // Score each category over the blocks that matter to the threat model, so SL
   // tracks real coverage instead of being diluted by never-deployed catalog depth.
-  const relevantIds = relevantBlockIds(attackChains);
+  const relevantIds = relevantBlockIds(attackChains, blocks);
   const categoryScores = computeCategoryScores(
     blocks,
     effectiveStates,

@@ -2,18 +2,24 @@ import { useLayoutEffect } from "react";
 import type { PanZoomState } from "../../utils/use-viewbox-pan-zoom";
 
 /**
- * Shared map-style canvas: an <svg> whose viewBox is its own PIXEL SIZE, with a
- * single transform <g> that wheel-zoom and drag-to-pan move. Each view drops its
- * content inside as children — in world coordinates — and gets identical
- * pan/zoom behavior for free.
+ * Shared map-style canvas: an <svg> with NO viewBox and a single transform <g>
+ * that wheel-zoom and drag-to-pan move. Each view drops its content inside as
+ * children — in world coordinates — and gets identical pan/zoom behavior free.
  *
- * The viewBox deliberately tracks pixels rather than the view's world bounds.
- * With world bounds + `preserveAspectRatio`, the browser silently rescales all
- * content whenever the element resizes — so opening a panel shrank the map while
- * the zoom readout still claimed 100%. Pinning the viewBox to pixels makes one
- * world unit a fixed number of pixels, so the only thing that ever changes scale
- * is the transform, and "100%" means one thing. The view's world bounds are
- * handed to the hook instead, which uses them to compute the baseline fit.
+ * The missing viewBox is the design, not an oversight. A viewBox maps user units
+ * onto the element box, so any change to the element's size rescales the whole
+ * scene — a zoom the transform knows nothing about, which is why opening a panel
+ * shrank the map while the readout still claimed 100%. Without one, SVG user
+ * units are CSS pixels by definition: the mapping is fixed by layout, cannot go
+ * stale, and the transform is the only thing that ever moves.
+ *
+ * Sizing a viewBox from React state does NOT work as a substitute — state trails
+ * the DOM by a render, so on the frame a panel opens the element is already
+ * narrow while the viewBox still describes the wide one. That mismatch is
+ * visible when shrinking and invisible when growing.
+ *
+ * The view's world bounds still matter (they define the baseline "100%" fit), so
+ * they go to the hook via `setWorldBounds` rather than onto the element.
  *
  * The pan/zoom `state` is owned by the parent (App) so the external zoom-control
  * buttons can drive the same instance; the view mode is its reset key, so

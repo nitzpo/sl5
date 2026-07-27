@@ -3,9 +3,19 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 /**
  * Map-style pan/zoom for an SVG canvas. The view is a single transform
  * `translate(tx, ty) scale(scale)` applied to a `<g>` that wraps all content;
- * the `<svg>` itself keeps a fixed viewBox equal to its pixel size. Panning and
- * zooming move the group, never the viewBox — so text stays crisp and the math
- * stays in one coordinate space.
+ * the `<svg>` itself has NO viewBox, so SVG user units are CSS pixels by
+ * definition. Panning and zooming move only the group — so text stays crisp and
+ * the math stays in one coordinate space.
+ *
+ * The absence of a viewBox is load-bearing, not an omission. A viewBox maps user
+ * units onto the element box, so whenever the element resizes the browser
+ * rescales the entire scene to fit — a second zoom this hook cannot see, which
+ * made the map shrink when a panel opened while the readout still said 100%.
+ * Sizing it from React state only moves the problem: state lags the DOM by a
+ * render, so the frame a panel opens would map the old, wider box onto the new,
+ * narrower element. With no viewBox the mapping is fixed by layout and cannot go
+ * stale; the view's world bounds reach this hook through `setWorldBounds`
+ * instead, where they are used to compute the baseline fit.
  *
  * Unlike a scroll-container pan, this works at ANY zoom (even fully zoomed out)
  * and lets you drag the content past its own edges (there is no scroll range to
@@ -30,6 +40,14 @@ const ZOOM_STEP = 1.2; // multiplicative step for the +/- buttons
  * with content crowding the viewport edges.
  */
 const FIT_ZOOM = 0.88;
+
+/** px per world unit that frames `w` inside `vp`. The baseline "100%". */
+function fitRatio(
+  vp: { width: number; height: number },
+  w: { width: number; height: number }
+): number {
+  return Math.min(vp.width / w.width, vp.height / w.height) * FIT_ZOOM;
+}
 
 /** Elements whose presses should never start a pan (they own the click). */
 function isInteractiveTarget(el: EventTarget | null): boolean {
@@ -59,7 +77,13 @@ export interface ViewTransform {
  *
  * `k` is the absolute px-per-world-unit factor in force (baseline × scale) and
  * is deliberately the same on both sides — a viewport resize must not change it.
- * Exported for tests; the hook uses it on every ResizeObserver callback.
+ * Because it is identical on both sides it cancels out, and the result reduces
+ * to `tx + (next.width − prev.width) / 2`: a pure half-the-size-change pan. It
+ * stays an explicit parameter to document that invariant and to reject a
+ * degenerate scale rather than propagate it.
+ *
+ * Exported for tests; the hook calls it from the measuring layout effect and
+ * from the ResizeObserver fallback.
  */
 export function recenterOnResize(
   view: ViewTransform,
@@ -67,7 +91,10 @@ export function recenterOnResize(
   next: { width: number; height: number },
   k: number
 ): ViewTransform {
-  if (k === 0) return view;
+  // Non-finite covers the pre-measurement window, where k can arrive as NaN
+  // (0/0 from an unmeasured ratio) or Infinity. Either would produce NaN
+  // offsets and blank the canvas, so hold the view instead.
+  if (!Number.isFinite(k) || k === 0) return view;
   const worldCX = (prev.width / 2 - view.tx) / k;
   const worldCY = (prev.height / 2 - view.ty) / k;
   return {
@@ -178,16 +205,34 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
       if (!w || vp.width === 0 || vp.height === 0 || w.width <= 0 || w.height <= 0) {
         return { k: latchedK.current ?? 1, tx: 0, ty: 0, ready: false };
       }
-      if (latchedK.current === null) {
-        latchedK.current = Math.min(vp.width / w.width, vp.height / w.height) * FIT_ZOOM;
-      }
-      const k = latchedK.current;
+      // Pure read: the latch is established by `latchBaseline` in the measuring
+      // layout effect. Falling back to the live ratio (rather than writing it)
+      // keeps this correct on the render that first sees a viewport, before the
+      // effect has run, without letting a discarded render pin the baseline.
+      const k = latchedK.current ?? fitRatio(vp, w);
       return {
         k,
         tx: vp.width / 2 - (w.minX + w.width / 2) * k,
         ty: vp.height / 2 - (w.minY + w.height / 2) * k,
         ready: true,
       };
+    },
+    []
+  );
+
+  /**
+   * Establish the baseline from a COMMITTED measurement. Called only from the
+   * measuring layout effect, so the latch is never set during render — a render
+   * React throws away can no longer pin the zoom baseline permanently.
+   */
+  const latchBaseline = useCallback(
+    (
+      vp: { width: number; height: number },
+      w: { minX: number; minY: number; width: number; height: number } | null
+    ) => {
+      if (latchedK.current !== null) return;
+      if (!w || vp.width === 0 || vp.height === 0 || w.width <= 0 || w.height <= 0) return;
+      latchedK.current = fitRatio(vp, w);
     },
     []
   );
@@ -223,22 +268,28 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
 
   const setWorldBounds = useCallback(
     (rect: { minX: number; minY: number; width: number; height: number } | null) => {
-      setWorld((cur) => {
-        if (
-          rect &&
-          cur &&
-          cur.minX === rect.minX &&
-          cur.minY === rect.minY &&
-          cur.width === rect.width &&
-          cur.height === rect.height
-        ) {
-          return cur; // unchanged — don't churn state every render
-        }
-        // New world bounds mean a new baseline: re-latch against them, so each
-        // view frames itself rather than inheriting the previous view's zoom.
-        latchedK.current = null;
-        return rect;
-      });
+      // Compared here, OUTSIDE the state updater. The updater must stay pure:
+      // React may call it more than once (StrictMode) or discard the render it
+      // belongs to, and clearing the latch from inside would then drop the
+      // baseline for a render that never commits.
+      const cur = worldRefForFit.current;
+      if (
+        rect &&
+        cur &&
+        cur.minX === rect.minX &&
+        cur.minY === rect.minY &&
+        cur.width === rect.width &&
+        cur.height === rect.height
+      ) {
+        return; // unchanged — don't churn state every render
+      }
+      // New world bounds mean a new baseline: re-latch against them, so each
+      // view frames itself rather than inheriting the previous view's zoom.
+      // Safe outside the updater because this runs in a layout effect (commit
+      // phase), and the very next render re-derives the fit from the new bounds.
+      latchedK.current = null;
+      worldRefForFit.current = rect;
+      setWorld(rect);
     },
     []
   );
@@ -254,12 +305,21 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   // flicker. Assigning during render keeps every reader on the current value.
   const viewRef = useRef(effectiveView);
   const pristineRef = useRef(pristine);
-  // World bounds for the stable callbacks (fitBounds), which must not be
-  // recreated on every bounds change but still need the current value.
-  const worldRefForFit = useRef(world);
   viewRef.current = effectiveView;
   pristineRef.current = pristine;
-  worldRefForFit.current = world;
+  // Drag state for the measuring layout effect. A ref, not the `dragging`
+  // state: the pointer handlers set this at gesture start, so it is already
+  // true on the very first pointermove commit — whereas the state lands a
+  // render later, leaking the reflow this guard exists to prevent.
+  const draggingRef = useRef(false);
+  // World bounds for the stable callbacks (fitBounds), which must not be
+  // recreated on every bounds change but still need the current value.
+  //
+  // NOT synced from `world` during render: `setWorldBounds` writes this ref in
+  // the commit phase and is the one place bounds change, so it is always the
+  // fresher of the two. Re-assigning from state here would roll it back to the
+  // previous value for the render between the write and the state landing.
+  const worldRefForFit = useRef(world);
 
   /**
    * Every gesture commits the current effective view into state first (so a
@@ -286,13 +346,29 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   // callback lands after a paint, so relying on it alone meant one frame drawn
   // at the wrong size — invisible on load (the layout effect below beats it) but
   // a visible flicker when a panel opened and changed the canvas width.
+  // Deliberately has no dependency array: the element can be resized by a commit
+  // that changes nothing this hook owns (a sibling panel mounting), so there is
+  // no dependency that would catch it.
   useLayoutEffect(() => {
+    // `getBoundingClientRect` forces a synchronous layout. With no deps this
+    // runs on every commit, and a pan calls setView on every pointermove — so
+    // without this guard each drag frame would pay a forced reflow. A drag can
+    // only translate the content; it never resizes the element, so there is
+    // nothing to measure. The ResizeObserver still covers the case of the window
+    // being resized mid-drag.
+    if (draggingRef.current) return;
     const el = ref.current;
     if (!el) return;
     const box = el.getBoundingClientRect();
     if (box.width === 0 || box.height === 0) return;
     const next = { width: box.width, height: box.height };
     const prev = viewportRef.current;
+    // Latch BEFORE the unchanged-size guard below. The two inputs to the
+    // baseline arrive independently: on the commit where world bounds land, the
+    // element has usually already been measured, so the size is unchanged and
+    // that guard returns early — latching after it would leave the baseline
+    // unset until something happened to resize the canvas.
+    latchBaseline(next, worldRefForFit.current);
     if (prev.width === next.width && prev.height === next.height) return;
     viewportRef.current = next;
     setViewport(next);
@@ -312,8 +388,19 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
     if (!el || typeof ResizeObserver === "undefined") return;
 
     const ro = new ResizeObserver((entries) => {
-      const box = entries[0]?.contentRect;
-      if (!box || box.width === 0 || box.height === 0) return;
+      // Border box, to match the layout effect's getBoundingClientRect. Mixing
+      // box models would make the two sources disagree by exactly the border +
+      // padding the moment any is added to the <svg>: both "size unchanged"
+      // short-circuits would then miss and the paths would recenter against
+      // each other every commit. `contentRect` is the content box, so it is
+      // only safe while that padding is zero — not a property to rely on.
+      const entry = entries[0];
+      if (!entry) return;
+      const borderBox = entry.borderBoxSize?.[0];
+      const box = borderBox
+        ? { width: borderBox.inlineSize, height: borderBox.blockSize }
+        : el.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) return;
       const next = { width: box.width, height: box.height };
       const prev = viewportRef.current;
       viewportRef.current = next;
@@ -342,10 +429,10 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   }, [baseFit, world, resetKey]);
 
   /**
-   * Map a client (mouse) point into the SVG's own coordinate space — which is
-   * now 1:1 with CSS pixels, because the viewBox is set to the element's pixel
-   * size. So this is just "subtract the element's origin", and the result is
-   * the space the pan/zoom transform group is positioned in.
+   * Map a client (mouse) point into the SVG's own coordinate space. With no
+   * viewBox, user units ARE CSS pixels, so subtracting the element's origin is
+   * exact — no scale factor is involved. The result is the space the pan/zoom
+   * transform group is positioned in.
    */
   const clientToSvg = useCallback((clientX: number, clientY: number) => {
     const rect = ref.current?.getBoundingClientRect();
@@ -436,11 +523,12 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
       if (!active && Math.hypot(dxClient, dyClient) < DRAG_THRESHOLD) return;
       if (!active) {
         active = true;
+        draggingRef.current = true;
         setDragging(true);
         node?.setPointerCapture(pointerId);
       }
-      // The viewBox is the element's pixel size, so a client-space drag is
-      // already in transform units — panning tracks the cursor exactly 1:1.
+      // There is no viewBox, so client-space deltas are already transform units
+      // — panning tracks the cursor exactly 1:1, with no conversion.
       setPristine(false);
       setView((v) => ({ ...v, tx: start.tx + dxClient, ty: start.ty + dyClient }));
     };
@@ -452,6 +540,7 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
       // Mark that a real drag happened so the trailing synthetic click is
       // swallowed by consumeClickAfterDrag instead of clearing the selection.
       if (active) didDragRef.current = true;
+      draggingRef.current = false;
       setDragging(false);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
@@ -485,9 +574,9 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   const reset = useCallback(() => setPristine(true), []);
 
   /**
-   * Frame a world-space rectangle (in the SVG's viewBox coordinates) within the
+   * Frame a world-space rectangle (in the view's own world coordinates) within the
    * visible canvas: scale so it fits, then translate so its center sits at the
-   * center of the visible area. `padding` (viewBox units) is the breathing room
+   * center of the visible area. `padding` (CSS px) is the breathing room
    * left around the rect; `insetTop` reserves space at the top of the viewport
    * (e.g. for the floating chain strip) so the framed content isn't hidden under
    * it.
@@ -501,8 +590,8 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
       if (rect.width <= 0 || rect.height <= 0) return;
       if (vp.width === 0 || vp.height === 0) return;
 
-      // Everything here is in CSS px: the viewBox matches the element's pixel
-      // size, so padding and insetTop need no unit conversion.
+      // Everything here is in CSS px: with no viewBox, user units are pixels,
+      // so padding and insetTop need no unit conversion.
       const padding = opts?.padding ?? 40;
       const insetTop = opts?.insetTop ?? 0;
 

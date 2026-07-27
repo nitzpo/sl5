@@ -305,64 +305,100 @@ stories (pinned by `tests/engine/scripts.test.ts`):
 | Do Nothing | 100.0% | 1.00 | $0M | — | patient-distillation |
 | Budget-Constrained | 99.4% | 1.51 | $196M / $200M | 0 | zero-day-cascade |
 | Reactive CISO | 43.9% | 1.80 | $620M / $700M | 0 | poisoned-chip |
-| Proactive Program | 16.7% | 2.51 | $759M / $800M | 0 | long-game |
+| Proactive Program | 15.2% | 3.51 | $1,330M / $1,400M | 0 | long-game |
 
 Both numbers order the stories the same way, which is the point of weighting SL
-and breach identically (Part 2) — but note how far apart they read: the Proactive
-program's 17% breach comes with an SL of only **2.51**. Cutting the worst path's
-odds by 83% does not buy an SL4 posture, because SL measures coverage across the
-whole threat model and this plan deliberately buys 23 of 47 blocks.
+and breach identically (Part 2).
 
 All four plan at the **same** `risk_tolerance: 0.65` (asserted by a test), so the
 cost basis is one rule rather than per-story special pleading, and **every story
-now plans inside its own budget** (also asserted) — nothing is capped at
+plans inside its own budget** (also asserted) — nothing is capped at
 `implementing` anywhere. Raising any budget changes no outcome (measured:
 Reactive is identical from $600M to $800M; Budget-Constrained is 99.4% at every
 combination from $100M/1.0 to $200M/0.65, because its number comes from hard
 stops it cannot afford *at all*, not from the cost basis).
 
-Proactive's trajectory is a steady decline: `100 → 81 → 45 → 33 → 26 → 19 →
-16.7%`, monotonically improving at all 13 playback steps.
+Proactive's trajectory is a steady decline over all 13 playback steps:
+`100 → 78.5 → 63.8 → 54.2 → 40.4 → 37.3 → 34.2 → 33.9 → 26.6 → 18.0 → 17.1 →
+15.3 → 15.2%`.
 
-Three things make Proactive's 17% honest rather than an artifact:
+### SL is a breadth measure, and that sets the price of SL 3.5
 
-1. It is the *residual of a delivered program*, not of an unpayable one. All 23
-   deployments reach `mature` by 2030 on $759M of $800M. The exposure is what the
-   plan leaves out, not what the funding queue froze.
-2. The dominant chain is `long-game` — all four named blocks are personnel
-   controls, and the plan covers only two of them. It is not sitting on the
-   residual floor.
-3. 24 blocks are never bought at all, including PHY-01 ($305M) and AI-02 ($240M).
+The single most counter-intuitive property of the model, and the one worth
+stating plainly: **cutting breach does not buy SL.** They answer different
+questions (see the table at the top), and they scale differently with money.
 
-### Why the plan is sized, not overrun
+45 of 47 blocks are threat-relevant, and `categoryScore` is a weighted *mean*
+over them. So a category's score is coverage, not quality — a plan can slash the
+worst attack path with a handful of well-chosen hard stops while leaving most of
+its categories half-empty. Measured, all mature at 2030:
 
-Proactive previously planned ~$1,624M against $800M on purpose, so that the
-funding queue would cap the tail and leave visible gaps. That was the wrong
-mechanism: costs are charged upfront at `startYear`, its 2024 tranche alone was
-$717M of the $800M, and **20 of 31 deployments sat frozen at `implementing` from
-2024.5 through 2030**. The staggered start years past the budget line were
-decorative — those blocks would have read identically at any start year. The
-story also turned back up after 2027, because a frozen tail cannot answer AI
-erosion.
+| Posture | Cost | SL | Breach |
+|---|---|---|---|
+| 23 blocks (previous Proactive plan) | $759M | 2.51 | 16.7% |
+| 30 blocks | $710M | 2.88 | 5.1% |
+| 33 blocks (**current Proactive plan**) | $1,330M | **3.51** | **15.2%** |
+| 37 blocks | $1,344M | 3.62 | 4.9% |
+| all 47 blocks | $3,668M | 4.39 | 4.7% |
 
-The rebalanced plan drops the mega-items that consumed that tranche and buys
-cheap structural controls earlier instead. Two further constraints shaped it:
+Three consequences:
+
+1. **A 23-block plan structurally caps near SL 2.5**, whichever 23 it buys.
+   Reaching 3.5 takes 33. This is why Proactive's budget is $1.4B and not $800M:
+   ~$1.3B is what SL 3.5 costs in this model, and that *is* the finding.
+2. **The ceiling is 4.39, not 5.0.** Even with the entire catalog matured, slider
+   penalties (org 0.7 / vendor 0.6 / gov 0.7) and AI erosion never fully clear.
+   At perfect sliders and no erosion it reaches exactly 5.00, so the gap is
+   entirely those two channels, not a bug in the mean.
+3. **`sl_requirement` is authored but unscored.** Every block declares
+   `{first_recommended, first_required}` (21× `{3,4}`, 19× `{4,5}`, 3× `{3,3}`,
+   3× `{4,4}`, 1× `{5,5}`), and `scoring.ts` never reads it — only `PolicyView`
+   and `BlockDetail` display it. A prototype that scored coverage tier-by-tier
+   (prefix-min over `first_required`, normalised over tiers present) moved
+   Proactive 2.51 → 2.65 and left the ordering unchanged, so the flat mean is not
+   what was holding the score down. Buying by tier is *worse* than buying by
+   threat relevance: `first_required <= 4` is 27 blocks for $1,770M and scores
+   only 2.23, because the tiers cut across categories and leave the weakest-link
+   term exposed.
+
+### Why the residual is 15% and not 5%
+
+SL 3.5 and a double-digit breach are in direct tension, and the plan resolves it
+with exactly one deliberate gap. `long-game` is an all-personnel chain
+(PER-02/03/04/05); Proactive buys PER-03 and PER-05 and skips **PER-02**
+(two-person control, $5M) and **PER-04** (continuous vetting, $10M).
+
+That $15M omission is load-bearing. Every plan measured that also closes those
+two collapses breach to **~4.7%** — because breach is a `max` over chains, and
+with breadth this wide the other six chains are all sitting on the residual
+floor (`long-game` 4.7%, everything else 2.6–3.0%). Adding $15M of personnel
+controls would raise SL by 0.03 and cut the headline number by two thirds, which
+would read as "solved" and is the exact failure mode the recalibration removed.
+
+Enumerating the alternatives (full catalog minus each candidate omission set,
+$3.6B, so plan cost is not the binding constraint) shows how narrow the band is:
+
+| Omitted | SL | Breach |
+|---|---|---|
+| PER-04 only | 4.19 | 8.7% |
+| PER-04, PER-02 | 3.96 | 15.2% |
+| PER-04, PER-03 | 3.98 | 16.5% |
+| PER-04, PER-03, PER-05 | 3.75 | 30.7% |
+| all four | 3.51 | 49.2% |
+
+Two further constraints shaped the schedule:
 
 - **Monotonicity is a scheduling property.** A half-year step where nothing
-  completes is a step where AI advances unopposed and breach ticks up. The
-  personnel tail (PER-04 @ 2027, PER-07 @ 2027.5) is staged to land completions
-  in the steps that would otherwise be flat.
-- **16.7% is the ceiling for a monotone plan at this budget.** Exhaustive
-  enumeration of 86,121 candidate plans (this spine plus up to three tail blocks,
-  every half-year start from 2025 to 2029, ≤$800M, nothing capped) found 557
-  strictly-monotone plans, and none exceeds 16.7% at 2030. Holding a higher
-  residual means leaving `long-game` exposed enough that AI erosion shows in the
-  tail as a rise. The two properties trade off directly, and monotone was chosen:
-  a curve that climbs while the program is still delivering reads as a bug.
-
-For scale, the **entire 47-block catalog** matured ($3,668M) reaches only 4.75%
-on `long-game` — so single digits is what near-total coverage costs, and no
-$800M plan should approach it.
+  completes is a step where AI advances unopposed and breach ticks up. Ten blocks
+  start in 2024 — including the cheap 12–18-month items (PHY-03/04, NET-04/07,
+  SC-05, PER-08) — specifically so the curve falls through 2024.5–2025 instead of
+  sitting at 100% waiting for 48-month hardware. The 2027–2028.25 tail (AI-04,
+  PER-05, PHY-05, PER-07) lands completions in the steps that would otherwise be
+  flat. A local search over start years found this schedule; the seed ordering,
+  which front-loaded the mega-projects, had two rising steps.
+- **The mega-projects pay off late and all at once.** HW-01, HW-03 and HW-07 are
+  48-month builds and PHY-01 is 36, so the biggest single drop in the story
+  (34% → 18%) is those four completing across 2028–2028.5.
 
 Budget-Constrained lands next to Do Nothing because $200M funds none of the
 three hard stops on `zero-day-cascade` (NET-01 $50M, HW-07 $50M + its $100M
@@ -378,8 +414,12 @@ small to buy any structural control buys very little breach reduction.
   is built to preserve this.
 - **Ordering** (`scripts.test.ts`) — Do Nothing > Budget-Constrained > Reactive
   ≫ Proactive, with Reactive at least 1.5× Proactive and Proactive inside
-  12–25%. The floor matters as much as the ceiling: single digits would read as
+  10–20%. The floor matters as much as the ceiling: single digits would read as
   "solved".
+- **Proactive SL band** (`scripts.test.ts`) — Proactive must land at SL 3.5–4.0
+  at 2030. Pinning breach alone let the story drift to SL 2.5, which reads as a
+  failing grade on a program that cut its worst path by 85%; the two numbers have
+  to be asserted separately because they scale differently with money.
 - **Affordability** (`scripts.test.ts`) — every story must plan *inside* its own
   budget, checked twice: by summing `blockCostBasis` at the story's own
   `risk_tolerance`, and through the engine by asserting `applyBudgetConstraint`

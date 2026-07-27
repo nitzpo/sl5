@@ -9,80 +9,92 @@ export const SCRIPTS: TimeLapseScript[] = [
     // A well-funded program that plans within its means — the point of this
     // story is a serious attempt, not a solved problem.
     //
-    // The plan is SIZED to the budget: 23 programs cost ~$759M at the shared
+    // The plan is SIZED to the budget: 33 programs cost ~$1,330M at the shared
     // risk_tolerance 0.65 basis (`min + (1 - rt) * (max - min)`), against the
-    // $800M cap. Nothing is capped at `implementing` and every block reaches
-    // `mature` by 2030, so the residual ~17% vs OC4 is what a fully-delivered
-    // $800M program actually leaves on the table — not an artifact of a plan
-    // the org could never pay for.
+    // $1,400M cap. Nothing is capped at `implementing` and every block reaches
+    // `mature` by 2030, so the residual ~15% vs OC4 is what a fully-delivered
+    // program actually leaves on the table — not an artifact of a plan the org
+    // could never pay for.
     //
-    // That sizing is why the mega-items are absent. PHY-01 ($305M) + its
-    // dependent PHY-02, AI-02 ($240M) + AI-01, HW-03, HW-06 and AI-03 together
-    // consumed the whole 2024 tranche in the earlier version of this plan,
-    // which left 20 of 31 deployments frozen at `implementing` for six years
-    // and made the staggered start years decorative. Cheap structural controls
-    // bought earlier beat expensive ones the queue never funds.
+    // ~$1.3B is what SL 3.5 costs, and that is the headline finding rather than
+    // a budget the story was handed. SL measures coverage across the whole
+    // threat model: 45 of 47 blocks are threat-relevant, so the score is a
+    // BREADTH measure and a 23-block plan structurally caps out near 2.5
+    // whatever it buys. Reaching 3.5 takes 33 blocks; the full catalog matured
+    // ($3,668M) reaches only 4.39, because slider penalties and AI erosion mean
+    // even a maxed posture is not a 5.
     //
-    // The tail (PER-04 continuous vetting, PER-07) is deliberately late and
-    // deliberately partial: `long-game` is an all-personnel chain, so leaving
-    // some of it uncovered is what keeps that chain dominant instead of the
-    // board collapsing to the residual floor.
+    // The two omissions are deliberate and they are the whole reason the number
+    // isn't single digits. `long-game` is an all-personnel chain (PER-02/03/04/
+    // 05); this plan buys PER-03 and PER-05 and skips PER-02 (two-person
+    // control) and PER-04 (continuous vetting). Every plan measured that closes
+    // all four collapses breach to ~4.7%, because breach is a max over chains
+    // and the other six are then all sitting on the residual floor. SL 3.5 with
+    // a real 15% residual requires leaving exactly one chain meaningfully open.
     //
     // gov_cooperation is set high: a program this well-resourced assumes
     // government partnership, so personnel/supply-chain controls aren't
     // govMult-penalized.
-    sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 0.65 },
+    sliderOverrides: { budget_millions: 1400, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 0.65 },
     deployments: [
-      // Foundations first (2024) — zero-prereq blocks that everything else
-      // requires. PER-01 gates PER-02/04 and PER-06; HW-01 gates HW-05/07/09
-      // and SC-06. Deploying these up front is what makes the later blocks
-      // actually reach mature.
+      // 2024 — the long-lead foundations plus every cheap quick win. HW-01 and
+      // HW-03 are 48-month builds and HW-01 gates HW-05/07/09 and SC-06;
+      // PER-01 gates PER-03/05/06. The 12–18mo items (PHY-03/04, NET-04/07,
+      // SC-05, PER-08) start here too because they are what makes the curve
+      // fall in 2024.5–2025 instead of sitting at 100% waiting for concrete.
       { blockId: "HW-01", startYear: 2024 },
+      { blockId: "HW-03", startYear: 2024 },
       { blockId: "PER-01", startYear: 2024 },
-      { blockId: "PER-06", startYear: 2024 },
-      // Immediate hard-stops (2024) — the air gap and its network siblings.
-      { blockId: "NET-01", startYear: 2024 },
-      { blockId: "PER-02", startYear: 2024 },
-      // Second wave, still cheap and still structural (2024.5)
-      { blockId: "NET-02", startYear: 2024.5 },
-      { blockId: "NET-04", startYear: 2024.5 },
-      { blockId: "PER-08", startYear: 2024.5 },
-      { blockId: "HW-05", startYear: 2024.5 },
-      // Machine + supply chain 2025
-      { blockId: "HW-07", startYear: 2025 },
+      { blockId: "NET-02", startYear: 2024 },
+      { blockId: "AI-07", startYear: 2024 },
+      { blockId: "SC-05", startYear: 2024 },
+      { blockId: "PER-08", startYear: 2024 },
+      { blockId: "PHY-04", startYear: 2024 },
+      { blockId: "NET-04", startYear: 2024 },
+      { blockId: "PHY-03", startYear: 2024 },
+      // 2024.5 — the air gap and the remaining 48-month items.
+      { blockId: "NET-01", startYear: 2024.5 },
+      { blockId: "HW-07", startYear: 2024.5 },
+      { blockId: "AI-01", startYear: 2024.5 },
+      { blockId: "PER-03", startYear: 2024.5 },
+      { blockId: "NET-07", startYear: 2024.5 },
+      // 2025 — the physical perimeter ($305M, 36mo) and the 24-month tier.
+      { blockId: "PER-06", startYear: 2025 },
+      { blockId: "PHY-01", startYear: 2025 },
+      { blockId: "HW-05", startYear: 2025 },
       { blockId: "SC-02", startYear: 2025 },
-      { blockId: "HW-09", startYear: 2025.5 },
-      { blockId: "NET-03", startYear: 2025.5 },
-      { blockId: "AI-04", startYear: 2025.5 },
-      // Physical + AI defenses 2026
+      { blockId: "PHY-07", startYear: 2025 },
+      { blockId: "HW-08", startYear: 2025.5 },
+      { blockId: "SC-04", startYear: 2025.5 },
+      { blockId: "AI-06", startYear: 2025.5 },
+      // 2026 — 18-month tier, still comfortably inside the 2030 horizon.
       { blockId: "PHY-06", startYear: 2026 },
-      { blockId: "AI-06", startYear: 2026 },
-      { blockId: "SC-06", startYear: 2026.5 },
-      { blockId: "PHY-03", startYear: 2026.5 },
-      { blockId: "SC-04", startYear: 2026.5 },
-      // Remaining coverage 2027
-      { blockId: "NET-05", startYear: 2027 },
-      { blockId: "SC-05", startYear: 2027.5 },
-      // The personnel tail — started late on purpose, and each one lands in a
-      // half-year step that would otherwise be flat. A step where nothing
-      // completes is a step where AI advances unopposed and the curve ticks
-      // back up; staging these two here is what keeps the decline monotonic
-      // all the way to 2030.
-      { blockId: "PER-04", startYear: 2027 },
-      { blockId: "PER-07", startYear: 2027.5 },
+      { blockId: "SC-06", startYear: 2026 },
+      { blockId: "NET-05", startYear: 2026 },
+      { blockId: "NET-03", startYear: 2026 },
+      { blockId: "HW-09", startYear: 2026.5 },
+      { blockId: "NET-06", startYear: 2026.5 },
+      // The tail is staged so every remaining half-year step lands at least one
+      // completion. A step where nothing completes is a step where AI advances
+      // unopposed and breach ticks back UP; these four are what keep the
+      // decline monotonic through 2030.
+      { blockId: "AI-04", startYear: 2027 },
+      { blockId: "PER-05", startYear: 2027.5 },
+      { blockId: "PHY-05", startYear: 2028.25 },
+      { blockId: "PER-07", startYear: 2028.25 },
     ],
     annotations: [
-      { atYear: 2024, message: "2024: hard-stops go in first, ahead of the AI curve." },
-      { atYear: 2025, message: "Foundations in place — prerequisite chains satisfied, so everything started later can actually finish" },
-      // The biggest single step in the story (−18 points) is NET-01 reaching
-      // deployed here, with the rest of the network family landing alongside it.
-      { atYear: 2026, message: "The air gap reaches deployed, network controls right behind it — the biggest drop this program gets", highlight: { type: "block", id: "NET-01" } },
-      { atYear: 2027, message: "Hard-stops maturing and the curve flattens. What's left is people.", highlight: { type: "chain", id: "long-game" } },
-      { atYear: 2028, message: "Continuous vetting starts late on purpose — by now it's the only thing left to buy", highlight: { type: "chain", id: "long-game" } },
-      { atYear: 2029, message: "Personnel controls reach deployed — the last real move on the number", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2024, message: "2024: long-lead foundations and every cheap quick win start together — nothing waits for concrete." },
+      { atYear: 2025, message: "The quick wins land first: 100% → 64% before a single mega-project finishes" },
+      { atYear: 2026, message: "The air gap reaches deployed and the network family lands with it", highlight: { type: "block", id: "NET-01" } },
+      { atYear: 2027, message: "The curve flattens around 34%. Concrete and silicon are still curing — and what's left after that is people.", highlight: { type: "chain", id: "long-game" } },
+      // The biggest step in the story: the two 48-month hardware builds and the
+      // physical perimeter all complete across 2028–2028.5.
+      { atYear: 2028, message: "The mega-projects complete: hardware root of trust, encrypted interconnect, physical perimeter — 34% → 18%", highlight: { type: "block", id: "PHY-01" } },
+      { atYear: 2029, message: "SL passes 3.4. Everything cheap is bought, everything expensive is matured.", highlight: { type: "chain", id: "long-game" } },
       // Why it doesn't reach zero: the plan is fully funded and fully matured,
       // and it still leaves an all-personnel chain open.
-      { atYear: 2030, message: "$759M of the $800M, all 23 programs matured — and ~17% still gets through", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2030, message: "$1.33B of $1.4B, all 33 programs matured, SL 3.5 — and an insider chain still gets through 15% of the time", highlight: { type: "chain", id: "long-game" } },
     ],
   },
   {

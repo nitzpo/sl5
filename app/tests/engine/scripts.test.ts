@@ -3,6 +3,7 @@ import { SCRIPTS } from "../../src/timelapse/scripts";
 import { computeScriptBlockStates } from "../../src/timelapse/compute-script-state";
 import { applyBudgetConstraint, blockCostBasis } from "../../src/engine/budget";
 import { computeBreachProbabilities } from "../../src/engine/breach";
+import { computeCategoryScores, overallSlScore, relevantBlockIds } from "../../src/engine/scoring";
 import type { Block, BlockState, Sliders } from "../../src/engine/types";
 import fs from "fs";
 import path from "path";
@@ -178,12 +179,47 @@ describe("time-lapse scripts", () => {
     expect(nothing).toBeGreaterThan(constrained);
     expect(constrained).toBeGreaterThan(reactive);
     expect(reactive).toBeGreaterThan(proactive * 1.5); // substantially better, not marginally
-    // Proactive: $759M of an $800M budget, every program matured, and an
-    // all-personnel chain still gets through ~17% of the time. The floor matters
+    // Proactive: $1,330M of a $1,400M budget, every program matured, and an
+    // all-personnel chain still gets through ~15% of the time. The floor matters
     // as much as the ceiling — if this ever drops into single digits the story
     // reads as "solved", which is the failure mode the recalibration removed.
-    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeGreaterThan(0.12);
-    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeLessThan(0.25);
+    // Both bounds are load-bearing: every measured plan that ALSO closes PER-02
+    // and PER-04 collapses to ~4.7%, because the other six chains are then all
+    // sitting on the residual floor and breach is a max.
+    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeGreaterThan(0.10);
+    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeLessThan(0.20);
+  });
+
+  it("land Proactive at SL 3.5-4.0 by 2030", () => {
+    // The other half of the calibration contract, and previously unpinned: the
+    // breach band alone let the story drift to SL 2.5, which reads as a failing
+    // grade on a $1.3B program that cut its worst path by 85%.
+    //
+    // SL is a BREADTH measure — 45 of 47 blocks are threat-relevant, so a plan
+    // that buys 23 of them structurally caps near 2.5 no matter which 23. 3.5
+    // takes 33 blocks. The ceiling is 4.39 (whole catalog matured, $3,668M), not
+    // 5.0, because slider penalties and AI erosion never fully clear.
+    const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
+    const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
+    const sliders = {
+      ai_timeline: 0.5,
+      gov_cooperation: 0.5,
+      vendor_cooperation: 0.5,
+      budget_millions: 2000,
+      org_transformation: 0.5,
+      risk_tolerance: 0.5,
+      ...(script.sliderOverrides ?? {}),
+    } as Sliders;
+    const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
+    const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
+      order: (script.deployments ?? []).map((d) => d.blockId),
+      riskTolerance: sliders.risk_tolerance,
+    });
+    const sl = overallSlScore(
+      computeCategoryScores(blocks, effectiveStates, 2030, sliders, relevantBlockIds(chains, blocks))
+    );
+    expect(sl, `proactive SL at 2030 is ${sl.toFixed(2)}`).toBeGreaterThanOrEqual(3.5);
+    expect(sl, `proactive SL at 2030 is ${sl.toFixed(2)}`).toBeLessThanOrEqual(4.0);
   });
 
   it("never leave a scripted deployment stuck before deployed by 2030", () => {

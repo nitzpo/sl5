@@ -6,16 +6,27 @@ export const SCRIPTS: TimeLapseScript[] = [
     name: "Proactive Program",
     description: "Start early. Hard-stops first. Ahead of the AI curve.",
     type: "scripted",
-    // A well-funded program that still cannot buy everything — the point of
-    // this story is a serious attempt, not a solved problem.
+    // A well-funded program that plans within its means — the point of this
+    // story is a serious attempt, not a solved problem.
     //
-    // risk_tolerance 0.65 (not 1.0) is what makes the $800M bite: cost basis is
-    // `min + (1 - rt) * (max - min)`, so planning at 1.0 budgeted all ~31
-    // programs at their best-case price and $800M bought the entire wishlist.
-    // At 0.65 the plan costs ~$1,624M against $800M, so the funding queue caps
-    // the tail at `implementing` — mostly the personnel program, which is why
-    // `long-game` stays the dominant chain (~22% vs OC4 at 2030) instead of the
-    // whole board collapsing to the residual floor.
+    // The plan is SIZED to the budget: 23 programs cost ~$759M at the shared
+    // risk_tolerance 0.65 basis (`min + (1 - rt) * (max - min)`), against the
+    // $800M cap. Nothing is capped at `implementing` and every block reaches
+    // `mature` by 2030, so the residual ~17% vs OC4 is what a fully-delivered
+    // $800M program actually leaves on the table — not an artifact of a plan
+    // the org could never pay for.
+    //
+    // That sizing is why the mega-items are absent. PHY-01 ($305M) + its
+    // dependent PHY-02, AI-02 ($240M) + AI-01, HW-03, HW-06 and AI-03 together
+    // consumed the whole 2024 tranche in the earlier version of this plan,
+    // which left 20 of 31 deployments frozen at `implementing` for six years
+    // and made the staggered start years decorative. Cheap structural controls
+    // bought earlier beat expensive ones the queue never funds.
+    //
+    // The tail (PER-04 continuous vetting, PER-07) is deliberately late and
+    // deliberately partial: `long-game` is an all-personnel chain, so leaving
+    // some of it uncovered is what keeps that chain dominant instead of the
+    // board collapsing to the residual floor.
     //
     // gov_cooperation is set high: a program this well-resourced assumes
     // government partnership, so personnel/supply-chain controls aren't
@@ -23,59 +34,55 @@ export const SCRIPTS: TimeLapseScript[] = [
     sliderOverrides: { budget_millions: 800, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 0.65 },
     deployments: [
       // Foundations first (2024) — zero-prereq blocks that everything else
-      // requires. PER-01 gates PER-02/03/04/05 and PER-06; PER-06 gates
-      // AI-01/AI-06; HW-01 gates HW-05/06/07/09 and SC-06. Deploying these up
-      // front is what makes the later blocks actually reach mature (not capped).
+      // requires. PER-01 gates PER-02/04 and PER-06; HW-01 gates HW-05/07/09
+      // and SC-06. Deploying these up front is what makes the later blocks
+      // actually reach mature.
+      { blockId: "HW-01", startYear: 2024 },
       { blockId: "PER-01", startYear: 2024 },
       { blockId: "PER-06", startYear: 2024 },
-      { blockId: "HW-01", startYear: 2024 },
-      // Immediate hard-stops (2024)
+      // Immediate hard-stops (2024) — the air gap and its network siblings.
       { blockId: "NET-01", startYear: 2024 },
-      { blockId: "NET-02", startYear: 2024 },
-      { blockId: "PHY-01", startYear: 2024 },
-      { blockId: "HW-09", startYear: 2024 },
       { blockId: "PER-02", startYear: 2024 },
-      { blockId: "NET-04", startYear: 2024 },
-      // Second wave early 2025
-      { blockId: "PHY-02", startYear: 2024.5 },
-      { blockId: "NET-03", startYear: 2024.5 },
-      { blockId: "HW-05", startYear: 2024.5 },
+      // Second wave, still cheap and still structural (2024.5)
+      { blockId: "NET-02", startYear: 2024.5 },
+      { blockId: "NET-04", startYear: 2024.5 },
       { blockId: "PER-08", startYear: 2024.5 },
-      { blockId: "AI-06", startYear: 2024.5 },
-      { blockId: "AI-04", startYear: 2024.5 },
-      // AI + supply chain 2025
-      { blockId: "AI-01", startYear: 2025.5 },
-      { blockId: "AI-03", startYear: 2026 },
+      { blockId: "HW-05", startYear: 2024.5 },
+      // Machine + supply chain 2025
+      { blockId: "HW-07", startYear: 2025 },
       { blockId: "SC-02", startYear: 2025 },
-      { blockId: "SC-04", startYear: 2026 },
-      { blockId: "SC-05", startYear: 2026.5 },
-      { blockId: "PER-03", startYear: 2025 },
-      { blockId: "PER-04", startYear: 2025.5 },
-      // Hardware and remaining coverage 2025.5
-      { blockId: "HW-03", startYear: 2025.5 },
-      { blockId: "HW-06", startYear: 2026.5 },
-      { blockId: "HW-07", startYear: 2026 },
-      { blockId: "PHY-06", startYear: 2026.5 },
+      { blockId: "HW-09", startYear: 2025.5 },
+      { blockId: "NET-03", startYear: 2025.5 },
+      { blockId: "AI-04", startYear: 2025.5 },
+      // Physical + AI defenses 2026
+      { blockId: "PHY-06", startYear: 2026 },
+      { blockId: "AI-06", startYear: 2026 },
+      { blockId: "SC-06", startYear: 2026.5 },
+      { blockId: "PHY-03", startYear: 2026.5 },
+      { blockId: "SC-04", startYear: 2026.5 },
+      // Remaining coverage 2027
       { blockId: "NET-05", startYear: 2027 },
-      // Long-lead items
-      { blockId: "AI-02", startYear: 2025 },
-      { blockId: "SC-06", startYear: 2027 },
-      { blockId: "PER-05", startYear: 2026.5 },
-      { blockId: "PHY-03", startYear: 2027.5 },
+      { blockId: "SC-05", startYear: 2027.5 },
+      // The personnel tail — started late on purpose, and each one lands in a
+      // half-year step that would otherwise be flat. A step where nothing
+      // completes is a step where AI advances unopposed and the curve ticks
+      // back up; staging these two here is what keeps the decline monotonic
+      // all the way to 2030.
+      { blockId: "PER-04", startYear: 2027 },
+      { blockId: "PER-07", startYear: 2027.5 },
     ],
     annotations: [
       { atYear: 2024, message: "2024: hard-stops go in first, ahead of the AI curve." },
-      // The single largest move in any story (−28 points) previously had no
-      // beat on it at all.
-      { atYear: 2024.5, message: "The air gap alone closes the cheapest paths — the biggest single drop this program will get" },
-      { atYear: 2025, message: "Foundations + hard-stops in place — prerequisite chains satisfied, many attack paths already blocked" },
-      { atYear: 2025.5, message: "$800M is now committed. Everything from here competes for money that's gone." },
-      { atYear: 2026, message: "First blocks reaching deployed. AI still at 35%." },
-      // The inflection: this is where the curve stops falling and turns back
-      // up. Narrating it as "resilient" was actively misleading.
-      { atYear: 2027, message: "Best it gets: ~20%. The unfunded tail is stuck at implementing.", highlight: { type: "chain", id: "long-game" } },
-      { atYear: 2028, message: "Now it drifts back up — AI erodes the personnel controls faster than a capped budget can replace them", highlight: { type: "chain", id: "long-game" } },
-      { atYear: 2029.5, message: "Hard-stops still hold, but ~22% residual is what $800M actually buys against OC4" },
+      { atYear: 2025, message: "Foundations in place — prerequisite chains satisfied, so everything started later can actually finish" },
+      // The biggest single step in the story (−18 points) is NET-01 reaching
+      // deployed here, with the rest of the network family landing alongside it.
+      { atYear: 2026, message: "The air gap reaches deployed, network controls right behind it — the biggest drop this program gets", highlight: { type: "block", id: "NET-01" } },
+      { atYear: 2027, message: "Hard-stops maturing and the curve flattens. What's left is people.", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2028, message: "Continuous vetting starts late on purpose — by now it's the only thing left to buy", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2029, message: "Personnel controls reach deployed — the last real move on the number", highlight: { type: "chain", id: "long-game" } },
+      // Why it doesn't reach zero: the plan is fully funded and fully matured,
+      // and it still leaves an all-personnel chain open.
+      { atYear: 2030, message: "$759M of the $800M, all 23 programs matured — and ~17% still gets through", highlight: { type: "chain", id: "long-game" } },
     ],
   },
   {

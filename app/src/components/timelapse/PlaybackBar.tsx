@@ -50,10 +50,11 @@ function EndSummary({ onReplay }: { onReplay: () => void }) {
   const p = bestChain?.probability ?? 0;
   // Same target the Security Posture card shows (risk tolerance sets it)
   const target = 5 - riskTolerance * 2;
-  // The money line. A story whose plan outruns its budget ends with blocks
+  // The money line. A posture whose plan outruns its budget ends with blocks
   // capped at `implementing`, and that capping is usually the whole reason the
   // residual risk is what it is — so the summary has to say it, not leave it to
-  // per-block badges nobody hovers.
+  // per-block badges nobody hovers. The scripted stories all plan inside their
+  // budgets now, so this branch is for configs the user builds themselves.
   const cappedCount = budgetExceededIds.size;
 
   return (

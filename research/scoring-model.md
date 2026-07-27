@@ -305,33 +305,64 @@ stories (pinned by `tests/engine/scripts.test.ts`):
 | Do Nothing | 100.0% | 1.00 | $0M | — | patient-distillation |
 | Budget-Constrained | 99.4% | 1.51 | $196M / $200M | 0 | zero-day-cascade |
 | Reactive CISO | 43.9% | 1.80 | $620M / $700M | 0 | poisoned-chip |
-| Proactive Program | 22.1% | 2.46 | $1,624M / $800M | 20 | long-game |
+| Proactive Program | 16.7% | 2.51 | $759M / $800M | 0 | long-game |
 
 Both numbers order the stories the same way, which is the point of weighting SL
 and breach identically (Part 2) — but note how far apart they read: the Proactive
-program's 22% breach comes with an SL of only **2.46**. Cutting the worst path's
-odds by 78% does not buy an SL4 posture, because SL measures coverage across the
-whole threat model and 20 of its blocks are capped at `implementing`.
+program's 17% breach comes with an SL of only **2.51**. Cutting the worst path's
+odds by 83% does not buy an SL4 posture, because SL measures coverage across the
+whole threat model and this plan deliberately buys 23 of 47 blocks.
 
 All four plan at the **same** `risk_tolerance: 0.65` (asserted by a test), so the
-cost basis is one rule rather than per-story special pleading. Only Proactive
-overruns, and that is deliberate. Budget-Constrained's and Reactive's budgets are
-sized to cover their own plans at that basis — raising either changes no outcome
-(measured: Reactive is identical from $600M to $800M; Budget-Constrained is 99.4%
-at every combination from $100M/1.0 to $200M/0.65, because its number comes from
-hard stops it cannot afford *at all*, not from the cost basis).
+cost basis is one rule rather than per-story special pleading, and **every story
+now plans inside its own budget** (also asserted) — nothing is capped at
+`implementing` anywhere. Raising any budget changes no outcome (measured:
+Reactive is identical from $600M to $800M; Budget-Constrained is 99.4% at every
+combination from $100M/1.0 to $200M/0.65, because its number comes from hard
+stops it cannot afford *at all*, not from the cost basis).
 
-Proactive's trajectory is a decline, not a cliff: `100 → 59 → 28 → 20%` by 2027,
-then a slow *rise* to 22.1% as AI erodes the probabilistic controls faster than
-the remaining program can compensate.
+Proactive's trajectory is a steady decline: `100 → 81 → 45 → 33 → 26 → 19 →
+16.7%`, monotonically improving at all 13 playback steps.
 
-Three things make Proactive's 22% honest rather than an artifact:
+Three things make Proactive's 17% honest rather than an artifact:
 
-1. It plans at `risk_tolerance: 0.65`, so its ~$1.6B plan overruns its $800M
-   budget and 20 blocks are capped at `implementing`. Those are real gaps.
+1. It is the *residual of a delivered program*, not of an unpayable one. All 23
+   deployments reach `mature` by 2030 on $759M of $800M. The exposure is what the
+   plan leaves out, not what the funding queue froze.
 2. The dominant chain is `long-game` — all four named blocks are personnel
-   controls, three of them capped. It is not sitting on the residual floor.
-3. 16 blocks are never funded at all.
+   controls, and the plan covers only two of them. It is not sitting on the
+   residual floor.
+3. 24 blocks are never bought at all, including PHY-01 ($305M) and AI-02 ($240M).
+
+### Why the plan is sized, not overrun
+
+Proactive previously planned ~$1,624M against $800M on purpose, so that the
+funding queue would cap the tail and leave visible gaps. That was the wrong
+mechanism: costs are charged upfront at `startYear`, its 2024 tranche alone was
+$717M of the $800M, and **20 of 31 deployments sat frozen at `implementing` from
+2024.5 through 2030**. The staggered start years past the budget line were
+decorative — those blocks would have read identically at any start year. The
+story also turned back up after 2027, because a frozen tail cannot answer AI
+erosion.
+
+The rebalanced plan drops the mega-items that consumed that tranche and buys
+cheap structural controls earlier instead. Two further constraints shaped it:
+
+- **Monotonicity is a scheduling property.** A half-year step where nothing
+  completes is a step where AI advances unopposed and breach ticks up. The
+  personnel tail (PER-04 @ 2027, PER-07 @ 2027.5) is staged to land completions
+  in the steps that would otherwise be flat.
+- **16.7% is the ceiling for a monotone plan at this budget.** Exhaustive
+  enumeration of 86,121 candidate plans (this spine plus up to three tail blocks,
+  every half-year start from 2025 to 2029, ≤$800M, nothing capped) found 557
+  strictly-monotone plans, and none exceeds 16.7% at 2030. Holding a higher
+  residual means leaving `long-game` exposed enough that AI erosion shows in the
+  tail as a rise. The two properties trade off directly, and monotone was chosen:
+  a curve that climbs while the program is still delivering reads as a bug.
+
+For scale, the **entire 47-block catalog** matured ($3,668M) reaches only 4.75%
+on `long-game` — so single digits is what near-total coverage costs, and no
+$800M plan should approach it.
 
 Budget-Constrained lands next to Do Nothing because $200M funds none of the
 three hard stops on `zero-day-cascade` (NET-01 $50M, HW-07 $50M + its $100M
@@ -347,9 +378,16 @@ small to buy any structural control buys very little breach reduction.
   is built to preserve this.
 - **Ordering** (`scripts.test.ts`) — Do Nothing > Budget-Constrained > Reactive
   ≫ Proactive, with Reactive at least 1.5× Proactive and Proactive inside
-  15–32%.
-- **Affordability** (`scripts.test.ts`) — no story may plan more than 2.5× its
-  budget, or the posture it narrates bears no relation to what it can pay for.
+  12–25%. The floor matters as much as the ceiling: single digits would read as
+  "solved".
+- **Affordability** (`scripts.test.ts`) — every story must plan *inside* its own
+  budget, checked twice: by summing `blockCostBasis` at the story's own
+  `risk_tolerance`, and through the engine by asserting `applyBudgetConstraint`
+  caps nothing. A story that overruns has decorative start years past its budget
+  line.
+- **Proactive monotonicity** (`scripts.test.ts`) — breach never rises across the
+  13 playback steps. Distinct from the engine-level invariant below: this one
+  catches a *schedule* with a gap in it, not a formula that misbehaves.
 - **Shared cost basis** (`scripts.test.ts`) — every scripted story plans at
   `risk_tolerance: 0.65`.
 - **No stuck deployments** (`scripts.test.ts`) — a block a story starts by 2026

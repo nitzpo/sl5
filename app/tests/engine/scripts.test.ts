@@ -32,29 +32,28 @@ describe("time-lapse scripts", () => {
   });
 
   it("all plan at the same risk tolerance", () => {
-    // One cost basis for every story. Proactive plans at 0.65 and deliberately
-    // overruns; if another story planned at 1.0 it would be budgeting every
-    // program at its best-case price — the exact thing that made security too
-    // cheap — so the model would be punishing optimism in one story and
-    // rewarding it in another.
+    // One cost basis for every story. If one planned at 1.0 it would be
+    // budgeting every program at its best-case price — the exact thing that made
+    // security too cheap — so the model would be punishing optimism in one story
+    // and rewarding it in another.
     for (const script of SCRIPTS) {
       if (script.type !== "scripted" || !script.deployments?.length) continue;
       expect(script.sliderOverrides?.risk_tolerance, `${script.id}`).toBe(0.65);
     }
   });
 
-  it("cost out against the risk tolerance they actually plan at", () => {
+  it("plan within the budget they claim to have", () => {
     // Stories are costed at their OWN `risk_tolerance`, which selects where in
     // each block's authored min–max range the plan is budgeted (see
-    // `blockCostBasis`). Planning every one of ~30 programs at its best-case
-    // price is not a realistic program, so Proactive deliberately plans at 0.65
-    // and DOES outrun its budget — the capped blocks are the point, they are the
-    // gaps that keep a fully-funded-looking program from reading as "solved".
+    // `blockCostBasis`). Every story must plan inside its own budget: a plan that
+    // outruns its funding gets capped at `implementing` by the funding queue, and
+    // the start years past the budget line stop meaning anything — the blocks sit
+    // frozen regardless of when the story says they began.
     //
-    // What must stay true is that the overrun is intentional and bounded: a
-    // story may plan for more than it can pay, but not so much more that the
-    // posture it narrates bears no relation to its budget. 2.5x is the ceiling;
-    // Proactive sits at ~2.03x ($1,624M against $800M).
+    // Proactive used to overrun deliberately ($1,624M on $800M), which froze 20
+    // of its 31 deployments for six years. Its residual risk now comes from what
+    // the plan LEAVES OUT rather than from what it cannot pay for, which is the
+    // honest version of the same lesson.
     for (const script of SCRIPTS) {
       const budget = script.sliderOverrides?.budget_millions;
       if (budget === undefined || !script.deployments?.length) continue;
@@ -68,8 +67,70 @@ describe("time-lapse scripts", () => {
       }, 0);
       expect(
         total,
-        `${script.id} plans $${total.toFixed(0)}M at risk_tolerance ${rt} — more than 2.5x its $${budget}M budget`
-      ).toBeLessThanOrEqual(budget * 2.5);
+        `${script.id} plans $${total.toFixed(0)}M at risk_tolerance ${rt} — over its $${budget}M budget`
+      ).toBeLessThanOrEqual(budget);
+    }
+  });
+
+  it("never cap a scripted deployment at implementing", () => {
+    // The corollary of the affordability test, checked through the engine rather
+    // than by summing costs: no story should be narrating a block that the
+    // funding queue has frozen. If this fails, some story's start years are
+    // decorative for the blocks past its budget line.
+    for (const script of SCRIPTS) {
+      const budget = script.sliderOverrides?.budget_millions;
+      if (budget === undefined || !script.deployments?.length) continue;
+      const rt = script.sliderOverrides?.risk_tolerance ?? 0.5;
+      const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
+      const { exceededIds } = applyBudgetConstraint(blocks, raw, budget, {
+        order: script.deployments.map((d) => d.blockId),
+        riskTolerance: rt,
+      });
+      expect(
+        [...exceededIds],
+        `${script.id} caps ${exceededIds.size} block(s) at implementing`
+      ).toEqual([]);
+    }
+  });
+
+  it("keep the Proactive curve monotonically improving", () => {
+    // The story's whole claim is that starting early and staying inside the
+    // budget keeps paying off. A step where nothing completes is a step where AI
+    // advances unopposed and breach ticks back UP — which reads as the program
+    // losing ground and previously happened for the last three years of the
+    // playback. The deployment schedule is staged so every half-year lands at
+    // least one completion; this pins that.
+    const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
+    const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
+    const sliders = {
+      ai_timeline: 0.5,
+      gov_cooperation: 0.5,
+      vendor_cooperation: 0.5,
+      budget_millions: 2000,
+      org_transformation: 0.5,
+      risk_tolerance: 0.5,
+      ...(script.sliderOverrides ?? {}),
+    } as Sliders;
+    const order = (script.deployments ?? []).map((d) => d.blockId);
+
+    let prev = Infinity;
+    for (let year = 2024; year <= 2030 + 1e-9; year += 0.5) {
+      const raw = computeScriptBlockStates(script, year, blocks) as Record<string, BlockState>;
+      const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
+        order,
+        riskTolerance: sliders.risk_tolerance,
+      });
+      const p = Math.max(
+        ...Object.values(
+          computeBreachProbabilities(chains, blocks, effectiveStates, 4, year, sliders, true)
+        ),
+        0
+      );
+      expect(
+        p,
+        `proactive rises at ${year.toFixed(1)}: ${(prev * 100).toFixed(1)}% → ${(p * 100).toFixed(1)}%`
+      ).toBeLessThanOrEqual(prev + 1e-9);
+      prev = p;
     }
   });
 
@@ -117,9 +178,12 @@ describe("time-lapse scripts", () => {
     expect(nothing).toBeGreaterThan(constrained);
     expect(constrained).toBeGreaterThan(reactive);
     expect(reactive).toBeGreaterThan(proactive * 1.5); // substantially better, not marginally
-    // Proactive: a ~$1.6B plan on an $800M budget still leaves real exposure.
-    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeGreaterThan(0.15);
-    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeLessThan(0.32);
+    // Proactive: $759M of an $800M budget, every program matured, and an
+    // all-personnel chain still gets through ~17% of the time. The floor matters
+    // as much as the ceiling — if this ever drops into single digits the story
+    // reads as "solved", which is the failure mode the recalibration removed.
+    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeGreaterThan(0.12);
+    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeLessThan(0.25);
   });
 
   it("never leave a scripted deployment stuck before deployed by 2030", () => {

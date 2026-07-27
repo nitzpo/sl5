@@ -64,12 +64,20 @@ export function BottomPanel() {
             </span>
           )}
           {playbackState === "idle" && (
-            <div className="relative">
+            <div className="relative flex items-center">
+              {/* Pill-styled like the tab controls on the right, so it reads as a
+                  button rather than as another passive readout. Font/leading
+                  match the readouts to its left so the baselines line up. */}
               <button
                 onClick={() => setShowSelector((v) => !v)}
-                className="text-[11px] font-medium text-violet-300 hover:text-violet-200"
+                aria-expanded={showSelector}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-mono leading-none transition-colors ${
+                  showSelector
+                    ? "bg-violet-900/50 border-violet-700 text-violet-100"
+                    : "bg-violet-950/40 border-violet-900/50 text-violet-300 hover:bg-violet-900/40 hover:border-violet-700 hover:text-violet-100"
+                }`}
               >
-                ▶ Play story
+                <span aria-hidden="true">▶</span> Play story
               </button>
               {showSelector && (
                 <ScriptSelector hideAdvanced onClose={() => setShowSelector(false)} />

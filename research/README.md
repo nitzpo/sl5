@@ -2,12 +2,14 @@
 
 Methodology, design notes, schemas, and source material behind [SL5 Explorable](../README.md). This folder documents *why the model is shaped the way it is*; the live app reads its data from [`../app/public/data/`](../app/public/data/).
 
-> ⚠️ **Generation note.** Most documents here (notably `scoring-model.md`, `formula-calibration-results.md`, the JSON schemas, and `scenario-test.py` with its frozen `data/`) describe the **first-generation Python prototype** of the model. The shipped app re-designed the breach model (capability gate + monotone get-past, see the root README) and re-tuned the block data, so specific formulas, constants, and calibration numbers in these files may not match the live engine. They remain valuable as the reasoning record; where they conflict, `app/src/engine/` is authoritative.
+> ⚠️ **Generation note.** Most documents here (notably `formula-calibration-results.md`, the JSON schemas, and `scenario-test.py` with its frozen `data/`) describe the **first-generation Python prototype** of the model. The shipped app re-designed the breach model (capability gate + monotone get-past, see the root README) and re-tuned the block data, so specific formulas, constants, and calibration numbers in these files may not match the live engine. They remain valuable as the reasoning record; where they conflict, `app/src/engine/` is authoritative.
+>
+> **Exception:** `scoring-model.md` has been rewritten to describe the model **as shipped**, including its calibration. It tracks `app/src/engine/` and should be updated alongside it.
 
 ## Methodology & design
 
 - `building-blocks-model.md` — the building-block framing of security.
-- `scoring-model.md` — how per-category and overall Security Levels are computed.
+- `scoring-model.md` — **the reference for the shipped engine**: SL scores, breach probability, budget, and the scenario calibration.
 - `design-decisions.md` — key modeling choices and trade-offs.
 - `distillation-analysis.md` — model-extraction / distillation risk reasoning.
 - `formula-calibration-results.md` — calibration of the scoring/breach formulas.

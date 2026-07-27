@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   blockEffectiveness,
+  categoryScore,
   overallSlScore,
   computeCategoryScores,
   getStateEffectiveness,
+  relevantBlockIds,
 } from "../../src/engine/scoring";
+import { SUPPORTING_WEIGHT } from "../../src/engine/supporting";
 import { getAiCapability } from "../../src/engine/ai-curve";
 import type { Block } from "../../src/engine/types";
 import fs from "fs";
@@ -143,5 +146,58 @@ describe("Category and Overall Scores", () => {
     // The weakest-link term still bites: a wide-open AI category pulls overall
     // meaningfully below full coverage (~4.18), even though breadth now dominates.
     expect(overall).toBeLessThan(fullOverall - 0.8);
+  });
+});
+
+describe("Threat relevance weighting", () => {
+  const blocks = loadBlocks();
+  const chains = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "../../public/data/attack-chains.json"), "utf-8")
+  );
+
+  it("weights named chain steps fully and supporting defenses at the breach weight", () => {
+    const weights = relevantBlockIds(chains, blocks);
+    const named = new Set<string>();
+    for (const c of chains) {
+      for (const id of c.blocks_exploited ?? []) named.add(id);
+      for (const id of c.stoppers ?? []) named.add(id);
+    }
+    expect(named.size).toBeGreaterThan(0);
+    for (const id of named) expect(weights.get(id), id).toBe(1);
+    // Everything else that made the cut is a supporting defense, and must carry
+    // the SAME weight breach.ts gives it — otherwise deploying one moves the two
+    // numbers by different amounts.
+    const supporting = [...weights.keys()].filter((id) => !named.has(id));
+    expect(supporting.length).toBeGreaterThan(0);
+    for (const id of supporting) expect(weights.get(id), id).toBe(SUPPORTING_WEIGHT);
+  });
+
+  it("lets a named step move a category score more than a supporting one", () => {
+    const weights = relevantBlockIds(chains, blocks);
+    const named = new Set<string>();
+    for (const c of chains) {
+      for (const id of c.blocks_exploited ?? []) named.add(id);
+      for (const id of c.stoppers ?? []) named.add(id);
+    }
+    // Pick a category holding both kinds so the comparison is within one mean.
+    const cat = (["network", "physical", "personnel"] as const).find((c) => {
+      const inCat = blocks.filter((b) => b.category === c && weights.has(b.id));
+      return inCat.some((b) => named.has(b.id)) && inCat.some((b) => !named.has(b.id));
+    })!;
+    const inCat = blocks.filter((b) => b.category === cat && weights.has(b.id));
+    const namedBlock = inCat.find((b) => named.has(b.id))!;
+    const suppBlock = inCat.find((b) => !named.has(b.id))!;
+
+    const base: Record<string, string> = {};
+    for (const b of blocks) base[b.id] = "not_started";
+    const catBlocks = blocks.filter((b) => b.category === cat);
+    const score = (id: string) =>
+      categoryScore(catBlocks, { ...base, [id]: "mature" }, 2026, 0.5, weights);
+
+    expect(score(namedBlock.id)).toBeGreaterThan(score(suppBlock.id));
+    // ...but a supporting block is not inert: it still has to move the number.
+    expect(score(suppBlock.id)).toBeGreaterThan(
+      categoryScore(catBlocks, base, 2026, 0.5, weights)
+    );
   });
 });

@@ -80,11 +80,11 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "insider_threat",
+        "personnel_trust",
         "access_control"
       ],
       "shared_dependencies": [
-        "monitoring_infrastructure_integrity"
+        "monitoring_infrastructure"
       ]
     },
     "open_questions": [
@@ -193,8 +193,8 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "insider_threat",
-        "integrity_verification"
+        "personnel_trust",
+        "monitoring_detection"
       ],
       "shared_dependencies": [
         "assumes_review_model_not_colluding"
@@ -305,8 +305,7 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "detection",
-        "integrity_verification"
+        "monitoring_detection"
       ],
       "shared_dependencies": [
         "monitoring_infrastructure"
@@ -418,8 +417,7 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "access_control",
-        "resource_boundary"
+        "access_control"
       ],
       "shared_dependencies": [
         "os_enforcement_integrity"
@@ -526,8 +524,7 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "detection",
-        "response_validation"
+        "monitoring_detection"
       ],
       "shared_dependencies": [
         "testing_environment_isolation"
@@ -637,8 +634,8 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "last_resort",
-        "physical_control"
+        "accelerator_security",
+        "physical_perimeter"
       ],
       "shared_dependencies": [
         "kill_path_hardware_integrity",
@@ -749,8 +746,8 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "data_boundary",
-        "detection"
+        "network_boundary",
+        "monitoring_detection"
       ],
       "shared_dependencies": [
         "serving_infrastructure_integrity"
@@ -860,8 +857,8 @@
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "input_boundary",
-        "detection"
+        "network_boundary",
+        "monitoring_detection"
       ],
       "shared_dependencies": [
         "model_architecture_cooperates"

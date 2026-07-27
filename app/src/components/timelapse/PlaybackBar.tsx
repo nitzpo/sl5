@@ -2,21 +2,47 @@ import { useState } from "react";
 import { usePlaybackStore } from "../../timelapse/playback-store";
 import { usePlaybackLoop } from "../../timelapse/use-playback-loop";
 import { useSimulationStore } from "../../store/simulation";
-import { useSimulationResults } from "../../store/derived";
-import { formatProbability, formatSl } from "../../utils/format";
-import { breachLevel, LEVEL_TEXT } from "../../utils/colors";
+import { useBudgetStatus, useSimulationResults } from "../../store/derived";
+import { formatCost, formatProbability, formatSl } from "../../utils/format";
+import { breachLevel, LEVEL_TEXT, SEMANTIC } from "../../utils/colors";
 import { ScriptSelector } from "./ScriptSelector";
 import type { PlaybackSpeed } from "../../timelapse/types";
 
 const SPEED_CYCLE: PlaybackSpeed[] = [0.5, 1, 2, 4];
 
+/** Live spend vs budget during playback, with the count of blocks the budget
+ * can't actually pay for. Turns "why is this program still at 22%?" from a
+ * hover-the-right-hex discovery into something visible on the transport bar. */
+function SpendChip() {
+  // useBudgetStatus, not useSimulationResults: this renders on every playback
+  // frame and only needs the budget slice, not the SL scores and OC sweeps.
+  const { spentMillions, budgetExceededIds, budgetMillions: budget } = useBudgetStatus();
+  if (spentMillions <= 0) return null;
+  const capped = budgetExceededIds.size;
+  return (
+    <span
+      className="text-[10px] font-mono shrink-0 tabular-nums"
+      style={{ color: capped > 0 ? SEMANTIC.overBudget : "#9ca3af" }}
+      title={
+        capped > 0
+          ? `Planned spend exceeds the budget: ${capped} block(s) held at implementing because they can't be funded`
+          : "Planned upfront spend vs budget (basis follows Risk Tolerance)"
+      }
+    >
+      {formatCost(spentMillions)}/{formatCost(budget)}
+      {capped > 0 && <span className="ml-1">▲{capped}</span>}
+    </span>
+  );
+}
+
 /** Shown when a story reaches its final year: the takeaway, in numbers. */
 function EndSummary({ onReplay }: { onReplay: () => void }) {
-  const { overallSl, bestChain } = useSimulationResults();
+  const { overallSl, bestChain, spentMillions, budgetExceededIds } = useSimulationResults();
   const attackChains = useSimulationStore((s) => s.attackChains);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const year = useSimulationStore((s) => s.year);
   const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
+  const budget = useSimulationStore((s) => s.sliders.budget_millions);
   const stop = usePlaybackStore((s) => s.stop);
   const chainName = bestChain
     ? attackChains.find((c) => c.id === bestChain.id)?.name ?? bestChain.id
@@ -24,6 +50,12 @@ function EndSummary({ onReplay }: { onReplay: () => void }) {
   const p = bestChain?.probability ?? 0;
   // Same target the Security Posture card shows (risk tolerance sets it)
   const target = 5 - riskTolerance * 2;
+  // The money line. A posture whose plan outruns its budget ends with blocks
+  // capped at `implementing`, and that capping is usually the whole reason the
+  // residual risk is what it is — so the summary has to say it, not leave it to
+  // per-block badges nobody hovers. The scripted stories all plan inside their
+  // budgets now, so this branch is for configs the user builds themselves.
+  const cappedCount = budgetExceededIds.size;
 
   return (
     <div className="flex items-center gap-3 text-xs bg-gray-900 border border-gray-700 rounded px-3 py-2">
@@ -39,7 +71,21 @@ function EndSummary({ onReplay }: { onReplay: () => void }) {
             <span className="text-gray-200">{chainName}</span> at{" "}
             <span className={LEVEL_TEXT[breachLevel(p)]}>{formatProbability(p)}</span>.
           </>
-        )}
+        )}{" "}
+        <span className="text-gray-500">
+          Planned spend{" "}
+          <span style={{ color: cappedCount > 0 ? SEMANTIC.overBudget : undefined }}>
+            {formatCost(spentMillions)}
+          </span>{" "}
+          against a {formatCost(budget)} budget
+          {cappedCount > 0 && (
+            <>
+              {" "}— {cappedCount} block{cappedCount === 1 ? "" : "s"} capped at
+              implementing, unaffordable at this budget
+            </>
+          )}
+          .
+        </span>
       </span>
       <button
         onClick={onReplay}
@@ -182,6 +228,10 @@ export function PlaybackBar() {
         <span className="text-xs font-mono text-gray-300 w-12 text-right">
           {currentYear.toFixed(1)}
         </span>
+
+        {/* Live spend — a story's money running out is a plot point, so it has
+            to be visible while it happens, not only in the end summary. */}
+        <SpendChip />
 
         {/* Stop */}
         <button

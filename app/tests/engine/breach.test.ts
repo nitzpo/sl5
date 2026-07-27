@@ -3,7 +3,9 @@ import {
   sigmoidProbability,
   chainBreachProbability,
   computeBreachProbabilities,
+  blockExploitProbability,
 } from "../../src/engine/breach";
+import { supportingBlocks } from "../../src/engine/supporting";
 import type { AttackChain, Block, BlockState, Sliders } from "../../src/engine/types";
 import fs from "fs";
 import path from "path";
@@ -98,6 +100,87 @@ describe("chain breach model", () => {
     expect(maxChain(mature, 5)).toBeGreaterThan(maxChain(mature, 2));
   });
 
+  it("never reaches zero: even a fully mature posture leaves residual risk", () => {
+    // The irreducible residual (insider never caught, zero-day nobody found).
+    // A posture that read as ~0% made near-perfect defense look free, which is
+    // the opposite of the SL5 premise.
+    const mature = allState("mature");
+    for (const chain of chains) {
+      const p = chainBreachProbability(chain, blocks, mature, 4, YEAR, SLIDERS, true);
+      expect(p, `${chain.id} drove to zero despite the residual floor`).toBeGreaterThan(0.01);
+    }
+  });
+
+  it("residual floor is gated: a far-underqualified adversary gets no free shot", () => {
+    // The floor scales with the capability gate, so it applies only to chains
+    // the adversary could actually attempt — an OC1 actor doesn't get 3% at a
+    // chain needing OC4+.
+    const mature = allState("mature");
+    const oc4Chain = chains.find((c) => c.adversary_profile.min_oc >= 4)!;
+    const weak = chainBreachProbability(oc4Chain, blocks, mature, 1, YEAR, SLIDERS, true);
+    expect(weak).toBeLessThan(0.01);
+  });
+
+  it("residual floor does not resurrect a precondition-inert chain", () => {
+    const mature = allState("mature");
+    const pd = chains.find((c) => c.requires_external_serving)!;
+    expect(chainBreachProbability(pd, blocks, mature, 5, YEAR, SLIDERS, false)).toBe(0);
+  });
+
+  it("supporting defenses matter: maturing a chain's family lowers its breach", () => {
+    // Blocks sharing a `summary_group` with a named step are no longer inert.
+    // Before this, ~28 of 47 blocks changed no number when deployed.
+    const chain = chains.find((c) => c.id === "quiet-tap")!;
+    const support = supportingBlocks(chain, blocks);
+    expect(support.length).toBeGreaterThan(0);
+
+    const none = allState("not_started");
+    const withSupport = { ...none };
+    for (const b of support) withSupport[b.id] = "mature";
+
+    const before = chainBreachProbability(chain, blocks, none, 4, YEAR, SLIDERS, true);
+    const after = chainBreachProbability(chain, blocks, withSupport, 4, YEAR, SLIDERS, true);
+    expect(after).toBeLessThan(before);
+  });
+
+  it("supporting defenses count for less than the chain's own named steps", () => {
+    // They harden a path without being steps you read in the story, so a single
+    // named block must outweigh a single supporting one. Compared one-for-one so
+    // the residual floor (which both saturate when fully built out) can't mask
+    // the difference.
+    const chain = chains.find((c) => c.id === "quiet-tap")!;
+    const namedId = chain.stoppers![0];
+    const supportId = supportingBlocks(chain, blocks)[0].id;
+    const none = allState("not_started");
+
+    const pNamed = chainBreachProbability(
+      chain, blocks, { ...none, [namedId]: "mature" }, 4, YEAR, SLIDERS, true
+    );
+    const pSupport = chainBreachProbability(
+      chain, blocks, { ...none, [supportId]: "mature" }, 4, YEAR, SLIDERS, true
+    );
+    expect(pNamed).toBeLessThan(pSupport);
+  });
+
+  it("hard stops erode against a stronger adversary, unlike before", () => {
+    // Hard stops used to be OC-independent: an identical wall for OC3 and OC6.
+    // They should still be the best buy, but a top-tier adversary bribes someone
+    // to carry a drive across the air gap.
+    const netOne = blocks.find((b) => b.id === "NET-01")!;
+    expect(netOne.defense_type).toBe("hard_stop");
+    const atOc3 = blockExploitProbability(netOne, "mature", 3, YEAR, SLIDERS);
+    const atOc6 = blockExploitProbability(netOne, "mature", 6, YEAR, SLIDERS);
+    expect(atOc6).toBeGreaterThan(atOc3);
+
+    // ...but they erode far less than probabilistic controls do.
+    const prob = blocks.find((b) => b.id === "PER-02")!;
+    expect(prob.defense_type).toBe("probabilistic");
+    const probSpread =
+      blockExploitProbability(prob, "mature", 6, YEAR, SLIDERS) -
+      blockExploitProbability(prob, "mature", 3, YEAR, SLIDERS);
+    expect(atOc6 - atOc3).toBeLessThan(probSpread);
+  });
+
   it("maturing a stopper lowers its chain's breach probability", () => {
     const pd = chains.find((c) => c.id === "patient-distillation")!;
     const before = chainBreachProbability(pd, blocks, allState("not_started"), 2, YEAR, SLIDERS, true);
@@ -126,7 +209,11 @@ describe("chain breach model", () => {
       SLIDERS,
       true
     );
-    expect(after).toBeLessThan(before * 0.25);
+    // Hard stops are strong but not absolute: resist erodes from 0.98 toward
+    // 0.86 as the adversary outclasses the block, so a single matured air gap
+    // cuts a chain to roughly a quarter — not to nothing. This is measured at
+    // OC5, the tier where that erosion is largest.
+    expect(after).toBeLessThan(before * 0.3);
   });
 
   it("air-gap precondition: external-serving chains are inert when not served externally", () => {

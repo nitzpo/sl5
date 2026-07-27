@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useSimulationStore } from "./simulation";
 import {
   computeCategoryScores,
@@ -12,6 +13,35 @@ import {
 import type { Block } from "../engine/types";
 import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
 import type { LayerId } from "../utils/ring-geometry";
+
+/**
+ * Just the money: planned spend and which blocks the budget can't pay for.
+ *
+ * Separate from `useSimulationResults` so a component that only needs the budget
+ * line doesn't drag in category scores and three full breach sweeps. That matters
+ * during time-lapse playback, where the year advances every frame.
+ */
+export function useBudgetStatus(): {
+  spentMillions: number;
+  budgetExceededIds: Set<string>;
+  budgetMillions: number;
+} {
+  const blocks = useSimulationStore((s) => s.blocks);
+  const blockStates = useSimulationStore((s) => s.blockStates);
+  const advanceOrder = useSimulationStore((s) => s.advanceOrder);
+  const budgetMillions = useSimulationStore((s) => s.sliders.budget_millions);
+  const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
+
+  return useMemo(() => {
+    const { exceededIds, spentMillions } = applyBudgetConstraint(
+      blocks,
+      blockStates,
+      budgetMillions,
+      { order: advanceOrder, riskTolerance }
+    );
+    return { spentMillions, budgetExceededIds: exceededIds, budgetMillions };
+  }, [blocks, blockStates, advanceOrder, budgetMillions, riskTolerance]);
+}
 
 /**
  * Hook that computes all derived simulation results from current store state.
@@ -49,7 +79,7 @@ export function useSimulationResults() {
 
   // Score each category over the blocks that matter to the threat model, so SL
   // tracks real coverage instead of being diluted by never-deployed catalog depth.
-  const relevantIds = relevantBlockIds(attackChains);
+  const relevantIds = relevantBlockIds(attackChains, blocks);
   const categoryScores = computeCategoryScores(
     blocks,
     effectiveStates,

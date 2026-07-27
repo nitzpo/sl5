@@ -8,6 +8,7 @@ export {
   getStateEffectiveness,
   aiDegradation,
 } from "./scoring";
+export type { RelevanceWeights } from "./scoring";
 export {
   sigmoidProbability,
   blockExploitProbability,
@@ -15,6 +16,7 @@ export {
   chainBreachProbability,
   computeBreachProbabilities,
 } from "./breach";
+export { supportingBlocks, SUPPORTING_WEIGHT } from "./supporting";
 export { applyBudgetConstraint, blockCostBasis } from "./budget";
 export { applyDependencyConstraint } from "./dependencies";
 export {

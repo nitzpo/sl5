@@ -23,6 +23,22 @@ function loadBlocks(): Block[] {
 const blocks = loadBlocks();
 const blockById = new Map(blocks.map((b) => [b.id, b]));
 
+// Sliders as a story actually plays them: neutral defaults, then the story's own
+// overrides. The budget MUST come from `sliderOverrides` — a literal here would
+// let a cost or schedule regression be checked against a more-funded posture
+// than playback ever runs (Proactive is a $1,400M plan, not the $2,000M default).
+function scriptSliders(script: (typeof SCRIPTS)[number]): Sliders {
+  return {
+    ai_timeline: 0.5,
+    gov_cooperation: 0.5,
+    vendor_cooperation: 0.5,
+    budget_millions: 2000,
+    org_transformation: 0.5,
+    risk_tolerance: 0.5,
+    ...(script.sliderOverrides ?? {}),
+  } as Sliders;
+}
+
 describe("time-lapse scripts", () => {
   it("reference every deployment against a real block", () => {
     for (const script of SCRIPTS) {
@@ -103,15 +119,7 @@ describe("time-lapse scripts", () => {
     // least one completion; this pins that.
     const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
     const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
-    const sliders = {
-      ai_timeline: 0.5,
-      gov_cooperation: 0.5,
-      vendor_cooperation: 0.5,
-      budget_millions: 2000,
-      org_transformation: 0.5,
-      risk_tolerance: 0.5,
-      ...(script.sliderOverrides ?? {}),
-    } as Sliders;
+    const sliders = scriptSliders(script);
     const order = (script.deployments ?? []).map((d) => d.blockId);
 
     let prev = Infinity;
@@ -201,15 +209,10 @@ describe("time-lapse scripts", () => {
     // 5.0, because slider penalties and AI erosion never fully clear.
     const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
     const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
-    const sliders = {
-      ai_timeline: 0.5,
-      gov_cooperation: 0.5,
-      vendor_cooperation: 0.5,
-      budget_millions: 2000,
-      org_transformation: 0.5,
-      risk_tolerance: 0.5,
-      ...(script.sliderOverrides ?? {}),
-    } as Sliders;
+    const sliders = scriptSliders(script);
+    // Calibrate against the budget the story is documented and validated at, so
+    // this never silently grades a better-funded posture than playback runs.
+    expect(sliders.budget_millions, "proactive must calibrate at its own budget").toBe(1400);
     const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
     const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
       order: (script.deployments ?? []).map((d) => d.blockId),

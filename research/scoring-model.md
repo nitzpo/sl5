@@ -101,7 +101,7 @@ Two things this buys:
 
 ### Per category
 
-```
+```text
 categoryScore = floor + (Σ wᵢ · effᵢ / Σ wᵢ) × (5 − floor)
 ```
 
@@ -181,8 +181,12 @@ resist  = clamp(0.98 − 0.12 × bypass, 0.86, 0.98)   if hard_stop
 hard stops run **0.98 → 0.86** (the clamp binds, since `0.98 − 0.12` = 0.86) and
 probabilistic controls run **0.95 → 0.40** (the ceiling clamp binds, the floor
 does not — `1.00 − 0.60 × bypass` asymptotes at 0.40). `PROB_RESIST_FLOOR = 0.35`
-is a guard kept under the asymptote so retuning `PROB_BYPASS_SCALE` cannot
-silently yield a negative resist.
+is unreachable under the current constants and steepness: no retuning of
+`PROB_BYPASS_SCALE` alone can pull the resist below the floor, because `bypass`
+stays inside (0, 1). It is a guard against *future* changes — raising the
+erosion coefficient past 0.65, or relaxing the contract that `bypass` is
+sigmoid-bounded — either of which could otherwise drive resist to zero or
+negative.
 
 Monotonic by construction: an absent block returns 1 (no obstacle), and as
 effectiveness rises the term falls toward `1 − resist`. Improving a defense can
@@ -372,7 +376,7 @@ That $15M omission is load-bearing. Every plan measured that also closes those
 two collapses breach to **~4.7%** — because breach is a `max` over chains, and
 with breadth this wide the other six chains are all sitting on the residual
 floor (`long-game` 4.7%, everything else 2.6–3.0%). Adding $15M of personnel
-controls would raise SL by 0.03 and cut the headline number by two thirds, which
+controls would raise SL by 0.03 and cut the headline number by two-thirds, which
 would read as "solved" and is the exact failure mode the recalibration removed.
 
 Enumerating the alternatives (full catalog minus each candidate omission set,

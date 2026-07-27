@@ -28,9 +28,10 @@ const HARD_STOP_RESIST_FLOOR = 0.86;
 const HARD_STOP_RESIST_CEIL = 0.98;
 // Probabilistic defenses lose up to PROB_BYPASS_SCALE of their resist against a
 // strong adversary, so `1 − scale × bypass` asymptotes at 0.40 — that, not the
-// clamp below, is the effective floor. PROB_RESIST_FLOOR is a defensive bound
-// kept strictly under the asymptote so retuning the scale can't silently produce
-// a negative resist.
+// clamp below, is the effective floor. PROB_RESIST_FLOOR sits under that
+// asymptote and is unreachable today (bypass is sigmoid-bounded to (0, 1), so
+// no retune of the scale alone can cross it); it guards future changes — an
+// erosion coefficient past 0.65, or a bypass that stops being sigmoid-bounded.
 const PROB_BYPASS_SCALE = 0.6;
 const PROB_RESIST_FLOOR = 0.35;
 const PROB_RESIST_CEIL = 0.95;        // vs a much weaker adversary, resists this much (not 100% — nothing is perfect)

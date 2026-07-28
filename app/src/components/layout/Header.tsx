@@ -64,6 +64,16 @@ export function Header({ onShowIntro }: HeaderProps) {
         Reset
       </button>
 
+      {/* Introduction — the standalone explainer at /sl5/intro/. A plain link,
+          not a modal: it's its own page so it can be shared and deep-linked. */}
+      <a
+        href={`${import.meta.env.BASE_URL}intro/`}
+        className={HEADER_BTN}
+        title="Why model weight security matters, and how to use this tool"
+      >
+        Intro
+      </a>
+
       {/* Help */}
       <button
         onClick={onShowIntro}

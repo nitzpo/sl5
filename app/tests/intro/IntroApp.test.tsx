@@ -8,6 +8,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { IntroApp } from "../../src/intro/IntroApp";
 import { SLIDES } from "../../src/intro/slides";
 import { DEMO_BLOCKS, LONG_GAME } from "../../src/intro/content";
+import { SCRIPTS } from "../../src/timelapse/scripts";
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/sl5/intro/");
@@ -99,12 +100,35 @@ describe("handing off to the app", () => {
     expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
   });
 
-  it("the final slide's story CTA carries ?story= for App.tsx to pick up", () => {
+  it("the story CTA opens a picker offering every authored story", () => {
     window.history.replaceState(null, "", "/sl5/intro/#the-rest");
     render(<IntroApp />);
-    const story = screen.getByText("▶ Watch the 1-min story");
-    expect(story.getAttribute("href")).toBe(`${BASE}?story=proactive-program`);
-    fireEvent.click(story);
+    fireEvent.click(screen.getByText("▶ Watch a 1-min story"));
+
+    // Every scripted story is offered; the passthrough one isn't, because it
+    // just advances time on a posture a newcomer hasn't built.
+    const scripted = SCRIPTS.filter((s) => s.type !== "passthrough");
+    expect(scripted.length).toBeGreaterThan(1);
+    for (const s of scripted) {
+      expect(screen.getByText(`▶ ${s.name}`).closest("a")!.getAttribute("href")).toBe(
+        `${BASE}?story=${s.id}`
+      );
+    }
+    for (const s of SCRIPTS.filter((s) => s.type === "passthrough")) {
+      expect(screen.queryByText(`▶ ${s.name}`)).toBeNull();
+    }
+  });
+
+  it("picking a story marks the intro seen, and Back returns to the CTAs", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#the-rest");
+    render(<IntroApp />);
+    fireEvent.click(screen.getByText("▶ Watch a 1-min story"));
+
+    fireEvent.click(screen.getByText("Cancel"));
+    expect(screen.getByText("▶ Watch a 1-min story")).toBeTruthy();
+
+    fireEvent.click(screen.getByText("▶ Watch a 1-min story"));
+    fireEvent.click(screen.getByText("▶ Proactive Program"));
     expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
   });
 });

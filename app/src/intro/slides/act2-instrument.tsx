@@ -4,8 +4,8 @@ import { LifecycleDemo } from "../demos/LifecycleDemo";
 import { ChainDemo } from "../demos/ChainDemo";
 import { TimelineDiagram } from "../demos/TimelineDiagram";
 import { DemoHex } from "../demos/DemoHex";
+import { StoryPicker } from "../StoryPicker";
 import { CATALOG, DEMO_BLOCKS, LONG_GAME } from "../content";
-import { APP_URL, markIntroSeen, storyUrl } from "../nav";
 
 export function Blocks() {
   return (
@@ -300,22 +300,7 @@ export function TheRest() {
             than you have and still leaves an insider path open. Finding out{" "}
             <Em>which</Em> gaps survive your best effort is the point.
           </p>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <a
-              href={storyUrl("proactive-program")}
-              onClick={markIntroSeen}
-              className="flex-1 rounded-lg bg-violet-600 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-violet-500"
-            >
-              ▶ Watch the 1-min story
-            </a>
-            <a
-              href={APP_URL}
-              onClick={markIntroSeen}
-              className="flex-1 rounded-lg bg-gray-800 px-4 py-2.5 text-center text-sm font-medium text-gray-200 transition-colors hover:bg-gray-700"
-            >
-              Open the app →
-            </a>
-          </div>
+          <StoryPicker />
           <p className="mt-3 text-[10px] leading-relaxed text-gray-600">
             Reminder: an illustrative educational model, not authoritative security
             guidance. Source material is on the{" "}

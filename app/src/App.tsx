@@ -13,6 +13,8 @@ import { ClusterView } from "./components/clusters/ClusterView";
 import { ChainStrip } from "./components/analysis/ChainStrip";
 import { useViewStore } from "./store/view";
 import type { BadgeKey } from "./store/view";
+import { SCRIPTS } from "./timelapse/scripts";
+import { usePlaybackStore } from "./timelapse/playback-store";
 import type { Block } from "./engine/types";
 
 type ViewMode = "clusters" | "grid" | "rings";
@@ -66,6 +68,28 @@ function App() {
       setLoadError(err instanceof Error ? err.message : String(err));
     });
   }, [loadData, loadAttempt]);
+
+  // `?story=<id>` — the introduction's "Watch the 1-min story" CTA hands off to
+  // the app with a script already running. Waits for dataLoaded because
+  // startScript writes block states, then strips the param so a reload (or a
+  // Share link built afterwards) doesn't restart the story.
+  useEffect(() => {
+    if (!dataLoaded) return;
+    const requested = new URLSearchParams(window.location.search).get("story");
+    if (!requested) return;
+
+    const params = new URLSearchParams(window.location.search);
+    params.delete("story");
+    const query = params.toString();
+    history.replaceState(
+      null,
+      "",
+      window.location.pathname + (query ? `?${query}` : "") + window.location.hash
+    );
+
+    const script = SCRIPTS.find((s) => s.id === requested);
+    if (script) usePlaybackStore.getState().startScript(script);
+  }, [dataLoaded]);
 
   // Listen for hash changes (paste URL in same tab)
   const applyHash = useCallback(() => {

@@ -2,7 +2,7 @@
 
 **An interactive instrument for understanding what it takes to defend frontier AI model weights from nation-state attackers.**
 
-🔗 **[Live demo →](https://nitzpo.github.io/sl5/)**
+🔗 **[Live demo →](https://nitzpo.github.io/sl5/)** · 📖 **[Start with the introduction →](https://nitzpo.github.io/sl5/intro/)**
 
 ![SL5 Explorable](assets/screenshot.png)
 
@@ -30,6 +30,18 @@ The tool is built around **two simultaneous races**:
 - **Strong AI shifts the OC scale** — capabilities that are OC5-only today move within reach of lesser actors over time.
 - **Insider threat is a distinct, hard-to-mitigate class** — including the AI system itself acting as an insider.
 - **Time pressure is real** — long-lead blocks must be started years ahead.
+
+### The introduction
+
+New to the problem? [`/sl5/intro/`](https://nitzpo.github.io/sl5/intro/) is a standalone
+~5-minute slideshow, linked from the app's `Intro` button and its first-run modal. Act I
+covers why a cyber superpower would spend a state-scale budget to steal model weights, why
+the problem worsens as AI improves, the OC1–OC5 adversary ladder and the SL1–SL5 scale, and
+the source material. Act II teaches the instrument itself — blocks, the build lifecycle,
+budget and dependency caps, an example attack path, and the timeline — with small
+interactive demos driven by the same engine functions the app runs on. It's a separate Vite
+entry point, so it loads instantly, ships no simulation store, and every slide is linkable
+(`/sl5/intro/#the-oc-ladder`). Unlike the app, it reads fine on a phone.
 
 ---
 
@@ -69,13 +81,14 @@ Ideas the research docs argue for that the simulation does not implement — lis
 ```bash
 cd app
 npm install
-npm run dev        # http://localhost:5173/sl5/
+npm run dev        # http://localhost:5173/sl5/       — the explorable
+                   # http://localhost:5173/sl5/intro/ — the introduction
 ```
 
 Other scripts:
 
 ```bash
-npm run build      # type-check + production build to app/dist
+npm run build      # type-check + production build to app/dist (two pages: / and /intro/)
 npm run preview    # serve the production build
 npm test           # run the engine unit tests (vitest)
 npm run lint       # eslint
@@ -90,14 +103,16 @@ Requires Node 20+. The app is desktop-only (it gates small screens).
 ```
 .
 ├── app/                      # the React + TypeScript + Vite app (the explorable)
+│   ├── intro/index.html       # second page entry → /sl5/intro/
 │   ├── src/
 │   │   ├── components/        # SVG views: clusters (default), grid, rings, analysis, timeline
 │   │   ├── engine/            # scoring, breach, budget, AI-curve, distillation
+│   │   ├── intro/             # the standalone introduction: slides + its own demos
 │   │   ├── store/             # Zustand state (simulation, derived, view, persistence)
 │   │   ├── timelapse/         # scripted scenario playback
 │   │   └── utils/             # geometry, ring/cluster layout, pan-zoom, colors, decision windows
 │   ├── public/data/           # canonical block + attack-chain data (JSON)
-│   └── tests/                 # vitest unit tests (engine scoring/breach + layout geometry)
+│   └── tests/                 # vitest unit tests (engine, layout geometry, introduction)
 ├── research/                 # methodology, design notes, JSON schemas, source material
 └── .github/workflows/        # GitHub Pages deploy
 ```

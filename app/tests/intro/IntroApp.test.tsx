@@ -27,6 +27,9 @@ describe("every slide renders", () => {
       render(<IntroApp />);
       expect(screen.getByText(`${i + 1}/${SLIDES.length}`)).toBeTruthy();
       expect(document.title).toBe(`${slide.title} · SL5 Explorable`);
+      // The container that takes focus on every slide change carries the
+      // slide's name, so a screen reader announces where it landed.
+      expect(screen.getByRole("region", { name: slide.title })).toBeTruthy();
     });
   }
 });
@@ -75,9 +78,12 @@ describe("navigation", () => {
 
   it("the progress rail jumps straight to a slide", () => {
     render(<IntroApp />);
-    fireEvent.click(screen.getByLabelText(SLIDES[8].title));
+    // By role: once navigated, the focused slide region carries the same
+    // accessible name as its rail tick.
+    const tick = () => screen.getByRole("button", { name: SLIDES[8].title });
+    fireEvent.click(tick());
     expect(window.location.hash).toBe(`#${SLIDES[8].slug}`);
-    expect(screen.getByLabelText(SLIDES[8].title).getAttribute("aria-current")).toBe("step");
+    expect(tick().getAttribute("aria-current")).toBe("step");
   });
 
   it("an unknown slug falls back to the first slide instead of blanking", () => {
@@ -259,6 +265,21 @@ describe("the demos respond", () => {
     expect(screen.getByText(/^OC5 — Top-Priority State Operations$/)).toBeTruthy();
     expect(screen.getByText("$1B")).toBeTruthy();
     expect(screen.getByText("50+ zero-days simultaneously")).toBeTruthy();
+  });
+
+  it("the OC ladder's patience readout is never off by a plural", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#the-oc-ladder");
+    render(<IntroApp />);
+    // OC1 is a quarter of a month, OC2 exactly one, OC4 exactly twelve — the
+    // three values that sit right on a formatTime boundary.
+    fireEvent.click(screen.getByRole("button", { name: "OC1" }));
+    expect(screen.getByText("1 week")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "OC2" }));
+    expect(screen.getByText("1 month")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "OC4" }));
+    expect(screen.getByText("1 year")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "OC5" }));
+    expect(screen.getByText("5 years")).toBeTruthy();
   });
 
   it("deploying PER-04 blocks The Long Game at its first step", () => {

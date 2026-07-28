@@ -8,9 +8,15 @@ function formatBudget(millions: number): string {
 }
 
 function formatTime(months: number): string {
-  if (months < 1) return `${Math.round(months * 4)} weeks`;
-  if (months < 12) return `${months} months`;
-  return `${months / 12} year${months / 12 > 1 ? "s" : ""}`;
+  // OC1 is a quarter of a month and OC2 exactly one, so both short branches
+  // need the singular — "1 weeks" / "1 months" otherwise.
+  if (months < 1) {
+    const weeks = Math.round(months * 4);
+    return `${weeks} week${weeks === 1 ? "" : "s"}`;
+  }
+  if (months < 12) return `${months} month${months === 1 ? "" : "s"}`;
+  const years = months / 12;
+  return `${years} year${years === 1 ? "" : "s"}`;
 }
 
 export function OcLadderDemo() {

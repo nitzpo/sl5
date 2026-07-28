@@ -9,11 +9,24 @@ import tailwindcss from '@tailwindcss/vite'
 // instead of the introduction — a shared link missing one character would send
 // readers to the wrong page. GitHub Pages 301s directory URLs itself; this makes
 // `npm run dev` and `npm run preview` behave the same way.
+//
+// `/intro` and `/intro/` are handled too, and both land on `/sl5/intro/`: with
+// `base: '/sl5/'` Vite's base middleware 404s anything outside the prefix, so
+// redirecting `/intro` to `/intro/` would only trade one wrong page for a dead
+// end.
+const INTRO = '/sl5/intro/'
+const ALIASES = ['/sl5/intro', '/intro', '/intro/']
+
 function introTrailingSlash(): Plugin {
   const redirect: Connect.NextHandleFunction = (req, res, next) => {
-    const [path, query] = (req.url ?? '').split('?')
-    if (path === '/sl5/intro' || path === '/intro') {
-      res.writeHead(301, { Location: `${path}/${query ? `?${query}` : ''}` })
+    const url = req.url ?? ''
+    // indexOf, not split('?'): a query string may legally contain further `?`
+    // characters, and split would drop everything after the second one.
+    const q = url.indexOf('?')
+    const path = q === -1 ? url : url.slice(0, q)
+    const query = q === -1 ? '' : url.slice(q)
+    if (ALIASES.includes(path)) {
+      res.writeHead(301, { Location: `${INTRO}${query}` })
       res.end()
       return
     }

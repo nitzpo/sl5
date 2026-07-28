@@ -5,6 +5,11 @@ import { OC_TIERS } from "../content";
 
 // The same curve the app runs on (engine/ai-curve.ts), scrubbed by year.
 const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
+// By level, not by index: the caption names these two tiers specifically, and a
+// reorder in content.ts shouldn't silently relabel them.
+const oc4 = OC_TIERS.find((t) => t.level === 4)!;
+const oc5 = OC_TIERS.find((t) => t.level === 5)!;
 const W = 520;
 const H = 150;
 const PAD = { left: 34, right: 12, top: 12, bottom: 24 };
@@ -112,8 +117,8 @@ export function AiCurveDemo() {
 
       <p className="mt-3 text-xs leading-relaxed text-gray-400">{effect}</p>
       <p className="mt-2 text-[11px] text-gray-600">
-        For scale: OC{OC_TIERS[3].level} is {OC_TIERS[3].name.toLowerCase()}; OC
-        {OC_TIERS[4].level} is {OC_TIERS[4].name.toLowerCase()}.
+        For scale: OC{oc4.level} is {oc4.name.toLowerCase()}; OC{oc5.level} is{" "}
+        {oc5.name.toLowerCase()}.
       </p>
     </div>
   );

@@ -118,6 +118,11 @@ export function IntroApp() {
           key={slide.slug}
           ref={headingRef}
           tabIndex={-1}
+          // Named, because the effect above moves focus here on every slide
+          // change: without it a screen reader announces an anonymous group and
+          // the reader has no idea which slide they just landed on.
+          role="region"
+          aria-label={slide.title}
           className="animate-fade-in flex-1 outline-none motion-reduce:animate-none"
         >
           <Component />

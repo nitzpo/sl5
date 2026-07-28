@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { SCRIPTS } from "../../timelapse/scripts";
 import type { TimeLapseScript } from "../../timelapse/types";
 import { usePlaybackStore } from "../../timelapse/playback-store";
+// One guarded writer for the seen flag: localStorage throws outright in some
+// private-browsing modes, and neither path here is worth failing over.
+import { markIntroSeen } from "../../intro/nav";
 
 interface IntroOverlayProps {
   onClose: () => void;
@@ -29,7 +32,7 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
   }, [onClose, choosingStory]);
 
   function dismiss() {
-    localStorage.setItem("sl5_intro_seen", "1");
+    markIntroSeen();
     onClose();
   }
 
@@ -62,7 +65,7 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
             link — it also marks the intro seen so returning here isn't a loop. */}
         <a
           href={`${import.meta.env.BASE_URL}intro/`}
-          onClick={() => localStorage.setItem("sl5_intro_seen", "1")}
+          onClick={markIntroSeen}
           className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-violet-800/60 bg-violet-950/30 px-3 py-2.5 transition-colors hover:border-violet-700 hover:bg-violet-950/60"
         >
           <span className="text-xs text-gray-300">

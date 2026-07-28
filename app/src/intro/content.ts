@@ -180,6 +180,9 @@ export interface DemoBlock {
   /** adversary_exploitation.ai_oc_shift — how much AI capability lifts the
    * adversary against this control. Feeds the real `aiDegradation()`. */
   aiOcShift: number;
+  /** dimensions.time_to_deploy_months — feeds the real
+   * `computeDecisionWindows()` on the timeline slide. */
+  deployMonths: { min: number; max: number };
   blurb: string;
 }
 
@@ -191,6 +194,7 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     category: "network",
     defenseType: "hard_stop",
     aiOcShift: 0.5,
+    deployMonths: { min: 12, max: 24 },
     blurb:
       "Zero external connections — no internet, no VPN, no cloud. A remote attacker has no route in, however capable they get.",
   },
@@ -201,6 +205,7 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     category: "personnel",
     defenseType: "probabilistic",
     aiOcShift: 1.0,
+    deployMonths: { min: 9, max: 18 },
     blurb:
       "Watches for changed access patterns and new foreign contacts. It raises the odds of catching an insider — it never guarantees it.",
   },
@@ -211,6 +216,7 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     category: "network",
     defenseType: "hybrid",
     aiOcShift: 1.0,
+    deployMonths: { min: 9, max: 18 },
     blurb:
       "Hardware-enforced one-way flow: a physical hard stop on direction, wrapped in probabilistic inspection of what passes.",
   },
@@ -221,6 +227,7 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     category: "personnel",
     defenseType: "probabilistic",
     aiOcShift: 1.0,
+    deployMonths: { min: 12, max: 24 },
     blurb: "SF-86-grade background disclosure: foreign contacts, finances, history.",
   },
   "PER-05": {
@@ -230,6 +237,7 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     category: "personnel",
     defenseType: "probabilistic",
     aiOcShift: 0.5,
+    deployMonths: { min: 6, max: 12 },
     blurb: "Obligations that outlive the badge — and deter recruitment upfront.",
   },
   "HW-07": {
@@ -239,6 +247,7 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     category: "machine",
     defenseType: "hard_stop",
     aiOcShift: 1.0,
+    deployMonths: { min: 24, max: 48 },
     blurb:
       "Weights stay encrypted in accelerator memory — unreadable even to an attacker who owns the host.",
   },

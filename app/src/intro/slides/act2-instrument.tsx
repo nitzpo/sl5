@@ -3,6 +3,7 @@ import { ErosionDemo } from "../demos/ErosionDemo";
 import { LifecycleDemo } from "../demos/LifecycleDemo";
 import { ChainDemo } from "../demos/ChainDemo";
 import { TimelineDiagram } from "../demos/TimelineDiagram";
+import { DecisionWindowDemo } from "../demos/DecisionWindowDemo";
 import { DemoHex } from "../demos/DemoHex";
 import { StoryPicker } from "../StoryPicker";
 import { CATALOG, DEMO_BLOCKS, LONG_GAME } from "../content";
@@ -234,13 +235,26 @@ export function Timeline() {
             capability, so probabilistic defenses lose value even if you never touch them.
             What you build in 2026 has to still work in 2030.
           </Card>
-          <Card title="The deployment race" accent="text-amber-300">
-            The amber ▲ markers are <Em>must-start-by</Em> deadlines. An air-gapped facility
-            or custom silicon takes 36–48 months to stand up; if you want it operational by
-            2030, the decision is due now. Blocks whose window is closing get a red{" "}
-            <Em>!</Em> badge on the map.
+          <Card title="The deployment race" accent="text-red-300">
+            The small ▲ markers sitting on the year axis are <Em>must-start-by</Em>{" "}
+            deadlines — one per cluster of blocks, hover for the list. An air-gapped
+            facility or custom silicon takes 36–48 months to stand up, so a 2030 target
+            makes the decision due now, not later.
           </Card>
         </CardGrid>
+
+        <DemoFrame
+          caption={
+            <>
+              Same rule on the map: a block still at <Em>not started</Em> whose deadline is
+              inside the next two years earns a red <Em>!</Em> in its top-left corner. The{" "}
+              <Em>Start now</Em> legend item toggles those badges — and the deadline
+              triangles use the same three weights, so the axis and the map always agree.
+            </>
+          }
+        >
+          <DecisionWindowDemo />
+        </DemoFrame>
 
         <Aside>
           You can also just <Em>drag the year</Em> in the header to scrub the whole
@@ -288,9 +302,11 @@ export function TheRest() {
         </div>
 
         <Aside>
-          The legend items above the map are also <Em>toggles</Em> — click one to hide or
-          show that badge if the map gets busy. And the app itself needs a desktop-sized
-          screen; this introduction doesn't.
+          The legend items above the map are also <Em>toggles</Em> — click <Em>Start now</Em>,{" "}
+          <Em>Contested</Em>, <Em>Over budget</Em> or any of the relation arrows to hide that
+          badge if the map gets busy. Hovering a block also gives you the numbers behind its
+          badges, including the year its window closes. And the app itself needs a
+          desktop-sized screen; this introduction doesn't.
         </Aside>
 
         <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">

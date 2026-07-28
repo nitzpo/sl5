@@ -192,6 +192,52 @@ describe("the demos respond", () => {
     expect(screen.getByText("10%")).toBeTruthy();
   });
 
+  it("the decision-window demo separates a closed window from a closing one", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#timeline");
+    render(<IntroApp />);
+    // Defaults to 2027, the one year where the three blocks sit in three tiers.
+    expect(screen.getByText("Window closed")).toBeTruthy();
+    expect(screen.getByText("Window closing")).toBeTruthy();
+    expect(screen.getByText("On the horizon")).toBeTruthy();
+  });
+
+  /** `!` glyphs drawn on a hexagon — the slide's prose also says "!", so count
+   *  the SVG badges rather than every match on the page. */
+  function countBadges(): number {
+    return Array.from(document.querySelectorAll("svg text")).filter(
+      (t) => t.textContent === "!"
+    ).length;
+  }
+
+  it("only closed and closing windows get the ! badge, and only closed pulses", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#timeline");
+    render(<IntroApp />);
+    // Two badges at 2027 — the "upcoming" block is deliberately unbadged,
+    // matching BlockGrid/ClusterView/DefenseRings, which all drop it.
+    expect(countBadges()).toBe(2);
+    // The pulse is the overdue-only tell (BlockCell does the same).
+    expect(document.querySelectorAll("animate")).toHaveLength(1);
+  });
+
+  it("scrubbing to 2029 closes every window on the demo", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#timeline");
+    render(<IntroApp />);
+    fireEvent.change(screen.getByLabelText("Year"), { target: { value: "2029" } });
+    expect(screen.getAllByText("Window closed")).toHaveLength(3);
+    expect(countBadges()).toBe(3);
+    expect(screen.queryByText("Window closing")).toBeNull();
+  });
+
+  it("scrubbing to 2024 leaves nothing pressing", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#timeline");
+    render(<IntroApp />);
+    fireEvent.change(screen.getByLabelText("Year"), { target: { value: "2024" } });
+    // Only HW-07's 48-month build is even on the two-year horizon, and it's
+    // still "upcoming" — so no badge appears anywhere.
+    expect(countBadges()).toBe(0);
+    expect(screen.getAllByText("Not pressing yet")).toHaveLength(2);
+  });
+
   it("the AI curve scrubber moves the readout", () => {
     window.history.replaceState(null, "", "/sl5/intro/#why-it-gets-worse");
     render(<IntroApp />);

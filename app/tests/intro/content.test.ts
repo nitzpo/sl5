@@ -19,6 +19,7 @@ import {
 } from "../../src/intro/content";
 import { BLOCK_SHORT_LABELS } from "../../src/utils/geometry";
 import { getStateEffectiveness } from "../../src/engine/scoring";
+import { computeDecisionWindows } from "../../src/utils/decision-windows";
 import { SLIDES } from "../../src/intro/slides";
 
 const DATA = path.join(__dirname, "../../public/data");
@@ -124,7 +125,23 @@ describe("intro demo blocks match blocks-*.json", () => {
       expect(demo.category).toBe(source!.category);
       expect(demo.defenseType).toBe(source!.defense_type);
       expect(demo.aiOcShift).toBe(source!.adversary_exploitation.ai_oc_shift);
+      expect(demo.deployMonths.min).toBe(source!.dimensions.time_to_deploy_months.min);
+      expect(demo.deployMonths.max).toBe(source!.dimensions.time_to_deploy_months.max);
     }
+  });
+
+  it("the three blocks the decision-window demo teaches with still land in three tiers", () => {
+    // The demo's whole point is showing closed / closing / on-the-horizon side
+    // by side at one year. If the data's deploy times shift, that spread can
+    // collapse and the slide silently stops teaching the distinction.
+    const shown = ["HW-07", "NET-01", "PER-05"];
+    const blockStates = Object.fromEntries(shown.map((id) => [id, "not_started"]));
+    const urgencies = computeDecisionWindows(
+      shown.map((id) => blocks.find((b) => b.id === id)!),
+      blockStates,
+      2027
+    ).map((w) => w.urgency);
+    expect(new Set(urgencies)).toEqual(new Set(["overdue", "urgent", "upcoming"]));
   });
 
   it("short labels match the app's BLOCK_SHORT_LABELS", () => {

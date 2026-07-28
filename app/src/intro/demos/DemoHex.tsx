@@ -5,7 +5,9 @@ import {
   STATE_FILL_FRACTION,
   SEMANTIC,
   DEPENDENCY_COLOR,
+  URGENCY_BADGE,
 } from "../../utils/colors";
+import type { WindowUrgency } from "../../utils/decision-windows";
 import type { DemoBlock } from "../content";
 
 // A teaching replica of components/blocks/BlockCell.tsx — that component is the
@@ -35,6 +37,8 @@ interface DemoHexProps {
   budgetExceeded?: boolean;
   /** Sky dotted ring — a `requires` prerequisite isn't operational. */
   dependencyUnmet?: boolean;
+  /** Red `!` badge — decision-window pressure, from `computeDecisionWindows()`. */
+  urgency?: WindowUrgency;
   onClick?: () => void;
 }
 
@@ -45,6 +49,7 @@ export function DemoHex({
   size = 34,
   budgetExceeded = false,
   dependencyUnmet = false,
+  urgency,
   onClick,
 }: DemoHexProps) {
   const color = DEFENSE_COLORS[block.defenseType];
@@ -168,6 +173,43 @@ export function DemoHex({
           strokeDasharray="2 3"
           opacity={0.85}
         />
+      )}
+
+      {/* Decision-window badge. Same encoding as BlockCell: hue stays
+          threat-red, urgency is carried by weight — solid for a closed window,
+          outlined for a closing one — and only the closed one pulses. */}
+      {urgency && (
+        <g>
+          <circle
+            cx={cx - size + 4}
+            cy={cy - size + 4}
+            r={6}
+            fill={URGENCY_BADGE[urgency].fill}
+            stroke={URGENCY_BADGE[urgency].stroke}
+            strokeWidth={1.25}
+          >
+            {urgency === "overdue" && (
+              <animate
+                attributeName="opacity"
+                values="1;0.35;1"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            )}
+          </circle>
+          <text
+            x={cx - size + 4}
+            y={cy - size + 5}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={8}
+            fontWeight={700}
+            fill={URGENCY_BADGE[urgency].text}
+            className="pointer-events-none"
+          >
+            !
+          </text>
+        </g>
       )}
 
       <text

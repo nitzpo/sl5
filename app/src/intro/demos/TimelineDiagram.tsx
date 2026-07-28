@@ -1,5 +1,6 @@
 import { getAiCapability } from "../../engine/ai-curve";
-import { SEMANTIC } from "../../utils/colors";
+import { SEMANTIC, URGENCY_BADGE } from "../../utils/colors";
+import type { WindowUrgency } from "../../utils/decision-windows";
 
 // A static, annotated redrawing of components/timeline/TimelineTrack.tsx — the
 // real track is bound to the store and playback; this one exists only to label
@@ -22,6 +23,13 @@ const THREAT: Record<number, number> = {
 const DEFENSE: Record<number, number> = {
   2024: 0.2, 2025: 0.24, 2026: 0.32, 2027: 0.44, 2028: 0.6, 2029: 0.66, 2030: 0.7,
 };
+
+/** Two deadline clusters, as they'd read at the app's default year of 2026:
+ * one already past, one due within the year. */
+const DEADLINES: { year: number; urgency: WindowUrgency }[] = [
+  { year: 2025.6, urgency: "overdue" },
+  { year: 2026.8, urgency: "urgent" },
+];
 
 const path = (series: Record<number, number>) =>
   YEARS.map((yr) => `${x(yr)},${y(series[yr])}`).join(" ");
@@ -54,12 +62,16 @@ export function TimelineDiagram() {
       />
       <polyline points={path(DEFENSE)} fill="none" stroke={SEMANTIC.defense} strokeWidth={2} />
 
-      {/* deadline triangles — "must start by" */}
-      {[2026, 2027.5].map((yr) => (
+      {/* Must-start-by triangles. Apex on the axis, base below, and the same
+          URGENCY_BADGE weights the real track uses: solid for a window already
+          closed, outlined for one closing. */}
+      {DEADLINES.map(({ year: yr, urgency }) => (
         <polygon
           key={yr}
-          points={`${x(yr)},${H - PAD.bottom + 2} ${x(yr) - 5},${H - PAD.bottom + 11} ${x(yr) + 5},${H - PAD.bottom + 11}`}
-          fill="#f59e0b"
+          points={`${x(yr)},${H - PAD.bottom} ${x(yr) - 4.5},${H - PAD.bottom + 9} ${x(yr) + 4.5},${H - PAD.bottom + 9}`}
+          fill={URGENCY_BADGE[urgency].fill}
+          stroke={URGENCY_BADGE[urgency].stroke}
+          strokeWidth={1}
           opacity={0.9}
         />
       ))}
@@ -90,7 +102,7 @@ export function TimelineDiagram() {
       <Label x={x(2024.15)} y={y(0.14)} fill="#a78bfa" anchor="start">
         AI capability
       </Label>
-      <Label x={x(2026)} y={H - PAD.bottom + 22} fill="#fbbf24" anchor="middle">
+      <Label x={x(2026.2)} y={H - PAD.bottom + 21} fill="#fca5a5" anchor="middle">
         ▲ must start by
       </Label>
       <Label x={x(2028.6)} y={PAD.top - 8} fill="#c4b5fd" anchor="middle">

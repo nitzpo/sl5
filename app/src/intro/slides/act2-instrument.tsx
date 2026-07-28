@@ -68,7 +68,14 @@ export function Lifecycle() {
       }
     >
       <div className="space-y-5">
-        <DemoFrame caption="Click the hexagon to advance it, or jump straight to a state with the segmented control.">
+        <DemoFrame
+          caption={
+            <>
+              <Em>Right-click</Em> the hexagon to advance it — the same gesture the app uses
+              — or jump straight to a state with the segmented control.
+            </>
+          }
+        >
           <LifecycleDemo />
         </DemoFrame>
 
@@ -110,8 +117,8 @@ export function Constraints() {
       <div className="space-y-5">
         <div className="grid items-start gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-gray-800 bg-gray-900 p-3.5">
-            <div className="flex items-start gap-3">
-              <DemoHex block={DEMO_BLOCKS["HW-07"]} state="deployed" size={30} budgetExceeded />
+            <div className="flex flex-col items-start gap-3 sm:flex-row">
+              <DemoHex block={DEMO_BLOCKS["HW-07"]} state="deployed" size={38} budgetExceeded />
               <div>
                 <h3 className="text-xs font-semibold text-pink-300">
                   Pink dashed ring — over budget
@@ -127,8 +134,8 @@ export function Constraints() {
           </div>
 
           <div className="rounded-lg border border-gray-800 bg-gray-900 p-3.5">
-            <div className="flex items-start gap-3">
-              <DemoHex block={DEMO_BLOCKS["PER-03"]} state="deployed" size={30} dependencyUnmet />
+            <div className="flex flex-col items-start gap-3 sm:flex-row">
+              <DemoHex block={DEMO_BLOCKS["PER-03"]} state="deployed" size={38} dependencyUnmet />
               <div>
                 <h3 className="text-xs font-semibold text-sky-300">
                   Sky dotted ring — missing prerequisite

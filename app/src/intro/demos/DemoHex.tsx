@@ -72,8 +72,24 @@ export function DemoHex({
       width={w}
       height={h}
       viewBox={`0 0 ${w} ${h}`}
-      className={onClick ? "cursor-pointer select-none" : "select-none"}
+      // shrink-0: the svg carries width/height attributes, but a flex parent
+      // would still squash it — these hexes sit beside paragraphs.
+      className={`shrink-0 select-none ${
+        onClick
+          ? "cursor-pointer rounded outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
+          : ""
+      }`}
       onClick={onClick}
+      // Right-click advances too, because that's the gesture the app itself
+      // uses — the demo should teach the real muscle memory.
+      onContextMenu={
+        onClick
+          ? (e) => {
+              e.preventDefault();
+              onClick();
+            }
+          : undefined
+      }
       role={onClick ? "button" : "img"}
       aria-label={`${block.id} ${block.name}`}
       tabIndex={onClick ? 0 : undefined}

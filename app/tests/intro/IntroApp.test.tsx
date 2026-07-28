@@ -150,6 +150,15 @@ describe("the demos respond", () => {
     expect(screen.getByText("0%")).toBeTruthy();
   });
 
+  it("right-click advances too — the gesture the app itself uses", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#lifecycle");
+    render(<IntroApp />);
+    const block = DEMO_BLOCKS["NET-01"];
+    const hex = screen.getByRole("button", { name: `${block.id} ${block.name}` });
+    fireEvent.contextMenu(hex);
+    expect(screen.getByText("10%")).toBeTruthy();
+  });
+
   it("the segmented control jumps to a state directly, including backwards", () => {
     window.history.replaceState(null, "", "/sl5/intro/#lifecycle");
     render(<IntroApp />);

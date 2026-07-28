@@ -42,14 +42,16 @@ export function ChainDemo() {
         ))}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      {/* Wraps rather than scrolls: the whole chain has to be visible at once
+          for the "every later step dims" read to land. */}
+      <div className="flex flex-wrap items-stretch gap-2">
         {steps.map((step, i) => {
           const dimmed = stopped && i > blockedAt;
           const isBlocked = stopped && i === blockedAt;
           return (
             <div
               key={step.phase}
-              className={`w-40 shrink-0 rounded-lg border p-2 transition-opacity ${
+              className={`min-w-[8.5rem] flex-1 basis-0 rounded-lg border p-2 transition-opacity ${
                 isBlocked
                   ? "border-emerald-800/60 bg-emerald-950/20"
                   : "border-gray-800 bg-gray-900"
@@ -78,7 +80,7 @@ export function ChainDemo() {
         })}
 
         <div
-          className={`flex w-32 shrink-0 items-center justify-center rounded-lg border p-2 text-[11px] font-medium ${
+          className={`flex min-w-[7rem] flex-1 basis-0 items-center justify-center rounded-lg border p-2 text-center text-[11px] font-medium ${
             stopped
               ? "border-emerald-800 bg-emerald-950/30 text-emerald-300"
               : "border-red-900/60 bg-red-950/40 text-red-300"

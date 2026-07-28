@@ -15,7 +15,7 @@ export function Cover() {
       <p className="mt-5 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
         A frontier AI model's weights are the most concentrated piece of strategic
         technology a private company has ever held on a hard drive. Defending them from a
-        nation-state is a problem nobody has solved yet.
+        cyber superpower is a problem nobody has solved yet.
       </p>
       <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-400">
         The <Em>SL5 Explorable</Em> lets you try. This introduction covers the problem

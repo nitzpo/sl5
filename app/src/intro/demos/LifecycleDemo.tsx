@@ -40,8 +40,9 @@ export function LifecycleDemo() {
           size={40}
           onClick={() => setI((n) => (n + 1) % CYCLE.length)}
         />
-        <span className="mt-0.5 text-[10px] text-gray-600">
-          {wrapped ? "click to start over" : "click to advance"}
+        <span className="mt-0.5 text-center text-[10px] leading-tight text-gray-600">
+          <span className="text-gray-400">right-click</span> to{" "}
+          {wrapped ? "start over" : "advance"}
         </span>
       </div>
 

@@ -81,6 +81,26 @@ describe("Block Effectiveness", () => {
     expect(blockEffectiveness(net01, "not_started", 2026)).toBe(0);
     expect(blockEffectiveness(ai03, "not_started", 2030)).toBe(0);
   });
+
+  it("hybrid blocks erode, but only over their probabilistic half", () => {
+    // `hybrid` was unimplemented on this channel too: `aiDegradation` returned
+    // early for `hard_stop` and gave everything else the full probabilistic
+    // erosion, so a data diode's hardware one-way flow decayed as if it were a
+    // monitoring rule. Vary only `defense_type` so the comparison isn't
+    // confounded by a different block's `ai_oc_shift`.
+    const net05 = blocks.find((b) => b.id === "NET-05")!;
+    expect(net05.defense_type).toBe("hybrid");
+    const asType = (t: Block["defense_type"]) =>
+      blockEffectiveness({ ...net05, defense_type: t }, "deployed", 2030);
+
+    expect(asType("hybrid")).toBeLessThan(asType("hard_stop"));
+    expect(asType("hybrid")).toBeGreaterThan(asType("probabilistic"));
+
+    // Still erodes over time — half-structural, not immune.
+    expect(blockEffectiveness(net05, "deployed", 2030)).toBeLessThan(
+      blockEffectiveness(net05, "deployed", 2026)
+    );
+  });
 });
 
 describe("Category and Overall Scores", () => {

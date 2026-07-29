@@ -1,6 +1,6 @@
 import type { AttackChain, Block, BlockState, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
-import { blockEffectiveness } from "./scoring";
+import { blockEffectiveness, HYBRID_STRUCTURAL_SHARE } from "./scoring";
 import { SUPPORTING_WEIGHT, supportingBlocks } from "./supporting";
 import { resolveLayer } from "../utils/ring-geometry";
 
@@ -86,8 +86,9 @@ export function sigmoidProbability(
  * Monotonic by construction: an absent block is no obstacle (returns 1); as the
  * block matures, effectiveness rises 0→1 and the term falls toward (1 - resist),
  * so improving a defense can never raise breach probability. `resist` captures how
- * reliably a *fully* deployed version stops THIS adversary — hard stops are
- * deterministic, probabilistic defenses weaken against stronger adversaries.
+ * reliably a *fully* deployed version stops THIS adversary — hard stops hold up
+ * against a strong adversary nearly as well as a weak one, probabilistic defenses
+ * do not, and hybrids fall between the two.
  *
  * AI's attacker-side lift is already inside `effectiveOc`, so effectiveness is
  * evaluated WITHOUT the defender-side AI erosion (see blockEffectiveness).
@@ -102,22 +103,27 @@ export function blockExploitProbability(
   const eff = blockEffectiveness(block, state, year, sliders, { aiErosion: false });
   if (eff <= 0) return 1.0;
 
-  // Both defense types erode against a stronger adversary; hard stops just erode
-  // far less (a narrow 0.98→0.86 band vs the probabilistic 0.95→0.40).
+  // Every defense type erodes against a stronger adversary; hard stops just erode
+  // far less (a narrow 0.98→0.86 band vs the probabilistic 0.95→0.40), and a
+  // hybrid sits between the two — see HYBRID_STRUCTURAL_SHARE.
   const threshold = block.adversary_exploitation.oc_threshold_to_exploit;
   const bypass = sigmoidProbability(effectiveOc - threshold);
+  const hardResist = clamp(
+    HARD_STOP_RESIST_CEIL - HARD_STOP_BYPASS_SCALE * bypass,
+    HARD_STOP_RESIST_FLOOR,
+    HARD_STOP_RESIST_CEIL
+  );
+  const probResist = clamp(1 - PROB_BYPASS_SCALE * bypass, PROB_RESIST_FLOOR, PROB_RESIST_CEIL);
+  // Interpolating between the two branches rather than picking a third constant:
+  // a hybrid is then bracketed by them at every adversary capability by
+  // construction, which is the property the tests assert and the one a future
+  // retune of either band can't break.
   const resist =
     block.defense_type === "hard_stop"
-      ? clamp(
-          HARD_STOP_RESIST_CEIL - HARD_STOP_BYPASS_SCALE * bypass,
-          HARD_STOP_RESIST_FLOOR,
-          HARD_STOP_RESIST_CEIL
-        )
-      : clamp(
-          1 - PROB_BYPASS_SCALE * bypass,
-          PROB_RESIST_FLOOR,
-          PROB_RESIST_CEIL
-        );
+      ? hardResist
+      : block.defense_type === "hybrid"
+        ? HYBRID_STRUCTURAL_SHARE * hardResist + (1 - HYBRID_STRUCTURAL_SHARE) * probResist
+        : probResist;
   return 1 - eff * resist;
 }
 

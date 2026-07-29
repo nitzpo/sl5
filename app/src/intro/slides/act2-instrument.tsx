@@ -50,7 +50,10 @@ export function Blocks() {
               Switch the year. The red wash creeping down a hexagon is{" "}
               <Term term="erosion">AI erosion</Term> — and it never touches the hard stop,
               because a better model doesn't make an <Term term="airGap">air gap</Term>
-              {" "}shallower. The cable is either there or it isn't.
+              {" "}shallower. The cable is either there or it isn't. The third is a{" "}
+              <Em>hybrid</Em>: a data diode enforces direction in hardware and inspects
+              content in software, so only the inspecting half erodes and it lands between
+              the other two.
             </>
           }
         >

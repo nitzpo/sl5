@@ -80,7 +80,28 @@ export function getStateEffectiveness(state: BlockState | string): number {
 }
 
 /**
- * AI degrades probabilistic blocks over time. Hard stops are immune.
+ * How much of a `hybrid` block is structural rather than probabilistic.
+ *
+ * `hybrid` means a hard-stop core with a probabilistic wrapper — a data diode
+ * enforces direction in hardware and inspects content in software; zone
+ * architecture is a physical boundary policed by procedure. Both halves are real,
+ * so the type belongs between the other two on both AI channels, and half is the
+ * honest split absent per-block data saying otherwise.
+ *
+ * Used by `aiDegradation` (defender channel) and by `blockExploitProbability` in
+ * breach.ts (attacker channel), so the two can't disagree about what a hybrid is.
+ * Both treat it as a lerp between the hard-stop and probabilistic branches, which
+ * keeps it bracketed by them by construction rather than by a tuned constant.
+ *
+ * Before this existed, both call sites branched only on `hard_stop`, so all three
+ * hybrid blocks fell through to the pure-probabilistic path — NET-05 got no credit
+ * at all for the half of it that is physics.
+ */
+export const HYBRID_STRUCTURAL_SHARE = 0.5;
+
+/**
+ * AI degrades probabilistic blocks over time. Hard stops are immune; hybrids
+ * erode only over their probabilistic share.
  */
 export function aiDegradation(
   block: Block,
@@ -91,7 +112,8 @@ export function aiDegradation(
   const aiShift = block.adversary_exploitation.ai_oc_shift;
   const aiCap = getAiCapability(year, aiTimelineSlider);
   // Max degradation: ai_oc_shift=3, ai_cap=1.0 → 30%
-  return aiShift * aiCap * 0.1;
+  const full = aiShift * aiCap * 0.1;
+  return block.defense_type === "hybrid" ? full * (1 - HYBRID_STRUCTURAL_SHARE) : full;
 }
 
 function orgTransformMultiplier(block: Block, orgTransformation: number): number {

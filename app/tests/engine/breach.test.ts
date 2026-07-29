@@ -181,6 +181,35 @@ describe("chain breach model", () => {
     expect(atOc6 - atOc3).toBeLessThan(probSpread);
   });
 
+  it("a hybrid resists between a hard stop and a probabilistic control", () => {
+    // `hybrid` used to be silently unimplemented: both this function and
+    // `aiDegradation` branched on `hard_stop` alone, so all three hybrid blocks
+    // fell through to the pure-probabilistic path. NET-05 is a data diode — a
+    // hardware one-way flow with software inspection on top — and got no credit
+    // whatsoever for the half of it that is physics.
+    //
+    // Comparing get-past across three real blocks with different exploitation
+    // thresholds would confound type with threshold, so hold the block fixed and
+    // vary only `defense_type`. Same block, same threshold, same ai_oc_shift.
+    const netFive = blocks.find((b) => b.id === "NET-05")!;
+    expect(netFive.defense_type).toBe("hybrid");
+    const asType = (t: Block["defense_type"], oc: number) =>
+      blockExploitProbability({ ...netFive, defense_type: t }, "mature", oc, YEAR, SLIDERS);
+
+    // At every adversary tier, not just one: the interpolation is between the two
+    // branches, so bracketing has to hold wherever the bands sit.
+    for (const oc of [2, 3, 4, 5, 6]) {
+      const hard = asType("hard_stop", oc);
+      const hybrid = asType("hybrid", oc);
+      const prob = asType("probabilistic", oc);
+      expect(hybrid).toBeGreaterThan(hard);
+      expect(hybrid).toBeLessThan(prob);
+    }
+
+    // And it still erodes with adversary capability — half-structural, not immune.
+    expect(asType("hybrid", 6)).toBeGreaterThan(asType("hybrid", 3));
+  });
+
   it("maturing a stopper lowers its chain's breach probability", () => {
     const pd = chains.find((c) => c.id === "patient-distillation")!;
     const before = chainBreachProbability(pd, blocks, allState("not_started"), 2, YEAR, SLIDERS, true);

@@ -1,7 +1,17 @@
-import { Aside, Card, CardGrid, DemoFrame, Em, ExternalLink, SlideShell } from "./slide-parts";
+import {
+  Aside,
+  Card,
+  CardGrid,
+  DemoFrame,
+  Em,
+  ExternalLink,
+  Reveal,
+  SlideShell,
+  Term,
+} from "./slide-parts";
 import { AiCurveDemo } from "../demos/AiCurveDemo";
 import { OcLadderDemo } from "../demos/OcLadderDemo";
-import { RECURSIVE_RISK, SL_LEVELS, SOURCES } from "../content";
+import { GLOSSARY, RECURSIVE_RISK, SL_LEVELS, SOURCES } from "../content";
 
 export function Cover() {
   return (
@@ -13,16 +23,22 @@ export function Cover() {
         Sooner or later, someone will try to steal the weights.
       </h1>
       <p className="mt-5 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-        A frontier AI model's weights are the most concentrated piece of strategic
+        A <Term term="frontier">frontier</Term> AI model's{" "}
+        <Term term="weights">weights</Term> are the most concentrated piece of strategic
         technology a private company has ever held on a hard drive. Defending them from a
         cyber superpower is a problem nobody has solved yet.
       </p>
       <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-400">
-        The <Em>SL5 Explorable</Em> lets you try. This introduction covers the problem
-        first — why a state would spend a billion dollars and five years on this, and why
-        it gets harder every year — and then how to drive the tool.
+        This tool lets you try. <Em>SL5</Em> is the top tier of the security scale it's
+        named after — <Term term="sl">Security Level 5</Term>, the one nobody has reached.
       </p>
-      <p className="mt-6 text-xs text-gray-600">
+      <p className="mt-6 max-w-2xl text-xs leading-relaxed text-gray-500">
+        Two halves: <Em>the problem</Em> — why a state would spend a billion dollars and
+        five years on this — then <Em>the instrument</Em>, how to drive the tool. Any word
+        with a <span className="text-violet-300 underline decoration-violet-700 decoration-dotted underline-offset-2">dotted underline</span>{" "}
+        is a term you can click for a plain-English definition.
+      </p>
+      <p className="mt-5 text-xs text-gray-600">
         Press <Em>→</Em> or <Em>Next</Em> to begin. Every slide is linkable; you can skip
         straight to the app at any time.
       </p>
@@ -37,34 +53,40 @@ export function WhatWeightsAre() {
       title="The weights are the model"
       lede={
         <>
-          Training a frontier model produces a set of numbers — the weights. That file{" "}
-          <Em>is</Em> the capability. Copy it, and you have the model: no retraining, no
-          reconstruction, no waiting.
+          Training a frontier model produces a set of numbers — the{" "}
+          <Term term="weights">weights</Term>. That file <Em>is</Em> the capability. Copy
+          it, and you have the model: no retraining, no reconstruction, no waiting.
         </>
       }
     >
-      <CardGrid>
-        <Card title="Not like stealing a design document">
-          A stolen blueprint still has to be built, and building it needs the expertise the
-          thief was missing in the first place. A stolen weight file runs on rented GPUs
-          the afternoon it lands.
-        </Card>
-        <Card title="Not like stealing money">
-          The original owner keeps their copy. Nothing is missing, no alarm is
-          intrinsically tripped — a successful theft can look exactly like a normal
-          Tuesday, and may only surface when the capability shows up somewhere else.
-        </Card>
-        <Card title="Small enough to move">
-          The artifact is large, but it is still a file. Every path that can carry bytes
-          out — a network link, a laptop, a technician, a chip returned for RMA — is a
-          candidate exfiltration channel.
-        </Card>
-        <Card title="Concentrated">
-          Years of research, a training run that costs as much as a factory, and the tacit
-          know-how baked into it all collapse into one artifact with one owner. That is an
-          unusually attractive target.
-        </Card>
-      </CardGrid>
+      <div className="space-y-4">
+        <CardGrid>
+          <Card title="Not like stealing a design document">
+            A stolen blueprint still has to be built, and building it needs the expertise
+            the thief was missing in the first place. A stolen weight file runs on rented
+            GPUs the afternoon it lands.
+          </Card>
+          <Card title="Not like stealing money">
+            The original owner keeps their copy. Nothing is missing, no alarm is
+            intrinsically tripped — a successful theft can look exactly like a normal
+            Tuesday.
+          </Card>
+        </CardGrid>
+
+        <Reveal summary="Two more things that make it an unusual target">
+          <p>
+            <Em>Small enough to move.</Em> The artifact is large, but it is still a file.
+            Every path that can carry bytes out — a network link, a laptop, a technician, a
+            chip returned to the manufacturer — is a candidate{" "}
+            <Term term="exfiltration">exfiltration</Term> channel.
+          </p>
+          <p>
+            <Em>Concentrated.</Em> Years of research, a training run that costs as much as
+            a factory, and the tacit know-how baked into it all collapse into one artifact
+            with one owner.
+          </p>
+        </Reveal>
+      </div>
     </SlideShell>
   );
 }
@@ -82,33 +104,38 @@ export function WhySteal() {
         </>
       }
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         <CardGrid>
           <Card title="Capability parity, for free" accent="text-red-300">
-            Years of R&D — $1–10B and rising — captured in a single operation. A
-            ten-million-dollar intrusion that yields a billion-dollar model is the best
+            A ten-million-dollar intrusion that yields a billion-dollar model is the best
             return on investment in the espionage catalogue. For a state that is behind,
             theft is the cheapest way to stop being behind.
           </Card>
           <Card title="The guardrails come off" accent="text-red-300">
-            A served model refuses things. A stolen weight file does not: with the weights
-            in hand, safety training can be fine-tuned away and the model repurposed for
-            offensive cyber operations, biological and chemical weapon design, or
-            large-scale manipulation. The thief gets a strictly more dangerous artifact
-            than the one the lab operates.
-          </Card>
-          <Card title="Military and intelligence leverage" accent="text-red-300">
-            Autonomous systems, targeting, strategic planning, signals analysis, and
-            wholesale automation of the intrusion work that currently needs scarce human
-            experts. This is the kind of advantage states have historically been willing
-            to run decade-long programmes for.
-          </Card>
-          <Card title="Denying it to the other side" accent="text-red-300">
-            Access is only half the value. Knowing exactly what a rival's frontier model
-            can do — and being able to test against a copy of it — is intelligence in its
-            own right, independent of whether you ever deploy it.
+            A served model refuses things. A stolen weight file does not — safety training
+            can be fine-tuned away. The thief gets a strictly more dangerous artifact than
+            the one the lab operates.
           </Card>
         </CardGrid>
+
+        <Reveal summary="What “more dangerous” means, and two further motives">
+          <p>
+            <Em>The uses safety training blocks.</Em> Offensive cyber operations,
+            biological and chemical weapon design, and large-scale manipulation — the
+            categories every frontier lab trains its served model to refuse.
+          </p>
+          <p>
+            <Em>Military and intelligence leverage.</Em> Autonomous systems, targeting,
+            strategic planning, signals analysis, and wholesale automation of intrusion
+            work that currently needs scarce human experts. States have run decade-long
+            programmes for less.
+          </p>
+          <p>
+            <Em>Denying it to the other side.</Em> Knowing exactly what a rival's frontier
+            model can do — and being able to test against a copy — is intelligence in its
+            own right, whether or not you ever deploy it.
+          </p>
+        </Reveal>
 
         <Aside>
           And the arithmetic is lopsided. A defender has to hold <Em>every</Em> path — the
@@ -143,7 +170,7 @@ export function WhyItGetsWorse() {
             As AI capability climbs, an attacker's <Em>effective</Em> capability climbs with
             it. Work that needed a hundred state-employed experts in 2026 needs far fewer
             later. Controls that only a top-tier state could beat come within reach of
-            criminal groups and insiders.
+            criminal groups and <Term term="insider">insiders</Term>.
           </Card>
         </CardGrid>
 
@@ -175,27 +202,38 @@ export function OcLadderSlide() {
   return (
     <SlideShell
       eyebrow="Naming the attacker"
-      title="Five tiers of adversary — OC1 to OC5"
+      title="How capable is the attacker? OC1 to OC5"
       lede={
         <>
-          "Secure" is meaningless without saying <Em>against whom</Em>. RAND's framework
-          sorts attackers into five operational-capability tiers by what they can actually
+          "Secure" is meaningless without saying <Em>against whom</Em>. So RAND's framework
+          sorts attackers into five tiers of <Em>Operational Capability</Em> — written{" "}
+          <Em>OC1</Em> through <Em>OC5</Em> — ranked by what an attacker can actually
           spend: money, people, and patience.
         </>
       }
     >
       <div className="space-y-5">
-        <DemoFrame caption="Click a tier. Note the jump between the last two.">
+        <div className="rounded-lg border border-violet-900/40 bg-violet-950/20 p-3.5">
+          <p className="text-xs leading-relaxed text-gray-300">
+            <span className="font-semibold text-violet-200">OC = Operational Capability.</span>{" "}
+            It describes the <Em>attacker</Em>, never your defenses. A higher number means
+            a better-funded, more patient, more skilled opponent. When the app asks you to
+            pick an adversary OC, it's asking who you're building against — and OC4, a
+            national intelligence service, is its baseline.
+          </p>
+        </div>
+
+        <DemoFrame caption="Click a tier to see what it can spend. Note the jump between the last two.">
           <OcLadderDemo />
         </DemoFrame>
 
         <Aside>
           <Em>OC4 → OC5 is a qualitative jump, not a bigger budget.</Em> OC4 is a hundred
           people for a year at ten million dollars — already a national intelligence
-          service. OC5 is a thousand people for five years at a billion, running fifty
-          zero-days at once, inserting backdoors into hardware during manufacture, and
-          using infrastructure and agent networks built over decades. Defenses that comfortably
-          stop OC4 can be irrelevant to OC5.
+          service. OC5 is a thousand people for five years at a billion, running fifty{" "}
+          <Term term="zeroDay">zero-days</Term> at once, inserting backdoors into hardware
+          during manufacture, and using infrastructure and agent networks built over
+          decades. Defenses that comfortably stop OC4 can be irrelevant to OC5.
         </Aside>
       </div>
     </SlideShell>
@@ -209,13 +247,22 @@ export function SecurityLevels() {
       title="Five security levels — and the one nobody has reached"
       lede={
         <>
-          Each Security Level is defined by the attacker tier it is meant to survive, and
-          by how many <Em>independent</Em> defense layers that takes. The count is the hard
-          part: eight layers means eight things that must each fail independently.
+          The defender's side of the same scale: <Em>Security Levels</Em>, written{" "}
+          <Em>SL1</Em> through <Em>SL5</Em>. Each one is defined by the OC tier it is meant
+          to survive, and by how many <Em>independent</Em> defense layers that takes.
         </>
       }
     >
       <div className="space-y-4">
+        <div className="rounded-lg border border-violet-900/40 bg-violet-950/20 p-3.5">
+          <p className="text-xs leading-relaxed text-gray-300">
+            <span className="font-semibold text-violet-200">SL = Security Level.</span>{" "}
+            Read the two scales as a pair: <Em>SL4 is what it takes to stop OC4</Em>. The
+            layer count is the hard part — eight independent layers means eight things that
+            must each fail on their own, which is what{" "}
+            <Term term="defenseInDepth">defense in depth</Term> actually costs.
+          </p>
+        </div>
         <div className="overflow-hidden rounded-lg border border-gray-800">
           <table className="w-full text-left text-xs">
             <thead className="bg-gray-900 text-[10px] tracking-wide text-gray-500 uppercase">
@@ -289,6 +336,23 @@ export function Sources() {
             <p className="mt-1.5 text-xs leading-relaxed text-gray-400">{s.gives}</p>
           </div>
         ))}
+
+        {/* The full glossary in one place, so a reader who met a term three
+            slides ago and forgot it has somewhere to look it up — and so every
+            entry is findable by Ctrl+F, which the inline <Term> popovers aren't
+            once collapsed. */}
+        <Reveal summary={`Glossary — every term and abbreviation used here (${Object.keys(GLOSSARY).length})`}>
+          <dl className="space-y-2.5">
+            {Object.entries(GLOSSARY).map(([key, entry]) => (
+              <div key={key}>
+                <dt className="text-xs font-semibold text-gray-200">{entry.label}</dt>
+                <dd className="mt-0.5 text-xs leading-relaxed text-gray-400">
+                  {entry.definition}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Reveal>
 
         <div className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-3.5">
           <h3 className="mb-1.5 text-xs font-semibold text-amber-300">

@@ -6,6 +6,137 @@
 // few dozen fields. `tests/intro/content.test.ts` reads the real JSON off disk
 // and asserts every value below still matches, so the two can't drift silently.
 
+/** Every abbreviation and term-of-art the introduction uses, defined once.
+ *
+ * Two consumers: the inline `<Term>` affordance, which pops one of these open
+ * where the word first appears, and the glossary list on the sources slide,
+ * which shows all of them. Plain strings, not JSX, so both can render them and
+ * a test can lint them. Keys are checked by `keyof typeof GLOSSARY`, so a
+ * `<Term>` pointing at an entry that doesn't exist fails `tsc`, not a reader. */
+export interface GlossaryEntry {
+  /** How the term is written when it's the subject, e.g. "OC — Operational Capability". */
+  label: string;
+  definition: string;
+}
+
+export const GLOSSARY = {
+  weights: {
+    label: "Weights",
+    definition:
+      "The numbers a training run produces. The file is the model — load it and the capability runs, with no retraining and no reconstruction step.",
+  },
+  frontier: {
+    label: "Frontier model",
+    definition:
+      "One of the handful of most capable AI models in existence at a given moment — the ones whose weights are worth a nation-state's attention.",
+  },
+  oc: {
+    label: "OC — Operational Capability",
+    definition:
+      "A five-tier scale for how capable an attacker is, measured in what they can spend: money, people and patience. OC1 is a lone hobbyist running public exploits; OC5 is a thousand people, a billion dollars and five years.",
+  },
+  sl: {
+    label: "SL — Security Level",
+    definition:
+      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the OC tier it is meant to stop, and by how many independent defense layers that takes. SL5 is the top tier, and nobody has reached it.",
+  },
+  hardStop: {
+    label: "Hard stop",
+    definition:
+      "A control that makes an action impossible rather than merely unlikely — an air gap, a one-way data diode, encrypted memory. It doesn't care how clever the attacker is, so rising AI capability can't erode it.",
+  },
+  probabilistic: {
+    label: "Probabilistic control",
+    definition:
+      "A control that lowers the odds instead of closing the door: monitoring, vetting, human review. Its value depends on someone noticing — which is exactly what a more capable adversary is better at defeating.",
+  },
+  airGap: {
+    label: "Air gap",
+    definition:
+      "A network with no physical connection to any other network. There is nothing for a remote attacker to route through, so getting data out requires a person or a device to carry it.",
+  },
+  zeroDay: {
+    label: "Zero-day",
+    definition:
+      "A vulnerability the vendor doesn't know about, so no patch exists. Expensive to find or buy, and normally hoarded until it's worth spending.",
+  },
+  exfiltration: {
+    label: "Exfiltration",
+    definition:
+      "Moving data out of a network it was supposed to stay inside — over a link, on a laptop, or in the pocket of someone who was allowed to be there.",
+  },
+  insider: {
+    label: "Insider threat",
+    definition:
+      "Someone with legitimate access who uses it against you, whether recruited, coerced, or simply leaving. Network security barely applies, because nothing is hacked.",
+  },
+  attackChain: {
+    label: "Attack chain",
+    definition:
+      "One complete route to the weights, written as ordered steps. Each step names the defensive block whose absence lets it succeed, so blocking any single step ends the whole chain.",
+  },
+  breachProbability: {
+    label: "Breach probability",
+    definition:
+      "The app's headline risk number: the chance that at least one modelled attack chain succeeds in the current year, given the posture you've built.",
+  },
+  residualRisk: {
+    label: "Residual risk",
+    definition:
+      "What's left after every control you can afford — the insider never caught, the zero-day nobody found. It's why no live chain in the app ever reaches zero.",
+  },
+  defenseInDepth: {
+    label: "Defense in depth",
+    definition:
+      "Stacking layers that fail independently, so beating one gets the attacker no closer to beating the next. The layer count is what the SL tiers actually measure.",
+  },
+  ciso: {
+    label: "CISO",
+    definition:
+      "Chief Information Security Officer — the executive accountable for an organization's security. The role the app puts you in.",
+  },
+  redTeam: {
+    label: "Red-teaming",
+    definition:
+      "Paying skilled attackers to break your own defenses, so you find the gap before someone hostile does.",
+  },
+  tee: {
+    label: "TEE — Trusted Execution Environment",
+    definition:
+      "Hardware that keeps data encrypted even while it is being computed on, so an attacker who fully owns the machine still can't read it. Also called confidential computing.",
+  },
+  sf86: {
+    label: "SF-86",
+    definition:
+      "The US government's security-clearance questionnaire: foreign contacts, finances, travel, personal history. “SF-86-equivalent vetting” means a private lab running the same depth of check.",
+  },
+  scif: {
+    label: "SCIF",
+    definition:
+      "A Sensitive Compartmented Information Facility — a room built to a published standard (ICD 705) so that nothing discussed or processed inside it leaks out.",
+  },
+  tempest: {
+    label: "TEMPEST",
+    definition:
+      "Standards for stopping equipment from leaking the data it handles through stray electromagnetic emissions: shielding, filtering, and physical separation.",
+  },
+  erosion: {
+    label: "AI erosion",
+    definition:
+      "The share of a probabilistic control that a more capable adversary has effectively taken back. In the app it's the red wash creeping down a hexagon as you move the year forward.",
+  },
+  block: {
+    label: "Block",
+    definition:
+      "One defensive building block — a single control you can invest in, drawn as a hexagon. The app ships 47 of them across 6 categories.",
+  },
+  decisionWindow: {
+    label: "Decision window",
+    definition:
+      "The last year you can start building a control and still have it operational by the target date. Once it closes, the option is gone however much budget appears later.",
+  },
+} satisfies Record<string, GlossaryEntry>;
+
 /** OC tier — the defender's vocabulary for "how capable is the attacker".
  * Mirrors world-state.json `oc_definitions`. */
 export interface OcTier {

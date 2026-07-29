@@ -1,4 +1,13 @@
-import { Aside, Card, CardGrid, DemoFrame, Em, SlideShell } from "./slide-parts";
+import {
+  Aside,
+  Card,
+  CardGrid,
+  DemoFrame,
+  Em,
+  Reveal,
+  SlideShell,
+  Term,
+} from "./slide-parts";
 import { ErosionDemo } from "../demos/ErosionDemo";
 import { LifecycleDemo } from "../demos/LifecycleDemo";
 import { ChainDemo } from "../demos/ChainDemo";
@@ -15,40 +24,48 @@ export function Blocks() {
       title="Everything is a block"
       lede={
         <>
-          The app gives you a catalogue of {CATALOG.blocks} defensive{" "}
-          <Em>building blocks</Em> across {CATALOG.categories} categories — network,
-          machine, physical, personnel, supply chain, and AI-specific. One hexagon is one
-          block: its ID sits inside, a short label underneath.
+          A <Term term="block">block</Term> is one defensive control you can invest in,
+          drawn as a hexagon. The app gives you {CATALOG.blocks} of them across{" "}
+          {CATALOG.categories} categories — network, machine, physical, personnel, supply
+          chain, and AI-specific.
         </>
       }
     >
       <div className="space-y-5">
         <p className="text-sm leading-relaxed text-gray-300">
-          A block's colour is its <Em>defense type</Em>, and that is the single most
-          important thing to read off the map — it tells you whether the control will still
-          be worth anything in 2030.
+          Its colour is the one thing to read first. A{" "}
+          <Term term="hardStop">hard stop</Term> makes an attack impossible; a{" "}
+          <Term term="probabilistic">probabilistic</Term> control only makes it less likely.
+          That difference decides whether the control is still worth anything in 2030.
         </p>
 
         <DemoFrame
           caption={
             <>
-              Switch the year. The red wash creeping down from the top of a hexagon is{" "}
-              <Em>AI erosion</Em>: the fraction of the control that a more capable adversary
-              has effectively taken back. A hard stop never erodes — an air gap doesn't care
-              how clever the attacker is. This is the trade-off the whole tool circles
-              around: probabilistic controls are cheap and fast, structural ones are
-              expensive, slow, and permanent.
+              Switch the year. The red wash creeping down a hexagon is{" "}
+              <Term term="erosion">AI erosion</Term> — and it never touches the hard stop,
+              because an <Term term="airGap">air gap</Term> doesn't care how clever the
+              attacker is.
             </>
           }
         >
           <ErosionDemo />
         </DemoFrame>
 
-        <Aside>
-          Click any hexagon in the app to open its <Em>Block Detail</Em> panel: cost range,
-          deploy time, feasibility, dependencies, how an adversary exploits its absence,
-          real-world parallels, and the open questions experts still disagree about.
-        </Aside>
+        <Reveal summary="Why this is the central trade-off">
+          <p>
+            Probabilistic controls are cheap and fast, and they're what most security
+            programmes are made of. Structural ones are expensive, slow, and permanent.
+            Spend everything on the first kind and your 2026 posture quietly decays to
+            nothing by 2030; spend everything on the second and you can't afford enough
+            layers to matter. The app is largely an argument about that split.
+          </p>
+          <p>
+            Click any hexagon in the app for its <Em>Block Detail</Em> panel: cost range,
+            deploy time, feasibility, dependencies, how an adversary exploits its absence,
+            real-world parallels, and the open questions experts still disagree about.
+          </p>
+        </Reveal>
       </div>
     </SlideShell>
   );
@@ -80,11 +97,8 @@ export function Lifecycle() {
           <LifecycleDemo />
         </DemoFrame>
 
-        <div>
-          <h3 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-            Three ways to advance a block in the app
-          </h3>
-          <ul className="space-y-1.5 text-xs text-gray-400">
+        <Reveal summary="Three ways to advance a block in the app">
+          <ul className="space-y-1.5">
             <li>
               <Em>Right-click</Em> a hexagon on the map — fastest way to walk one forward.
             </li>
@@ -97,7 +111,7 @@ export function Lifecycle() {
               the only way to jump straight to a state or step backwards.
             </li>
           </ul>
-        </div>
+        </Reveal>
 
         <Aside>
           The order you advance blocks in is also your <Em>funding priority</Em>. That
@@ -143,8 +157,8 @@ export function Constraints() {
                 </h3>
                 <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
                   Some blocks require others to be operational first. Behavioral monitoring
-                  without a sensitivity-tier framework to monitor <Em>against</Em> is capped
-                  the same way. Turn on the <Em>Requires</Em> legend toggle to see the arrows.
+                  with no sensitivity-tier framework to monitor <Em>against</Em> is capped
+                  the same way. The <Em>Requires</Em> legend toggle draws the arrows.
                 </p>
               </div>
             </div>
@@ -169,9 +183,10 @@ export function AttackPath() {
       title="Attack paths: how the breach number is made"
       lede={
         <>
-          {CATALOG.chains} multi-step attack chains ship with the app. Each names the
-          blocks it exploits and the blocks that stop it, so the breach probability isn't a
-          vibe — it's a product over the gaps you left open. Here is{" "}
+          An <Term term="attackChain">attack chain</Term> is one complete route to the
+          weights, step by step. {CATALOG.chains} ship with the app, each naming the blocks
+          it exploits and the blocks that stop it — so the{" "}
+          <Term term="breachProbability">breach probability</Term> isn't a vibe. Here is{" "}
           <Em>{LONG_GAME.name}</Em>, an OC{LONG_GAME.typicalOc} chain that never touches a
           computer illicitly.
         </>
@@ -182,10 +197,9 @@ export function AttackPath() {
           caption={
             <>
               Deploy a defense and watch the chain die at that step — every later step dims,
-              because it never happens. In the app, selecting a chain also draws it across
-              the map, so you can see which part of your posture it walks through. Note the
-              third step: <Em>nothing is hacked</Em>. Insider paths are a distinct class,
-              and the hardest to price.
+              because it never happens. Note the third step: <Em>nothing is hacked</Em>.{" "}
+              <Term term="insider">Insider</Term> paths are a distinct class, and the
+              hardest to price.
             </>
           }
         >
@@ -194,14 +208,15 @@ export function AttackPath() {
 
         <CardGrid>
           <Card title="Improving a defense never makes things worse">
-            The model is monotonic by construction and tested for it. Advancing any block
-            can only lower breach probability — so if a number moves the wrong way, that's a
+            Advancing any block can only lower breach probability — the model is monotonic
+            by construction and tested for it. If a number moves the wrong way, that's a
             bug, not a subtlety.
           </Card>
           <Card title="But no live chain reaches zero">
-            Every viable chain keeps a residual-risk floor: the insider never caught, the
-            zero-day nobody found. The only way to a true zero is removing the
-            precondition — an air-gapped model has no extraction channel at all.
+            Every viable chain keeps a floor of{" "}
+            <Term term="residualRisk">residual risk</Term>. The only way to a true zero is
+            removing the precondition — an air-gapped model has no extraction channel at
+            all.
           </Card>
         </CardGrid>
       </div>
@@ -236,8 +251,8 @@ export function Timeline() {
             What you build in 2026 has to still work in 2030.
           </Card>
           <Card title="The deployment race" accent="text-red-300">
-            The small ▲ markers sitting on the year axis are <Em>must-start-by</Em>{" "}
-            deadlines — one per cluster of blocks, hover for the list. An air-gapped
+            The small ▲ markers on the year axis are{" "}
+            <Term term="decisionWindow">decision windows</Term> closing. An air-gapped
             facility or custom silicon takes 36–48 months to stand up, so a 2030 target
             makes the decision due now, not later.
           </Card>
@@ -276,38 +291,41 @@ export function TheRest() {
       <div className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-2">
           <Card title="Three views of the same posture">
-            <Em>Clusters</Em> groups blocks by category around the model at the centre.{" "}
-            <Em>Grid</Em> is the flat catalogue. <Em>Rings</Em> shows the eight
-            defense-in-depth layers as concentric rings, each labelled with its strength —
+            <Em>Clusters</Em> groups blocks by category around the model.{" "}
+            <Em>Grid</Em> is the flat catalogue. <Em>Rings</Em> shows the eight{" "}
+            <Term term="defenseInDepth">defense-in-depth</Term> layers as concentric rings —
             the fastest way to spot the layer you have nothing in.
           </Card>
           <Card title="Four perspectives">
-            The right-hand panel reframes the same numbers as a <Em>CISO</Em> (priorities,
-            budget, decision windows), an <Em>Attacker</Em> (which chains are viable, ranked),
-            a <Em>Policy</Em> maker (what levers like mandating SL4 would do), or an{" "}
-            <Em>Observer</Em> (the raw readouts).
+            The right-hand panel reframes the same numbers as a <Term term="ciso">CISO</Term>{" "}
+            (priorities and budget), an <Em>Attacker</Em> (which chains are viable), a{" "}
+            <Em>Policy</Em> maker (what mandating SL4 would do), or an <Em>Observer</Em> (raw
+            readouts).
           </Card>
           <Card title="World sliders">
-            Six assumptions you don't control as a CISO: AI timeline, government cooperation,
-            vendor cooperation, annual budget, organizational transformation, and risk
-            tolerance. Plus the adversary's OC tier and whether the model is served
-            externally at all.
+            Six assumptions you don't control as a CISO — AI timeline, government and vendor
+            cooperation, budget, organizational transformation, risk tolerance — plus the
+            adversary's OC tier and whether the model is served externally at all.
           </Card>
           <Card title="Score, share, save">
-            The <Em>Security Posture</Em> card carries your SL score and breach probability,
-            flashing the delta as you change things. <Em>Share</Em> copies a URL that encodes
-            your whole posture; <Em>Scenarios</Em> saves named ones locally; <Em>Reset</Em>{" "}
-            returns to the real-world baseline.
+            The <Em>Security Posture</Em> card carries your SL score and breach probability.{" "}
+            <Em>Share</Em> copies a URL encoding your whole posture; <Em>Scenarios</Em> saves
+            named ones locally; <Em>Reset</Em> returns to the real-world baseline.
           </Card>
         </div>
 
-        <Aside>
-          The legend items above the map are also <Em>toggles</Em> — click <Em>Start now</Em>,{" "}
-          <Em>Contested</Em>, <Em>Over budget</Em> or any of the relation arrows to hide that
-          badge if the map gets busy. Hovering a block also gives you the numbers behind its
-          badges, including the year its window closes. And the app itself needs a
-          desktop-sized screen; this introduction doesn't.
-        </Aside>
+        <Reveal summary="Two smaller things worth knowing">
+          <p>
+            The legend items above the map are also <Em>toggles</Em> — click{" "}
+            <Em>Start now</Em>, <Em>Contested</Em>, <Em>Over budget</Em> or any relation
+            arrow to hide that badge when the map gets busy. Hovering a block gives you the
+            numbers behind its badges, including the year its window closes.
+          </p>
+          <p>
+            The app itself needs a desktop-sized screen. This introduction doesn't, so it's
+            the shareable half.
+          </p>
+        </Reveal>
 
         <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
           <h3 className="text-sm font-semibold text-gray-100">That's the tour.</h3>

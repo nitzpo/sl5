@@ -18,14 +18,14 @@ export function ErosionDemo() {
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-xs text-gray-500">Year</span>
+        <span className="text-sm text-gray-500">Year</span>
         <div className="flex items-center gap-0.5 rounded bg-gray-800 p-0.5">
           {[2026, 2030].map((yr) => (
             <button
               key={yr}
               onClick={() => setYear(yr)}
               aria-pressed={year === yr}
-              className={`rounded px-2 py-0.5 text-[11px] transition-colors ${
+              className={`rounded px-2 py-0.5 text-sm transition-colors ${
                 year === yr ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"
               }`}
             >
@@ -42,15 +42,15 @@ export function ErosionDemo() {
           return (
             <div key={id} className="flex flex-col items-center text-center">
               <DemoHex block={block} state="deployed" degradation={degradation} />
-              <div className="mt-1 text-[11px] font-medium text-gray-200">
+              <div className="mt-1 text-sm font-medium text-gray-200">
                 {TYPE_LABEL[block.defenseType]}
               </div>
-              <div className="mt-0.5 font-mono text-[10px] text-gray-500">
+              <div className="mt-0.5 font-mono text-sm text-gray-500">
                 {degradation > 0.005
                   ? `−${Math.round(degradation * 100)}% eroded`
                   : "no erosion"}
               </div>
-              <p className="mt-1.5 text-[11px] leading-snug text-gray-500">{block.blurb}</p>
+              <p className="mt-1.5 text-sm leading-snug text-gray-500">{block.blurb}</p>
             </div>
           );
         })}

@@ -16,29 +16,33 @@ import { GLOSSARY, RECURSIVE_RISK, SL_LEVELS, SOURCES } from "../content";
 export function Cover() {
   return (
     <section className="flex min-h-[52vh] flex-col justify-center">
-      <p className="mb-3 text-[10px] font-semibold tracking-wider text-violet-400 uppercase">
+      <p className="mb-3 text-xs font-semibold tracking-wider text-violet-400 uppercase">
         Introduction · about 5 minutes
       </p>
-      <h1 className="text-3xl leading-tight font-bold text-gray-100 sm:text-4xl">
+      <h1 className="text-3xl leading-tight font-bold text-gray-100 sm:text-5xl">
         Sooner or later, someone will try to steal the weights.
       </h1>
-      <p className="mt-5 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
+      <p className="mt-6 max-w-2xl text-base leading-relaxed text-gray-300 sm:text-lg">
         A <Term term="frontier">frontier</Term> AI model's{" "}
         <Term term="weights">weights</Term> are the most concentrated piece of strategic
         technology a private company has ever held on a hard drive. Defending them from a
         cyber superpower is a problem nobody has solved yet.
       </p>
-      <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-400">
+      <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-400">
         This tool lets you try. <Em>SL5</Em> is the top tier of the security scale it's
-        named after — <Term term="sl">Security Level 5</Term>, the one nobody has reached.
+        named after: <Term term="sl">Security Level 5</Term>, the level built to withstand
+        the most capable attacker there is.
       </p>
-      <p className="mt-6 max-w-2xl text-xs leading-relaxed text-gray-500">
+      <p className="mt-6 max-w-2xl text-sm leading-relaxed text-gray-500">
         Two halves: <Em>the problem</Em> — why a state would spend a billion dollars and
         five years on this — then <Em>the instrument</Em>, how to drive the tool. Any word
-        with a <span className="text-violet-300 underline decoration-violet-700 decoration-dotted underline-offset-2">dotted underline</span>{" "}
-        is a term you can click for a plain-English definition.
+        with a{" "}
+        <span className="text-violet-300 underline decoration-violet-600 decoration-dotted underline-offset-[3px]">
+          dotted underline
+        </span>{" "}
+        explains itself when you hover or tap it.
       </p>
-      <p className="mt-5 text-xs text-gray-600">
+      <p className="mt-5 text-sm text-gray-600">
         Press <Em>→</Em> or <Em>Next</Em> to begin. Every slide is linkable; you can skip
         straight to the app at any time.
       </p>
@@ -214,7 +218,7 @@ export function OcLadderSlide() {
     >
       <div className="space-y-5">
         <div className="rounded-lg border border-violet-900/40 bg-violet-950/20 p-3.5">
-          <p className="text-xs leading-relaxed text-gray-300">
+          <p className="text-sm leading-relaxed text-gray-300">
             <span className="font-semibold text-violet-200">OC = Operational Capability.</span>{" "}
             It describes the <Em>attacker</Em>, never your defenses. A higher number means
             a better-funded, more patient, more skilled opponent. When the app asks you to
@@ -244,7 +248,7 @@ export function SecurityLevels() {
   return (
     <SlideShell
       eyebrow="Naming the defense"
-      title="Five security levels — and the one nobody has reached"
+      title="Five security levels — SL1 to SL5"
       lede={
         <>
           The defender's side of the same scale: <Em>Security Levels</Em>, written{" "}
@@ -255,7 +259,7 @@ export function SecurityLevels() {
     >
       <div className="space-y-4">
         <div className="rounded-lg border border-violet-900/40 bg-violet-950/20 p-3.5">
-          <p className="text-xs leading-relaxed text-gray-300">
+          <p className="text-sm leading-relaxed text-gray-300">
             <span className="font-semibold text-violet-200">SL = Security Level.</span>{" "}
             Read the two scales as a pair: <Em>SL4 is what it takes to stop OC4</Em>. The
             layer count is the hard part — eight independent layers means eight things that
@@ -264,13 +268,13 @@ export function SecurityLevels() {
           </p>
         </div>
         <div className="overflow-hidden rounded-lg border border-gray-800">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-gray-900 text-[10px] tracking-wide text-gray-500 uppercase">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-900 text-xs tracking-wide text-gray-500 uppercase">
               <tr>
-                <th className="px-3 py-2">Level</th>
-                <th className="px-3 py-2">Stops</th>
-                <th className="hidden px-3 py-2 sm:table-cell">Layers</th>
-                <th className="px-3 py-2">What it looks like</th>
+                <th className="px-3 py-2.5">Level</th>
+                <th className="px-3 py-2.5">Stops</th>
+                <th className="hidden px-3 py-2.5 sm:table-cell">Layers</th>
+                <th className="px-3 py-2.5">What it looks like</th>
               </tr>
             </thead>
             <tbody>
@@ -281,20 +285,23 @@ export function SecurityLevels() {
                     sl.achievable ? "" : "bg-red-950/20"
                   }`}
                 >
-                  <td className="px-3 py-2 align-top font-mono whitespace-nowrap text-gray-200">
+                  <td className="px-3 py-2.5 align-top font-mono whitespace-nowrap text-gray-200">
                     SL{sl.level}
                   </td>
-                  <td className="px-3 py-2 align-top whitespace-nowrap text-gray-400">
+                  <td className="px-3 py-2.5 align-top whitespace-nowrap text-gray-400">
                     {sl.defendsAgainst.split(" — ")[0]}
                   </td>
-                  <td className="hidden px-3 py-2 align-top font-mono text-gray-300 sm:table-cell">
+                  <td className="hidden px-3 py-2.5 align-top font-mono text-gray-300 sm:table-cell">
                     {sl.requiredIndependentLayers}
                   </td>
-                  <td className="px-3 py-2 align-top text-gray-400">
+                  <td className="px-3 py-2.5 align-top text-gray-400">
                     {sl.description}
+                    {/* Its own block, not trailing the sentence: inline, the badge
+                        wrapped mid-phrase and left "achievable today" orphaned on
+                        the next line. */}
                     {!sl.achievable && (
-                      <span className="ml-1.5 rounded border border-red-900/50 bg-red-950 px-1.5 py-0.5 text-[10px] text-red-300">
-                        not achievable today
+                      <span className="mt-1.5 inline-block rounded border border-red-900/50 bg-red-950 px-2 py-0.5 text-xs whitespace-nowrap text-red-300">
+                        likely out of reach today
                       </span>
                     )}
                   </td>
@@ -305,12 +312,14 @@ export function SecurityLevels() {
         </div>
 
         <Aside>
-          RAND's conclusion is blunt: <Em>SL5 is not achievable today</Em> — not by any
-          lab, not without help from the national-security community — and a model served
-          to the public over the internet cannot meet it at all. Even <Em>SL4</Em> is
-          aspirational for most labs. That gap is what this tool is for: you assemble a
-          posture and watch how far short of SL5 the best available answer still falls,
-          and why.
+          RAND's assessment is that <Em>SL5 is probably not achievable today</Em> — not by
+          a lab acting alone, without help from the national-security community — and that a
+          model served to the public over the internet can't meet it at all. Even{" "}
+          <Em>SL4</Em> is hard: it's nation-state defense, and most labs aren't there. That
+          gap is what this tool is for. Nobody publishes their real posture, so whether any
+          organization has quietly reached a given level isn't something you or this app can
+          know; what you <Em>can</Em> do is assemble a posture and see what it costs and
+          what it still leaves open.
         </Aside>
       </div>
     </SlideShell>
@@ -331,9 +340,9 @@ export function Sources() {
               <ExternalLink href={s.href}>
                 <span className="text-sm font-medium">{s.title}</span>
               </ExternalLink>
-              <span className="font-mono text-[10px] text-gray-600">{s.year}</span>
+              <span className="font-mono text-sm text-gray-600">{s.year}</span>
             </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-gray-400">{s.gives}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-gray-400">{s.gives}</p>
           </div>
         ))}
 
@@ -345,8 +354,8 @@ export function Sources() {
           <dl className="space-y-2.5">
             {Object.entries(GLOSSARY).map(([key, entry]) => (
               <div key={key}>
-                <dt className="text-xs font-semibold text-gray-200">{entry.label}</dt>
-                <dd className="mt-0.5 text-xs leading-relaxed text-gray-400">
+                <dt className="text-sm font-semibold text-gray-200">{entry.label}</dt>
+                <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
                   {entry.definition}
                 </dd>
               </div>
@@ -355,10 +364,10 @@ export function Sources() {
         </Reveal>
 
         <div className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-3.5">
-          <h3 className="mb-1.5 text-xs font-semibold text-amber-300">
+          <h3 className="mb-1.5 text-sm font-semibold text-amber-300">
             ⚠ What this tool is not
           </h3>
-          <p className="text-xs leading-relaxed text-gray-400">
+          <p className="text-sm leading-relaxed text-gray-400">
             An educational, illustrative model — not authoritative security guidance. The
             blocks, attack chains, costs, and probabilities are a modeling{" "}
             <Em>interpretation</Em> synthesized from the sources above, not official

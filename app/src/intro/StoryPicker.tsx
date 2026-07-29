@@ -22,12 +22,12 @@ export function StoryPicker() {
     return (
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs text-gray-400">Choose a story to watch</span>
+          <span className="text-sm text-gray-400">Choose a story to watch</span>
           {/* "Cancel", not "← Back": the deck's own Back button is on screen
               too, and two of them is ambiguous by sight and to a screen reader. */}
           <button
             onClick={() => setChoosing(false)}
-            className="text-xs text-gray-500 hover:text-gray-300"
+            className="text-sm text-gray-500 hover:text-gray-300"
           >
             Cancel
           </button>
@@ -43,7 +43,7 @@ export function StoryPicker() {
               <div className="text-sm font-medium text-gray-100 group-hover:text-white">
                 ▶ {script.name}
               </div>
-              <div className="text-[11px] text-gray-500 group-hover:text-gray-400">
+              <div className="text-sm text-gray-500 group-hover:text-gray-400">
                 {script.description}
               </div>
             </a>

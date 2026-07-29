@@ -358,18 +358,26 @@ describe("jargon is explained in place", () => {
     // `keyof typeof GLOSSARY` makes a bad key a type error, but only if the
     // slide renders — so walk the whole deck and check each popover resolves to
     // a real label rather than an empty span.
+    const labels = new Set(Object.values(GLOSSARY).map((e) => e.label));
+    let checked = 0;
     for (const slide of SLIDES) {
       window.history.replaceState(null, "", `/sl5/intro/#${slide.slug}`);
       render(<IntroApp />);
-      const labels = new Set(Object.values(GLOSSARY).map((e) => e.label));
       for (const btn of screen.queryAllByRole("button", { expanded: false })) {
         fireEvent.click(btn);
-        // A Term renders its label bolded inside the popover it opens.
-        const popover = document.getElementById(btn.getAttribute("aria-controls")!);
-        if (popover) expect(labels).toContain(popover.querySelector("span")!.textContent);
+        // An open Term describes its trigger with the popover it just rendered,
+        // and the popover's first span is the glossary label.
+        const id = btn.getAttribute("aria-describedby");
+        const popover = id ? document.getElementById(id) : null;
+        if (!popover || popover.getAttribute("role") !== "tooltip") continue;
+        expect(labels).toContain(popover.querySelector("span")!.textContent);
+        checked++;
       }
       cleanup();
     }
+    // Guard against the sweep silently checking nothing — which is exactly what
+    // happened when Term moved from aria-controls to aria-describedby.
+    expect(checked, "no Term popovers were opened").toBeGreaterThan(15);
   });
 });
 

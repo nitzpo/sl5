@@ -38,7 +38,7 @@ export const GLOSSARY = {
   sl: {
     label: "SL — Security Level",
     definition:
-      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the OC tier it is meant to stop, and by how many independent defense layers that takes. SL5 is the top tier, and nobody has reached it.",
+      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the attacker tier it is meant to stop, and by how many independent defense layers that takes. SL5 is simply the level built to stop the top attacker tier.",
   },
   hardStop: {
     label: "Hard stop",
@@ -450,7 +450,7 @@ export const SOURCES: SourceLink[] = [
     href: "https://www.rand.org/pubs/research_reports/RRA2849-1.html",
     year: "2024",
     gives:
-      "The framework this whole tool is built on: five Security Levels mapped to five attacker capability tiers, ~38 attack vectors across 9 domains, and the finding that SL5 is not achievable today without help from the national-security community.",
+      "The framework this whole tool is built on: five Security Levels mapped to five attacker capability tiers, ~38 attack vectors across 9 domains, and the assessment that SL5 is likely not achievable today without help from the national-security community.",
   },
   {
     title: "SL5 Standard for AI Security v0.1",

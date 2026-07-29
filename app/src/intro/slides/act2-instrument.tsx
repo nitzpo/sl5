@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Aside,
   Card,
@@ -14,8 +15,11 @@ import { ChainDemo } from "../demos/ChainDemo";
 import { TimelineDiagram } from "../demos/TimelineDiagram";
 import { DecisionWindowDemo } from "../demos/DecisionWindowDemo";
 import { DemoHex } from "../demos/DemoHex";
+import { BuildPostureGame } from "../demos/BuildPostureGame";
 import { StoryPicker } from "../StoryPicker";
 import { CATALOG, DEMO_BLOCKS, LONG_GAME } from "../content";
+import { BUDGET_MILLIONS } from "../posture-game";
+import { formatCost } from "../../utils/format";
 
 export function Blocks() {
   return (
@@ -123,6 +127,14 @@ export function Lifecycle() {
 }
 
 export function Constraints() {
+  // The mini-game is a detour, not a slide: it replaces the slide body while
+  // it's open and hands the reader straight back where they were. Keeping it out
+  // of SLIDES means the progress rail still reads as a 13-slide read, nobody is
+  // forced through it, and deep links to #constraints land on the slide.
+  const [playing, setPlaying] = useState(false);
+
+  if (playing) return <BuildPostureGame onExit={() => setPlaying(false)} />;
+
   return (
     <SlideShell
       eyebrow="The instrument"
@@ -135,10 +147,10 @@ export function Constraints() {
             <div className="flex flex-col items-start gap-3 sm:flex-row">
               <DemoHex block={DEMO_BLOCKS["HW-07"]} state="deployed" size={38} budgetExceeded />
               <div>
-                <h3 className="text-xs font-semibold text-pink-300">
+                <h3 className="text-sm font-semibold text-pink-300">
                   Pink dashed ring — over budget
                 </h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
+                <p className="mt-1 text-sm leading-relaxed text-gray-400">
                   Your annual budget is binding. Blocks are funded in the order you advanced
                   them, so activating one more can only cap <Em>that</Em> block — it never
                   evicts an earlier commitment. Anything that doesn't fit is held at{" "}
@@ -152,10 +164,10 @@ export function Constraints() {
             <div className="flex flex-col items-start gap-3 sm:flex-row">
               <DemoHex block={DEMO_BLOCKS["PER-03"]} state="deployed" size={38} dependencyUnmet />
               <div>
-                <h3 className="text-xs font-semibold text-sky-300">
+                <h3 className="text-sm font-semibold text-sky-300">
                   Sky dotted ring — missing prerequisite
                 </h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
+                <p className="mt-1 text-sm leading-relaxed text-gray-400">
                   Some blocks require others to be operational first. Behavioral monitoring
                   with no sensitivity-tier framework to monitor <Em>against</Em> is capped
                   the same way. The <Em>Requires</Em> legend toggle draws the arrows.
@@ -171,6 +183,28 @@ export function Constraints() {
           that buys the whole wishlist and one that leaves real gaps, without a single
           block changing.
         </Aside>
+
+        {/* The invitation into the detour. Deliberately concrete about what it
+            is and that it's skippable — a reader mid-tour needs to know they
+            aren't leaving the tour. */}
+        <div className="rounded-xl border border-violet-800/50 bg-violet-950/20 p-4">
+          <h3 className="text-base font-semibold text-gray-100">
+            Try it yourself — {formatCost(BUDGET_MILLIONS)}, ten blocks, one year
+          </h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-gray-400">
+            Reading about a binding budget isn't the same as running out of money. Spend a
+            minute building a posture against a nation-state and watch the SL score and
+            the breach probability move — computed by the app's real engine, over the real
+            block catalogue. You come straight back here when you're done.
+          </p>
+          <button
+            type="button"
+            onClick={() => setPlaying(true)}
+            className="mt-3 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+          >
+            ▶ Start the mini-game
+          </button>
+        </div>
       </div>
     </SlideShell>
   );
@@ -205,6 +239,32 @@ export function AttackPath() {
         >
           <ChainDemo />
         </DemoFrame>
+
+        {/* A reader asked where any of this actually lives in the app. Naming
+            the three places, in click order, answers it better than more theory. */}
+        <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+          <h3 className="text-sm font-semibold text-gray-100">
+            Where you'll find this in the app
+          </h3>
+          <ol className="mt-2.5 space-y-2 text-sm leading-relaxed text-gray-400">
+            <li>
+              <Em>1. The big breach percentage</Em> at the top of the{" "}
+              <Em>Security Posture</Em> card is this calculation, for whichever chain is
+              currently your most likely one — it's named right underneath.
+            </li>
+            <li>
+              <Em>2. Click that percentage</Em> and the chain is drawn across the map, so
+              you can see which blocks it walks through, and this same step strip opens at
+              the bottom of the screen.
+            </li>
+            <li>
+              <Em>3. Switch the right-hand panel to the Attacker perspective</Em> for all{" "}
+              {CATALOG.chains} ranked by how likely they are to work, split into viable and
+              blocked. Click any one to draw it. That list is the app's answer to "what
+              should I fix next".
+            </li>
+          </ol>
+        </div>
 
         <CardGrid>
           <Card title="Improving a defense never makes things worse">
@@ -329,13 +389,13 @@ export function TheRest() {
 
         <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
           <h3 className="text-sm font-semibold text-gray-100">That's the tour.</h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-gray-400">
+          <p className="mt-1.5 text-sm leading-relaxed text-gray-400">
             There is no winning posture — the honest outcome is a programme that costs more
             than you have and still leaves an insider path open. Finding out{" "}
             <Em>which</Em> gaps survive your best effort is the point.
           </p>
           <StoryPicker />
-          <p className="mt-3 text-[10px] leading-relaxed text-gray-600">
+          <p className="mt-3 text-sm leading-relaxed text-gray-600">
             Reminder: an illustrative educational model, not authoritative security
             guidance. Source material is on the{" "}
             {/* same-page hash link — IntroApp's hashchange listener jumps slides */}

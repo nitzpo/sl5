@@ -25,13 +25,13 @@ export function ChainDemo() {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span className="text-[11px] text-gray-500">Deploy a defense:</span>
+        <span className="text-sm text-gray-500">Deploy a defense:</span>
         {GAP_BLOCKS.map((id) => (
           <button
             key={id}
             onClick={() => setDeployed((d) => ({ ...d, [id]: !d[id] }))}
             aria-pressed={deployed[id]}
-            className={`rounded border px-2 py-0.5 text-[11px] transition-colors ${
+            className={`rounded border px-2 py-0.5 text-sm transition-colors ${
               deployed[id]
                 ? "border-emerald-700 bg-emerald-950/60 text-emerald-300"
                 : "border-gray-700 bg-gray-900 text-gray-400 hover:text-gray-200"
@@ -57,11 +57,11 @@ export function ChainDemo() {
                   : "border-gray-800 bg-gray-900"
               } ${dimmed ? "opacity-30" : ""}`}
             >
-              <div className="text-[11px] font-semibold text-gray-200">{step.phase}</div>
-              <p className="mt-1 text-[10px] leading-snug text-gray-500">{step.description}</p>
+              <div className="text-sm font-semibold text-gray-200">{step.phase}</div>
+              <p className="mt-1 text-sm leading-snug text-gray-500">{step.description}</p>
               {step.blockGapUsed ? (
                 <span
-                  className={`mt-1.5 inline-block rounded px-1.5 py-0.5 text-[10px] ${
+                  className={`mt-1.5 inline-block rounded px-1.5 py-0.5 text-sm ${
                     deployed[step.blockGapUsed as GapBlock]
                       ? "bg-emerald-900/60 text-emerald-300"
                       : "border border-red-900/50 bg-red-950 text-red-300"
@@ -71,7 +71,7 @@ export function ChainDemo() {
                   {step.blockGapUsed}
                 </span>
               ) : (
-                <span className="mt-1.5 inline-block rounded bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-400">
+                <span className="mt-1.5 inline-block rounded bg-gray-800 px-1.5 py-0.5 text-sm text-gray-400">
                   no defense applies
                 </span>
               )}
@@ -80,7 +80,7 @@ export function ChainDemo() {
         })}
 
         <div
-          className={`flex min-w-[7rem] flex-1 basis-0 items-center justify-center rounded-lg border p-2 text-center text-[11px] font-medium ${
+          className={`flex min-w-[7rem] flex-1 basis-0 items-center justify-center rounded-lg border p-2 text-center text-sm font-medium ${
             stopped
               ? "border-emerald-800 bg-emerald-950/30 text-emerald-300"
               : "border-red-900/60 bg-red-950/40 text-red-300"
@@ -91,7 +91,7 @@ export function ChainDemo() {
       </div>
 
       {stopped && (
-        <p className="mt-3 text-[11px] leading-relaxed text-emerald-300/80">
+        <p className="mt-3 text-sm leading-relaxed text-emerald-300/80">
           {steps[blockedAt].howItStops}
         </p>
       )}

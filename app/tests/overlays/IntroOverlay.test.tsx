@@ -8,11 +8,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { IntroOverlay } from "../../src/components/overlays/IntroOverlay";
 import { SCRIPTS } from "../../src/timelapse/scripts";
+import { usePlaybackStore } from "../../src/timelapse/playback-store";
 
 const INTRO_CTA = "Start with the 5-minute introduction";
 
+// The real startScript rewrites the simulation store; the modal's only contract
+// is that it hands the chosen script over, so stub it and restore afterwards.
+const realStartScript = usePlaybackStore.getState().startScript;
+
 beforeEach(() => localStorage.clear());
-afterEach(cleanup);
+afterEach(() => {
+  usePlaybackStore.setState({ startScript: realStartScript });
+  cleanup();
+});
 
 describe("the introduction is the primary call to action", () => {
   it("is the first interactive element in the modal", () => {
@@ -49,6 +57,8 @@ describe("the introduction is the primary call to action", () => {
 describe("the secondary exits still work", () => {
   it("the story button opens the chooser, and picking one plays it", () => {
     const onClose = vi.fn();
+    const startScript = vi.fn();
+    usePlaybackStore.setState({ startScript });
     render(<IntroOverlay onClose={onClose} />);
 
     fireEvent.click(screen.getByText("▶ Watch the 1-min story"));
@@ -56,6 +66,9 @@ describe("the secondary exits still work", () => {
     for (const s of scripted) expect(screen.getByText(`▶ ${s.name}`)).toBeTruthy();
 
     fireEvent.click(screen.getByText(`▶ ${scripted[0].name}`));
+    // Closing and remembering isn't enough: the whole point of this exit is
+    // that the chosen story is actually playing when the app appears.
+    expect(startScript).toHaveBeenCalledWith(scripted[0]);
     expect(onClose).toHaveBeenCalled();
     expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
   });

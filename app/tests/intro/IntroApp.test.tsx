@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+//
 // Behavioural smoke test for the introduction at /sl5/intro/. `content.test.ts`
 // guards the numbers; this guards that every slide actually renders and that
 // navigation and the interactive demos respond — the intro has no other test
@@ -322,6 +324,25 @@ describe("jargon is explained in place", () => {
     expect(term.getAttribute("aria-expanded")).toBe("false");
   });
 
+  it("a tap opens a term rather than opening and closing it", () => {
+    // A tap fires focus and then click. When focus opened the card
+    // unconditionally, the click behind it closed it again and the definition
+    // was unreachable on a phone — the one device this page is shared to.
+    // jsdom never matches `:focus-visible`, which is exactly a pointer's
+    // behaviour, so this is the real touch sequence.
+    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
+    render(<IntroApp />);
+    const term = screen.getByRole("button", { name: "weights" });
+
+    fireEvent.focus(term);
+    fireEvent.click(term);
+    expect(term.getAttribute("aria-expanded")).toBe("true");
+
+    // And a second tap closes it, which is the behaviour on a mouse too.
+    fireEvent.click(term);
+    expect(term.getAttribute("aria-expanded")).toBe("false");
+  });
+
   it("the OC slide spells out the abbreviation without needing a click", () => {
     window.history.replaceState(null, "", "/sl5/intro/#the-oc-ladder");
     render(<IntroApp />);
@@ -336,6 +357,20 @@ describe("jargon is explained in place", () => {
     window.history.replaceState(null, "", "/sl5/intro/#security-levels");
     render(<IntroApp />);
     expect(screen.getByText(/SL = Security Level/)).toBeTruthy();
+  });
+
+  it("doesn't define the SL tiers by a layer count", () => {
+    // The layer count is a field no code in the app reads — `overallSlScore`
+    // blends category scores and never sees it — so presenting 1/1/2/4/8 as
+    // what the tiers *are* taught the reader something the model doesn't do.
+    // What separates SL4 from SL5 is which controls are on the table.
+    window.history.replaceState(null, "", "/sl5/intro/#security-levels");
+    render(<IntroApp />);
+    expect(screen.queryByText("Layers")).toBeNull();
+    expect(screen.queryByText(/independent layers/)).toBeNull();
+    // The SL5 row still renders its description, minus the trailing count.
+    expect(screen.getByText(/Complete isolation, formal hardware verification/))
+      .toBeTruthy();
   });
 
   it("the cover tells the reader the dotted underlines are clickable", () => {

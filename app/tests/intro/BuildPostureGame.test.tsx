@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+//
 // The mini-game is a detour off the constraints slide, and it's the one part of
 // the introduction that touches the network. Both of those are contracts a reader
 // notices when they break: the deck must still load without fetching anything,
@@ -18,6 +20,9 @@ const DATA = path.join(__dirname, "../../public/data");
 function stubFetch() {
   const fetchMock = vi.fn(async (url: string | URL) => {
     const file = String(url).split("/data/")[1];
+    // 404 rather than a TypeError out of path.join, so an unrelated request
+    // fails the way the browser would fail it.
+    if (!file) return { ok: false, status: 404, json: async () => null } as Response;
     const full = path.join(DATA, file);
     if (!fs.existsSync(full)) {
       return { ok: false, status: 404, json: async () => null } as Response;
@@ -122,15 +127,20 @@ describe("playing it", () => {
     await openGame();
     const breach = () => screen.getByText("Breach probability").parentElement!.textContent!;
     const before = breach();
-    // The trap first: real score gain, no movement on the headline number.
+    // The trap first: real score gain, no movement on the headline number,
+    // because the mantrap isn't on the worst route.
     fireEvent.click(screen.getByText("Access Control Vestibules (Mantraps)"));
     expect(breach()).toBe(before);
-    expect(screen.getByText(/score is climbing and the breach probability isn't/))
-      .toBeTruthy();
-    // Then a block that's actually on the chain driving it.
+    expect(screen.getByText(/only ever tracks the/)).toBeTruthy();
+    // Then a block that is on the worst route: the number has to move.
     fireEvent.click(screen.getByText("Inference Channel Outbound Defense"));
     expect(breach()).not.toBe(before);
-    expect(screen.getByText(/the breach number is moving now/)).toBeTruthy();
+    // Note the coaching does NOT claim the number is moving here — closing the
+    // worst route promotes the next one, which is also untouched, so the line
+    // goes back to naming a route the reader hasn't addressed. That's the whole
+    // lesson: there is always a worst remaining route.
+    expect(screen.getByText(/only ever tracks the|you're on the right route now/))
+      .toBeTruthy();
   });
 
   it("shows the budget cap, and names click order as the way out of it", async () => {
@@ -161,9 +171,10 @@ describe("playing it", () => {
     stubFetch();
     await openGame();
     const toggle = screen.getByText(/What does the attacker do about it\?/);
-    expect(screen.queryByText(/All 7 chains/)).toBeNull();
+    // Any count: the number of shipped chains is data, not behaviour.
+    expect(screen.queryByText(/All \d+ chains/)).toBeNull();
     fireEvent.click(toggle);
-    expect(screen.getByText(/All 7 chains/)).toBeTruthy();
+    expect(screen.getByText(/All \d+ chains/)).toBeTruthy();
     // The honest-outcome line the copy promises.
     expect(screen.getByText(new RegExp(`Nothing \\$${BUDGET_MILLIONS}M can buy`))).toBeTruthy();
   });

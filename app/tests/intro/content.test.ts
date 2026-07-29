@@ -100,7 +100,12 @@ describe("intro SL levels match world-state.json", () => {
     expect(SL_LEVELS.filter((s) => !s.achievable).map((s) => s.level)).toEqual([5]);
   });
 
-  it("SL5 still requires 8 independent layers", () => {
+  // `requiredIndependentLayers` is mirrored so this file stays a faithful copy
+  // of world-state.json, but it is deliberately not shown to a reader: no code
+  // in the app reads the field, and what separates SL4 from SL5 is which
+  // controls are on the table rather than how many layers are stacked. The
+  // security-levels slide drops it — see `withoutLayerCount` there.
+  it("mirrors the layer count without the slide presenting it as the definition", () => {
     expect(SL_LEVELS.find((s) => s.level === 5)!.requiredIndependentLayers).toBe(8);
   });
 });

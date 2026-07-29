@@ -244,6 +244,16 @@ export function OcLadderSlide() {
   );
 }
 
+/** SL5's description in the source data ends ", 8 independent layers". The layer
+ * count doesn't define the tiers — it's a field no code in the app reads, and
+ * what actually separates SL4 from SL5 is which controls are on the table, not
+ * how many things are stacked. `content.ts` stays a verbatim mirror of
+ * world-state.json so the drift test keeps its teeth; the clause is dropped
+ * here, at the point of display. */
+function withoutLayerCount(description: string): string {
+  return description.replace(/,\s*\d+\s+independent layers\s*$/i, "");
+}
+
 export function SecurityLevels() {
   return (
     <SlideShell
@@ -253,7 +263,7 @@ export function SecurityLevels() {
         <>
           The defender's side of the same scale: <Em>Security Levels</Em>, written{" "}
           <Em>SL1</Em> through <Em>SL5</Em>. Each one is defined by the OC tier it is meant
-          to survive, and by how many <Em>independent</Em> defense layers that takes.
+          to survive, and by the controls that takes.
         </>
       }
     >
@@ -262,9 +272,11 @@ export function SecurityLevels() {
           <p className="text-sm leading-relaxed text-gray-300">
             <span className="font-semibold text-violet-200">SL = Security Level.</span>{" "}
             Read the two scales as a pair: <Em>SL4 is what it takes to stop OC4</Em>. The
-            layer count is the hard part — eight independent layers means eight things that
-            must each fail on their own, which is what{" "}
-            <Term term="defenseInDepth">defense in depth</Term> actually costs.
+            levels aren't the same controls done more thoroughly — each tier brings in
+            controls the one below it doesn't have, and the hard part is that the upper
+            tiers reach for measures that are painful to build and painful to work
+            under. Air-gapping a network is not a stronger firewall; it's a different
+            way of operating.
           </p>
         </div>
         <div className="overflow-hidden rounded-lg border border-gray-800">
@@ -273,7 +285,6 @@ export function SecurityLevels() {
               <tr>
                 <th className="px-3 py-2.5">Level</th>
                 <th className="px-3 py-2.5">Stops</th>
-                <th className="hidden px-3 py-2.5 sm:table-cell">Layers</th>
                 <th className="px-3 py-2.5">What it looks like</th>
               </tr>
             </thead>
@@ -291,11 +302,8 @@ export function SecurityLevels() {
                   <td className="px-3 py-2.5 align-top whitespace-nowrap text-gray-400">
                     {sl.defendsAgainst.split(" — ")[0]}
                   </td>
-                  <td className="hidden px-3 py-2.5 align-top font-mono text-gray-300 sm:table-cell">
-                    {sl.requiredIndependentLayers}
-                  </td>
                   <td className="px-3 py-2.5 align-top text-gray-400">
-                    {sl.description}
+                    {withoutLayerCount(sl.description)}
                     {/* Its own block, not trailing the sentence: inline, the badge
                         wrapped mid-phrase and left "achievable today" orphaned on
                         the next line. */}

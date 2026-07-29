@@ -104,7 +104,13 @@ export function DemoFrame({
  * Hover is not enough on its own: it never fires on touch and can't be reached
  * from a keyboard. So this also opens on focus and on click/tap, stays a real
  * `<button>` with `aria-describedby`, and closes on Escape. `term` is keyed to
- * GLOSSARY, so a typo fails the build rather than silently rendering nothing. */
+ * GLOSSARY, so a typo fails the build rather than silently rendering nothing.
+ *
+ * The focus handler is gated on `:focus-visible` for a reason. A tap fires focus
+ * and then click; an ungated focus handler opened the card and the click that
+ * followed closed it again, so a term was unopenable on a phone — which is the
+ * one device this page is meant to be shared to. Keyboard focus still opens it,
+ * because `:focus-visible` matches for Tab and not for a pointer. */
 export function Term({
   term,
   children,
@@ -126,7 +132,11 @@ export function Term({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        onFocus={() => setOpen(true)}
+        onFocus={(e) => {
+          // Keyboard focus only — a mouse has already opened the card on hover,
+          // and a tap's focus would be undone by the click right behind it.
+          if (e.currentTarget.matches(":focus-visible")) setOpen(true);
+        }}
         onBlur={() => setOpen(false)}
         onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
         aria-describedby={open ? id : undefined}

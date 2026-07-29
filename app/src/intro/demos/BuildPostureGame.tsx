@@ -13,7 +13,7 @@
 //     first time someone opens the game, so the rest of the deck stays instant
 //     for the readers who never touch it.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AttackChain, Block, BlockState } from "../../engine/types";
 import {
   ADVERSARY_OC,
@@ -58,8 +58,13 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
 
   useEffect(() => {
     let alive = true;
+    // Aborted on unmount, so leaving the detour mid-load doesn't leave seven
+    // requests running against a component nobody is looking at.
+    const controller = new AbortController();
     const fetchJson = async (file: string) => {
-      const resp = await fetch(`${import.meta.env.BASE_URL}data/${file}`);
+      const resp = await fetch(`${import.meta.env.BASE_URL}data/${file}`, {
+        signal: controller.signal,
+      });
       if (!resp.ok) throw new Error(`${file}: HTTP ${resp.status}`);
       return resp.json();
     };
@@ -68,17 +73,33 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
         if (alive) setData({ blocks: (blockArrays as Block[][]).flat(), chains });
       })
       .catch((e: unknown) => {
+        // An abort is us, not a failure — don't flash an error at a reader who
+        // has already left.
         if (alive) setError(e instanceof Error ? e.message : String(e));
       });
     return () => {
       alive = false;
+      controller.abort();
     };
   }, []);
 
   const shortlist = useMemo(() => {
     if (!data) return [];
     const byId = new Map(data.blocks.map((b) => [b.id, b]));
-    return SHORTLIST.map((id) => byId.get(id)).filter((b): b is Block => b !== undefined);
+    const found = SHORTLIST.map((id) => byId.get(id)).filter(
+      (b): b is Block => b !== undefined
+    );
+    // A renamed block id would otherwise hand the reader a nine-tile game that
+    // looks deliberate. `posture-game.test.ts` catches this against the shipped
+    // JSON; this catches it in a browser, where the data could be newer.
+    if (found.length !== SHORTLIST.length) {
+      const missing = SHORTLIST.filter((id) => !byId.has(id));
+      console.warn(
+        `BuildPostureGame: ${missing.join(", ")} missing from the block catalogue — ` +
+          `the mini-game is offering ${found.length} of ${SHORTLIST.length} blocks.`
+      );
+    }
+    return found;
   }, [data]);
 
   const result = useMemo(
@@ -351,16 +372,21 @@ function Coaching({
       </p>
     );
   }
-  // The trap the game exists to spring: the SL score climbs steadily while the
-  // headline breach number doesn't budge, because nothing bought so far is a
-  // stopper on the chain that's driving it. Asking the chain directly rather
-  // than watching the number move keeps this honest when the arithmetic changes.
+  // The trap the game exists to spring: the SL score is an average over the
+  // whole posture, but the headline breach number tracks only the single worst
+  // remaining route. So a posture can keep improving while the number barely
+  // moves, and closing one route just promotes the next one.
+  //
+  // Ask the chain directly rather than watching the number: this stays true when
+  // the arithmetic changes, and it avoids claiming the breach number is frozen
+  // in the moment it has just dropped — stopping the top chain promotes a
+  // different chain that is usually also untouched.
   const onTopChain = chosen.some((id) => topChain?.stoppers?.includes(id));
   if (topChain && !onTopChain) {
     return (
       <p className="text-sm leading-relaxed text-gray-400">
-        Your score is climbing and the breach probability isn't. Nothing you've bought
-        appears on <Em>{topChain.name}</Em>, which is the chain driving that number — a
+        The breach number only ever tracks the <Em>worst remaining route</Em>, and right
+        now that's <Em>{topChain.name}</Em> — which nothing you've bought appears on. A
         better posture on average is not the same as closing the route they're actually
         taking. {formatCost(Math.max(0, remaining))} left.
       </p>
@@ -368,10 +394,10 @@ function Coaching({
   }
   return (
     <p className="text-sm leading-relaxed text-gray-400">
-      {formatCost(Math.max(0, remaining))} left, and the breach number is moving now:
-      something you bought stands on <Em>{topChain?.name}</Em>. Note which kind of control
-      did it — cheap probabilistic ones buy the most score per dollar today, and they're
-      exactly the ones AI erosion takes back by 2030.
+      {formatCost(Math.max(0, remaining))} left, and you're on the right route now:
+      something you bought stands on <Em>{topChain?.name}</Em>, the worst one left. Note
+      which kind of control did it — cheap probabilistic ones buy the most score per
+      dollar today, and they're exactly the ones AI erosion takes back by 2030.
     </p>
   );
 }
@@ -381,7 +407,7 @@ function GameFrame({
   children,
   onExit,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   onExit: () => void;
 }) {
   return (

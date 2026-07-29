@@ -56,9 +56,9 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
 
         <p className="text-sm text-gray-300 leading-relaxed mb-6">
           It's 2026. You're the CISO of a frontier AI lab building the world's
-          most capable model. Nation-states want your weights. Your job: deploy
-          enough independent defense layers to reach Security Level 5 before
-          adversary capabilities outpace you.
+          most capable model. Nation-states want your weights. Your job: build a
+          posture strong enough across every category to reach Security Level 5
+          before adversary capabilities outpace you.
         </p>
 
         {/* The primary path for a first-time reader: the long-form introduction

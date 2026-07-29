@@ -50,7 +50,9 @@ describe("the mini-game's shortlist", () => {
     for (const file of BLOCK_FILES) {
       expect(fs.existsSync(path.join(DATA, file)), `${file} missing`).toBe(true);
     }
-    expect(blocks.length).toBe(47);
+    // Relational, not the current 47: adding a block to the catalogue is
+    // routine and shouldn't fail the intro suite.
+    expect(blocks.length).toBeGreaterThan(SHORTLIST.length);
   });
 
   it("is ten real blocks with short labels for the hexes", () => {

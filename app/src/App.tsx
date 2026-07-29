@@ -147,13 +147,24 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Mobile gate */}
-      <div className="md:hidden fixed inset-0 z-[200] bg-gray-950 flex flex-col items-center justify-center p-8 text-center">
+      {/* Mobile gate. Above the first-run modal, not merely equal to it: both
+          used z-[200], and since the modal renders later it painted on top — so
+          a phone visitor got the intro modal over a gate that was supposed to
+          have stopped them, then an unusable map behind it. The introduction is
+          the one thing worth offering here, and it does read on a phone. */}
+      <div className="md:hidden fixed inset-0 z-[300] bg-gray-950 flex flex-col items-center justify-center p-8 text-center">
         <span className="text-4xl mb-4">🖥️</span>
         <h1 className="text-lg font-semibold text-gray-100 mb-2">Desktop Required</h1>
         <p className="text-sm text-gray-400 max-w-[280px]">
           This interactive simulation needs a larger screen to display properly. Please open it on a desktop or laptop.
         </p>
+        <a
+          href={`${import.meta.env.BASE_URL}intro/`}
+          className="mt-5 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+        >
+          Read the 5-minute introduction →
+        </a>
+        <p className="mt-2 text-xs text-gray-500">Written to read on a phone.</p>
       </div>
 
       <Header onShowIntro={() => setShowIntro(true)} />

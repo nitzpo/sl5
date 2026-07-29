@@ -38,7 +38,7 @@ export const GLOSSARY = {
   sl: {
     label: "SL — Security Level",
     definition:
-      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the attacker tier it is meant to stop, and by how many independent defense layers that takes. SL5 is simply the level built to stop the top attacker tier.",
+      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the attacker tier it is meant to stop, and by the controls that takes — the upper tiers aren't more of the same, they bring in measures the lower tiers never ask for. SL5 is simply the level built to stop the top attacker tier.",
   },
   hardStop: {
     label: "Hard stop",
@@ -88,7 +88,7 @@ export const GLOSSARY = {
   defenseInDepth: {
     label: "Defense in depth",
     definition:
-      "Stacking layers that fail independently, so beating one gets the attacker no closer to beating the next. The layer count is what the SL tiers actually measure.",
+      "Stacking layers that fail independently, so beating one gets the attacker no closer to beating the next. In this app it discounts breach probability — each extra layer standing between an attacker and the weights makes a chain less likely to run end to end.",
   },
   ciso: {
     label: "CISO",

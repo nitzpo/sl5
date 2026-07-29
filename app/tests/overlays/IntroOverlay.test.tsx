@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+//
 // The first-run modal is the only thing a new arrival sees, so the ordering of
 // its three exits is a product decision worth pinning: the long-form
 // introduction is the primary call to action, and the story and free-explore

@@ -61,18 +61,24 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
           adversary capabilities outpace you.
         </p>
 
-        {/* The long-form version. Its own page (/sl5/intro/), so this is a real
-            link — it also marks the intro seen so returning here isn't a loop. */}
+        {/* The primary path for a first-time reader: the long-form introduction
+            answers "why does any of this matter" before the instrument asks them
+            to make choices. Its own page (/sl5/intro/), so this is a real link —
+            and it marks the intro seen so coming back here isn't a loop. */}
         <a
           href={`${import.meta.env.BASE_URL}intro/`}
           onClick={markIntroSeen}
-          className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-violet-800/60 bg-violet-950/30 px-3 py-2.5 transition-colors hover:border-violet-700 hover:bg-violet-950/60"
+          className="mb-3 flex items-center justify-between gap-3 rounded-lg bg-violet-600 px-4 py-3 transition-colors hover:bg-violet-500"
         >
-          <span className="text-xs text-gray-300">
-            <span className="font-medium text-violet-300">New here?</span> Read the
-            5-minute introduction — why weights are a target, and how to drive this tool.
+          <span>
+            <span className="block text-sm font-medium text-white">
+              Start with the 5-minute introduction
+            </span>
+            <span className="mt-0.5 block text-[11px] text-violet-200">
+              Why model weights are a target, and how to drive this tool
+            </span>
           </span>
-          <span className="text-violet-400">→</span>
+          <span className="text-lg text-white">→</span>
         </a>
 
         {choosingStory ? (
@@ -104,16 +110,18 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
             </div>
           </div>
         ) : (
-          <div className="flex gap-3 mb-5">
+          /* Both secondary to the introduction above: same muted treatment, so
+             the violet button is the only thing competing for the first click. */
+          <div className="flex gap-2 mb-5">
             <button
               onClick={() => setChoosingStory(true)}
-              className="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
+              className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
             >
               ▶ Watch the 1-min story
             </button>
             <button
               onClick={dismiss}
-              className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2.5 rounded-lg font-medium transition-colors"
+              className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
             >
               Explore freely
             </button>

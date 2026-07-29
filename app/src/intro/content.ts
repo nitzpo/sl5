@@ -43,7 +43,7 @@ export const GLOSSARY = {
   hardStop: {
     label: "Hard stop",
     definition:
-      "A control that makes an action impossible rather than merely unlikely — an air gap, a one-way data diode, encrypted memory. It doesn't care how clever the attacker is, so rising AI capability can't erode it.",
+      "A control that removes a route rather than watching it — an air gap, a one-way data diode, encrypted memory. Not unbreakable: an air gap is still crossed by a person carrying a drive. But it rests on physics rather than on someone noticing, so rising AI capability erodes it slowly instead of gutting it.",
   },
   probabilistic: {
     label: "Probabilistic control",
@@ -53,7 +53,7 @@ export const GLOSSARY = {
   airGap: {
     label: "Air gap",
     definition:
-      "A network with no physical connection to any other network. There is nothing for a remote attacker to route through, so getting data out requires a person or a device to carry it.",
+      "A network with no physical connection to any other network. There is nothing for a remote attacker to route through — so getting data out requires a person or a device to carry it, which is a real route rather than no route. Stuxnet crossed one on a USB stick.",
   },
   zeroDay: {
     label: "Zero-day",
@@ -281,7 +281,7 @@ export const SL_LEVELS: SlLevel[] = [
     defendsAgainst: "OC5 — Top-Priority State Operations",
     requiredIndependentLayers: 8,
     description:
-      "Complete isolation, formal hardware verification, supervised access, 8 independent layers",
+      "Complete isolation, formal hardware verification, supervised access",
     achievable: false,
   },
 ];

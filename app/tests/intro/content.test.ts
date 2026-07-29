@@ -104,7 +104,8 @@ describe("intro SL levels match world-state.json", () => {
   // of world-state.json, but it is deliberately not shown to a reader: no code
   // in the app reads the field, and what separates SL4 from SL5 is which
   // controls are on the table rather than how many layers are stacked. The
-  // security-levels slide drops it — see `withoutLayerCount` there.
+  // security-levels slide renders no Layers column — asserted in
+  // `IntroApp.test.tsx`.
   it("mirrors the layer count without the slide presenting it as the definition", () => {
     expect(SL_LEVELS.find((s) => s.level === 5)!.requiredIndependentLayers).toBe(8);
   });

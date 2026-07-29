@@ -33,7 +33,7 @@ The implant is never detected because no periodic hardware inspection protocol e
 - PHY-07 (Inspection pipeline): Routine X-ray/visual audit detects anomalous device
 - PER-04 (Private SF-86): Deeper vetting might surface front company links
 
-**Defense-in-depth lesson:** Any ONE of these blocks breaks the chain. The adversary needed all three absent. This is why 8 independent layers matter at SL5 — the adversary must thread every needle.
+**Defense-in-depth lesson:** Any ONE of these blocks breaks the chain. The adversary needed all three absent — the adversary must thread every needle. (RAND's eight independent layers at SL5 are a red-team review rule rather than the definition of the level; see `building-blocks-model.md` § Defense-in-Depth Mechanic.)
 
 **Real-world parallel:** NSA ANT catalog (2013) included COTTONMOUTH — USB implants for passive data interception. Chinese APT groups have used HVAC contractor access as initial entry (Target breach, 2013, albeit for retail data). The technique scales.
 

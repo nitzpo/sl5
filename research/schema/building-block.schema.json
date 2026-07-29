@@ -151,7 +151,7 @@
     "defense_type": {
       "type": "string",
       "enum": ["hard_stop", "probabilistic", "hybrid"],
-      "description": "hard_stop = deterministic (if present, attack is physically impossible); probabilistic = reduces likelihood but doesn't eliminate; hybrid = has elements of both"
+      "description": "hard_stop = structural (removes the route rather than watching it, so it resists strongly and erodes only slowly with adversary capability — NOT unbypassable: see HARD_STOP_RESIST_FLOOR in engine/breach.ts, and the insider/supply-chain chains that route around an air gap entirely); probabilistic = reduces likelihood but doesn't eliminate, and erodes fast as AI improves; hybrid = has elements of both"
     },
     "sl_requirement": {
       "type": "object",

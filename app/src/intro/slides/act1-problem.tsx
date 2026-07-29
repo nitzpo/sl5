@@ -244,16 +244,6 @@ export function OcLadderSlide() {
   );
 }
 
-/** SL5's description in the source data ends ", 8 independent layers". The layer
- * count doesn't define the tiers — it's a field no code in the app reads, and
- * what actually separates SL4 from SL5 is which controls are on the table, not
- * how many things are stacked. `content.ts` stays a verbatim mirror of
- * world-state.json so the drift test keeps its teeth; the clause is dropped
- * here, at the point of display. */
-function withoutLayerCount(description: string): string {
-  return description.replace(/,\s*\d+\s+independent layers\s*$/i, "");
-}
-
 export function SecurityLevels() {
   return (
     <SlideShell
@@ -303,7 +293,7 @@ export function SecurityLevels() {
                     {sl.defendsAgainst.split(" — ")[0]}
                   </td>
                   <td className="px-3 py-2.5 align-top text-gray-400">
-                    {withoutLayerCount(sl.description)}
+                    {sl.description}
                     {/* Its own block, not trailing the sentence: inline, the badge
                         wrapped mid-phrase and left "achievable today" orphaned on
                         the next line. */}

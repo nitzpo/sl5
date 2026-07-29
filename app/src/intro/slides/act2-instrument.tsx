@@ -38,9 +38,10 @@ export function Blocks() {
       <div className="space-y-5">
         <p className="text-sm leading-relaxed text-gray-300">
           Its colour is the one thing to read first. A{" "}
-          <Term term="hardStop">hard stop</Term> makes an attack impossible; a{" "}
-          <Term term="probabilistic">probabilistic</Term> control only makes it less likely.
-          That difference decides whether the control is still worth anything in 2030.
+          <Term term="hardStop">hard stop</Term> removes the route rather than watching
+          it; a <Term term="probabilistic">probabilistic</Term> control only makes the
+          route less likely to work. That difference decides whether the control is still
+          worth anything in 2030.
         </p>
 
         <DemoFrame
@@ -48,21 +49,42 @@ export function Blocks() {
             <>
               Switch the year. The red wash creeping down a hexagon is{" "}
               <Term term="erosion">AI erosion</Term> — and it never touches the hard stop,
-              because an <Term term="airGap">air gap</Term> doesn't care how clever the
-              attacker is.
+              because a better model doesn't make an <Term term="airGap">air gap</Term>
+              {" "}shallower. The cable is either there or it isn't.
             </>
           }
         >
           <ErosionDemo />
         </DemoFrame>
 
+        <Reveal summary="A hard stop isn't a wall, though">
+          <p>
+            "Impossible" is the wrong word, and the app doesn't model it that way. An air
+            gap is crossed by a person carrying a drive, by an implant that arrived in the
+            hardware, or by a signal leaking out of the room — Stuxnet reached air-gapped
+            centrifuges on a USB stick. So even a mature hard stop leaves the attacker a
+            residual chance in the arithmetic, and it widens as the adversary gets more
+            capable rather than staying fixed.
+          </p>
+          <p>
+            What survives is the <Em>shape</Em> of it. A probabilistic control depends on
+            someone noticing, which is exactly what a more capable attacker is better at
+            defeating, so its value falls away as AI improves. An air gap depends on
+            physics, so it degrades slowly instead — and the routes that get around it are
+            different routes, which the app models as separate{" "}
+            <Term term="attackChain">attack chains</Term> that the air gap simply doesn't
+            appear on. Buy it and the insider path is untouched.
+          </p>
+        </Reveal>
+
         <Reveal summary="Why this is the central trade-off">
           <p>
             Probabilistic controls are cheap and fast, and they're what most security
             programmes are made of. Structural ones are expensive, slow, and permanent.
             Spend everything on the first kind and your 2026 posture quietly decays to
-            nothing by 2030; spend everything on the second and you can't afford enough
-            layers to matter. The app is largely an argument about that split.
+            nothing by 2030; spend everything on the second and you can't afford the
+            breadth to cover the other routes. The app is largely an argument about that
+            split.
           </p>
           <p>
             Click any hexagon in the app for its <Em>Block Detail</Em> panel: cost range,

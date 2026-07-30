@@ -38,7 +38,7 @@ export const GLOSSARY = {
   sl: {
     label: "SL — Security Level",
     definition:
-      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the attacker tier it is meant to stop, and by the controls that take — the upper tiers aren't more of the same, they bring in measures the lower tiers never ask for. SL5 is simply the level built to stop the top attacker tier.",
+      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the attacker tier it is meant to stop, and by the controls that stopping them requires — the upper tiers aren't more of the same, they bring in measures the lower tiers never ask for. SL5 is simply the level built to stop the top attacker tier.",
   },
   hardStop: {
     label: "Hard stop",

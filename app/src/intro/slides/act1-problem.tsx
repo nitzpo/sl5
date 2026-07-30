@@ -253,7 +253,7 @@ export function SecurityLevels() {
         <>
           The defender's side of the same scale: <Em>Security Levels</Em>, written{" "}
           <Em>SL1</Em> through <Em>SL5</Em>. Each one is defined by the OC tier it is meant
-          to survive, and by the controls that take.
+          to survive, and by the controls that surviving it requires.
         </>
       }
     >

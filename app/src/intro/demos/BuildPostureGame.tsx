@@ -26,6 +26,7 @@ import {
   evaluatePosture,
   type GameData,
 } from "../posture-game";
+import { enablementFactor } from "../../engine";
 import { formatCost, formatProbability } from "../../utils/format";
 import { STATE_ICONS, STATE_LABELS, breachLevel, slLevel, LEVEL_TEXT } from "../../utils/colors";
 import { BLOCK_SHORT_LABELS, CATEGORY_LABELS } from "../../utils/geometry";
@@ -176,6 +177,13 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
               ? (result.effectiveStates[block.id] ?? "deployed")
               : "not_started";
             const missing = result.dependencyUnmetRequires.get(block.id) ?? [];
+            // The third way a tile can be worth less than it looks, and the only
+            // one that isn't a cap: the control is deployed and working, it just
+            // isn't the whole thing its name implies without its companions.
+            // Measured against the effective posture, so it's the same fraction
+            // the engine charged.
+            const enablement = enablementFactor(block, result.effectiveStates);
+            const incomplete = picked && enablement < 1;
             return (
               <button
                 key={block.id}
@@ -219,6 +227,17 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
                       block.defense_type.replace("_", " ")
                     )}
                   </span>
+                  {incomplete && !overBudget && !unmet && (
+                    <span className="block text-xs leading-relaxed text-amber-400">
+                      {Math.round(enablement * 100)}% of full — incomplete without{" "}
+                      {(block.dependencies.completed_by?.blocks ?? [])
+                        .filter((id) => {
+                          const s = result.effectiveStates[id];
+                          return s !== "deployed" && s !== "mature";
+                        })
+                        .join(", ")}
+                    </span>
+                  )}
                 </span>
               </button>
             );
@@ -259,6 +278,17 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
           remaining={remaining}
           overBudget={[...result.budgetExceeded]}
           unmet={[...result.dependencyUnmet]}
+          incomplete={shortlist
+            .filter(
+              (b) => chosen.includes(b.id) && enablementFactor(b, result.effectiveStates) < 1
+            )
+            // Worst first, so the coaching names the one costing the reader most.
+            .sort(
+              (a, b) =>
+                enablementFactor(a, result.effectiveStates) -
+                enablementFactor(b, result.effectiveStates)
+            )}
+          effectiveStates={result.effectiveStates}
           topChain={result.ranked[0]?.chain}
         />
 
@@ -336,12 +366,17 @@ function Coaching({
   remaining,
   overBudget,
   unmet,
+  incomplete,
+  effectiveStates,
   topChain,
 }: {
   chosen: string[];
   remaining: number;
   overBudget: string[];
   unmet: string[];
+  /** Deployed picks missing `completed_by` companions, worst fraction first. */
+  incomplete: Block[];
+  effectiveStates: Record<string, BlockState>;
   topChain?: AttackChain;
 }) {
   if (chosen.length === 0) {
@@ -369,6 +404,43 @@ function Coaching({
         The <span className="text-sky-300">sky dotted</span> blocks are capped a different
         way: a prerequisite of theirs isn't operational. Buy what they name and they come
         up to full strength — this is the app's <Em>Requires</Em> relation, enforced.
+      </p>
+    );
+  }
+  // Ranked above the worst-route lesson on purpose: this is the one that fires
+  // when a reader buys the air gap and expects to be done. The block works — it
+  // isn't capped — but a gap nobody can legitimately move data across is a gap
+  // people carry drives across, so it's priced as the partial thing it is.
+  //
+  // Only fires when a companion is buyable from the shortlist, so the lesson
+  // always comes with a move. Most companions are deliberately off the list (the
+  // air gap the budget affords is not the air gap the standard describes, and no
+  // ten-block year makes it one), and for those the tile's own "N% of full — needs
+  // …" line says it without spending the coaching slot on advice the reader can't
+  // take.
+  const missingCompanions = (block: Block) =>
+    (block.dependencies.completed_by?.blocks ?? []).filter((id) => {
+      const s = effectiveStates[id];
+      return s !== "deployed" && s !== "mature";
+    });
+  const finishable = incomplete.find((b) =>
+    missingCompanions(b).some((id) => (SHORTLIST as readonly string[]).includes(id))
+  );
+  if (finishable) {
+    const gaps = missingCompanions(finishable);
+    const here = gaps.filter((id) => (SHORTLIST as readonly string[]).includes(id));
+    return (
+      <p className="text-sm leading-relaxed text-gray-400">
+        <Em>{finishable.name}</Em> is deployed and nothing is capping it — but it counts for
+        only{" "}
+        <span className="text-amber-300">
+          {Math.round(enablementFactor(finishable, effectiveStates) * 100)}% of the control
+          its name implies
+        </span>
+        , because {gaps.join(" and ")} {gaps.length === 1 ? "isn't" : "aren't"} there.{" "}
+        {finishable.dependencies.completed_by?.why} {here.join(" and ")}{" "}
+        {here.length === 1 ? "is" : "are"} on this list — buy{" "}
+        {here.length === 1 ? "it" : "them"} and the number comes up.
       </p>
     );
   }

@@ -92,15 +92,24 @@ export function sigmoidProbability(
  *
  * AI's attacker-side lift is already inside `effectiveOc`, so effectiveness is
  * evaluated WITHOUT the defender-side AI erosion (see blockEffectiveness).
+ *
+ * `blockStates` is the whole posture, not just this block's state, because a
+ * control declaring `completed_by` companions resists less while they're missing:
+ * an air gap with no controlled crossing is one people carry drives across. Omit
+ * it and the block is evaluated as fully enabled.
  */
 export function blockExploitProbability(
   block: Block,
   state: BlockState | string,
   effectiveOc: number,
   year: number,
-  sliders: Sliders | number = 0.5
+  sliders: Sliders | number = 0.5,
+  blockStates?: Record<string, BlockState | string>
 ): number {
-  const eff = blockEffectiveness(block, state, year, sliders, { aiErosion: false });
+  const eff = blockEffectiveness(block, state, year, sliders, {
+    aiErosion: false,
+    blockStates,
+  });
   if (eff <= 0) return 1.0;
 
   // Every defense type erodes against a stronger adversary; hard stops just erode
@@ -260,7 +269,7 @@ export function chainBreachProbability(
   let pass = 1.0;
   for (const block of defenseBlocks) {
     const state = blockStates[block.id] ?? "not_started";
-    pass *= blockExploitProbability(block, state, effectiveOc, year, sliders);
+    pass *= blockExploitProbability(block, state, effectiveOc, year, sliders, blockStates);
   }
 
   // Supporting defenses (same defense family, not narrative steps) count at
@@ -268,7 +277,14 @@ export function chainBreachProbability(
   // supporting block removes ~a third of what a named block would.
   for (const block of supportingBlocks(chain, allBlocks)) {
     const state = blockStates[block.id] ?? "not_started";
-    const getPast = blockExploitProbability(block, state, effectiveOc, year, sliders);
+    const getPast = blockExploitProbability(
+      block,
+      state,
+      effectiveOc,
+      year,
+      sliders,
+      blockStates
+    );
     pass *= 1 - SUPPORTING_WEIGHT * (1 - getPast);
   }
 

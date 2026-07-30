@@ -29,6 +29,7 @@ import {
   applyDependencyConstraint,
   computeBreachProbabilities,
   computeCategoryScores,
+  enablementFactor,
   overallSlScore,
   relevantBlockIds,
 } from "../../src/engine";
@@ -114,6 +115,58 @@ describe("the mini-game's shortlist", () => {
         ).toContain(req);
       }
     }
+  });
+
+  it("offers a `completed_by` companion the reader can afford to buy", () => {
+    // Unlike `requires`, a companion is allowed off the shortlist — an air gap
+    // that stays 55% of an air gap IS the lesson. But at least one completion has
+    // to be reachable, or the lesson is a dead end with no move attached.
+    const pairs = SHORTLIST.flatMap((id) =>
+      (byId.get(id)!.dependencies?.completed_by?.blocks ?? [])
+        .filter((c) => (SHORTLIST as readonly string[]).includes(c))
+        .map((c) => [id, c] as const)
+    );
+    expect(pairs.length, "no completion is buyable from the shortlist").toBeGreaterThan(0);
+    // And affordably: both halves together have to fit the year.
+    const affordable = pairs.some(
+      ([id, c]) => costOf(byId.get(id)!) + costOf(byId.get(c)!) <= BUDGET_MILLIONS
+    );
+    expect(affordable, "no block + companion pair fits the budget").toBe(true);
+  });
+
+  it("prices a structural block as the partial thing it is, and pays for finishing it", () => {
+    // The reason `completed_by` exists. NET-01 alone used to be the single best
+    // purchase at any budget, which taught that one structural buy is most of
+    // security — the opposite of the deck's argument.
+    const airGap = byId.get("NET-01")!;
+    const companion = airGap
+      .dependencies!.completed_by!.blocks.find((id) =>
+        (SHORTLIST as readonly string[]).includes(id)
+      )!;
+
+    const alone = evaluatePosture(data, ["NET-01"]);
+    expect(alone.budgetExceeded.size).toBe(0);
+    expect(alone.dependencyUnmet.size).toBe(0);
+    expect(enablementFactor(airGap, alone.effectiveStates)).toBeLessThan(1);
+
+    // Completing it is not a cap being lifted — it's the same block getting
+    // closer to what its name claims, and both numbers have to reward it.
+    const finished = evaluatePosture(data, ["NET-01", companion]);
+    expect(enablementFactor(airGap, finished.effectiveStates)).toBeGreaterThan(
+      enablementFactor(airGap, alone.effectiveStates)
+    );
+    expect(finished.breach).toBeLessThan(alone.breach);
+    expect(finished.sl).toBeGreaterThan(alone.sl);
+
+    // And the air gap is no longer the runaway best single click: some cheaper
+    // block on the shortlist now buys at least as much SL per dollar.
+    const perDollar = (id: string) =>
+      (evaluatePosture(data, [id]).sl - evaluatePosture(data, []).sl) / costOf(byId.get(id)!);
+    const airGapRate = perDollar("NET-01");
+    expect(
+      SHORTLIST.some((id) => id !== "NET-01" && perDollar(id) > airGapRate),
+      "the air gap is still the best score-per-dollar buy on the board"
+    ).toBe(true);
   });
 
   it("can move the headline breach number, not just the score", () => {

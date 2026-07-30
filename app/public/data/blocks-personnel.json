@@ -185,7 +185,15 @@
         "PHY-07",
         "HW-03"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "PHY-04",
+          "PER-07"
+        ],
+        "standalone_share": 0.7,
+        "why": "Two-person integrity is a rule about who was in the room, so it needs something that can tell. Without intrusion detection or body-worn cameras, a solo maintenance window on a quiet night leaves no trace."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -383,7 +391,15 @@
         "PER-03",
         "PER-05"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "PER-03",
+          "PER-01"
+        ],
+        "standalone_share": 0.7,
+        "why": "Vetting is a snapshot of someone who then works there for years. Without continuous monitoring and a sensitivity framework that triggers rescreening, nothing re-examines the judgement after the day it was made."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -764,7 +780,15 @@
         "HW-09",
         "NET-01"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "HW-09",
+          "PER-02"
+        ],
+        "standalone_share": 0.65,
+        "why": "Eliminating remote management moves every maintenance action into the facility \u2014 which is a gain only if firmware is verified on boot and nobody performs those actions alone. Otherwise you have traded a remote adversary for an unobserved local one."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [

@@ -270,7 +270,15 @@
         "PHY-01",
         "PER-02"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "HW-01",
+          "HW-09"
+        ],
+        "standalone_share": 0.65,
+        "why": "Interconnect encryption is only as trustworthy as the endpoints holding the keys. Without a hardware root of trust and verified boot, an adversary who owns the firmware owns the plaintext."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -475,7 +483,15 @@
         "PHY-02",
         "HW-04"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "PHY-07",
+          "PHY-04"
+        ],
+        "standalone_share": 0.6,
+        "why": "Tamper-evident is a detection story, not a prevention one: the seal records the intrusion but only an inspection regime and an alarm response turn that record into a response."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -680,7 +696,15 @@
         "HW-02",
         "NET-01"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "HW-02",
+          "HW-09"
+        ],
+        "standalone_share": 0.65,
+        "why": "A trusted execution environment assumes the boundary around it holds: without device-enforced memory isolation the host reads accelerator memory anyway, and without verified boot the attestation it offers is signed by whatever the adversary installed."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [

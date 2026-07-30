@@ -41,6 +41,18 @@ export const VIABLE_THRESHOLD = 0.02;
  *    real dependency rule caps it.
  *  - Between them they stop chains: `AI-07` and `NET-01` are stoppers on the
  *    chain that drives the headline number, so the breach percentage does move.
+ *  - At least one `completed_by` companion is buyable here, so the "your air gap
+ *    is 55% of an air gap" lesson comes with a move the reader can make: `PER-08`
+ *    is a NET-01 companion at $10M, taking it to 70% inside the budget.
+ *
+ * `completed_by` companions are otherwise allowed off the list, unlike `requires`.
+ * The two relations differ exactly here: an unmeetable `requires` is a cap the
+ * reader can't clear and reads as a broken game, whereas an unmeetable
+ * `completed_by` is the lesson — the air gap the budget can buy is not the air gap
+ * the standard describes, and no ten-block year makes it one. Buying `NET-01`'s
+ * other two companions needs `NET-05` and `NET-04`, both of which require the $50M
+ * `NET-02` enclave; that whole set is $191M against a $150M budget, so putting them
+ * on the list would only sell a completion the reader cannot afford.
  *
  * Every id, cost, category and dependency is asserted against the shipped JSON
  * by `tests/intro/posture-game.test.ts`. */

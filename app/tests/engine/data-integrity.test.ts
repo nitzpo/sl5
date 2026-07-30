@@ -42,6 +42,40 @@ describe("block data integrity", () => {
     }
   });
 
+  // `completed_by` is a soft fractional discount rather than a gate, so a bad
+  // entry doesn't crash anything — it silently prices a block wrong forever.
+  // These are the checks that would have caught the plausible authoring slips.
+  it("every `completed_by` companion is a real, other block", () => {
+    for (const b of blocks) {
+      const completed = b.dependencies?.completed_by;
+      if (!completed) continue;
+      expect(completed.blocks.length, `${b.id} completed_by is empty`).toBeGreaterThan(0);
+      for (const id of completed.blocks) {
+        expect(blockIds.has(id), `${b.id} completed_by references unknown ${id}`).toBe(true);
+        // Self-reference would make the block permanently incomplete: a block is
+        // never operational at the moment its own effectiveness is computed.
+        expect(id, `${b.id} completed_by references itself`).not.toBe(b.id);
+      }
+      expect(
+        new Set(completed.blocks).size,
+        `${b.id} completed_by has duplicates, which would skew the fraction`
+      ).toBe(completed.blocks.length);
+    }
+  });
+
+  it("every `standalone_share` is a real fraction with a reason", () => {
+    for (const b of blocks) {
+      const completed = b.dependencies?.completed_by;
+      if (!completed) continue;
+      // Open interval: 0 would make an un-companioned block worthless (that's
+      // `requires`, not this), 1 would make the annotation a no-op.
+      expect(completed.standalone_share, `${b.id} standalone_share`).toBeGreaterThan(0);
+      expect(completed.standalone_share, `${b.id} standalone_share`).toBeLessThan(1);
+      // `why` is reader-facing copy in the block panel, not a placeholder.
+      expect(completed.why.length, `${b.id} completed_by.why is too short`).toBeGreaterThan(20);
+    }
+  });
+
   it("hard `requires` chains are acyclic", () => {
     const visiting = new Set<string>();
     const done = new Set<string>();

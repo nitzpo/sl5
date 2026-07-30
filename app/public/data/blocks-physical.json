@@ -78,7 +78,15 @@
         "PHY-04",
         "NET-06"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "PHY-04",
+          "PHY-03"
+        ],
+        "standalone_share": 0.65,
+        "why": "ICD 705 pairs the physical shell with detection and a response time for a reason: a continuous barrier nobody is watching just means an intruder who gets in has unlimited time."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -184,7 +192,15 @@
       ],
       "enabled_by": [
         "PHY-01"
-      ]
+      ],
+      "completed_by": {
+        "blocks": [
+          "PHY-05",
+          "PHY-01"
+        ],
+        "standalone_share": 0.65,
+        "why": "TEMPEST countermeasures assume the emitters are the ones you shielded. A phone or wireless keyboard inside the shielded space, or a shell with uncontrolled penetrations, re-opens the channel the shielding closed."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -557,7 +573,15 @@
         "PHY-03",
         "PHY-04"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "PHY-03",
+          "PHY-01"
+        ],
+        "standalone_share": 0.7,
+        "why": "A Red/Black split is a line on a floor plan until something enforces the crossing. Vestibules and a real construction boundary are what make the zone a boundary rather than a designation."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [

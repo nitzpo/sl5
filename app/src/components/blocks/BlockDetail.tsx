@@ -1,6 +1,6 @@
 import type { Block, BlockState } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
-import { blockEffectiveness } from "../../engine/scoring";
+import { blockEffectiveness, enablementFactor } from "../../engine/scoring";
 import { DEFENSE_COLORS, STATE_LABELS, STATE_ICONS } from "../../utils/colors";
 import { BLOCK_SHORT_LABELS } from "../../utils/geometry";
 import { formatCost, formatDeployRange } from "../../utils/format";
@@ -36,7 +36,12 @@ export function BlockDetail({ block, onNavigate }: BlockDetailProps) {
 
   const state = (blockStates[block.id] ?? "not_started") as BlockState;
   const currentStateIndex = STATE_STEPS.indexOf(state);
-  const eff = blockEffectiveness(block, state, year, sliders);
+  // Scored against the whole posture, not this block alone, so the effectiveness
+  // shown here is the one the SL score actually used — a control missing its
+  // `completed_by` companions is worth less than its state implies.
+  const eff = blockEffectiveness(block, state, year, sliders, { blockStates });
+  const completedBy = block.dependencies.completed_by;
+  const enablement = enablementFactor(block, blockStates);
   const color = DEFENSE_COLORS[block.defense_type];
 
   return (
@@ -163,6 +168,44 @@ export function BlockDetail({ block, onNavigate }: BlockDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* What this control is missing to be the whole thing its name implies.
+          Above the dependency lists because it is the one that changes the
+          number: `Enhances` and `Enabled by` are narrative, `Requires` is a cap
+          the ring already shows, and this is a live discount on effectiveness. */}
+      {completedBy && (
+        <div className="rounded border border-amber-900/50 bg-amber-950/20 p-2">
+          <div className="flex items-baseline justify-between gap-2 mb-1">
+            <span className="text-xs font-medium text-amber-300">
+              Incomplete on its own
+            </span>
+            <span className="font-mono text-xs text-amber-200 tabular-nums">
+              {Math.round(enablement * 100)}% of full
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed">{completedBy.why}</p>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {completedBy.blocks.map((id) => {
+              const st = (blockStates[id] ?? "not_started") as BlockState;
+              const operational = st === "deployed" || st === "mature";
+              return (
+                <button
+                  key={id}
+                  onClick={() => onNavigate?.(id)}
+                  className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                    operational
+                      ? "bg-emerald-950/50 text-emerald-300 hover:bg-emerald-900/50"
+                      : "bg-amber-950/50 text-amber-300 hover:bg-amber-900/50"
+                  }`}
+                  title={`Go to ${id}`}
+                >
+                  {STATE_ICONS[st]} {id} {BLOCK_SHORT_LABELS[id] ?? ""}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Dependencies */}
       {(block.dependencies.requires.length > 0 ||

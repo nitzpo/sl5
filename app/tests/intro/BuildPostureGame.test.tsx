@@ -167,6 +167,37 @@ describe("playing it", () => {
     await waitFor(() => expect(screen.queryByText(/needs PER-01 first/)).toBeNull());
   });
 
+  it("prices the air gap as a partial air gap, and names the companion to buy", async () => {
+    stubFetch();
+    await openGame();
+    // The lesson `completed_by` exists for. The air gap is neither over budget
+    // nor dependency-capped here, so neither ring fires — it is simply not the
+    // whole control its name implies until data can cross it in a controlled way.
+    fireEvent.click(screen.getByText("Air-Gapped SL5 Network"));
+    expect(screen.queryByText(/over budget — capped at/)).toBeNull();
+    expect(screen.queryByText(/needs .* first/)).toBeNull();
+    await waitFor(() =>
+      expect(screen.getAllByText(/% of full — incomplete without/).length).toBeGreaterThan(0)
+    );
+    // And the coaching has to hand the reader a move that's actually on the board.
+    expect(screen.getByText(/of the control its name implies/)).toBeTruthy();
+    expect(screen.getByText(/PER-08 is on this list/)).toBeTruthy();
+
+    // Buying it lifts the fraction rather than clearing a cap — same block,
+    // closer to what it claims. Read the air gap's own tile: PER-08 is itself
+    // incomplete once bought, so a document-wide query would be ambiguous.
+    const airGapFraction = () => {
+      // Scoped to the tile: the coaching line under the score names the block too.
+      const tile = screen
+        .getAllByRole("button")
+        .find((el) => el.textContent?.includes("Air-Gapped SL5 Network"))!;
+      return Number(tile.textContent!.match(/(\d+)% of full/)![1]);
+    };
+    const before = airGapFraction();
+    fireEvent.click(screen.getByText("No Remote Access / No Out-of-Facility Maintenance"));
+    await waitFor(() => expect(airGapFraction()).toBeGreaterThan(before));
+  });
+
   it("reveals the ranked chain list on demand", async () => {
     stubFetch();
     await openGame();

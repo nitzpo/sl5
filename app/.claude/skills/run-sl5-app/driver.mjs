@@ -17,8 +17,9 @@
 //
 // Exit code is nonzero if any assertion fails, so it works in a pipeline.
 
-import { mkdirSync } from "fs";
+import { mkdirSync, readdirSync, readFileSync } from "fs";
 import { createRequire } from "module";
+import { dirname, join } from "path";
 
 // Resolve playwright from PLAYWRIGHT_DIR, then from the app, then from the
 // ambient install. NODE_PATH does NOT work here — Node ignores it for ESM
@@ -61,6 +62,22 @@ const OUT = arg("out", "/tmp/sl5-shots");
 // the DesktopGate instead of the map. 1600x1000 is comfortably above it.
 const WIDE = { width: 1600, height: 1000 };
 const NARROW = { width: 500, height: 900 };
+
+// The app root, derived from this script's own location
+// (app/.claude/skills/run-sl5-app/ → up 3). Never a hard-coded absolute path:
+// the driver has to work in any clone, not just the machine it was written on.
+const APP_ROOT = dirname(dirname(dirname(import.meta.dirname)));
+
+/** How many blocks the catalog actually declares, read from the same JSON the app loads. */
+const EXPECTED_BLOCKS = (() => {
+  const dir = join(APP_ROOT, "public", "data");
+  let n = 0;
+  for (const f of readdirSync(dir)) {
+    if (f.startsWith("blocks-") && f.endsWith(".json"))
+      n += JSON.parse(readFileSync(join(dir, f), "utf-8")).length;
+  }
+  return n;
+})();
 
 const FLOW_NAMES = ["smoke", "panzoom", "gate", "intro", "views"];
 // Validated before launching a browser, so a typo fails instantly.
@@ -117,7 +134,31 @@ async function openApp(page) {
     .locator("svg.touch-none g[transform]")
     .first()
     .waitFor({ state: "visible", timeout: 10000 });
-  await page.waitForTimeout(400);
+  await settled(page);
+}
+
+/**
+ * Wait until the pan/zoom transform stops changing.
+ *
+ * Panel widths are animated, so reading the transform too early catches an
+ * intermediate `tx`. Polling for two identical consecutive samples finishes as
+ * soon as the animation actually ends — typically well under a fixed sleep, and
+ * it can't under-wait on a slow machine either.
+ */
+async function settled(page, { interval = 100, timeout = 4000 } = {}) {
+  const read = () =>
+    page
+      .locator("svg.touch-none g[transform]")
+      .first()
+      .getAttribute("transform")
+      .catch(() => null);
+  let prev = await read();
+  for (let waited = 0; waited < timeout; waited += interval) {
+    await page.waitForTimeout(interval);
+    const now = await read();
+    if (now && now === prev) return;
+    prev = now;
+  }
 }
 
 /** The transform `<g>` is the direct output of use-viewbox-pan-zoom. */
@@ -148,7 +189,13 @@ async function smoke() {
   await openApp(page);
   const hexes = await page.locator("svg g.cursor-pointer").count();
   const t = await readTransform(page);
-  check("block hexes rendered", hexes > 40, `${hexes} interactive groups (47 blocks in data)`);
+  // Exact, not `> 40`: the catalog is 47 blocks (counted from public/data at
+  // startup), so a missing entry must fail rather than squeak by.
+  check(
+    "every block hex rendered",
+    hexes === EXPECTED_BLOCKS,
+    `${hexes} interactive groups, expected ${EXPECTED_BLOCKS}`
+  );
   check("transform group visible", t.visibility !== "hidden", t.transform ?? "no transform");
   check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
   await page.screenshot({ path: `${OUT}/smoke.png` });
@@ -190,7 +237,7 @@ async function panzoom() {
 
   await page.locator("svg g.cursor-pointer").first().click();
   await page.locator("text=Block Detail").first().waitFor({ timeout: 8000 });
-  await page.waitForTimeout(900); // let the panel's width transition finish
+  await settled(page); // the panel width is animated; read tx only once it stops
   const after = await readTransform(page);
   await page.screenshot({ path: `${OUT}/panzoom-after.png` });
 
@@ -252,32 +299,56 @@ async function gate() {
 /** The second Vite entry point. Unlike the app, it is phone-readable. */
 async function intro() {
   console.log("\n[intro] standalone introduction page");
+  // Slide 5 of 13 in src/intro/slides/index.ts. Asserting the TITLE and the
+  // counter (not just "the page has text") is what makes this prove the hash
+  // was honored — a deep link that silently fell back to slide 1 would pass a
+  // mere length check.
+  const OC = { slug: "the-oc-ladder", title: "How capable is the attacker?", n: 5 };
+
   const page = await newPage();
   await page.goto(INTRO, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2000);
+  // Wait on the first slide's real heading rather than a fixed sleep.
+  await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
   const text = await page.locator("body").innerText();
   check("intro renders content", text.trim().length > 200, `${text.trim().length} chars of copy`);
   check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
-  await page.screenshot({ path: `${OUT}/intro.png`, fullPage: false });
+  await page.screenshot({ path: `${OUT}/intro.png` });
 
   // Deep links are a documented feature: every slide is addressable by hash.
-  await page.goto(`${INTRO}#the-oc-ladder`, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1200);
+  await page.goto(`${INTRO}#${OC.slug}`, { waitUntil: "domcontentloaded" });
+  const ocTitle = page.getByText(OC.title, { exact: false }).first();
+  const landed = await ocTitle
+    .waitFor({ timeout: 10000 })
+    .then(() => true)
+    .catch(() => false);
+  check("hash deep-link lands on the right slide", landed, `#${OC.slug} → "${OC.title}"`);
+  const counter = (await page.locator("body").innerText()).match(/\b(\d+)\s*\/\s*(\d+)\b/);
   check(
-    "hash deep-link resolves",
-    (await page.locator("body").innerText()).trim().length > 100,
-    "#the-oc-ladder"
+    "deep-linked slide is at the right position",
+    !!counter && Number(counter[1]) === OC.n,
+    counter ? `counter reads ${counter[0]}, expected ${OC.n}/${counter[2]}` : "no N/M counter found"
   );
   await page.screenshot({ path: `${OUT}/intro-oc-ladder.png` });
 
-  // Phone width: the intro must NOT be gated (only the app is desktop-only).
+  // Phone width: the intro must not be gated (only the app is desktop-only) AND
+  // must actually fit — "no gate" alone said nothing about readability.
   const phone = await newPage({ width: 390, height: 844 });
   await phone.goto(INTRO, { waitUntil: "domcontentloaded" });
-  await phone.waitForTimeout(1500);
+  await phone.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
   check(
-    "readable at phone width",
+    "intro is not desktop-gated",
     !(await phone.locator("text=Desktop required").count()),
-    "intro is not desktop-gated"
+    "no gate at 390px"
+  );
+  const overflow = await phone.evaluate(() => ({
+    doc: document.documentElement.scrollWidth,
+    win: window.innerWidth,
+  }));
+  // The page body must not scroll sideways. 1px of slack for sub-pixel layout.
+  check(
+    "no horizontal overflow at 390px",
+    overflow.doc <= overflow.win + 1,
+    `scrollWidth ${overflow.doc} vs viewport ${overflow.win}`
   );
   await phone.screenshot({ path: `${OUT}/intro-phone.png` });
   console.log(`  screenshots → ${OUT}/intro{,-oc-ladder,-phone}.png`);
@@ -297,7 +368,7 @@ async function views() {
       continue;
     }
     await btn.click();
-    await page.waitForTimeout(1100);
+    await settled(page);
     const t = await readTransform(page);
     const hexes = await page.locator("svg g.cursor-pointer").count();
     check(
@@ -315,8 +386,21 @@ async function views() {
 const flows = { smoke, panzoom, gate, intro, views };
 
 console.log(`driving ${APP}  (flows: ${toRun.join(", ")})`);
-for (const f of toRun) await flows[f]();
-await browser.close();
+const started = Date.now();
+try {
+  for (const f of toRun) await flows[f]();
+} catch (err) {
+  // A timeout or a failed click lands here. Report it as a failure rather than
+  // an unhandled rejection, so the exit code still means something.
+  console.error(`\n  FAIL ${flow} threw — ${err.message.split("\n")[0]}`);
+  failures++;
+} finally {
+  // Always: an aborted flow used to leave a headless Chromium running.
+  await browser.close();
+}
 
-console.log(failures ? `\n${failures} check(s) FAILED` : "\nall checks passed");
+const secs = ((Date.now() - started) / 1000).toFixed(1);
+console.log(
+  failures ? `\n${failures} check(s) FAILED in ${secs}s` : `\nall checks passed in ${secs}s`
+);
 process.exit(failures ? 1 : 0);

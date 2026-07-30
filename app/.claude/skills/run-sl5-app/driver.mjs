@@ -21,6 +21,9 @@ import { mkdirSync, readdirSync, readFileSync } from "fs";
 import { createRequire } from "module";
 import { dirname, join } from "path";
 
+/** Keep in step with SKILL.md's install command. */
+const PINNED_PLAYWRIGHT = "1.62.0";
+
 // Resolve playwright from PLAYWRIGHT_DIR, then from the app, then from the
 // ambient install. NODE_PATH does NOT work here — Node ignores it for ESM
 // `import`, so a bare `import "playwright"` fails even with NODE_PATH set.
@@ -38,9 +41,12 @@ const chromium = await (async () => {
   try {
     return (await import("playwright")).chromium;
   } catch {
+    // Pinned to match SKILL.md — an unpinned recovery hint would send anyone who
+    // hits this error to a moving version, defeating the point of pinning.
     console.error(
       "playwright not found. Install it and re-run, e.g.:\n" +
-        "  mkdir -p /tmp/pw && cd /tmp/pw && npm init -y && npm i playwright && npx playwright install chromium\n" +
+        `  mkdir -p /tmp/pw && cd /tmp/pw && npm init -y && npm i playwright@${PINNED_PLAYWRIGHT}\n` +
+        `  npx playwright@${PINNED_PLAYWRIGHT} install chromium\n` +
         "  PLAYWRIGHT_DIR=/tmp/pw node .claude/skills/run-sl5-app/driver.mjs all"
     );
     process.exit(2);
@@ -322,7 +328,17 @@ async function intro() {
     .then(() => true)
     .catch(() => false);
   check("hash deep-link lands on the right slide", landed, `#${OC.slug} → "${OC.title}"`);
-  const counter = (await page.locator("body").innerText()).match(/\b(\d+)\s*\/\s*(\d+)\b/);
+  // Scoped to the <header> and matched on the element's WHOLE text. The counter
+  // is an unlabeled span, and slide bodies are full of other `N/M` strings
+  // (ratios like 900/40, and a literal 1/2 in slide-parts.tsx), so regexing
+  // body.innerText would match whichever happened to come first.
+  const counterText = await page
+    .locator("header span")
+    .filter({ hasText: /^\d+\/\d+$/ })
+    .first()
+    .innerText()
+    .catch(() => null);
+  const counter = counterText?.match(/^(\d+)\/(\d+)$/);
   check(
     "deep-linked slide is at the right position",
     !!counter && Number(counter[1]) === OC.n,
@@ -387,12 +403,18 @@ const flows = { smoke, panzoom, gate, intro, views };
 
 console.log(`driving ${APP}  (flows: ${toRun.join(", ")})`);
 const started = Date.now();
+// The flow actually executing, not `flow` (the CLI selector — which is "all" for
+// a full run and would lose the attribution).
+let currentFlow = toRun[0];
 try {
-  for (const f of toRun) await flows[f]();
+  for (const f of toRun) {
+    currentFlow = f;
+    await flows[f]();
+  }
 } catch (err) {
   // A timeout or a failed click lands here. Report it as a failure rather than
   // an unhandled rejection, so the exit code still means something.
-  console.error(`\n  FAIL ${flow} threw — ${err.message.split("\n")[0]}`);
+  console.error(`\n  FAIL ${currentFlow} threw — ${err.message.split("\n")[0]}`);
   failures++;
 } finally {
   // Always: an aborted flow used to leave a headless Chromium running.

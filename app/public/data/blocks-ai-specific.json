@@ -413,7 +413,15 @@
       "enabled_by": [
         "HW-02",
         "NET-02"
-      ]
+      ],
+      "completed_by": {
+        "blocks": [
+          "AI-01",
+          "AI-06"
+        ],
+        "standalone_share": 0.65,
+        "why": "Resource quotas bound how much an agent can do, not what. Without behavioural monitoring nobody notices the misuse inside the quota, and without a kill-switch noticing doesn't stop it."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -630,7 +638,15 @@
       ],
       "enabled_by": [
         "HW-01"
-      ]
+      ],
+      "completed_by": {
+        "blocks": [
+          "AI-01",
+          "AI-02"
+        ],
+        "standalone_share": 0.65,
+        "why": "A kill-switch is a response, and a response needs a trigger. Without insider-threat monitoring and decorrelated review, nothing tells the two co-signers there is anything to stop."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -742,7 +758,15 @@
       ],
       "enabled_by": [
         "AI-03"
-      ]
+      ],
+      "completed_by": {
+        "blocks": [
+          "AI-03",
+          "NET-04"
+        ],
+        "standalone_share": 0.7,
+        "why": "Outbound inspection has to recognise extraction to stop it, and something has to bound what it fails to recognise \u2014 adversarial-robustness testing supplies the first, the physical bandwidth cap the second."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [

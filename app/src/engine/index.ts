@@ -7,6 +7,7 @@ export {
   relevantBlockIds,
   getStateEffectiveness,
   aiDegradation,
+  enablementFactor,
 } from "./scoring";
 export type { RelevanceWeights } from "./scoring";
 export {

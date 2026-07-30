@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+//
 // Behavioural smoke test for the introduction at /sl5/intro/. `content.test.ts`
 // guards the numbers; this guards that every slide actually renders and that
 // navigation and the interactive demos respond — the intro has no other test
@@ -7,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { IntroApp } from "../../src/intro/IntroApp";
 import { SLIDES } from "../../src/intro/slides";
-import { DEMO_BLOCKS, LONG_GAME } from "../../src/intro/content";
+import { DEMO_BLOCKS, GLOSSARY, LONG_GAME } from "../../src/intro/content";
 import { SCRIPTS } from "../../src/timelapse/scripts";
 
 beforeEach(() => {
@@ -299,6 +301,144 @@ describe("the demos respond", () => {
     fireEvent.click(screen.getByText(`✗ PER-05 ${DEMO_BLOCKS["PER-05"].shortLabel}`));
     expect(screen.getByText("■ Chain blocked")).toBeTruthy();
     expect(screen.getByText(LONG_GAME.steps[3].howItStops!)).toBeTruthy();
+  });
+});
+
+describe("jargon is explained in place", () => {
+  // The intro was reported as too text-heavy, and specifically as using "OC"
+  // without ever saying what it stands for. Detail now hides behind <Reveal>
+  // and terms behind <Term>, so these guard that the explanation is actually
+  // reachable rather than merely written.
+
+  it("clicking a term shows its definition, and clicking again hides it", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
+    render(<IntroApp />);
+    const term = screen.getByRole("button", { name: "weights" });
+    expect(term.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(term);
+    expect(term.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText(GLOSSARY.weights.definition, { exact: false })).toBeTruthy();
+
+    fireEvent.click(term);
+    expect(term.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("one tap opens a term — the whole touch cascade, not just the click", () => {
+    // A tap fires FOUR events: pointerenter, a synthesized mouseenter, focus,
+    // then click. Every ungated auto-open handler in that cascade opens the card
+    // for the click behind it to toggle shut, which is why a term used to need
+    // two taps on a phone — the first opened and closed it, and the second only
+    // worked because mouseenter doesn't fire twice.
+    //
+    // This test previously fired focus + click and passed while the phone was
+    // still broken, because it left the hover events out. Firing the real
+    // sequence is the whole point.
+    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
+    render(<IntroApp />);
+    const term = screen.getByRole("button", { name: "weights" });
+
+    const tap = () => {
+      // pointerType "touch" is what distinguishes this from a mouse; jsdom
+      // likewise never matches `:focus-visible` for a pointer, so both gates see
+      // exactly what a phone would send.
+      fireEvent.pointerEnter(term, { pointerType: "touch" });
+      fireEvent.mouseEnter(term);
+      fireEvent.focus(term);
+      fireEvent.click(term);
+    };
+
+    tap();
+    expect(term.getAttribute("aria-expanded")).toBe("true");
+
+    // And a second tap dismisses it — the click-to-hide behaviour to preserve.
+    tap();
+    expect(term.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("a mouse still opens a term on hover alone", () => {
+    // The touch fix gates hover on pointerType, so this guards the other side of
+    // that gate: a mouse must still get hover-to-open with no click at all.
+    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
+    render(<IntroApp />);
+    const term = screen.getByRole("button", { name: "weights" });
+
+    fireEvent.pointerEnter(term, { pointerType: "mouse" });
+    expect(term.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.pointerLeave(term, { pointerType: "mouse" });
+    expect(term.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("the OC slide spells out the abbreviation without needing a click", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#the-oc-ladder");
+    render(<IntroApp />);
+    // Visible prose, not a collapsed popover: this is the term a reader told us
+    // they couldn't follow, so it can't be one interaction away.
+    expect(screen.getByText(/OC = Operational Capability/)).toBeTruthy();
+    // The heading no longer leads with the bare abbreviation either.
+    expect(document.title).toBe("How capable is the attacker? · SL5 Explorable");
+  });
+
+  it("the security-levels slide spells out SL the same way", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#security-levels");
+    render(<IntroApp />);
+    expect(screen.getByText(/SL = Security Level/)).toBeTruthy();
+  });
+
+  it("doesn't define the SL tiers by a layer count", () => {
+    // The layer count is a field no code in the app reads — `overallSlScore`
+    // blends category scores and never sees it — so presenting 1/1/2/4/8 as
+    // what the tiers *are* taught the reader something the model doesn't do.
+    // What separates SL4 from SL5 is which controls are on the table.
+    window.history.replaceState(null, "", "/sl5/intro/#security-levels");
+    render(<IntroApp />);
+    expect(screen.queryByText("Layers")).toBeNull();
+    expect(screen.queryByText(/independent layers/)).toBeNull();
+    // The SL5 row still renders its description, minus the trailing count.
+    expect(screen.getByText(/Complete isolation, formal hardware verification/))
+      .toBeTruthy();
+  });
+
+  it("the cover tells the reader the dotted underlines are clickable", () => {
+    render(<IntroApp />);
+    expect(screen.getByText(/dotted underline/)).toBeTruthy();
+  });
+
+  it("the sources slide carries the full glossary, collapsed", () => {
+    window.history.replaceState(null, "", "/sl5/intro/#sources");
+    render(<IntroApp />);
+    const entries = Object.values(GLOSSARY);
+    // Present in the DOM but inside a closed <details>, so it costs no reading
+    // effort until asked for.
+    const details = screen.getByText(/Glossary — every term/).closest("details")!;
+    expect(details.open).toBe(false);
+    for (const e of entries) expect(screen.getByText(e.label)).toBeTruthy();
+  });
+
+  it("every Term on every slide points at a glossary entry that exists", () => {
+    // `keyof typeof GLOSSARY` makes a bad key a type error, but only if the
+    // slide renders — so walk the whole deck and check each popover resolves to
+    // a real label rather than an empty span.
+    const labels = new Set(Object.values(GLOSSARY).map((e) => e.label));
+    let checked = 0;
+    for (const slide of SLIDES) {
+      window.history.replaceState(null, "", `/sl5/intro/#${slide.slug}`);
+      render(<IntroApp />);
+      for (const btn of screen.queryAllByRole("button", { expanded: false })) {
+        fireEvent.click(btn);
+        // An open Term describes its trigger with the popover it just rendered,
+        // and the popover's first span is the glossary label.
+        const id = btn.getAttribute("aria-describedby");
+        const popover = id ? document.getElementById(id) : null;
+        if (!popover || popover.getAttribute("role") !== "tooltip") continue;
+        expect(labels).toContain(popover.querySelector("span")!.textContent);
+        checked++;
+      }
+      cleanup();
+    }
+    // Guard against the sweep silently checking nothing — which is exactly what
+    // happened when Term moved from aria-controls to aria-describedby.
+    expect(checked, "no Term popovers were opened").toBeGreaterThan(15);
   });
 });
 

@@ -145,17 +145,10 @@ function App() {
     );
   }
 
+  // Narrow viewports never get here: `Root` in main.tsx renders `DesktopGate`
+  // instead of `App`, so nothing below mounts on a phone.
   return (
     <div className="flex flex-col h-screen">
-      {/* Mobile gate */}
-      <div className="md:hidden fixed inset-0 z-[200] bg-gray-950 flex flex-col items-center justify-center p-8 text-center">
-        <span className="text-4xl mb-4">🖥️</span>
-        <h1 className="text-lg font-semibold text-gray-100 mb-2">Desktop Required</h1>
-        <p className="text-sm text-gray-400 max-w-[280px]">
-          This interactive simulation needs a larger screen to display properly. Please open it on a desktop or laptop.
-        </p>
-      </div>
-
       <Header onShowIntro={() => setShowIntro(true)} />
       <SharedBanner />
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}

@@ -67,7 +67,7 @@ export function DecisionWindowDemo() {
   return (
     <div>
       <div className="mb-4 flex items-center gap-3">
-        <label htmlFor="dw-year" className="text-xs text-gray-500">
+        <label htmlFor="dw-year" className="text-sm text-gray-500">
           Year
         </label>
         <input
@@ -80,7 +80,7 @@ export function DecisionWindowDemo() {
           onChange={(e) => setYear(Number(e.target.value))}
           className="w-40 accent-violet-500"
         />
-        <span className="font-mono text-xs text-gray-300">{year}</span>
+        <span className="font-mono text-sm text-gray-300">{year}</span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -96,13 +96,13 @@ export function DecisionWindowDemo() {
           return (
             <div key={id} className="flex flex-col items-center text-center">
               <DemoHex block={block} state="not_started" urgency={badged} />
-              <div className={`mt-1 text-[11px] font-medium ${reading.tone}`}>
+              <div className={`mt-1 text-sm font-medium ${reading.tone}`}>
                 {reading.label}
               </div>
-              <div className="mt-0.5 font-mono text-[10px] text-gray-500">
+              <div className="mt-0.5 font-mono text-sm text-gray-500">
                 {block.deployMonths.max}mo to deploy · start by {mustStartBy}
               </div>
-              <p className="mt-1.5 text-[11px] leading-snug text-gray-500">{reading.note}</p>
+              <p className="mt-1.5 text-sm leading-snug text-gray-500">{reading.note}</p>
             </div>
           );
         })}

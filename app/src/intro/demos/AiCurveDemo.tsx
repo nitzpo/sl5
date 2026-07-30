@@ -99,7 +99,7 @@ export function AiCurveDemo() {
       </svg>
 
       <div className="mt-2 flex items-center gap-3">
-        <label htmlFor="ai-curve-year" className="text-xs text-gray-500">
+        <label htmlFor="ai-curve-year" className="text-sm text-gray-500">
           Year
         </label>
         <input
@@ -112,11 +112,11 @@ export function AiCurveDemo() {
           onChange={(e) => setYear(Number(e.target.value))}
           className="w-40 accent-violet-500"
         />
-        <span className="w-10 font-mono text-xs text-gray-300">{year}</span>
+        <span className="w-10 font-mono text-sm text-gray-300">{year}</span>
       </div>
 
-      <p className="mt-3 text-xs leading-relaxed text-gray-400">{effect}</p>
-      <p className="mt-2 text-[11px] text-gray-600">
+      <p className="mt-3 text-sm leading-relaxed text-gray-400">{effect}</p>
+      <p className="mt-2 text-sm text-gray-600">
         For scale: OC{oc4.level} is {oc4.name.toLowerCase()}; OC{oc5.level} is{" "}
         {oc5.name.toLowerCase()}.
       </p>

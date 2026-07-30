@@ -50,6 +50,7 @@ entry point, so it loads instantly, ships no simulation store, and every slide i
 Everything runs client-side from JSON data — no backend.
 
 - **Building blocks** (`app/public/data/blocks-*.json`) — each block has a category, a **defense type** (🔵 hard-stop / 🟠 probabilistic / 🔷 hybrid), cost, deploy time, an effectiveness curve, an AI-erosion rate, dependencies, and which defense-in-depth layer(s) it contributes to. A block moves through states: *not started → investing → implementing → deployed → mature.* Hard `requires` dependencies are enforced: a block claiming deployed while a prerequisite isn't operational is capped at implementing.
+- **No control is the whole thing its name implies on its own.** 19 blocks declare `completed_by` — companions without which the control genuinely works but is weaker than the version the standard describes. An air gap is the type specimen: it stops remote exploitation the day it exists, but with no controlled way to move data across it people carry drives, and with a live BMC on the management VLAN there is still a route in. So `NET-01` alone counts for 55% of `NET-01`, and each companion (`NET-05` diodes, `NET-04` bandwidth caps, `PER-08` no remote management) closes an equal part of the rest. This is deliberately *soft*, unlike `requires`: nothing is capped, the block just isn't priced as more than it is. It exists because the introduction's mini-game exposed the lesson-breaking alternative — one click on the air gap was the single best purchase at any budget, which taught that one structural buy is most of security. It isn't.
 - **Attack chains** (`app/public/data/attack-chains.json`) — multi-step exfiltration scenarios (e.g., *The Quiet Tap*, *The Poisoned Chip*, *Patient Distillation*). Each names the blocks it exploits and its stoppers — and both are mechanical: every listed stopper reduces its chain.
 - **Breach probability** is **capability-gated and monotonic**: for a chain,
 
@@ -127,7 +128,7 @@ The block and attack-chain data is an **illustrative modeling interpretation** s
 - The **SL5 Standard for AI Security** and its **Novel Recommendations**
 - The **AI 2027** forecast
 
-Canonical data the app loads is in `app/public/data/`. `research/data/` is a frozen snapshot used by the legacy Python prototype (`research/scenario-test.py`); see [`research/README.md`](research/README.md).
+Canonical data the app loads is in `app/public/data/` — the single source of truth. (An earlier Python prototype and its frozen data snapshot lived under `research/`; both were removed once `app/tests/engine/` covered the same scenarios against live data. See [`research/README.md`](research/README.md).)
 
 ---
 

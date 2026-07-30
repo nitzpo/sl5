@@ -40,7 +40,7 @@ export function LifecycleDemo() {
           size={40}
           onClick={() => setI((n) => (n + 1) % CYCLE.length)}
         />
-        <span className="mt-0.5 text-center text-[10px] leading-tight text-gray-600">
+        <span className="mt-0.5 text-center text-sm leading-tight text-gray-600">
           <span className="text-gray-400">right-click</span> to{" "}
           {wrapped ? "start over" : "advance"}
         </span>
@@ -56,7 +56,7 @@ export function LifecycleDemo() {
               onClick={() => setI(n)}
               aria-pressed={n === i}
               aria-label={STATE_LABELS[s]}
-              className={`flex-1 border-r border-gray-700 px-1 py-1.5 text-[10px] transition-colors last:border-r-0 ${
+              className={`flex-1 border-r border-gray-700 px-1 py-1.5 text-sm transition-colors last:border-r-0 ${
                 n === i
                   ? "bg-gray-700 text-gray-100"
                   : "bg-gray-900 text-gray-500 hover:bg-gray-800 hover:text-gray-300"
@@ -74,7 +74,7 @@ export function LifecycleDemo() {
             {Math.round(effectiveness * 100)}%
           </span>
         </div>
-        <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
+        <p className="mt-1 text-sm leading-relaxed text-gray-500">
           Effectiveness at this state, before any AI erosion or budget cap. The fill height
           tracks the state; the border thickens as it hardens; <em>Mature</em> earns the outer
           glow ring.

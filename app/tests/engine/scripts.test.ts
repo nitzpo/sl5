@@ -187,7 +187,7 @@ describe("time-lapse scripts", () => {
     expect(nothing).toBeGreaterThan(constrained);
     expect(constrained).toBeGreaterThan(reactive);
     expect(reactive).toBeGreaterThan(proactive * 1.5); // substantially better, not marginally
-    // Proactive: $1,330M of a $1,400M budget, every program matured, and an
+    // Proactive: $1,384M of a $1,400M budget, every program matured, and an
     // all-personnel chain still gets through ~15% of the time. The floor matters
     // as much as the ceiling — if this ever drops into single digits the story
     // reads as "solved", which is the failure mode the recalibration removed.
@@ -205,7 +205,9 @@ describe("time-lapse scripts", () => {
     //
     // SL is a BREADTH measure — 45 of 47 blocks are threat-relevant, so a plan
     // that buys 23 of them structurally caps near 2.5 no matter which 23. 3.5
-    // takes 33 blocks. The ceiling is 4.39 (whole catalog matured, $3,668M), not
+    // takes 34 blocks — one of which, PHY-02, earns its place by completing
+    // PHY-01 and PHY-05 rather than by covering new ground; see `completed_by`.
+    // The ceiling is 4.42 (whole catalog matured, $3,668M), not
     // 5.0, because slider penalties and AI erosion never fully clear.
     const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
     const script = SCRIPTS.find((s) => s.id === "proactive-program")!;

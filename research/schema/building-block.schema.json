@@ -151,7 +151,7 @@
     "defense_type": {
       "type": "string",
       "enum": ["hard_stop", "probabilistic", "hybrid"],
-      "description": "hard_stop = deterministic (if present, attack is physically impossible); probabilistic = reduces likelihood but doesn't eliminate; hybrid = has elements of both"
+      "description": "hard_stop = structural (removes the route rather than watching it, so it resists strongly and erodes only slowly with adversary capability — NOT unbypassable: see HARD_STOP_RESIST_FLOOR in engine/breach.ts, and the insider/supply-chain chains that route around an air gap entirely); probabilistic = reduces likelihood but doesn't eliminate, and erodes fast as AI improves; hybrid = a hard-stop core with a probabilistic wrapper (a data diode enforces direction in hardware and inspects content in software), scored halfway between the two on both AI channels — see HYBRID_STRUCTURAL_SHARE in engine/scoring.ts"
     },
     "sl_requirement": {
       "type": "object",
@@ -211,6 +211,29 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "Block IDs that must be present for this block to be deployable at all"
+        },
+        "completed_by": {
+          "type": "object",
+          "description": "Companion controls without which this block is only partly the thing its name implies. Softer than `requires`: the block genuinely works alone (so it is NOT capped at implementing), it is just weaker than the standard's version — an air gap with no data diode is one people carry drives across. Absent all companions the block counts for `standalone_share` of its effectiveness, and each operational (deployed/mature) companion closes an equal part of the remainder. Deliberately not derived from `enhances`/`enabled_by`, which are a loose near-symmetric narrative relation; hand-authored per block, with the reasoning in `why`.",
+          "properties": {
+            "blocks": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1,
+              "description": "Block IDs that must be deployed or mature for this control to count fully"
+            },
+            "standalone_share": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1,
+              "description": "Fraction of effectiveness the block keeps with none of its companions operational"
+            },
+            "why": {
+              "type": "string",
+              "description": "Why this control is incomplete without them — reader-facing copy"
+            }
+          },
+          "required": ["blocks", "standalone_share", "why"]
         }
       },
       "required": ["requires", "enhances", "enabled_by"]

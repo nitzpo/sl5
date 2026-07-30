@@ -181,6 +181,35 @@ describe("chain breach model", () => {
     expect(atOc6 - atOc3).toBeLessThan(probSpread);
   });
 
+  it("a hybrid resists between a hard stop and a probabilistic control", () => {
+    // `hybrid` used to be silently unimplemented: both this function and
+    // `aiDegradation` branched on `hard_stop` alone, so all three hybrid blocks
+    // fell through to the pure-probabilistic path. NET-05 is a data diode — a
+    // hardware one-way flow with software inspection on top — and got no credit
+    // whatsoever for the half of it that is physics.
+    //
+    // Comparing get-past across three real blocks with different exploitation
+    // thresholds would confound type with threshold, so hold the block fixed and
+    // vary only `defense_type`. Same block, same threshold, same ai_oc_shift.
+    const netFive = blocks.find((b) => b.id === "NET-05")!;
+    expect(netFive.defense_type).toBe("hybrid");
+    const asType = (t: Block["defense_type"], oc: number) =>
+      blockExploitProbability({ ...netFive, defense_type: t }, "mature", oc, YEAR, SLIDERS);
+
+    // At every adversary tier, not just one: the interpolation is between the two
+    // branches, so bracketing has to hold wherever the bands sit.
+    for (const oc of [2, 3, 4, 5, 6]) {
+      const hard = asType("hard_stop", oc);
+      const hybrid = asType("hybrid", oc);
+      const prob = asType("probabilistic", oc);
+      expect(hybrid).toBeGreaterThan(hard);
+      expect(hybrid).toBeLessThan(prob);
+    }
+
+    // And it still erodes with adversary capability — half-structural, not immune.
+    expect(asType("hybrid", 6)).toBeGreaterThan(asType("hybrid", 3));
+  });
+
   it("maturing a stopper lowers its chain's breach probability", () => {
     const pd = chains.find((c) => c.id === "patient-distillation")!;
     const before = chainBreachProbability(pd, blocks, allState("not_started"), 2, YEAR, SLIDERS, true);
@@ -209,11 +238,63 @@ describe("chain breach model", () => {
       SLIDERS,
       true
     );
-    // Hard stops are strong but not absolute: resist erodes from 0.98 toward
-    // 0.86 as the adversary outclasses the block, so a single matured air gap
-    // cuts a chain to roughly a quarter — not to nothing. This is measured at
-    // OC5, the tier where that erosion is largest.
-    expect(after).toBeLessThan(before * 0.3);
+    // Hard stops are strong but not absolute, for two compounding reasons.
+    // Resist erodes from 0.98 toward 0.86 as the adversary outclasses the block;
+    // and an air gap bought on its own is only `standalone_share` of an air gap,
+    // because nothing yet moves data across it in a controlled way. So a lone
+    // matured air gap cuts this chain by about a third at OC5 — the tier where
+    // both effects are largest — rather than to a quarter of itself.
+    expect(after).toBeLessThan(before * 0.65);
+
+    // Complete it and it recovers the full structural cut. This is the pair of
+    // assertions that pins the mechanic's intent: the air gap is still the
+    // biggest single structural move on the board, but the version you get for
+    // one purchase is not the version the standard describes.
+    const completed = { ...none, "NET-01": "mature" as BlockState };
+    const airGap = blocks.find((b) => b.id === "NET-01")!;
+    for (const id of airGap.dependencies.completed_by!.blocks) completed[id] = "mature";
+    const whole = chainBreachProbability(zd, blocks, completed, 5, YEAR, SLIDERS, true);
+    expect(whole).toBeLessThan(before * 0.3);
+    expect(whole).toBeLessThan(after);
+  });
+
+  it("an air gap on its own does less than an air gap with its companions", () => {
+    // The mini-game exposed the lesson-breaking version of this: NET-01 alone was
+    // the single best purchase on any budget, so a reader learned that one
+    // structural buy is most of security. An air gap with no controlled crossing
+    // is one people carry drives across, so `completed_by` prices it as the
+    // partial thing it is — and completing it has to keep paying.
+    const zd = chains.find((c) => c.id === "zero-day-cascade")!;
+    const netOne = blocks.find((b) => b.id === "NET-01")!;
+    const companions = netOne.dependencies.completed_by!.blocks;
+    const none = allState("not_started");
+
+    const alone = { ...none, "NET-01": "mature" as BlockState };
+    let previous = chainBreachProbability(zd, blocks, alone, 5, YEAR, SLIDERS, true);
+    // Each companion coming online strictly improves the air gap, never the reverse.
+    const states = { ...alone };
+    for (const id of companions) {
+      states[id] = "mature";
+      const next = chainBreachProbability(zd, blocks, states, 5, YEAR, SLIDERS, true);
+      expect(next, `bringing ${id} online did not help NET-01`).toBeLessThan(previous);
+      previous = next;
+    }
+
+    // And the discount is real: the whole set beats the air gap alone by a
+    // margin a reader would notice, not a rounding difference.
+    expect(previous).toBeLessThan(
+      chainBreachProbability(zd, blocks, alone, 5, YEAR, SLIDERS, true) * 0.9
+    );
+  });
+
+  it("blocks with no `completed_by` are unaffected by the posture around them", () => {
+    // The mechanism must be opt-in per block: passing the whole posture through
+    // breach can't quietly change what an unannotated control is worth.
+    const plain = blocks.find((b) => !b.dependencies.completed_by)!;
+    const alone = { [plain.id]: "mature" as BlockState };
+    expect(blockExploitProbability(plain, "mature", 4, YEAR, SLIDERS, alone)).toBe(
+      blockExploitProbability(plain, "mature", 4, YEAR, SLIDERS)
+    );
   });
 
   it("air-gap precondition: external-serving chains are inert when not served externally", () => {

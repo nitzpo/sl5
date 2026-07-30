@@ -107,7 +107,7 @@
       "name": "Top-Priority State Operations Defense",
       "defends_against": "OC5 — Top-Priority State Operations",
       "required_independent_layers": 8,
-      "description": "Complete isolation, formal hardware verification, supervised access, 8 independent layers",
+      "description": "Complete isolation, formal hardware verification, supervised access",
       "achievable": false
     }
   ],

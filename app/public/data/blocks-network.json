@@ -75,7 +75,16 @@
         "NET-04",
         "HW-07"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "NET-05",
+          "NET-04",
+          "PER-08"
+        ],
+        "standalone_share": 0.55,
+        "why": "An air gap is only as good as how data crosses it. With no diode, transfers happen on hand-carried drives; with no bandwidth cap, one breach exfiltrates the weights at line rate; with remote management still live, the BMC is a route in that bypasses the perimeter entirely."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -183,7 +192,15 @@
         "HW-06",
         "NET-04"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "NET-05",
+          "PER-06"
+        ],
+        "standalone_share": 0.65,
+        "why": "A stricter inner perimeter needs a controlled way through it and someone authorizing what crosses. Without those the enclave boundary is a diagram rather than a checkpoint."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -283,7 +300,14 @@
         "NET-01",
         "NET-07"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "NET-06"
+        ],
+        "standalone_share": 0.75,
+        "why": "Heterogeneous encryptors protect what is on the wire, not the wire. Without hardened, alarmed conduit an adversary reaches the cable run itself, upstream of both encryptors."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -384,7 +408,15 @@
         "NET-05",
         "AI-07"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "NET-05",
+          "PHY-05"
+        ],
+        "standalone_share": 0.75,
+        "why": "A throughput cap only binds the channels it sits on. A wireless device in the room, or an uncontrolled crossing beside the metered one, is bandwidth the cap never counts."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -489,7 +521,15 @@
         "NET-04",
         "AI-01"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "NET-04",
+          "AI-07"
+        ],
+        "standalone_share": 0.75,
+        "why": "A diode enforces direction, not volume or content. Everything the permitted direction allows still leaves, so the metered cap and outbound inspection are what turn one-way into bounded."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [

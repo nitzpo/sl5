@@ -71,6 +71,17 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    // Node by default, jsdom only where it's earned. Three of thirteen test
+    // files render React; the rest are pure engine and data checks. Building a
+    // jsdom for all thirteen dominated the run — 433s of summed worker time
+    // against 11s of actual test execution — because every jsdom is another
+    // 11MB of modules read off the 9p mount. Those three opt in with a
+    // `// @vitest-environment jsdom` docblock.
+    environment: 'node',
+    // Threads share one module graph per worker; forks re-read react and jsdom
+    // from /mnt/c for every file, which is also what made a cold worker miss
+    // the pool handshake and fail the run with "Timeout waiting for worker".
+    pool: 'threads',
+    teardownTimeout: 30_000,
   },
 })

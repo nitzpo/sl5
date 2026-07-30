@@ -34,7 +34,7 @@ export const SLIDES: Slide[] = [
   { slug: "the-asset", title: "The weights are the model", act: 1, Component: WhatWeightsAre },
   { slug: "why-steal-them", title: "Why a superpower wants them", act: 1, Component: WhySteal },
   { slug: "why-it-gets-worse", title: "Why it gets harder", act: 1, Component: WhyItGetsWorse },
-  { slug: "the-oc-ladder", title: "Five tiers of adversary", act: 1, Component: OcLadderSlide },
+  { slug: "the-oc-ladder", title: "How capable is the attacker?", act: 1, Component: OcLadderSlide },
   { slug: "security-levels", title: "Five security levels", act: 1, Component: SecurityLevels },
   { slug: "sources", title: "The source material", act: 1, Component: Sources },
   { slug: "blocks", title: "Everything is a block", act: 2, Component: Blocks },

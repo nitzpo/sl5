@@ -74,7 +74,10 @@
           "level": { "type": "number", "minimum": 1, "maximum": 5 },
           "name": { "type": "string" },
           "defends_against": { "type": "string", "description": "Which OC tier this SL is designed to thwart" },
-          "required_independent_layers": { "type": "number" },
+          "required_independent_layers": {
+            "type": "number",
+            "description": "RAND's independent-layer benchmark for this level — ONE benchmark control among many, listed under 'Other Organization Policies (ID.RM)' in Appendix B, NOT what defines the level (that is `defends_against`). Faithful to RAND for SL3/SL4/SL5 = 2/4/8 (rand_full.txt:4997, :5240, :5387). RAND states no layer requirement at SL1 or SL2, so the 1 recorded for those two tiers is this project's filler, not a citation. No engine code reads this field: the SL score is computed from category coverage (engine/scoring.ts), and the layer AND-gate in engine/breach.ts derives depth from each block's defense_in_depth.layer_contributions instead. It is mirrored into the introduction's SL_LEVELS and checked against world-state.json by app/tests/intro/content.test.ts, so it is part of a real data contract even though no calculation reads it. Do not present it to a reader as the definition of a level."
+          },
           "description": { "type": "string" },
           "achievable": {
             "type": "boolean",

@@ -172,7 +172,15 @@
         "SC-01",
         "SC-05"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "SC-01",
+          "SC-06"
+        ],
+        "standalone_share": 0.65,
+        "why": "An inspection pipeline can only flag deviation from a reference. Without provenance tracking and a second supplier to cross-reference against, there is no golden sample and a uniformly backdoored batch passes."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
@@ -639,7 +647,15 @@
         "HW-01",
         "HW-04"
       ],
-      "enabled_by": []
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "HW-01",
+          "SC-04"
+        ],
+        "standalone_share": 0.7,
+        "why": "Building it yourself relocates the supply-chain risk rather than removing it: without a hardware root of trust to anchor what you built and flow-down requirements on your own sub-tier suppliers, the adversary simply targets your build instead of your vendor's."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [

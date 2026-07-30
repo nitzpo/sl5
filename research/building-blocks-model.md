@@ -113,10 +113,28 @@ Users can view through:
 
 ## Defense-in-Depth Mechanic
 
-RAND specifies independent security layers scaling by SL:
+RAND lists a number of independent security layers as **one benchmark control
+among many**, under "Other Organization Policies (ID.RM)" in Appendix B, and only
+from SL3 upward (`rand_full.txt:4997`, `:5240`, `:5387`):
 - SL3: 2 independent layers
 - SL4: 4 independent layers
 - SL5: 8 independent layers
+- SL1, SL2: no layer requirement at all
+
+This is **not** how RAND defines the levels. RAND's *headline* definition of each SL
+is the attacker tier it is meant to thwart (`rand_full.txt:1660`, Figure 6.1 at
+`:1701`): SL5 is "a system that could plausibly be claimed to thwart most
+top-priority operations by the top cyber-capable institutions (OC5)". Each level then
+comes with a benchmark set of concrete controls — the layer count among them — so the
+levels are not *only* a statement about attacker tiers. What they are not is a level
+*defined by* its layer count. And RAND's layer rule is a *red-team review* rule —
+each layer is tested independently and a failure of one counts as a failure of the
+system — not a probability model.
+
+So the AND-gate below is this project's modelling choice, not RAND's. Don't let it
+back into the product copy as the definition of a level: what separates SL4 from
+SL5 is which controls are on the table, and how painful they are to build and to
+work under.
 
 Each building block contributes to one or more layers. An adversary must breach ALL layers (not just one) for weight exfiltration. The simulation should show:
 - Which layers exist given current building blocks

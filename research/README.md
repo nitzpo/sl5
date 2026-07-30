@@ -2,7 +2,9 @@
 
 Methodology, design notes, schemas, and source material behind [SL5 Explorable](../README.md). This folder documents *why the model is shaped the way it is*; the live app reads its data from [`../app/public/data/`](../app/public/data/).
 
-> ⚠️ **Generation note.** Most documents here (notably `formula-calibration-results.md`, the JSON schemas, and `scenario-test.py` with its frozen `data/`) describe the **first-generation Python prototype** of the model. The shipped app re-designed the breach model (capability gate + monotone get-past, see the root README) and re-tuned the block data, so specific formulas, constants, and calibration numbers in these files may not match the live engine. They remain valuable as the reasoning record; where they conflict, `app/src/engine/` is authoritative.
+> ⚠️ **Generation note.** Most documents here (notably `formula-calibration-results.md` and the JSON schemas) describe the **first-generation Python prototype** of the model. The shipped app re-designed the breach model (capability gate + monotone get-past, see the root README) and re-tuned the block data, so specific formulas, constants, and calibration numbers in these files may not match the live engine. They remain valuable as the reasoning record; where they conflict, `app/src/engine/` is authoritative.
+>
+> The prototype itself (`scenario-test.py` and the frozen `data/` snapshot it read) has been **removed**. It had drifted into contradicting the engine — no AI erosion on hard stops, no `hybrid` handling at all, and a flat `0.02` breach probability for any deployed hard stop — so running it gave materially different answers for the same block. Its four validation scenarios are ported to `app/tests/engine/scoring.test.ts`, where they run against the live data and the live engine on every test run.
 >
 > **Exception:** `scoring-model.md` has been rewritten to describe the model **as shipped**, including its calibration. It tracks `app/src/engine/` and should be updated alongside it.
 
@@ -25,7 +27,7 @@ Methodology, design notes, schemas, and source material behind [SL5 Explorable](
 ## Data
 
 - **Canonical / live:** [`../app/public/data/`](../app/public/data/) — what the app actually loads.
-- **`data/` (here):** a frozen snapshot from an earlier modeling pass, kept because the legacy Python prototype `scenario-test.py` reads it (`Path(__file__).parent / "data"`). It is **not** what the app uses and may differ; treat `../app/public/data/` as the source of truth.
+There is no longer a second copy. The `data/` snapshot that used to sit here existed only to feed `scenario-test.py`, and all six of its files had drifted from the live ones; both are gone.
 
 ## Source material
 

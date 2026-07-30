@@ -4,6 +4,7 @@ import {
   categoryScore,
   overallSlScore,
   computeCategoryScores,
+  enablementFactor,
   getStateEffectiveness,
   relevantBlockIds,
 } from "../../src/engine/scoring";
@@ -81,6 +82,90 @@ describe("Block Effectiveness", () => {
     expect(blockEffectiveness(net01, "not_started", 2026)).toBe(0);
     expect(blockEffectiveness(ai03, "not_started", 2030)).toBe(0);
   });
+
+  it("hybrid blocks erode, but only over their probabilistic half", () => {
+    // `hybrid` was unimplemented on this channel too: `aiDegradation` returned
+    // early for `hard_stop` and gave everything else the full probabilistic
+    // erosion, so a data diode's hardware one-way flow decayed as if it were a
+    // monitoring rule. Vary only `defense_type` so the comparison isn't
+    // confounded by a different block's `ai_oc_shift`.
+    const net05 = blocks.find((b) => b.id === "NET-05")!;
+    expect(net05.defense_type).toBe("hybrid");
+    const asType = (t: Block["defense_type"]) =>
+      blockEffectiveness({ ...net05, defense_type: t }, "deployed", 2030);
+
+    expect(asType("hybrid")).toBeLessThan(asType("hard_stop"));
+    expect(asType("hybrid")).toBeGreaterThan(asType("probabilistic"));
+
+    // Still erodes over time — half-structural, not immune.
+    expect(blockEffectiveness(net05, "deployed", 2030)).toBeLessThan(
+      blockEffectiveness(net05, "deployed", 2026)
+    );
+  });
+});
+
+describe("Enablement (completed_by)", () => {
+  const blocks = loadBlocks();
+  const net01 = blocks.find((b) => b.id === "NET-01")!;
+  const companions = net01.dependencies.completed_by!;
+
+  // The mini-game's air gap is the reason this mechanic exists: one click bought
+  // ~60 points of breach reduction, teaching that a single structural purchase is
+  // most of security. NET-01 is therefore the test's type specimen.
+  it("NET-01 declares the companions that make an air gap real", () => {
+    expect(companions.blocks.length).toBeGreaterThan(1);
+    expect(companions.standalone_share).toBeGreaterThan(0);
+    expect(companions.standalone_share).toBeLessThan(1);
+  });
+
+  it("is a no-op for a block that declares no companions", () => {
+    const plain = blocks.find((b) => !b.dependencies.completed_by)!;
+    expect(enablementFactor(plain, {})).toBe(1);
+    expect(blockEffectiveness(plain, "mature", 2026, 0.5, { blockStates: {} })).toBe(
+      blockEffectiveness(plain, "mature", 2026)
+    );
+  });
+
+  it("floors at exactly standalone_share with no companion operational", () => {
+    expect(enablementFactor(net01, {})).toBeCloseTo(companions.standalone_share, 10);
+  });
+
+  it("reaches 1 when every companion is operational", () => {
+    const all = Object.fromEntries(companions.blocks.map((id) => [id, "mature"]));
+    expect(enablementFactor(net01, all)).toBeCloseTo(1, 10);
+    // `deployed` counts too — the companion is doing its job, not perfected.
+    const deployed = Object.fromEntries(companions.blocks.map((id) => [id, "deployed"]));
+    expect(enablementFactor(net01, deployed)).toBeCloseTo(1, 10);
+  });
+
+  it("only counts operational companions, not merely started ones", () => {
+    for (const state of ["not_started", "investing", "implementing"]) {
+      const states = Object.fromEntries(companions.blocks.map((id) => [id, state]));
+      expect(enablementFactor(net01, states)).toBeCloseTo(companions.standalone_share, 10);
+    }
+  });
+
+  // The property that keeps the breach model monotone: a companion coming online
+  // can only ever raise this block's effectiveness.
+  it("rises monotonically as companions come online", () => {
+    const states: Record<string, string> = {};
+    let previous = enablementFactor(net01, states);
+    for (const id of companions.blocks) {
+      states[id] = "deployed";
+      const next = enablementFactor(net01, states);
+      expect(next).toBeGreaterThan(previous);
+      previous = next;
+    }
+    expect(previous).toBeCloseTo(1, 10);
+  });
+
+  it("discounts effectiveness only when blockStates is supplied", () => {
+    // Omitted, a block reads as fully enabled — the right default for the UI's
+    // "what is this worth once it's built" readouts.
+    expect(blockEffectiveness(net01, "mature", 2026)).toBe(1);
+    const discounted = blockEffectiveness(net01, "mature", 2026, 0.5, { blockStates: {} });
+    expect(discounted).toBeCloseTo(companions.standalone_share, 10);
+  });
 });
 
 describe("Category and Overall Scores", () => {
@@ -88,23 +173,32 @@ describe("Category and Overall Scores", () => {
 
   // Overall SL uses the 0.3·min + 0.7·mean aggregation over category scores
   // (all-catalog denominator here, since these tests pass no relevantIds set).
+  //
+  // These four are calibration pins, and three of them moved down when
+  // `completed_by` landed. That is the mechanic, not a regression: 19 blocks are
+  // now worth `standalone_share` until their companions are operational, so any
+  // PARTIAL posture scores lower than it did. The ceiling is deliberately
+  // untouched — Scenario 3 (all deployed) is unchanged, because in a complete
+  // posture every companion is operational and every factor is 1. If a future
+  // change moves Scenario 3, something is wrong with the mechanic; if it moves
+  // 1/2/4, check the annotations before re-baselining.
 
-  it("Scenario 1: Baseline 2026 (~1.85)", () => {
+  it("Scenario 1: Baseline 2026 (~1.75)", () => {
     const baselineStates: Record<string, string> = {};
     for (const b of blocks) {
       baselineStates[b.id] = b.current_state.baseline_state;
     }
     const catScores = computeCategoryScores(blocks, baselineStates, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(1.85, 1);
+    expect(overall).toBeCloseTo(1.75, 1);
   });
 
-  it("Scenario 2: All implementing 2026 (~2.56)", () => {
+  it("Scenario 2: All implementing 2026 (~2.33)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) states[b.id] = "implementing";
     const catScores = computeCategoryScores(blocks, states, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(2.56, 1);
+    expect(overall).toBeCloseTo(2.33, 1);
   });
 
   it("Scenario 3: All deployed 2029 (~4.18)", () => {
@@ -115,7 +209,7 @@ describe("Category and Overall Scores", () => {
     expect(overall).toBeCloseTo(4.18, 1);
   });
 
-  it("Scenario 4: Network+Physical deployed, AI absent 2028 (~2.20)", () => {
+  it("Scenario 4: Network+Physical deployed, AI absent 2028 (~2.14)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) {
       if (b.category === "network" || b.category === "physical") {
@@ -130,7 +224,7 @@ describe("Category and Overall Scores", () => {
     }
     const catScores = computeCategoryScores(blocks, states, 2028);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(2.20, 1);
+    expect(overall).toBeCloseTo(2.14, 1);
   });
 
   it("an absent category still drags overall below full coverage", () => {

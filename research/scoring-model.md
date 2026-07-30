@@ -27,6 +27,7 @@ which answers "how much defense is this block actually delivering?"
 effectiveness = stateEffectiveness(state)
               × (1 − aiDegradation)     // defender-side AI erosion
               × orgMult × vendorMult × govMult
+              × enablementFactor        // companions this control needs to be whole
 ```
 
 **State** is the deployment ladder — a block is not binary:
@@ -63,6 +64,61 @@ it is meaningful:
   will not ship.
 - `govMult` — `supply_chain` and `personnel` blocks only, penalized when
   `gov_cooperation` is low. Clearances and fab provenance are not unilateral.
+
+### Enablement — no control is the whole thing its name implies alone
+
+19 of 47 blocks declare `dependencies.completed_by`: a list of companion blocks, a
+`standalone_share`, and a reader-facing `why`. Absent all its companions the block
+counts for `standalone_share` of its effectiveness; each *operational*
+(`deployed`/`mature`) companion closes an equal part of the remainder.
+
+```
+enablementFactor = share + (1 − share) × (operational_companions / total_companions)
+```
+
+An air gap is the type specimen. `NET-01` alone is 0.55 of `NET-01`, because with
+no controlled way to move data across the gap transfers happen on hand-carried
+drives, with no bandwidth cap one breach exfiltrates the weights at line rate, and
+with remote management still live the BMC is a route in that bypasses the
+perimeter entirely. Its companions are `NET-05` (diodes), `NET-04` (bandwidth
+limits) and `PER-08` (no remote management); operational, they take it to 1.0.
+
+**Why this is soft rather than another `requires` gate.** `requires` says the
+control *cannot function*, and caps it at `implementing` to fixpoint. An air gap
+without a diode functions fine — it is simply less than the standard means by "air
+gap", so a cap would be a lie in the other direction. Nothing here caps anything;
+the block is just not priced as more than it is.
+
+**Why it is linear in the count** rather than a product of per-companion factors:
+then "each companion closes an equal part of the gap" is literally the arithmetic,
+and the floor is exactly `standalone_share` instead of something that depends on
+how many companions happened to be authored.
+
+**Why it is not derived from `enhances`/`enabled_by`.** Those are a loose,
+near-symmetric narrative relation — `SC-01` enhances `SC-02` *and* `SC-02`
+enhances `SC-01` — with 95 edges having no recorded inverse. Read as requirements
+they would gate nearly every block on nearly every other. `completed_by` is
+hand-authored per block, with its reasoning in `why`.
+
+**Monotonicity is preserved by construction:** the factor rises with the count of
+operational companions and never falls, so bringing a companion online can only
+raise a block's effectiveness. `tests/engine/monotonicity.test.ts` advances one
+block at a time from seeded-random postures and would catch a violation.
+
+**Scope.** `blockEffectiveness` applies it only when passed `opts.blockStates`, so
+single-block UI readouts ("what is this worth once it's built") are unaffected,
+and the ceiling is untouched: in a complete posture every companion is operational
+and every factor is 1. It moves *partial* postures only — which is why the
+`Category and Overall Scores` calibration pins for baseline/all-implementing/
+partial-coverage moved down when it landed, while all-deployed did not.
+
+**Why it exists.** The introduction's mini-game exposed the alternative: on a
+$150M budget, one click on the air gap was the single best purchase available and
+dropped four of seven chains by ~60 points, teaching exactly the lesson the deck
+spends two slides arguing against — that one structural purchase is most of
+security. After the change NET-01's solo leverage on its worst chain falls from
+64pp to 35pp and it is no longer the top single buy, while *completing* it still
+pays at every step.
 
 ### The two AI channels (counted once each)
 
@@ -307,9 +363,9 @@ stories (pinned by `tests/engine/scripts.test.ts`):
 | Scenario | Breach | SL | Spend vs budget | Capped | Worst chain |
 |---|---|---|---|---|---|
 | Do Nothing | 100.0% | 1.00 | $0M | — | patient-distillation |
-| Budget-Constrained | 99.4% | 1.51 | $196M / $200M | 0 | zero-day-cascade |
-| Reactive CISO | 43.9% | 1.80 | $620M / $700M | 0 | poisoned-chip |
-| Proactive Program | 15.2% | 3.51 | $1,330M / $1,400M | 0 | long-game |
+| Budget-Constrained | 99.4% | 1.43 | $196M / $200M | 0 | zero-day-cascade |
+| Reactive CISO | 51.1% | 1.67 | $620M / $700M | 0 | poisoned-chip |
+| Proactive Program | 16.1% | 3.53 | $1,384M / $1,400M | 0 | long-game |
 
 Both numbers order the stories the same way, which is the point of weighting SL
 and breach identically (Part 2).
@@ -323,8 +379,16 @@ combination from $100M/1.0 to $200M/0.65, because its number comes from hard
 stops it cannot afford *at all*, not from the cost basis).
 
 Proactive's trajectory is a steady decline over all 13 playback steps:
-`100 → 78.5 → 63.8 → 54.2 → 40.4 → 37.3 → 34.2 → 33.9 → 26.6 → 18.0 → 17.1 →
-15.3 → 15.2%`.
+`100 → 81.6 → 66.3 → 59.4 → 44.2 → 41.7 → 38.2 → 37.9 → 28.2 → 19.0 → 18.2 →
+16.2 → 16.1%`.
+
+The three incomplete stories all sit slightly worse than they did before
+`enablementFactor` landed (Reactive 43.9% → 51.1%, SL 1.80 → 1.67), which is the
+mechanic working: a posture that buys `NET-01` and no way to move data across it
+is now priced as the partial control it bought. Proactive is the one story the
+change *improved*, and only because it was amended in response to it — adding
+`PHY-02` ($54.5M, the companion of both `PHY-01` and `PHY-05`) took it from
+SL 3.42 to 3.53 and made the physical family count for what it claims.
 
 ### SL is a breadth measure, and that sets the price of SL 3.5
 
@@ -339,18 +403,21 @@ its categories half-empty. Measured, all mature at 2030:
 
 | Posture | Cost | SL | Breach |
 |---|---|---|---|
-| 23 blocks (previous Proactive plan) | $759M | 2.51 | 16.7% |
-| 30 blocks | $710M | 2.88 | 5.1% |
-| 33 blocks (**current Proactive plan**) | $1,330M | **3.51** | **15.2%** |
-| 37 blocks | $1,344M | 3.62 | 4.9% |
-| all 47 blocks | $3,668M | 4.39 | 4.7% |
+| first 23 of the Proactive plan | $1,242M | 2.56 | 39.3% |
+| first 30 | $1,363M | 3.11 | 37.2% |
+| all 34 (**the Proactive plan**) | $1,384M | **3.53** | **16.1%** |
+| all 47 blocks | $3,668M | 4.42 | 4.7% |
+
+The prefixes are the plan's own blocks in start-year order, all matured, so the
+rows differ only in *how many* of them the org got to — which is exactly the
+question a reader has.
 
 Three consequences:
 
 1. **A 23-block plan structurally caps near SL 2.5**, whichever 23 it buys.
-   Reaching 3.5 takes 33. This is why Proactive's budget is $1.4B and not $800M:
-   ~$1.3B is what SL 3.5 costs in this model, and that *is* the finding.
-2. **The ceiling is 4.39, not 5.0.** Even with the entire catalog matured, slider
+   Reaching 3.5 takes 34. This is why Proactive's budget is $1.4B and not $800M:
+   ~$1.4B is what SL 3.5 costs in this model, and that *is* the finding.
+2. **The ceiling is 4.42, not 5.0.** Even with the entire catalog matured, slider
    penalties (org 0.7 / vendor 0.6 / gov 0.7) and AI erosion never fully clear.
    At perfect sliders and no erosion it reaches exactly 5.00, so the gap is
    entirely those two channels, not a bug in the mean.
@@ -365,30 +432,32 @@ Three consequences:
    only 2.23, because the tiers cut across categories and leave the weakest-link
    term exposed.
 
-### Why the residual is 15% and not 5%
+### Why the residual is 16% and not 5%
 
 SL 3.5 and a double-digit breach are in direct tension, and the plan resolves it
 with exactly one deliberate gap. `long-game` is an all-personnel chain
 (PER-02/03/04/05); Proactive buys PER-03 and PER-05 and skips **PER-02**
 (two-person control, $5M) and **PER-04** (continuous vetting, $10M).
 
-That $15M omission is load-bearing. Every plan measured that also closes those
-two collapses breach to **~4.7%** — because breach is a `max` over chains, and
-with breadth this wide the other six chains are all sitting on the residual
-floor (`long-game` 4.7%, everything else 2.6–3.0%). Adding $15M of personnel
-controls would raise SL by 0.03 and cut the headline number by two-thirds, which
-would read as "solved" and is the exact failure mode the recalibration removed.
+That $15M omission is load-bearing, and it is a *choice*, not an affordability
+constraint — buying both fits the same $1,400M budget with $1M to spare, and
+lands at **4.7% breach and SL 3.70**. Breach is a `max` over chains, and with
+breadth this wide the other six are already on the residual floor (`long-game`
+4.7%, everything else 2.6–3.0%), so $15M of personnel controls buys 0.17 of SL
+and cuts the headline number by two-thirds. A $1.4B program that reads as
+"solved" is the exact failure mode the recalibration removed, so the story leaves
+one chain meaningfully open and says so in its own captions.
 
 Enumerating the alternatives (full catalog minus each candidate omission set,
 $3.6B, so plan cost is not the binding constraint) shows how narrow the band is:
 
 | Omitted | SL | Breach |
 |---|---|---|
-| PER-04 only | 4.19 | 8.7% |
-| PER-04, PER-02 | 3.96 | 15.2% |
-| PER-04, PER-03 | 3.98 | 16.5% |
-| PER-04, PER-03, PER-05 | 3.75 | 30.7% |
-| all four | 3.51 | 49.2% |
+| PER-04 only | 4.20 | 8.7% |
+| PER-04, PER-02 | 3.92 | 16.1% |
+| PER-04, PER-03 | 3.99 | 16.5% |
+| PER-04, PER-03, PER-05 | 3.76 | 30.7% |
+| all four | 3.48 | 52.1% |
 
 Two further constraints shaped the schedule:
 
@@ -406,8 +475,8 @@ Two further constraints shaped the schedule:
 
 Budget-Constrained lands next to Do Nothing because $200M funds none of the
 three hard stops on `zero-day-cascade` (NET-01 $50M, HW-07 $50M + its $100M
-HW-01 prerequisite, HW-09). Its personnel spend does cut `long-game` to 12% and
-`alignment-researcher` to 4% — but breach is a max, so the one open path sets
+HW-01 prerequisite, HW-09). Its personnel spend does cut `long-game` to 14% and
+`alignment-researcher` to 5% — but breach is a max, so the one open path sets
 the number. That is the intended lesson, not a calibration failure: a budget too
 small to buy any structural control buys very little breach reduction.
 
@@ -437,6 +506,17 @@ small to buy any structural control buys very little breach reduction.
 - **No stuck deployments** (`scripts.test.ts`) — a block a story starts by 2026
   must actually reach `deployed` by 2030, catching lead-time/prerequisite
   authoring errors.
+- **Enablement is a discount, never a cap** (`breach.test.ts`,
+  `scoring.test.ts`) — bringing each of `NET-01`'s companions online strictly
+  lowers `zero-day-cascade`; the factor floors at exactly `standalone_share` and
+  reaches exactly 1.0 when all companions are operational; a block with no
+  `completed_by` is bit-identical with and without the surrounding posture; and
+  the all-deployed calibration scenario is unchanged, which is what pins the
+  mechanic to *partial* postures only.
+- **`completed_by` authoring** (`data-integrity.test.ts`) — every companion is a
+  real, distinct, non-self block, and every `standalone_share` is a strict
+  fraction with a `why` long enough to be a reason. A soft factor can't crash,
+  so a bad entry would silently misprice a block forever.
 
 ### Known limitation: Do Nothing is flat at the default adversary
 

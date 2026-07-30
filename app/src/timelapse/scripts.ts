@@ -9,19 +9,19 @@ export const SCRIPTS: TimeLapseScript[] = [
     // A well-funded program that plans within its means — the point of this
     // story is a serious attempt, not a solved problem.
     //
-    // The plan is SIZED to the budget: 33 programs cost ~$1,330M at the shared
+    // The plan is SIZED to the budget: 34 programs cost ~$1,384M at the shared
     // risk_tolerance 0.65 basis (`min + (1 - rt) * (max - min)`), against the
     // $1,400M cap. Nothing is capped at `implementing` and every block reaches
-    // `mature` by 2030, so the residual ~15% vs OC4 is what a fully-delivered
+    // `mature` by 2030, so the residual ~16% vs OC4 is what a fully-delivered
     // program actually leaves on the table — not an artifact of a plan the org
     // could never pay for.
     //
-    // ~$1.3B is what SL 3.5 costs, and that is the headline finding rather than
+    // ~$1.4B is what SL 3.5 costs, and that is the headline finding rather than
     // a budget the story was handed. SL measures coverage across the whole
     // threat model: 45 of 47 blocks are threat-relevant, so the score is a
     // BREADTH measure and a 23-block plan structurally caps out near 2.5
-    // whatever it buys. Reaching 3.5 takes 33 blocks; the full catalog matured
-    // ($3,668M) reaches only 4.39, because slider penalties and AI erosion mean
+    // whatever it buys. Reaching 3.5 takes 34 blocks; the full catalog matured
+    // ($3,668M) reaches only 4.42, because slider penalties and AI erosion mean
     // even a maxed posture is not a 5.
     //
     // The two omissions are deliberate and they are the whole reason the number
@@ -30,7 +30,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     // control) and PER-04 (continuous vetting). Every plan measured that closes
     // all four collapses breach to ~4.7%, because breach is a max over chains
     // and the other six are then all sitting on the residual floor. SL 3.5 with
-    // a real 15% residual requires leaving exactly one chain meaningfully open.
+    // a real 16% residual requires leaving exactly one chain meaningfully open.
     //
     // gov_cooperation is set high: a program this well-resourced assumes
     // government partnership, so personnel/supply-chain controls aren't
@@ -61,6 +61,14 @@ export const SCRIPTS: TimeLapseScript[] = [
       // 2025 — the physical perimeter ($305M, 36mo) and the 24-month tier.
       { blockId: "PER-06", startYear: 2025 },
       { blockId: "PHY-01", startYear: 2025 },
+      // Bundled with PHY-01 because the data says it must be: TEMPEST
+      // countermeasures cannot deploy faster than the facility they line. It is
+      // also PHY-01's and PHY-05's `completed_by` companion — shielding assumes
+      // the emitters are the ones you shielded — so buying all three is what
+      // makes the physical family count for what it claims rather than for
+      // `standalone_share` of it. $54.5M, and it is the difference between this
+      // story landing at SL 3.42 and at 3.53.
+      { blockId: "PHY-02", startYear: 2025 },
       { blockId: "HW-05", startYear: 2025 },
       { blockId: "SC-02", startYear: 2025 },
       { blockId: "PHY-07", startYear: 2025 },
@@ -94,7 +102,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { atYear: 2029, message: "SL passes 3.4. Everything cheap is bought, everything expensive is matured.", highlight: { type: "chain", id: "long-game" } },
       // Why it doesn't reach zero: the plan is fully funded and fully matured,
       // and it still leaves an all-personnel chain open.
-      { atYear: 2030, message: "$1.33B of $1.4B, all 33 programs matured, SL 3.5 — and an insider chain still gets through 15% of the time", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2030, message: "$1.38B of $1.4B, all 34 programs matured, SL 3.5 — and an insider chain still gets through 16% of the time", highlight: { type: "chain", id: "long-game" } },
     ],
   },
   {

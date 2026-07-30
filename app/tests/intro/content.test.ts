@@ -11,6 +11,7 @@ import {
   CATALOG,
   DEMO_BLOCKS,
   EXFILTRATION_CONSEQUENCES,
+  GLOSSARY,
   LONG_GAME,
   OC_TIERS,
   RECURSIVE_RISK,
@@ -99,7 +100,13 @@ describe("intro SL levels match world-state.json", () => {
     expect(SL_LEVELS.filter((s) => !s.achievable).map((s) => s.level)).toEqual([5]);
   });
 
-  it("SL5 still requires 8 independent layers", () => {
+  // `requiredIndependentLayers` is mirrored so this file stays a faithful copy
+  // of world-state.json, but it is deliberately not shown to a reader: no code
+  // in the app reads the field, and what separates SL4 from SL5 is which
+  // controls are on the table rather than how many layers are stacked. The
+  // security-levels slide renders no Layers column — asserted in
+  // `IntroApp.test.tsx`.
+  it("mirrors the layer count without the slide presenting it as the definition", () => {
     expect(SL_LEVELS.find((s) => s.level === 5)!.requiredIndependentLayers).toBe(8);
   });
 });
@@ -223,6 +230,39 @@ describe("slide registry", () => {
 
   it("every slide has a title for the progress rail and document title", () => {
     for (const s of SLIDES) expect(s.title.length).toBeGreaterThan(0);
+  });
+});
+
+describe("glossary", () => {
+  // A reader told us they didn't know what OC meant, so the two abbreviations
+  // the whole framework rests on have to spell themselves out — in the entry
+  // label, not only somewhere in the prose.
+  it("expands OC and SL in the label itself", () => {
+    expect(GLOSSARY.oc.label).toMatch(/Operational Capability/);
+    expect(GLOSSARY.sl.label).toMatch(/Security Level/);
+  });
+
+  it("defines every abbreviation the intro leans on", () => {
+    for (const key of ["oc", "sl", "tee", "ciso", "scif", "sf86", "tempest"]) {
+      expect(GLOSSARY, `${key} missing from the glossary`).toHaveProperty(key);
+    }
+  });
+
+  it("every entry has a real label and a definition that reads as a sentence", () => {
+    for (const [key, entry] of Object.entries(GLOSSARY)) {
+      expect(entry.label.length, `${key} label`).toBeGreaterThan(2);
+      // Long enough to actually explain, and punctuated — a bare noun phrase
+      // isn't a definition.
+      expect(entry.definition.length, `${key} definition`).toBeGreaterThan(40);
+      expect(entry.definition, `${key} definition`).toMatch(/[.!?]$/);
+    }
+  });
+
+  it("no definition explains a term with the abbreviation it's defining", () => {
+    // "OC — the OC tier of the attacker" would pass every check above and teach
+    // nothing. Only guards the two that started this.
+    expect(GLOSSARY.oc.definition).not.toMatch(/\bOC\b(?!\d)/);
+    expect(GLOSSARY.sl.definition).not.toMatch(/\bSL\b(?!\d)/);
   });
 });
 

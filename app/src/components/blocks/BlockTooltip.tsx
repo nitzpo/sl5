@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Block, BlockState, Sliders } from "../../engine/types";
-import { blockEffectiveness, aiDegradation } from "../../engine/scoring";
+import { blockEffectiveness, aiDegradation, enablementFactor } from "../../engine/scoring";
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
@@ -28,6 +28,7 @@ export function BlockTooltip({
 
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
+  const blockStates = useSimulationStore((s) => s.blockStates);
   const { budgetExceededIds, dependencyUnmetIds, dependencyUnmetRequires } =
     useSimulationResults();
 
@@ -38,7 +39,10 @@ export function BlockTooltip({
     ? (dependencyUnmetRequires?.get(block.id) ?? block.dependencies?.requires ?? []).join(", ")
     : null;
 
-  const effectiveness = blockEffectiveness(block, state, year, sliders);
+  // Against the whole posture, so this matches what the SL score used.
+  const effectiveness = blockEffectiveness(block, state, year, sliders, { blockStates });
+  const enablement = enablementFactor(block, blockStates);
+  const incomplete = enablement < 1 && state !== "not_started";
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
   const showErosion = degradation > 0.02 && block.defense_type !== "hard_stop";
 
@@ -100,6 +104,20 @@ export function BlockTooltip({
       {cappedByDependency && (
         <div className="text-[10px] text-sky-400 mt-0.5">
           ⚠ Capped at Implementing — prerequisite not operational ({missingRequires})
+        </div>
+      )}
+      {/* Not a cap — the block is built and working, just not the whole thing its
+          name implies. Only shown once something is built, since "incomplete" is
+          noise on a control that doesn't exist yet. */}
+      {incomplete && (
+        <div className="text-[10px] text-amber-400 mt-0.5">
+          Incomplete on its own — {Math.round(enablement * 100)}% of full without{" "}
+          {(block.dependencies.completed_by?.blocks ?? [])
+            .filter((id) => {
+              const s = blockStates[id] ?? "not_started";
+              return s !== "deployed" && s !== "mature";
+            })
+            .join(", ")}
         </div>
       )}
       {cappedByBudget && !cappedByDependency && (

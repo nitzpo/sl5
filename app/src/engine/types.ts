@@ -74,6 +74,35 @@ export interface Block {
     requires: string[];
     enhances: string[];
     enabled_by: string[];
+    /** Controls without which this one is only partly real.
+     *
+     * Distinct from `requires`, which is a hard gate: a block whose `requires`
+     * aren't operational is capped at implementing, because it cannot function at
+     * all. `completed_by` is the softer and far more common case — the control
+     * genuinely works on its own, but the version you get without its companions
+     * is weaker than the version the standard describes. An air gap is the type
+     * specimen: it stops remote exploitation the day it exists, but with no
+     * controlled way to move data across it people carry drives, and with a live
+     * BMC on the management VLAN there is still a route in.
+     *
+     * Soft because the honest answer is a fraction, not a gate. Absent all its
+     * companions the block counts for `standalone_share` of its effectiveness, and
+     * each operational companion closes an equal part of the remainder — see
+     * `enablementFactor` in scoring.ts.
+     *
+     * Deliberately NOT derived from `enhances`/`enabled_by`. Those are a loose,
+     * near-symmetric "helps out" relation (SC-01 enhances SC-02 and SC-02 enhances
+     * SC-01), and 95 of their edges have no inverse recorded, so reading them as a
+     * requirement would gate nearly every block on nearly every other. This field
+     * is hand-authored per block with its reasoning in `why`. */
+    completed_by?: {
+      /** Block ids that must be deployed or mature for this control to count fully. */
+      blocks: string[];
+      /** Fraction of effectiveness the block keeps with none of them, in (0, 1). */
+      standalone_share: number;
+      /** Why this control is incomplete without them — shown to the reader. */
+      why: string;
+    };
   };
   defense_in_depth: {
     layer_contributions: string[];
@@ -175,6 +204,19 @@ export interface WorldState {
     level: number;
     name: string;
     defends_against: string;
+    /** RAND's independent-layer benchmark — one benchmark control among many
+     * (Appendix B, "Other Organization Policies"), NOT what defines the level.
+     * `defends_against` is that. Faithful to RAND at SL3/4/5 = 2/4/8; RAND states
+     * no layer requirement at SL1 or SL2, so the 1 recorded there is filler.
+     *
+     * No engine code reads it — not scoring, not breach. The SL score comes from
+     * category coverage (`scoring.ts`) and breach's depth discount counts each
+     * block's `defense_in_depth.layer_contributions` (`breach.ts`), never this
+     * number. It is mirrored into the introduction's `SL_LEVELS` and checked
+     * against this file by `tests/intro/content.test.ts`, so the data contract is
+     * real even though no calculation depends on it. It stays because the data
+     * file and its schema record it; don't reintroduce it to reader-facing copy as
+     * the definition of a level. */
     required_independent_layers: number;
     description: string;
     achievable: boolean;

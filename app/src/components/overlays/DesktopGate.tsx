@@ -16,34 +16,8 @@
 // makes the app unusable is available width, and a tablet in landscape or a phone
 // rotated past the breakpoint is genuinely fine.
 
-import { useEffect, useState } from "react";
-
-/** Tailwind's `md`. The app's own responsive rules break below this. */
-const MIN_WIDTH_PX = 768;
-const QUERY = `(min-width: ${MIN_WIDTH_PX}px)`;
-
-/** True when the viewport is wide enough to run the instrument.
- *
- * Starts from the real measurement rather than a default, so a phone never gets
- * a frame of the app before the gate appears — mounting the map even once costs
- * a data load and a pan/zoom layout pass. */
-export function useIsDesktopWidth(): boolean {
-  const [wide, setWide] = useState(
-    () => typeof window === "undefined" || window.matchMedia(QUERY).matches
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia(QUERY);
-    const onChange = (e: MediaQueryListEvent) => setWide(e.matches);
-    mq.addEventListener("change", onChange);
-    // Re-read on mount: the viewport can change between the initial state and
-    // the effect, e.g. a rotation during load.
-    setWide(mq.matches);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  return wide;
-}
+// The width check itself lives in `./use-is-desktop-width`, so this file only
+// exports a component.
 
 export function DesktopGate() {
   return (

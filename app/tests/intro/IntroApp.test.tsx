@@ -324,22 +324,48 @@ describe("jargon is explained in place", () => {
     expect(term.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("a tap opens a term rather than opening and closing it", () => {
-    // A tap fires focus and then click. When focus opened the card
-    // unconditionally, the click behind it closed it again and the definition
-    // was unreachable on a phone — the one device this page is shared to.
-    // jsdom never matches `:focus-visible`, which is exactly a pointer's
-    // behaviour, so this is the real touch sequence.
+  it("one tap opens a term — the whole touch cascade, not just the click", () => {
+    // A tap fires FOUR events: pointerenter, a synthesized mouseenter, focus,
+    // then click. Every ungated auto-open handler in that cascade opens the card
+    // for the click behind it to toggle shut, which is why a term used to need
+    // two taps on a phone — the first opened and closed it, and the second only
+    // worked because mouseenter doesn't fire twice.
+    //
+    // This test previously fired focus + click and passed while the phone was
+    // still broken, because it left the hover events out. Firing the real
+    // sequence is the whole point.
     window.history.replaceState(null, "", "/sl5/intro/#the-asset");
     render(<IntroApp />);
     const term = screen.getByRole("button", { name: "weights" });
 
-    fireEvent.focus(term);
-    fireEvent.click(term);
+    const tap = () => {
+      // pointerType "touch" is what distinguishes this from a mouse; jsdom
+      // likewise never matches `:focus-visible` for a pointer, so both gates see
+      // exactly what a phone would send.
+      fireEvent.pointerEnter(term, { pointerType: "touch" });
+      fireEvent.mouseEnter(term);
+      fireEvent.focus(term);
+      fireEvent.click(term);
+    };
+
+    tap();
     expect(term.getAttribute("aria-expanded")).toBe("true");
 
-    // And a second tap closes it, which is the behaviour on a mouse too.
-    fireEvent.click(term);
+    // And a second tap dismisses it — the click-to-hide behaviour to preserve.
+    tap();
+    expect(term.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("a mouse still opens a term on hover alone", () => {
+    // The touch fix gates hover on pointerType, so this guards the other side of
+    // that gate: a mouse must still get hover-to-open with no click at all.
+    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
+    render(<IntroApp />);
+    const term = screen.getByRole("button", { name: "weights" });
+
+    fireEvent.pointerEnter(term, { pointerType: "mouse" });
+    expect(term.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.pointerLeave(term, { pointerType: "mouse" });
     expect(term.getAttribute("aria-expanded")).toBe("false");
   });
 

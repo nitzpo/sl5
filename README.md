@@ -127,7 +127,7 @@ The block and attack-chain data is an **illustrative modeling interpretation** s
 - The **SL5 Standard for AI Security** and its **Novel Recommendations**
 - The **AI 2027** forecast
 
-Canonical data the app loads is in `app/public/data/`. `research/data/` is a frozen snapshot used by the legacy Python prototype (`research/scenario-test.py`); see [`research/README.md`](research/README.md).
+Canonical data the app loads is in `app/public/data/` — the single source of truth. (An earlier Python prototype and its frozen data snapshot lived under `research/`; both were removed once `app/tests/engine/` covered the same scenarios against live data. See [`research/README.md`](research/README.md).)
 
 ---
 

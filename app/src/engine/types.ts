@@ -175,6 +175,16 @@ export interface WorldState {
     level: number;
     name: string;
     defends_against: string;
+    /** RAND's independent-layer benchmark — one benchmark control among many
+     * (Appendix B, "Other Organization Policies"), NOT what defines the level.
+     * `defends_against` is that. Faithful to RAND at SL3/4/5 = 2/4/8; RAND states
+     * no layer requirement at SL1 or SL2, so the 1 recorded there is filler.
+     *
+     * Nothing reads it. The SL score comes from category coverage (`scoring.ts`)
+     * and breach's depth discount counts each block's
+     * `defense_in_depth.layer_contributions` (`breach.ts`), never this number. It
+     * stays because the data file and its schema record it; don't reintroduce it
+     * to reader-facing copy as the definition of a level. */
     required_independent_layers: number;
     description: string;
     achievable: boolean;

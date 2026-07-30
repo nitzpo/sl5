@@ -33,7 +33,7 @@ The implant is never detected because no periodic hardware inspection protocol e
 - PHY-07 (Inspection pipeline): Routine X-ray/visual audit detects anomalous device
 - PER-04 (Private SF-86): Deeper vetting might surface front company links
 
-**Defense-in-depth lesson:** Any ONE of these blocks breaks the chain. The adversary needed all three absent — the adversary must thread every needle. (RAND's eight independent layers at SL5 are a red-team review rule rather than the definition of the level; see `building-blocks-model.md` § Defense-in-Depth Mechanic.)
+**Defense-in-depth lesson:** The chain needed PER-02, HW-03 and PHY-07 all three absent — the adversary must thread every needle. Any one of them present makes the chain much harder, and the two structural ones (HW-03 encryption, PHY-07 inspection) come closest to breaking it outright: encrypted traffic is useless to a tap regardless of how good the operative is. PER-04 vetting is listed fourth because it is different in kind — deeper vetting *raises the odds* of surfacing a front-company link, it does not guarantee it, and a well-built front is designed to survive exactly that check. (RAND's eight independent layers at SL5 are a red-team review rule rather than the definition of the level; see `building-blocks-model.md` § Defense-in-Depth Mechanic.)
 
 **Real-world parallel:** NSA ANT catalog (2013) included COTTONMOUTH — USB implants for passive data interception. Chinese APT groups have used HVAC contractor access as initial entry (Target breach, 2013, albeit for retail data). The technique scales.
 

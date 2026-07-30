@@ -121,12 +121,15 @@ from SL3 upward (`rand_full.txt:4997`, `:5240`, `:5387`):
 - SL5: 8 independent layers
 - SL1, SL2: no layer requirement at all
 
-This is **not** how RAND defines the levels. RAND defines each SL purely by the
-attacker tier it is meant to thwart (`rand_full.txt:1660`, Figure 6.1 at `:1701`):
-SL5 is "a system that could plausibly be claimed to thwart most top-priority
-operations by the top cyber-capable institutions (OC5)". And RAND's layer rule is
-a *red-team review* rule — each layer is tested independently and a failure of one
-counts as a failure of the system — not a probability model.
+This is **not** how RAND defines the levels. RAND's *headline* definition of each SL
+is the attacker tier it is meant to thwart (`rand_full.txt:1660`, Figure 6.1 at
+`:1701`): SL5 is "a system that could plausibly be claimed to thwart most
+top-priority operations by the top cyber-capable institutions (OC5)". Each level then
+comes with a benchmark set of concrete controls — the layer count among them — so the
+levels are not *only* a statement about attacker tiers. What they are not is a level
+*defined by* its layer count. And RAND's layer rule is a *red-team review* rule —
+each layer is tested independently and a failure of one counts as a failure of the
+system — not a probability model.
 
 So the AND-gate below is this project's modelling choice, not RAND's. Don't let it
 back into the product copy as the definition of a level: what separates SL4 from

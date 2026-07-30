@@ -106,11 +106,20 @@ export function DemoFrame({
  * `<button>` with `aria-describedby`, and closes on Escape. `term` is keyed to
  * GLOSSARY, so a typo fails the build rather than silently rendering nothing.
  *
- * The focus handler is gated on `:focus-visible` for a reason. A tap fires focus
- * and then click; an ungated focus handler opened the card and the click that
- * followed closed it again, so a term was unopenable on a phone — which is the
- * one device this page is meant to be shared to. Keyboard focus still opens it,
- * because `:focus-visible` matches for Tab and not for a pointer. */
+ * Both auto-open paths are gated, because a tap fires a whole cascade —
+ * `pointerenter`, a synthesized `mouseenter`, `focus`, then `click` — and every
+ * ungated handler in that cascade opens the card only for the click behind it to
+ * toggle it shut. That's what made a term take two taps on a phone: the first tap
+ * opened and closed it, and the second worked only because `mouseenter` doesn't
+ * fire twice. A phone is the device this page is meant to be shared to, so:
+ *
+ *  - hover opens on `pointerenter` with `pointerType === "mouse"`, not on
+ *    `mouseenter`, so a touch never takes the hover path at all;
+ *  - focus opens only when `:focus-visible` matches, which is true for Tab and
+ *    false for a pointer.
+ *
+ * Click is therefore the single path a tap travels, and it toggles — which is also
+ * what makes tap-to-dismiss work. */
 export function Term({
   term,
   children,
@@ -126,8 +135,12 @@ export function Term({
     // without the term itself breaking across a line.
     <span
       className="relative inline-block"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") setOpen(true);
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") setOpen(false);
+      }}
     >
       <button
         type="button"

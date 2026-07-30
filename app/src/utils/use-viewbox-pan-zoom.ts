@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Map-style pan/zoom for an SVG canvas. The view is a single transform
@@ -47,6 +47,43 @@ function fitRatio(
   w: { width: number; height: number }
 ): number {
   return Math.min(vp.width / w.width, vp.height / w.height) * FIT_ZOOM;
+}
+
+/**
+ * The baseline fit: the view's world bounds framed in the viewport, centered.
+ *
+ * `latched` is the latched px-per-world-unit factor, or null before the first
+ * committed measurement. It is LATCHED on that first measurement and then held
+ * fixed, which is what makes 100% mean a stable amount of zoom. If it were
+ * recomputed from the live viewport, opening a panel would shrink the baseline —
+ * and so the rendered content — while `scale` still read 100%. Only the
+ * centering offsets track the current viewport.
+ *
+ * Falling back to the live ratio when `latched` is null keeps this correct on the
+ * render that first sees a viewport, before the latching effect has run.
+ *
+ * `ready` is false until both the viewport and the world bounds are known.
+ * Callers must not paint before then: any transform derived from a missing input
+ * is wrong, and painting it is what caused the jump-then-snap.
+ *
+ * A pure module-level function taking `latched` as a parameter, rather than a
+ * closure reading the latch ref — so calling it during render reads no ref.
+ */
+function computeBaseFit(
+  vp: { width: number; height: number },
+  w: { minX: number; minY: number; width: number; height: number } | null,
+  latched: number | null
+): { k: number; tx: number; ty: number; ready: boolean } {
+  if (!w || vp.width === 0 || vp.height === 0 || w.width <= 0 || w.height <= 0) {
+    return { k: latched ?? 1, tx: 0, ty: 0, ready: false };
+  }
+  const k = latched ?? fitRatio(vp, w);
+  return {
+    k,
+    tx: vp.width / 2 - (w.minX + w.width / 2) * k,
+    ty: vp.height / 2 - (w.minY + w.height / 2) * k,
+    ready: true,
+  };
 }
 
 /** Elements whose presses should never start a pan (they own the click). */
@@ -183,42 +220,16 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
     height: number;
   } | null>(null);
 
-  /**
-   * The baseline fit: the view's world bounds framed in the viewport, centered.
-   *
-   * `k` is LATCHED on the first real measurement and then held fixed, which is
-   * what makes 100% mean a stable amount of zoom. If it were recomputed from the
-   * live viewport, opening a panel would shrink the baseline — and so the
-   * rendered content — while `scale` still read 100%, which is the exact bug
-   * being fixed. Only the centering offsets track the current viewport.
-   *
-   * `ready` is false until both the viewport and the world bounds are known.
-   * Callers must not paint before then: any transform derived from a missing
-   * input is wrong, and painting it is what caused the jump-then-snap.
-   */
+  // The latched baseline `k` that `computeBaseFit` (above) is documented around.
+  // It lives in BOTH a ref and state, deliberately.
+  //
+  // The ref is the commit-phase source of truth: `latchBaseline` and
+  // `setWorldBounds` both write it from effects, and the measuring layout effect
+  // reads it back in the same commit — a state value would still be one render
+  // behind there. The state mirror exists only so RENDER has something pure to
+  // read, and it is kept in step by `latchBaseline` writing both at once.
   const latchedK = useRef<number | null>(null);
-  const baseFit = useCallback(
-    (
-      vp: { width: number; height: number },
-      w: { minX: number; minY: number; width: number; height: number } | null
-    ) => {
-      if (!w || vp.width === 0 || vp.height === 0 || w.width <= 0 || w.height <= 0) {
-        return { k: latchedK.current ?? 1, tx: 0, ty: 0, ready: false };
-      }
-      // Pure read: the latch is established by `latchBaseline` in the measuring
-      // layout effect. Falling back to the live ratio (rather than writing it)
-      // keeps this correct on the render that first sees a viewport, before the
-      // effect has run, without letting a discarded render pin the baseline.
-      const k = latchedK.current ?? fitRatio(vp, w);
-      return {
-        k,
-        tx: vp.width / 2 - (w.minX + w.width / 2) * k,
-        ty: vp.height / 2 - (w.minY + w.height / 2) * k,
-        ready: true,
-      };
-    },
-    []
-  );
+  const [latchedKState, setLatchedKState] = useState<number | null>(null);
 
   /**
    * Establish the baseline from a COMMITTED measurement. Called only from the
@@ -233,6 +244,7 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
       if (latchedK.current !== null) return;
       if (!w || vp.width === 0 || vp.height === 0 || w.width <= 0 || w.height <= 0) return;
       latchedK.current = fitRatio(vp, w);
+      setLatchedKState(latchedK.current);
     },
     []
   );
@@ -256,15 +268,23 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   // An untouched view tracks the baseline fit exactly: this is what centers the
   // content on first paint (once the ResizeObserver reports a real size) and
   // what re-centers it after a view switch.
-  // Prefer the ref: on the render triggered by a resize it already holds the
-  // measured size, so a pristine view frames itself against the CURRENT box
-  // instead of the previous one. Falls back to state on the very first render,
-  // before anything has been measured.
-  const liveViewport = viewportRef.current.width > 0 ? viewportRef.current : viewport;
-  const fit = baseFit(liveViewport, world);
-  const effectiveView: ViewTransform = pristine
-    ? { tx: fit.tx, ty: fit.ty, scale: 1 }
-    : view;
+  //
+  // Reads the `viewport` and latch STATE, not the refs. Each pair is written
+  // together (see the measuring layout effect), so they can only disagree between
+  // that effect and the render it schedules — and because it is a *layout*
+  // effect, that render lands before the browser paints. The size a pristine view
+  // frames itself against is therefore always the current one by the time
+  // anything is visible, and reading state keeps this render pure.
+  const fit = useMemo(
+    () => computeBaseFit(viewport, world, latchedKState),
+    [viewport, world, latchedKState]
+  );
+  // Memoized so it is referentially stable across renders that change nothing
+  // about it — the ref-sync layout effect below depends on it.
+  const effectiveView: ViewTransform = useMemo(
+    () => (pristine ? { tx: fit.tx, ty: fit.ty, scale: 1 } : view),
+    [pristine, fit, view]
+  );
 
   const setWorldBounds = useCallback(
     (rect: { minX: number; minY: number; width: number; height: number } | null) => {
@@ -297,16 +317,24 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   // Live view kept in refs so drags and the measuring layout effect can read the
   // current values without re-binding listeners.
   //
-  // These are assigned DURING RENDER, not in an effect. The measuring layout
-  // effect below reads `pristineRef`/`viewRef`, and a passive `useEffect` runs
-  // *after* paint — so syncing there handed the layout effect values that were
-  // one render stale. On the commit where a panel opens it would recenter from
-  // the old view, paint that, and only correct itself on the next render: the
-  // flicker. Assigning during render keeps every reader on the current value.
+  // Synced in a LAYOUT effect, and this one must stay declared ABOVE the
+  // measuring layout effect: effects run in declaration order, so this ordering
+  // is what guarantees the measuring effect reads the current view rather than
+  // the previous render's.
+  //
+  // A passive `useEffect` here would be wrong — it runs *after* paint, so on the
+  // commit where a panel opens the measuring effect would recenter from the old
+  // view, paint that, and only correct itself on the next render: the flicker
+  // this hook exists to avoid. A layout effect runs in the commit phase, before
+  // paint, so every reader below still sees the current value. Every consumer of
+  // these refs (the effects, the pointer handlers, `commitView`) runs after
+  // commit, so none of them needs the value during render.
   const viewRef = useRef(effectiveView);
   const pristineRef = useRef(pristine);
-  viewRef.current = effectiveView;
-  pristineRef.current = pristine;
+  useLayoutEffect(() => {
+    viewRef.current = effectiveView;
+    pristineRef.current = pristine;
+  }, [effectiveView, pristine]);
   // Drag state for the measuring layout effect. A ref, not the `dragging`
   // state: the pointer handlers set this at gesture start, so it is already
   // true on the very first pointermove commit — whereas the state lands a
@@ -348,7 +376,11 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
   // a visible flicker when a panel opened and changed the canvas width.
   // Deliberately has no dependency array: the element can be resized by a commit
   // that changes nothing this hook owns (a sibling panel mounting), so there is
-  // no dependency that would catch it.
+  // no dependency that would catch it. Running on every commit IS the trigger.
+  // The missing dep array is the mechanism, not an oversight, and the
+  // unchanged-size guard below is what keeps `setViewport` from looping — so the
+  // exhaustive-deps warning is suppressed rather than satisfied.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     // `getBoundingClientRect` forces a synchronous layout. With no deps this
     // runs on every commit, and a pan calls setView on every pointermove — so
@@ -377,7 +409,12 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
     // A pristine view re-derives from the baseline fit and re-centers itself.
     if (prev.width > 0 && prev.height > 0 && !pristineRef.current) {
       const v = viewRef.current;
-      const recentered = recenterOnResize(v, prev, next, baseFit(next, world).k * v.scale);
+      const recentered = recenterOnResize(
+        v,
+        prev,
+        next,
+        computeBaseFit(next, world, latchedK.current).k * v.scale
+      );
       viewRef.current = recentered;
       setView(recentered);
     }
@@ -419,14 +456,16 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
 
       // `k` is latched, so the zoom is untouched and this is a pure pan —
       // exactly what Google Maps does when a panel opens.
-      setView((v) => recenterOnResize(v, prev, next, baseFit(next, world).k * v.scale));
+      setView((v) =>
+        recenterOnResize(v, prev, next, computeBaseFit(next, world, latchedK.current).k * v.scale)
+      );
     });
 
     ro.observe(el);
     return () => ro.disconnect();
     // Re-observes when the SVG element is swapped (view switch) or the world
     // bounds change, since both change what the baseline fit means.
-  }, [baseFit, world, resetKey]);
+  }, [world, resetKey]);
 
   /**
    * Map a client (mouse) point into the SVG's own coordinate space. With no
@@ -601,7 +640,7 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
 
       // Absolute px-per-world-unit needed to fit the rect, expressed as a
       // multiple of the baseline fit so it round-trips through `scale`.
-      const base = baseFit(vp, worldRefForFit.current);
+      const base = computeBaseFit(vp, worldRefForFit.current, latchedK.current);
       if (!base.ready || base.k === 0) return;
       const scale = clampScale(Math.min(availW / rect.width, availH / rect.height) / base.k);
       const k = base.k * scale;
@@ -618,7 +657,7 @@ export function useViewBoxPanZoom(resetKey?: unknown): PanZoomState {
         scale,
       });
     },
-    [baseFit]
+    []
   );
 
   // `scale` stays the user-facing number (1 = "100%" = the framed fit), while

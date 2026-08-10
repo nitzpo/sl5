@@ -27,6 +27,10 @@ export interface Block {
     summary: string;
     deployed_by: string[];
     baseline_state: string;
+    /** Year this block became partially deployed in the real world, where that
+     * can be pinned to a public disclosure. Before it, the block counts as
+     * `not_started`. Absent means "long-standing practice, no useful date". */
+    baseline_since?: number;
   };
   dimensions: {
     technical_feasibility: {

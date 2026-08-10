@@ -55,6 +55,7 @@ export const BLOCK_SHORT_LABELS: Record<string, string> = {
   "PER-06": "Dual Auth",
   "PER-07": "Cameras",
   "PER-08": "No Remote",
+  "PER-09": "Duress",
   "SC-01": "Diverse",
   "SC-02": "Inspect",
   "SC-03": "Content",

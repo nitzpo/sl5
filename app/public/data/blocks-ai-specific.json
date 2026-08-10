@@ -11,7 +11,8 @@
         "partial_anthropic",
         "partial_openai"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2026
     },
     "dimensions": {
       "technical_feasibility": {
@@ -239,7 +240,8 @@
       "deployed_by": [
         "partial_all_major_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2026
     },
     "dimensions": {
       "technical_feasibility": {
@@ -697,7 +699,8 @@
       "deployed_by": [
         "partial_all_serving_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2026
     },
     "dimensions": {
       "technical_feasibility": {

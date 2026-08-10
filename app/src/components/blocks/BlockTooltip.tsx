@@ -5,7 +5,7 @@ import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { formatCost } from "../../utils/format";
-import { computeDecisionWindows } from "../../utils/decision-windows";
+import { computeDecisionWindows, schedulableDeployMonths } from "../../utils/decision-windows";
 import { STATE_LABELS } from "../../utils/colors";
 
 interface BlockTooltipProps {
@@ -143,7 +143,7 @@ export function BlockTooltip({
         >
           !{" "}
           {decisionWindow.urgency === "overdue"
-            ? `Window closed: needs up to ${block.dimensions.time_to_deploy_months.max}mo to deploy — starting now misses 2030`
+            ? `Window closed: needs up to ${schedulableDeployMonths(block)}mo to deploy — starting now misses 2030`
             : `Window closing: must start by ${decisionWindow.mustStartBy.toFixed(1)} to deploy by 2030`}
         </div>
       )}

@@ -16,7 +16,7 @@
     "dimensions": {
       "technical_feasibility": {
         "value": 85,
-        "notes": "Proven technology with decades of government construction experience, but the AI-scale version is not yet demonstrated. The Utah Data Center - the usual parallel - is roughly 65MW at about 1M sq ft, an order of magnitude below a single modern GW-scale AI campus, and it took about 3.5 years and overran its budget. Passing hundreds of MW of power and liquid cooling through a continuous shielded envelope is the genuinely unproven part.",
+        "notes": "Proven technology with decades of government construction experience, but the AI-scale version is not yet demonstrated. The Utah Data Center - the usual parallel - is roughly 65MW at about 1M sq ft, took around 3.5 years and overran its budget, which is the right order of magnitude for the enclave this block prices but well below a full training campus. Passing tens to hundreds of MW of power and liquid cooling through a continuous shielded envelope is the genuinely unproven part.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -26,14 +26,14 @@
       },
       "cost": {
         "upfront_millions": {
-          "min": 2000,
-          "max": 15000
+          "min": 800,
+          "max": 2500
         },
         "annual_ongoing_millions": {
-          "min": 150,
-          "max": 600
+          "min": 60,
+          "max": 200
         },
-        "notes": "Priced for a SCIF-grade AI datacenter, not a conventional SCIF. Assumes a facility in the 100MW-1GW range: commercial AI datacenter construction runs $15-20M/MW, and AWS's classified buildout implies roughly $38M/MW - about a 2x premium for classified-grade construction. Per square foot, SCIF construction ($350-1,200) and AI datacenter construction ($1,100-1,500) are comparable; the real premium comes from cleared labour, 15-30% schedule drag and security-driven rework. Ongoing covers accreditation maintenance, a dedicated security force and integrity checks."
+        "notes": "Prices the SECURITY PREMIUM for a secure enclave, not a whole datacenter. A lab builds the compute facility regardless, so what this control costs is the delta for classified-grade construction: commercial AI datacenter runs $15-20M/MW and AWS's classified buildout implies roughly $38M/MW, making the attributable premium about $20M/MW. The unit is a 50-100MW enclave holding weights at rest - the same scope NET-02 assumes - not the entire training fleet, which does not need to sit inside a shielded envelope. 50-100MW at a $15-23M/MW premium gives this range. Per square foot SCIF construction ($350-1,200) and AI datacenter construction ($1,100-1,500) are comparable; the premium comes from cleared labour, 15-30% schedule drag and security-driven rework. Ongoing covers accreditation maintenance, a dedicated security force and integrity checks. Building the whole campus to this grade would be several times larger and is not what SL5 requires."
       },
       "vendor_dependency": {
         "value": 60,
@@ -140,14 +140,14 @@
       },
       "cost": {
         "upfront_millions": {
-          "min": 300,
-          "max": 1500
+          "min": 120,
+          "max": 400
         },
         "annual_ongoing_millions": {
           "min": 5,
           "max": 15
         },
-        "notes": "Scales with the shielded floor area of PHY-01 rather than being a fixed line item, so it moves with facility size. Must be engineered into construction: retrofitting is possible but degraded, since existing penetrations and legacy routing make shielding continuity hard to achieve. Estimate is directional - facility-scale TEMPEST pricing is not published."
+        "notes": "Scales with the shielded floor area of PHY-01 rather than being a fixed line item, so it tracks the enclave rather than the whole campus. Must be engineered into construction: retrofitting is possible but degraded, since existing penetrations and legacy routing make shielding continuity hard to achieve. Estimate is directional - facility-scale TEMPEST pricing is not published."
       },
       "vendor_dependency": {
         "value": 55,

@@ -26,7 +26,7 @@ const blockById = new Map(blocks.map((b) => [b.id, b]));
 // Sliders as a story actually plays them: neutral defaults, then the story's own
 // overrides. The budget MUST come from `sliderOverrides` — a literal here would
 // let a cost or schedule regression be checked against a more-funded posture
-// than playback ever runs (Proactive is a $1,400M plan, not the $2,000M default).
+// than playback ever runs (Proactive is a $2,800M plan, not the $2,000M default).
 function scriptSliders(script: (typeof SCRIPTS)[number]): Sliders {
   return {
     ai_timeline: 0.5,
@@ -199,7 +199,7 @@ describe("time-lapse scripts", () => {
     // it bought. The old gap partly measured underfunding, because at $700M
     // this story ran with 12 of its 16 blocks frozen by the funding queue.
     expect(reactive).toBeGreaterThan(proactive);
-    // Proactive: $8,267M of an $8,300M budget, every program matured, and an
+    // Proactive: $2,610M of a $2,800M budget, every program matured, and an
     // all-personnel chain still gets through ~16% of the time. The floor matters
     // as much as the ceiling — if this ever drops into single digits the story
     // reads as "solved", which is the failure mode the recalibration removed.
@@ -219,14 +219,14 @@ describe("time-lapse scripts", () => {
     // that buys 23 of them structurally caps near 2.5 no matter which 23. 3.5
     // takes 33 blocks — one of which, PHY-02, earns its place by completing
     // PHY-01 and PHY-05 rather than by covering new ground; see `completed_by`.
-    // The ceiling is 4.43 (whole catalog matured, $10,131M), not
+    // The ceiling is ~4.4 (whole catalog matured, $4,474M), not
     // 5.0, because slider penalties and AI erosion never fully clear.
     const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
     const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
     const sliders = scriptSliders(script);
     // Calibrate against the budget the story is documented and validated at, so
     // this never silently grades a better-funded posture than playback runs.
-    expect(sliders.budget_millions, "proactive must calibrate at its own budget").toBe(8300);
+    expect(sliders.budget_millions, "proactive must calibrate at its own budget").toBe(2800);
     const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
     const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
       order: (script.deployments ?? []).map((d) => d.blockId),

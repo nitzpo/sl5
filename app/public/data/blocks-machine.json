@@ -209,7 +209,8 @@
       "deployed_by": [
         "nvidia_blackwell_users"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2025
     },
     "dimensions": {
       "technical_feasibility": {

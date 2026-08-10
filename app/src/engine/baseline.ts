@@ -30,22 +30,37 @@ const BASELINE_TO_STATE: Record<string, BlockState> = {
 };
 
 /**
- * One baseline, applied whenever a story starts.
+ * The starting posture, as of `year`.
  *
- * The data describes roughly 2026, while the scripted stories open in 2024, so
- * a 2024 start technically inherits a posture from two years later. That is a
- * deliberate call, not an oversight: the 2024–2026 delta on these blocks is
- * small next to the modelling error already in the baseline, and a per-year
- * table would double the review surface for a distinction users will not see.
+ * Most of these controls are long-standing practice — mantraps and enterprise
+ * VPNs did not appear recently — so the baseline is treated as static and the
+ * `year` changes nothing. But eight blocks became partially deployed on public,
+ * datable evidence: egress bandwidth controls and two-party weight
+ * authorization in 2025, the LLM supervisor and production classifiers in 2026,
+ * and so on. Those carry `baseline_since`, and before that year they were
+ * genuinely `not_started`.
+ *
+ * This is what keeps a 2024 story from opening on a 2026 posture. It is
+ * deliberately partial: only blocks whose arrival can be pinned to a public
+ * disclosure are dated, because inventing a year for the rest would be
+ * precision the evidence does not support.
  */
-export function baselineStateFor(block: Block): BlockState {
-  return BASELINE_TO_STATE[block.current_state?.baseline_state] ?? "not_started";
+export function baselineStateFor(block: Block, year?: number): BlockState {
+  const cs = block.current_state;
+  const mapped = BASELINE_TO_STATE[cs?.baseline_state] ?? "not_started";
+  if (mapped === "not_started" || year === undefined) return mapped;
+  const since = cs?.baseline_since;
+  if (typeof since === "number" && year < since) return "not_started";
+  return mapped;
 }
 
 /** The starting posture for a whole catalogue, keyed by block id. */
-export function baselineStates(blocks: Block[]): Record<string, BlockState> {
+export function baselineStates(
+  blocks: Block[],
+  year?: number
+): Record<string, BlockState> {
   const states: Record<string, BlockState> = {};
-  for (const b of blocks) states[b.id] = baselineStateFor(b);
+  for (const b of blocks) states[b.id] = baselineStateFor(b, year);
   return states;
 }
 

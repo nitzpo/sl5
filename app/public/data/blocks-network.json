@@ -347,7 +347,8 @@
         "some_classified_environments",
         "partial_some_frontier_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2025
     },
     "dimensions": {
       "technical_feasibility": {

@@ -10,9 +10,11 @@ export function computeScriptBlockStates(
   blocks: Block[]
 ): Record<string, BlockState> {
   // Stories start from where labs actually are, not from a bare field — the
-  // same baseline the app opens on. A script's own `initialBlockStates` still
-  // overrides it, which is how "Do Nothing" stays a true zero if it wants to.
-  const states: Record<string, BlockState> = baselineStates(blocks);
+  // same baseline the app opens on, evaluated at the year being played so a
+  // 2024 step doesn't inherit a control that only arrived in 2026. A script's
+  // own `initialBlockStates` still overrides it, which is how "Do Nothing"
+  // stays a true zero if it wants to.
+  const states: Record<string, BlockState> = baselineStates(blocks, currentYear);
 
   if (script.initialBlockStates) {
     for (const [id, state] of Object.entries(script.initialBlockStates)) {

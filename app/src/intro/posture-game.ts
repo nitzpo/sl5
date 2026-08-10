@@ -33,7 +33,7 @@ export const VIABLE_THRESHOLD = 0.02;
  * four constraints the tests enforce:
  *
  *  - All six categories and all three defense types, so no lesson is missing.
- *  - Costs $263.5M against a $150M budget, so the budget genuinely binds and
+ *  - Costs $243.5M against a $150M budget, so the budget genuinely binds and
  *    "the air gap, or eight cheap controls" is a real decision.
  *  - No block requires anything off this list, so every cap the reader hits is
  *    one they can actually fix. `PER-04` requires `PER-01`, which is here on
@@ -65,7 +65,7 @@ export const SHORTLIST = [
   "PER-04", // SF-86-equivalent vetting — requires PER-01
   "PER-05", // Post-employment restrictions — cheap probabilistic
   "PER-08", // No remote access — cheap hard stop
-  "SC-02", // Hardware inspection pipeline — probabilistic
+  "SC-04", // Sub-tier flow-down of security requirements — probabilistic
   "SC-05", // Counterfeit detection — cheap probabilistic
 ] as const;
 

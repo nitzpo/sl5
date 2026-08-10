@@ -250,7 +250,7 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
           <div>
             <div className="text-xs text-gray-500">SL score</div>
             <div className={`text-2xl font-bold ${LEVEL_TEXT[slLevel(result.sl)]}`}>
-              {/* Two decimals, not the app's one. Ten blocks out of 47 move the
+              {/* Two decimals, not the app's one. Ten blocks out of 46 move the
                   overall score in hundredths, and a readout frozen at "1.0"
                   would read as broken rather than as slow progress. */}
               {result.sl.toFixed(2)}
@@ -329,7 +329,7 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
               <p className="mt-2.5 border-t border-gray-800 pt-2.5 text-sm leading-relaxed text-gray-500">
                 Nothing {formatCost(BUDGET_MILLIONS)} can buy drives the top chain to
                 zero, and no posture here reaches SL5. That's the honest outcome, not a
-                bug — and it's the same outcome at full scale, with 47 blocks, six world
+                bug — and it's the same outcome at full scale, with 46 blocks, six world
                 sliders and seven years to spend across.
               </p>
             </div>

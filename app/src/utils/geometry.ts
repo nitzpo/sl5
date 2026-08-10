@@ -38,7 +38,6 @@ export const BLOCK_SHORT_LABELS: Record<string, string> = {
   "HW-05": "Rack Enc",
   "HW-06": "Exec Int",
   "HW-07": "TEE",
-  "HW-08": "Shielded",
   "HW-09": "Boot",
   "HW-10": "Composit",
   "PHY-01": "SCIF",

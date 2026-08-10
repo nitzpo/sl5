@@ -8,6 +8,7 @@ import type {
   AttackChain,
   OcDefinition,
 } from "../engine/types";
+import { baselineStates } from "../engine/baseline";
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -93,16 +94,14 @@ function deriveOrder(blockStates: Record<string, BlockState>): string[] {
   return Object.keys(blockStates).filter((id) => blockStates[id] !== "not_started");
 }
 
-function baselineStatesFor(blocks: Block[]): Record<string, BlockState> {
-  const baselineStates: Record<string, BlockState> = {};
-  for (const b of blocks) {
-    const bs = b.current_state.baseline_state;
-    baselineStates[b.id] = STATE_CYCLE.includes(bs as BlockState)
-      ? (bs as BlockState)
-      : "not_started";
-  }
-  return baselineStates;
-}
+/**
+ * The starting posture. Previously this coerced anything outside `STATE_CYCLE`
+ * to `not_started`, which threw away the researched baseline on more than half
+ * the catalogue and opened every session on a bare field. See
+ * `engine/baseline.ts` for why `partially_deployed` maps onto `implementing`
+ * rather than becoming a state of its own.
+ */
+const baselineStatesFor = baselineStates;
 
 export const useSimulationStore = create<SimulationStore>()(subscribeWithSelector((set, get) => ({
   blocks: [],

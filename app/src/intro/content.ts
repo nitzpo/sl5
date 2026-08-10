@@ -128,7 +128,7 @@ export const GLOSSARY = {
   block: {
     label: "Block",
     definition:
-      "One defensive building block — a single control you can invest in, drawn as a hexagon. The app ships 47 of them across 6 categories.",
+      "One defensive building block — a single control you can invest in, drawn as a hexagon. The app ships 46 of them across 6 categories.",
   },
   decisionWindow: {
     label: "Decision window",
@@ -435,7 +435,7 @@ export const LONG_GAME = {
 } as const;
 
 /** Total blocks and chains in the shipped data — asserted by the drift test. */
-export const CATALOG = { blocks: 47, categories: 6, chains: 7 } as const;
+export const CATALOG = { blocks: 46, categories: 6, chains: 7 } as const;
 
 export interface SourceLink {
   title: string;

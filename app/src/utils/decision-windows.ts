@@ -22,9 +22,12 @@ export interface DecisionWindow {
   urgency: WindowUrgency;
 }
 
+/** A prerequisite already operational adds nothing to the remaining schedule. */
+const OPERATIONAL: ReadonlySet<string> = new Set(["deployed", "mature"]);
+
 /**
- * Worst-case months to reach *operational*, including any `requires` chain that
- * has to be operational first.
+ * Worst-case months of work REMAINING to reach operational, counting any
+ * `requires` chain that is not yet in place.
  *
  * Twelve blocks in the catalogue declare a prerequisite slower than themselves —
  * `HW-09` is 18 months but needs `HW-01`'s 48, `PHY-05` is 9 but needs
@@ -33,6 +36,12 @@ export interface DecisionWindow {
  * prerequisite lands (see `dependencies.ts`); this makes the *displayed*
  * deadline agree with that, which matters because the deployment-race argument
  * depends on readers trusting these dates.
+ *
+ * `blockStates` is what keeps that from becoming a permanent tax: once `HW-01`
+ * is deployed, `HW-09` is an 18-month job again, and charging it 48 would tell
+ * a player they had missed a deadline they have in fact already cleared. Omit
+ * the argument and every prerequisite counts as outstanding, which is the right
+ * default for "nothing built yet" but wrong for a live posture.
  *
  * Work is assumed to OVERLAP rather than queue: you can pour concrete and
  * procure the racks that go inside it at the same time, so the effective time
@@ -45,13 +54,19 @@ export interface DecisionWindow {
  * Cycles are impossible (asserted in the data) but the visited set keeps this
  * total anyway.
  */
-export function effectiveDeployMonths(block: Block, allBlocks: Block[]): number {
+export function effectiveDeployMonths(
+  block: Block,
+  allBlocks: Block[],
+  blockStates?: Record<string, BlockState | string>
+): number {
   const byId = new Map(allBlocks.map((b) => [b.id, b]));
   const walk = (b: Block, seen: Set<string>): number => {
     if (seen.has(b.id)) return 0;
     seen.add(b.id);
     let longest = schedulableDeployMonths(b);
     for (const id of b.dependencies?.requires ?? []) {
+      // Already operational: no work left on this branch.
+      if (blockStates && OPERATIONAL.has(blockStates[id] ?? "not_started")) continue;
       const prereq = byId.get(id);
       if (prereq) longest = Math.max(longest, walk(prereq, seen));
     }
@@ -83,8 +98,9 @@ export function computeDecisionWindows(
     if (block.dimensions.time_to_deploy_months.max >= NO_DEADLINE_MONTHS) continue;
     // Counts the `requires` chain, not just the block's own build time — a
     // block gated behind a 48-month prerequisite has to start much earlier
-    // than its own duration suggests.
-    const mustStartBy = deadline - effectiveDeployMonths(block, blocks) / 12;
+    // than its own duration suggests. Prerequisites already operational are
+    // excluded, so the deadline reflects the work actually left.
+    const mustStartBy = deadline - effectiveDeployMonths(block, blocks, blockStates) / 12;
     if (mustStartBy > year + horizon || mustStartBy <= minYear) continue;
     const urgency: WindowUrgency =
       mustStartBy <= year ? "overdue" : mustStartBy <= year + 1 ? "urgent" : "upcoming";

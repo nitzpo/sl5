@@ -319,7 +319,7 @@
     "name": "Intrusion Detection Systems (5/15-min Response)",
     "category": "physical",
     "summary_group": "physical_facility",
-    "description": "Intrusion detection to ICD 705 standards with alarm response by an armed reaction force. Response time depends on security-in-depth: open storage requires response within 15 minutes where SID is present, or 5 minutes where it is not; closed storage requires 15 minutes. Continuous monitoring of all Red Zone boundaries.",
+    "description": "Intrusion detection to ICD 705 standards with alarm response by an armed reaction force. Response time depends on approved security-in-depth: open storage requires response within 15 minutes where SID has been approved, or five minutes where it has not; closed storage requires 15 minutes. Continuous monitoring of all Red Zone boundaries.",
     "current_state": {
       "summary": "Standard datacenter security has cameras and badge systems. ICD 705-grade IDS with guaranteed 5-minute armed response is government-level and not deployed by AI labs. Requires dedicated security force.",
       "deployed_by": [
@@ -348,7 +348,7 @@
           "min": 10,
           "max": 30
         },
-        "notes": "Dominated by the guard force rather than the sensors. A facility with strong perimeter security-in-depth (which PHY-01, PHY-03 and PHY-06 provide) qualifies for the 15-minute response standard rather than 5 minutes, which is a materially cheaper staffing model - so the companion controls change this block's ongoing cost, not just its effectiveness."
+        "notes": "Dominated by the guard force rather than the sensors, and priced conservatively at the five-minute response standard. ICD 705 permits a 15-minute response for open storage only where security-in-depth has been APPROVED - DCSA treats SID as a formal determination, not something a perimeter confers automatically - so the cheaper staffing model is not available on the strength of companion controls alone. Representing approved and unapproved response modes as distinct cost bases would need a schema change; until then this holds the conservative figure."
       },
       "vendor_dependency": {
         "value": 60,

@@ -582,13 +582,13 @@
     "summary_group": "supply_chain_integrity",
     "description": "Reimplement or custom-develop critical system components when supply chain risk from external sources is unacceptable. Maintain source code, build scripts, and tests internally. Reduces dependency on external vendors for security-critical paths.",
     "current_state": {
-      "summary": "Google designs custom TPUs. Some labs build custom training frameworks. But custom silicon design capability is limited to a few organizations globally. Most labs rely entirely on external vendors for hardware and much of their software stack.",
+      "summary": "Custom silicon for AI is an established capability at the largest organizations: Google has run production TPUs in its datacenters since 2015-2016, and Amazon (Trainium) and Microsoft (Maia) have since followed. Anthropic confirmed an in-house chip design team in August 2026, framed as part of a multi-chip approach rather than a replacement for vendors. The capability remains limited to a few organizations globally, and most labs rely entirely on external vendors for hardware and much of their software stack.",
       "deployed_by": [
         "google_tpu",
         "some_large_tech_custom_silicon"
       ],
       "baseline_state": "partially_deployed",
-      "baseline_since": 2026
+      "baseline_since": 2016
     },
     "dimensions": {
       "technical_feasibility": {

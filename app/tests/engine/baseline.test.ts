@@ -108,6 +108,23 @@ describe("baseline_since", () => {
   });
 });
 
+describe("block data shape", () => {
+  it("gives every real_world_parallel the object shape BlockDetail renders", () => {
+    // BlockDetail reads p.description / p.source / p.year. A bare string passes
+    // JSON validation, survives every engine test, and renders as an empty line
+    // with a dangling "— ·" — visible only if you open that block in the UI.
+    for (const b of blocks) {
+      for (const [i, p] of (b.real_world_parallels ?? []).entries()) {
+        const where = `${b.id} parallel[${i}]`;
+        expect(typeof p, `${where} is a bare string`).toBe("object");
+        expect(typeof (p as { description?: unknown }).description, where).toBe("string");
+        expect(typeof (p as { source?: unknown }).source, where).toBe("string");
+        expect(typeof (p as { year?: unknown }).year, where).toBe("number");
+      }
+    }
+  });
+});
+
 describe("isAtOrBelowBaseline", () => {
   it("treats a block sitting at its baseline as already paid for", () => {
     // Sunk cost: a lab does not re-buy the controls it already runs, and

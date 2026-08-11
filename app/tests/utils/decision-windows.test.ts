@@ -60,6 +60,47 @@ describe("effectiveDeployMonths", () => {
     }
   });
 
+  it("stops charging for a prerequisite that is already operational", () => {
+    // Otherwise the gate is a permanent tax: once HW-01 is deployed, HW-09 is an
+    // 18-month job again, and still charging it HW-01's 48 would tell a player
+    // they had missed a deadline they have in fact already cleared.
+    const hw09 = byId.get("HW-09")!;
+    const nothingBuilt = Object.fromEntries(blocks.map((b) => [b.id, "not_started"]));
+    expect(effectiveDeployMonths(hw09, blocks, nothingBuilt)).toBe(48);
+
+    for (const done of ["deployed", "mature"]) {
+      const states = { ...nothingBuilt, "HW-01": done };
+      expect(
+        effectiveDeployMonths(hw09, blocks, states),
+        `HW-01 ${done} should clear the gate`
+      ).toBe(18);
+    }
+  });
+
+  it("keeps charging for a prerequisite that is merely started", () => {
+    // `investing` and `implementing` are not operational — the dependency cap in
+    // `dependencies.ts` uses the same boundary.
+    const hw09 = byId.get("HW-09")!;
+    const base = Object.fromEntries(blocks.map((b) => [b.id, "not_started"]));
+    for (const partial of ["investing", "implementing"]) {
+      expect(
+        effectiveDeployMonths(hw09, blocks, { ...base, "HW-01": partial }),
+        `HW-01 ${partial} should not clear the gate`
+      ).toBe(48);
+    }
+  });
+
+  it("treats an omitted state map as nothing built", () => {
+    const hw09 = byId.get("HW-09")!;
+    expect(effectiveDeployMonths(hw09, blocks)).toBe(
+      effectiveDeployMonths(
+        hw09,
+        blocks,
+        Object.fromEntries(blocks.map((b) => [b.id, "not_started"]))
+      )
+    );
+  });
+
   it("terminates on every block in the catalogue", () => {
     // Guards against a cycle in `requires` hanging the UI rather than failing.
     for (const b of blocks) {
@@ -79,6 +120,16 @@ describe("computeDecisionWindows", () => {
     expect(hw09, "HW-09 should have a window").toBeDefined();
     // 2030 deadline minus HW-01's 48-month chain, not HW-09's own 18.
     expect(hw09!.mustStartBy).toBeCloseTo(2026, 1);
+  });
+
+  it("gives a gated block its own deadline back once the prerequisite lands", () => {
+    // The user-visible half of the same bug: with HW-01 operational, HW-09's
+    // deadline is 2030 minus its own 18 months, not minus HW-01's 48.
+    const states = { ...allNotStarted, "HW-01": "mature" };
+    const windows = computeDecisionWindows(blocks, states, 2026, { horizonYears: 10 });
+    const hw09 = windows.find((w) => w.block.id === "HW-09");
+    expect(hw09, "HW-09 should still have a window").toBeDefined();
+    expect(hw09!.mustStartBy).toBeCloseTo(2028.5, 1);
   });
 
   it("skips research-gated blocks, which have no meaningful deadline", () => {

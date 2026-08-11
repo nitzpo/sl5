@@ -911,9 +911,21 @@
       }
     ],
     "real_world_parallels": [
-      "US government counterintelligence and foreign-travel briefing programs",
-      "Nuclear Personnel Reliability Program duress provisions",
-      "Financial-sector duress codes and silent-alarm protocols"
+      {
+        "description": "US government counterintelligence and foreign-travel briefing programs for cleared personnel",
+        "source": "NITTF / DCSA counterintelligence awareness requirements",
+        "year": 2014
+      },
+      {
+        "description": "Nuclear Personnel Reliability Program duress provisions and no-lone-zone rules",
+        "source": "DoDM 5210.42",
+        "year": 2015
+      },
+      {
+        "description": "Financial-sector duress codes and silent-alarm protocols for coerced staff",
+        "source": "Banking physical security practice",
+        "year": 1968
+      }
     ]
   }
 ]

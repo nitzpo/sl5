@@ -59,14 +59,28 @@ describe("baseline mapping", () => {
 
 describe("baseline_since", () => {
   it("withholds a dated control before the year it arrived", () => {
-    // NET-04's egress bandwidth controls are public as of 2025. A 2024 story
-    // must not inherit them, or the deployment-race argument gets to assume a
-    // defense that did not exist when the story starts.
-    const net04 = byId.get("NET-04")!;
-    expect(net04.current_state.baseline_since).toBe(2025);
-    expect(baselineStateFor(net04, 2024)).toBe("not_started");
-    expect(baselineStateFor(net04, 2025)).toBe("implementing");
-    expect(baselineStateFor(net04, 2026)).toBe("implementing");
+    // PER-06's two-party authorization for weight access is public as of ASL-3
+    // in 2025. A 2024 story must not inherit it, or the deployment-race
+    // argument gets to assume a defense that did not exist when it starts.
+    const per06 = byId.get("PER-06")!;
+    expect(per06.current_state.baseline_since).toBe(2025);
+    expect(baselineStateFor(per06, 2024)).toBe("not_started");
+    expect(baselineStateFor(per06, 2025)).toBe("implementing");
+    expect(baselineStateFor(per06, 2026)).toBe("implementing");
+  });
+
+  it("only dates blocks that actually have a baseline to date", () => {
+    // A `baseline_since` on a `not_started` block says nothing and would rot:
+    // it survives a later correction that resets the state and then silently
+    // describes a posture the block no longer claims.
+    for (const b of blocks) {
+      if (b.current_state.baseline_since !== undefined) {
+        expect(
+          baselineStateFor(b),
+          `${b.id} carries baseline_since but has no baseline`
+        ).not.toBe("not_started");
+      }
+    }
   });
 
   it("leaves undated long-standing controls alone at every year", () => {

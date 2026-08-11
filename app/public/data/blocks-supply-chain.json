@@ -208,7 +208,7 @@
     "summary_group": "supply_chain_integrity",
     "description": "All external data entering the SL5 environment screened for adversarial content: poisoning attacks in training data, jailbreak attempts, adversarial examples, malicious code. Mandatory staging isolation until screening completes. Human review of flagged content.",
     "current_state": {
-      "summary": "Active research problem, and 2025 results made it structurally harder. Anthropic, the UK AI Security Institute and the Alan Turing Institute found that poisoning requires a near-constant number of documents regardless of model and training-data size - about 250 documents backdoored models from 600M to 13B parameters, which for the larger model is 0.00016% of training data. Because attack cost does not scale with corpus size, screening must approach perfect recall over the entire corpus. The SL5 Standard explicitly marks this as an open question.",
+      "summary": "Active research problem, and 2025 results made it look structurally harder. Anthropic, the UK AI Security Institute and the Alan Turing Institute found that poisoning required a near-constant number of documents regardless of model and training-data size - about 250 documents backdoored models from 600M to 13B parameters, which for the larger model is 0.00016% of training data. The study tested a narrow denial-of-service backdoor and its authors note that applicability to larger models and more harmful behaviours remains unclear. If the result does generalise, it implies screening would need recall approaching perfect over the entire corpus, since attack cost would not scale with corpus size. The SL5 Standard explicitly marks this as an open question.",
       "deployed_by": [],
       "baseline_state": "researching"
     },
@@ -488,7 +488,7 @@
     "summary_group": "hardware_inspection",
     "description": "Cryptographic attestation of component origin and chain of custody. Software Bill of Materials (SBOM), Model Cards, Datasheets with cryptographic signatures. Enables verification that each component is what it claims to be and has traveled through expected supply chain path.",
     "current_state": {
-      "summary": "SBOM tooling and standards continue to mature - CISA's 2026 minimum elements expanded the technical standard and explicitly cover AI software - but the federal mandate reversed: OMB M-26-05 (January 2026) rescinded the vendor self-attestation requirement in favour of an agency-led risk-based approach. Hardware provenance is much less mature and now advances through industry consortia (Caliptra, OCP S.A.F.E., DICE, SCITT) rather than policy; hardware bill-of-materials templates remain draft. Cryptographic attestation of physical components is cutting-edge.",
+      "summary": "SBOM tooling and standards continue to mature - CISA's 2025 Minimum Elements for a Software Bill of Materials expanded the technical standard and names AI software as an area for further consideration rather than adding AI-specific elements - but the federal mandate reversed: OMB M-26-05 (January 2026) rescinded the vendor self-attestation requirement in favour of an agency-led risk-based approach. Hardware provenance is much less mature and now advances through industry consortia (Caliptra, OCP S.A.F.E., DICE, SCITT) rather than policy; hardware bill-of-materials templates remain draft. Cryptographic attestation of physical components is cutting-edge.",
       "deployed_by": [
         "partial_some_software_sbom"
       ],

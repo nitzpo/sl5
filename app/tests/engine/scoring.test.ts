@@ -183,20 +183,22 @@ describe("Category and Overall Scores", () => {
   // change moves Scenario 3, something is wrong with the mechanic; if it moves
   // 1/2/4, check the annotations before re-baselining.
 
-  it("Scenario 1: Baseline 2026 (~1.90)", () => {
+  it("Scenario 1: Baseline 2026 (~1.82)", () => {
     // Feeds `baseline_state` straight into the engine, so it exercises the raw
     // data path and scores `partially_deployed` at the 0.6 shim — NOT what the
     // app shows, which maps that state onto the advancement cycle. Moved 1.75 →
-    // 1.90 in the 2026 value audit when NET-04, PER-06, AI-01 and SC-01 were
-    // corrected from "no lab has done this" to `partially_deployed` against
-    // published lab disclosures.
+    // 1.90 in the 2026 value audit when PER-06, AI-01 and SC-01 were corrected
+    // from "no lab has done this" to `partially_deployed` against published lab
+    // disclosures, then back to 1.82 when NET-04 returned to `not_started`: the
+    // deployed egress controls are software rate limits, not the hardware-
+    // enforced physical cap that block actually specifies.
     const baselineStates: Record<string, string> = {};
     for (const b of blocks) {
       baselineStates[b.id] = b.current_state.baseline_state;
     }
     const catScores = computeCategoryScores(blocks, baselineStates, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(1.9, 1);
+    expect(overall).toBeCloseTo(1.82, 1);
   });
 
   it("Scenario 2: All implementing 2026 (~2.33)", () => {

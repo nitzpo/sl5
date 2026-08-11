@@ -219,9 +219,9 @@
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
-        "min": 30,
+        "min": 6,
         "max": 48,
-        "notes": "Two very different paths. If the vendor already ships it, deployment is procurement: 6-12 months (NVIDIA Blackwell and Rubin support it today). If it must be added to a vendor roadmap, it is a full chip design cycle: 30-48 months. The modeled range spans the roadmap path; an NVIDIA-based lab should read the low end."
+        "notes": "Spans two very different paths, which is why the range is wide. If the vendor already ships it, deployment is procurement: 6-12 months (NVIDIA Blackwell and Rubin support it today). If it must be added to a vendor roadmap, it is a full chip design cycle: 30-48 months. A lab already on NVIDIA reads the bottom of the range; a lab on TPUs or Trainium reads the top."
       },
       "cost": {
         "upfront_millions": {
@@ -316,7 +316,7 @@
     "summary_group": "hardware_security",
     "description": "Physical tamper protection for AI accelerator compute cores and memory where model weights exist unencrypted during computation. Detection mechanisms identify physical attacks; response mechanisms may zeroize sensitive data.",
     "current_state": {
-      "summary": "Three active FIPS 140-2 Level 4 HSMs remain (all IBM: 4770-001, 4769-001), and all sunset 2026-09-21; no module has yet been validated at FIPS 140-3 Level 4, so the count of currently-validated Level 4 modules is about to reach zero. Sixteen further Level 4 modules are already historical, so the market has contracted rather than grown. No AI accelerator has equivalent tamper protection.",
+      "summary": "Three active FIPS 140-2 Level 4 certificates remain, all IBM: the 4770-001 and 4769-001 Enterprise PKCS#11 HSMs (certs 4558 and 4553) and the 4769-001 Cryptographic Coprocessor (cert 4079). All three sunset 2026-09-21, and no module has yet been validated at FIPS 140-3 Level 4, so the count of currently-validated Level 4 modules is about to reach zero. Sixteen further Level 4 modules are already historical, so the market has contracted rather than grown. No AI accelerator has equivalent tamper protection.",
       "deployed_by": [
         "hsm_manufacturers"
       ],
@@ -654,7 +654,7 @@
           "min": 10,
           "max": 40
         },
-        "notes": "Performance overhead is far smaller than once assumed: measured below 7% for typical LLM queries on H100 and ~3-3.5% on H100/B200, because the bottleneck is PCIe transfer rather than GPU compute, and overhead falls as model size grows. Marginal extra GPU spend rather than a 10-30% tax."
+        "notes": "Performance overhead is far smaller than once assumed, though the published measurements are inference-side: below 7% for typical LLM queries on H100 and ~3-3.5% on H100/B200, because the bottleneck there is PCIe transfer rather than GPU compute. Frontier TRAINING overhead is not established by those figures - training is throughput- and interconnect-bound rather than latency-bound - so the cost here is modelled as a marginal uplift rather than the 10-30% tax once assumed, with the training-scale figure still unmeasured in public."
       },
       "vendor_dependency": {
         "value": 95,
@@ -718,9 +718,9 @@
     },
     "open_questions": [
       {
-        "question": "Performance overhead at frontier training scale - measured at ~3-7%, so is confidential computing now effectively free?",
-        "uncertainty_level": "low",
-        "impact_if_resolved_negatively": "Largely resolved favourably: measured overhead is a few percent, not 10-30%, so the training-throughput tradeoff that once made CC look expensive has mostly disappeared."
+        "question": "Performance overhead at frontier TRAINING scale - inference-side measurements land at ~3-7%, but training is interconnect-bound and has no published figure. Does the inference result carry over?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "If training overhead is materially higher than the inference measurements, the hardware uplift needed to hold frontier throughput returns as a real cost and confidential computing stops being close to free at the scale that matters most."
       },
       {
         "question": "Can CC mode defend against physical attacks? TEE.Fail (2025) answered no for current commercial implementations.",

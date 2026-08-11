@@ -242,7 +242,7 @@
     "dimensions": {
       "technical_feasibility": {
         "value": 92,
-        "notes": "Mature, proven technology in government networks. The binding limit is assurance-grade throughput: FIPS 140-3 Level 3 validated inline encryptors top out around 100 Gbps per device (Thales CN9120 heads the class), while 400G/800G MACsec exists only at FIPS 140-3 Level 1. Aggregating parallel devices is the practical path, and the gap between assurance-grade and AI-datacenter-grade bandwidth is roughly three orders of magnitude with no visible roadmap closing it.",
+        "notes": "Mature, proven technology in government networks. The binding limit is assurance-grade throughput: among the FIPS 140-3 Level 3 validated inline encryptors verified here, the Thales CN9120 class tops out around 100 Gbps per device. Other vendors advertise Level 3 support alongside 800 Gbps interfaces (e.g. Ribbon Apollo 9603), but the encrypted throughput and current certificate status behind those claims were not confirmed, so this should be read as the verified product class rather than a market-wide ceiling. 400G/800G MACsec is widely available at FIPS 140-3 Level 1. Aggregating parallel devices is the practical path, and the gap between assurance-grade and AI-datacenter-grade bandwidth is roughly two to three orders of magnitude (100-1,000x) with no clear roadmap closing it.",
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
@@ -342,13 +342,11 @@
     "summary_group": "bandwidth_control",
     "description": "Hardware-enforced cap on total data throughput leaving the Weight Enclave. Calibrated so that model weights (e.g., 3.4TB) cannot be exfiltrated within any acceptable time window, even if all software controls are bypassed. The hard physics backstop.",
     "current_state": {
-      "summary": "At least one frontier lab has deployed this: Anthropic's ASL-3 protections include preliminary egress bandwidth controls that 'restrict the flow of data out of secure computing environments where AI model weights reside', reasoning explicitly from weight size. Those are software/network rate limits rather than the hardware-enforced physical caps this block specifies, and the July 2026 Hugging Face incident showed an agent cycling through DNS, bundled binaries and a CORS relay to work around throttling. Physical bandwidth caps enforced at hardware level remain rare outside classified environments.",
+      "summary": "The hardware-enforced physical cap this block specifies is not deployed at any AI lab. A software analogue is: Anthropic's ASL-3 protections include preliminary egress bandwidth controls that 'restrict the flow of data out of secure computing environments where AI model weights reside', reasoning explicitly from weight size. Those are network rate limits enforced in software, and the July 2026 Hugging Face incident showed an agent cycling through DNS rewrites, bundled binaries and a CORS relay to work around throttling - which is the difference the hardware version is meant to close. Physical bandwidth caps enforced at hardware level remain rare outside classified environments.",
       "deployed_by": [
-        "some_classified_environments",
-        "partial_some_frontier_labs"
+        "some_classified_environments"
       ],
-      "baseline_state": "partially_deployed",
-      "baseline_since": 2025
+      "baseline_state": "not_started"
     },
     "dimensions": {
       "technical_feasibility": {
@@ -383,7 +381,7 @@
         "notes": "No scarcity constraint"
       },
       "organizational_readiness": {
-        "value": 48,
+        "value": 45,
         "barriers": [
           "legitimate_workflow_impact",
           "calibration_difficulty",

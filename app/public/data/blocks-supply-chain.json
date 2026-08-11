@@ -6,16 +6,18 @@
     "summary_group": "supply_chain_integrity",
     "description": "Maintain at least two independent trusted sources for every critical component. Eliminates single points of failure and enables cross-reference for detecting anomalies. Where market constraints limit diversity, apply compensating mitigations.",
     "current_state": {
-      "summary": "For AI accelerators: market is NVIDIA-dominated. Google has TPUs (internal). AMD/Intel and AWS have alternatives but with significant capability gaps. True diversity at frontier scale is barely possible today.",
+      "summary": "Multi-vendor frontier training is demonstrated rather than hypothetical: Anthropic trains and serves Claude across AWS Trainium, Google TPUs and NVIDIA GPUs simultaneously, with roughly 500,000 Trainium2 chips in Project Rainier and a partnership to deploy up to 2GW of AMD Instinct MI450. NVIDIA's revenue share has been falling rather than rising. It remains rare and costly - CUDA lock-in and the porting burden are the residual barriers, not the absence of alternatives.",
       "deployed_by": [
         "military_procurement",
-        "some_telcos"
+        "some_telcos",
+        "partial_some_frontier_labs"
       ],
-      "baseline_state": "not_started"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2025
     },
     "dimensions": {
       "technical_feasibility": {
-        "value": 60,
+        "value": 75,
         "notes": "For most components (networking, storage, servers): feasible. For AI accelerators specifically: market structure makes true diversity very difficult. Training frameworks may not port cleanly between vendors.",
         "trajectory": "improving"
       },
@@ -36,7 +38,7 @@
         "notes": "Maintaining two parallel hardware stacks is very expensive. Different drivers, different frameworks, different debugging tools. Operational overhead is massive."
       },
       "vendor_dependency": {
-        "value": 90,
+        "value": 65,
         "key_vendors": [
           "accelerator_manufacturer_A",
           "accelerator_manufacturer_B"
@@ -44,9 +46,9 @@
         "notes": "Entirely depends on market offering viable alternatives. Can't create diversity where it doesn't exist."
       },
       "supply_scarcity": {
-        "value": 85,
+        "value": 55,
         "bottleneck": "Competitive AI accelerator alternatives at frontier scale",
-        "notes": "Market is consolidating, not diversifying. NVIDIA dominance may increase."
+        "notes": "Frontier accelerators remain allocation-constrained and lead times are long, but the market is diversifying rather than consolidating: NVIDIA's share has fallen from roughly 87% to an estimated 75%, with AMD and hyperscaler custom silicon taking the difference."
       },
       "organizational_readiness": {
         "value": 40,
@@ -66,7 +68,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 4,
       "ai_oc_shift": 0.5,
-      "exploit_narrative": "Without supplier diversity, a supply chain compromise of the single vendor affects ALL deployed hardware simultaneously. No behavioral cross-reference is possible \u2014 compromised hardware behaves the same as legitimate hardware because there's no baseline from an independent source."
+      "exploit_narrative": "Without supplier diversity, a supply chain compromise of the single vendor affects ALL deployed hardware simultaneously. No behavioral cross-reference is possible — compromised hardware behaves the same as legitimate hardware because there's no baseline from an independent source."
     },
     "dependencies": {
       "requires": [],
@@ -99,12 +101,12 @@
   },
   {
     "id": "SC-02",
-    "name": "Hardware Inspection Pipeline (X-ray, IR, Destructive)",
+    "name": "Upstream Hardware Inspection (Pre-Facility)",
     "category": "supply_chain",
     "summary_group": "hardware_inspection",
-    "description": "Systematic multi-modal inspection of hardware before deployment: X-ray imaging, infrared thermography, computer vision comparison against golden reference, and random destructive evaluation (decapping chips for die-level analysis).",
+    "description": "Extends the facility inspection pipeline (PHY-07) upstream: sampling and verification at vendor sites, in transit, and at receiving, before components ever reach the datacenter. Reuses PHY-07's equipment, staff and golden-reference corpus, so this block is the incremental cost of the upstream reach - chain-of-custody, vendor-site access, and the logistics of intercepting hardware early - not a second lab.",
     "current_state": {
-      "summary": "Same as PHY-07 \u2014 these overlap significantly. PHY-07 covers the facility-level pipeline; SC-02 focuses on the supply chain verification aspect before components enter the facility.",
+      "summary": "No AI lab inspects hardware upstream of its own receiving dock. Government defense procurement does some of this through trusted-supplier programs, but the practice depends on contractual access to vendor facilities that commercial buyers rarely have. The capability is meaningless without a reference to compare against, which is why it is gated on provenance tracking and supplier diversity.",
       "deployed_by": [
         "government_dmea",
         "military_supply_chain"
@@ -118,28 +120,28 @@
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
-        "min": 12,
-        "max": 24,
-        "notes": "Same as PHY-07."
+        "min": 6,
+        "max": 15,
+        "notes": "Shorter than PHY-07 because the lab already exists; the time is spent negotiating vendor-site access and standing up chain-of-custody, not procuring equipment."
       },
       "cost": {
         "upfront_millions": {
-          "min": 15,
-          "max": 50
+          "min": 4,
+          "max": 14
         },
         "annual_ongoing_millions": {
-          "min": 5,
-          "max": 20
+          "min": 2,
+          "max": 8
         },
-        "notes": "Same as PHY-07. Destructive evaluation means accepting loss of some expensive components."
+        "notes": "Incremental over PHY-07, which carries the equipment and lab cost. What is left is chain-of-custody logistics, vendor-site access (often a contractual fight rather than a purchase), and the sampling overhead of intercepting hardware before it ships. Deploying this without PHY-07 would cost far more, because the lab would have to be built first."
       },
       "vendor_dependency": {
-        "value": 40,
+        "value": 70,
         "key_vendors": [
           "xray_equipment_vendor",
           "inspection_services"
         ],
-        "notes": "Same as PHY-07."
+        "notes": "The binding constraint. Upstream inspection requires suppliers to permit sampling at their own facilities, which defense procurement obtains contractually and commercial buyers generally cannot. Without that access the block degrades to receiving-dock inspection, which PHY-07 already covers."
       },
       "supply_scarcity": {
         "value": 55,
@@ -147,7 +149,7 @@
         "notes": "Same as PHY-07."
       },
       "organizational_readiness": {
-        "value": 30,
+        "value": 25,
         "barriers": [
           "procurement_delay",
           "cost_of_destruction",
@@ -164,10 +166,12 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 4,
       "ai_oc_shift": 0.0,
-      "exploit_narrative": "Same as PHY-07 \u2014 without inspection, supply chain compromises (hardware implants) go undetected."
+      "exploit_narrative": "Same as PHY-07 — without inspection, supply chain compromises (hardware implants) go undetected."
     },
     "dependencies": {
-      "requires": [],
+      "requires": [
+        "PHY-07"
+      ],
       "enhances": [
         "SC-01",
         "SC-05"
@@ -204,13 +208,13 @@
     "summary_group": "supply_chain_integrity",
     "description": "All external data entering the SL5 environment screened for adversarial content: poisoning attacks in training data, jailbreak attempts, adversarial examples, malicious code. Mandatory staging isolation until screening completes. Human review of flagged content.",
     "current_state": {
-      "summary": "Active research problem. Best-available defenses are insufficient against sophisticated adversaries. No robust detection for data poisoning at web-scale training data volumes exists. The SL5 Standard explicitly marks this as an open question.",
+      "summary": "Active research problem, and 2025 results made it look structurally harder. Anthropic, the UK AI Security Institute and the Alan Turing Institute found that poisoning required a near-constant number of documents regardless of model and training-data size - about 250 documents backdoored models from 600M to 13B parameters, which for the larger model is 0.00016% of training data. The study tested a narrow denial-of-service backdoor and its authors note that applicability to larger models and more harmful behaviours remains unclear. If the result does generalise, it implies screening would need recall approaching perfect over the entire corpus, since attack cost would not scale with corpus size. The SL5 Standard explicitly marks this as an open question.",
       "deployed_by": [],
       "baseline_state": "researching"
     },
     "dimensions": {
       "technical_feasibility": {
-        "value": 25,
+        "value": 18,
         "notes": "Fundamental research problem. Adversarial robustness remains unsolved. Best-effort detection catches unsophisticated attacks but sophisticated adversaries can bypass current detectors. The SL5 Standard acknowledges breakthroughs are needed.",
         "trajectory": "uncertain"
       },
@@ -260,7 +264,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 1.5,
-      "exploit_narrative": "Without adversarial content screening, an adversary can poison training data to install backdoors (model behaves normally except on adversary-chosen triggers), degrade model performance subtly, or cause the model to assist in its own exfiltration. Web-scale training data makes this especially easy \u2014 inject poisoned content into crawled web pages."
+      "exploit_narrative": "Without adversarial content screening, an adversary can poison training data to install backdoors (model behaves normally except on adversary-chosen triggers), degrade model performance subtly, or cause the model to assist in its own exfiltration. Web-scale training data makes this especially easy — inject poisoned content into crawled web pages."
     },
     "dependencies": {
       "requires": [],
@@ -282,12 +286,12 @@
       {
         "question": "Is robust adversarial content detection achievable against sophisticated adversaries?",
         "uncertainty_level": "fundamental",
-        "impact_if_resolved_negatively": "SL5 cannot fully protect against training data poisoning \u2014 must limit to known-good data sources (dramatically restricting training data availability)"
+        "impact_if_resolved_negatively": "SL5 cannot fully protect against training data poisoning — must limit to known-good data sources (dramatically restricting training data availability)"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "Antivirus/malware detection has been an arms race for 30+ years with no complete solution. Adversarial content detection for ML is the same problem in a new domain \u2014 and the attackers have a structural advantage because detection is harder than evasion.",
+        "description": "Antivirus/malware detection has been an arms race for 30+ years with no complete solution. Adversarial content detection for ML is the same problem in a new domain — and the attackers have a structural advantage because detection is harder than evasion.",
         "source": "Antivirus industry history",
         "year": 1990
       }
@@ -360,7 +364,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 4,
       "ai_oc_shift": 0.5,
-      "exploit_narrative": "Without flow-down, the weakest link in the supply chain is an unvetted sub-tier supplier. A firmware contractor three levels deep may have no security requirements at all \u2014 but their compromised code runs on your servers with full privilege. See Chain 6 (Remote Ghost)."
+      "exploit_narrative": "Without flow-down, the weakest link in the supply chain is an unvetted sub-tier supplier. A firmware contractor three levels deep may have no security requirements at all — but their compromised code runs on your servers with full privilege. See Chain 6 (Remote Ghost)."
     },
     "dependencies": {
       "requires": [],
@@ -380,7 +384,7 @@
     "open_questions": [],
     "real_world_parallels": [
       {
-        "description": "SolarWinds (2020): compromise of a build system at a single software vendor cascaded to 18,000+ organizations. The attack exploited exactly the sub-tier visibility gap \u2014 most victims had no relationship with or visibility into SolarWinds' build infrastructure.",
+        "description": "SolarWinds (2020): compromise of a build system at a single software vendor cascaded to 18,000+ organizations. The attack exploited exactly the sub-tier visibility gap — most victims had no relationship with or visibility into SolarWinds' build infrastructure.",
         "source": "SolarWinds supply chain attack",
         "year": 2020
       }
@@ -484,7 +488,7 @@
     "summary_group": "hardware_inspection",
     "description": "Cryptographic attestation of component origin and chain of custody. Software Bill of Materials (SBOM), Model Cards, Datasheets with cryptographic signatures. Enables verification that each component is what it claims to be and has traveled through expected supply chain path.",
     "current_state": {
-      "summary": "SBOM requirements emerging (US executive order). Hardware provenance tracking is much less mature. Cryptographic attestation of physical components is cutting-edge. Some chip vendors provide basic provenance but not cryptographic verification of supply chain path.",
+      "summary": "SBOM tooling and standards continue to mature - CISA's 2025 Minimum Elements for a Software Bill of Materials expanded the technical standard and names AI software as an area for further consideration rather than adding AI-specific elements - but the federal mandate reversed: OMB M-26-05 (January 2026) rescinded the vendor self-attestation requirement in favour of an agency-led risk-based approach. Hardware provenance is much less mature and now advances through industry consortia (Caliptra, OCP S.A.F.E., DICE, SCITT) rather than policy; hardware bill-of-materials templates remain draft. Cryptographic attestation of physical components is cutting-edge.",
       "deployed_by": [
         "partial_some_software_sbom"
       ],
@@ -578,16 +582,17 @@
     "summary_group": "supply_chain_integrity",
     "description": "Reimplement or custom-develop critical system components when supply chain risk from external sources is unacceptable. Maintain source code, build scripts, and tests internally. Reduces dependency on external vendors for security-critical paths.",
     "current_state": {
-      "summary": "Google designs custom TPUs. Some labs build custom training frameworks. But custom silicon design capability is limited to a few organizations globally. Most labs rely entirely on external vendors for hardware and much of their software stack.",
+      "summary": "Custom silicon for AI is an established capability at the largest organizations: Google has run production TPUs in its datacenters since 2015-2016, and Amazon (Trainium) and Microsoft (Maia) have since followed. Anthropic confirmed an in-house chip design team in August 2026, framed as part of a multi-chip approach rather than a replacement for vendors. The capability remains limited to a few organizations globally, and most labs rely entirely on external vendors for hardware and much of their software stack.",
       "deployed_by": [
         "google_tpu",
         "some_large_tech_custom_silicon"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2016
     },
     "dimensions": {
       "technical_feasibility": {
-        "value": 50,
+        "value": 60,
         "notes": "For software: feasible (rewrite critical dependencies internally). For hardware: requires billion-dollar investment and world-class chip design team. Few organizations can do this. For firmware: intermediate difficulty.",
         "trajectory": "stable"
       },
@@ -599,13 +604,13 @@
       "cost": {
         "upfront_millions": {
           "min": 50,
-          "max": 2000
+          "max": 800
         },
         "annual_ongoing_millions": {
           "min": 20,
           "max": 200
         },
-        "notes": "Custom silicon: $1-2B. Custom firmware: $50-200M. Custom security-critical software: $50-100M. Ongoing = maintaining all custom code/hardware through lifecycle."
+        "notes": "Separate per-chip NRE from multi-generation program spend. A leading-edge accelerator tape-out runs roughly $100M-750M all-in depending on node and complexity (mask sets alone $10-20M at 3-5nm), plus $2-5M/year EDA and $5-20M IP licensing. The $1-2B figures quoted for custom silicon programs cover several generations, not one control. Software and firmware rewrites sit at the low end of the range."
       },
       "vendor_dependency": {
         "value": 20,
@@ -620,7 +625,7 @@
         "notes": "World-class chip design talent is extremely scarce and expensive."
       },
       "organizational_readiness": {
-        "value": 25,
+        "value": 40,
         "barriers": [
           "massive_investment",
           "talent_acquisition",
@@ -638,7 +643,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 5,
       "ai_oc_shift": 0.0,
-      "exploit_narrative": "When using external components, an OC5 adversary can compromise the vendor's design or manufacturing process. Custom development eliminates this vector \u2014 the adversary must compromise your internal development instead, which is a fundamentally different (and often harder) attack."
+      "exploit_narrative": "When using external components, an OC5 adversary can compromise the vendor's design or manufacturing process. Custom development eliminates this vector — the adversary must compromise your internal development instead, which is a fundamentally different (and often harder) attack."
     },
     "dependencies": {
       "requires": [],
@@ -668,12 +673,12 @@
       {
         "question": "Is custom silicon development realistic for any organization other than the very largest?",
         "uncertainty_level": "low",
-        "impact_if_resolved_negatively": "Most labs cannot implement this block \u2014 must rely on commercial vendors with strong inspection/attestation instead"
+        "impact_if_resolved_negatively": "Most labs cannot implement this block — must rely on commercial vendors with strong inspection/attestation instead"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "The US DoD maintains custom ASIC design capability (DMEA) for exactly this reason \u2014 when you can't trust commercial supply chains for the most critical components, you build them yourself.",
+        "description": "The US DoD maintains custom ASIC design capability (DMEA) for exactly this reason — when you can't trust commercial supply chains for the most critical components, you build them yourself.",
         "source": "DMEA custom microelectronics",
         "year": 2000
       }

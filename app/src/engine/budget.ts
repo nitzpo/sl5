@@ -1,4 +1,5 @@
 import type { Block, BlockState } from "./types";
+import { isAtOrBelowBaseline } from "./baseline";
 
 /**
  * Planning cost of a block, in upfront $M. Risk tolerance sets which end of
@@ -26,6 +27,11 @@ export interface BudgetOptions {
  * Budget constraint: active blocks consume the upfront budget in advancement
  * order; blocks past the budget line are funded only to "implementing" level —
  * a deployed/mature state the org cannot actually pay for is capped.
+ *
+ * Blocks sitting at or below their real-world baseline are SUNK COST and never
+ * enter the funding queue: a lab does not re-buy the controls it already runs,
+ * and charging for them would open every session overdrawn. Advancing one past
+ * its baseline makes it a purchase like any other.
  */
 export function applyBudgetConstraint(
   blocks: Block[],
@@ -33,8 +39,13 @@ export function applyBudgetConstraint(
   budgetMillions: number,
   opts: BudgetOptions = {}
 ): { effectiveStates: Record<string, BlockState>; exceededIds: Set<string>; spentMillions: number } {
-  const isActive = (id: string) => (blockStates[id] ?? "not_started") !== "not_started";
   const blockById = new Map(blocks.map((b) => [b.id, b]));
+  const isActive = (id: string) => {
+    const state = blockStates[id] ?? "not_started";
+    if (state === "not_started") return false;
+    const block = blockById.get(id);
+    return !block || !isAtOrBelowBaseline(block, state);
+  };
 
   // Funding queue: explicit advancement order first, then any remaining
   // active blocks in data order (pre-seeded states, old saves).

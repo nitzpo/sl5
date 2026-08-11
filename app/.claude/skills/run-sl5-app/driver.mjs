@@ -167,6 +167,23 @@ async function settled(page, { interval = 100, timeout = 4000 } = {}) {
   }
 }
 
+/**
+ * Block hexes on the canvas.
+ *
+ * Counts only groups whose first `<text>` is a block id. A bare
+ * `g.cursor-pointer` count over-counts: hovering a hex renders a "+"
+ * advance-state affordance that is *also* a cursor-pointer group, so wherever
+ * the mouse happens to rest inflates the total by one and an exact-count check
+ * fails against a perfectly healthy app.
+ */
+const countHexes = (page) =>
+  page.evaluate(
+    () =>
+      Array.from(document.querySelectorAll("svg g.cursor-pointer")).filter((g) =>
+        /^[A-Z]+-\d+$/.test(g.querySelector("text")?.textContent ?? "")
+      ).length
+  );
+
 /** The transform `<g>` is the direct output of use-viewbox-pan-zoom. */
 const readTransform = (page) =>
   page.evaluate(() => {
@@ -193,10 +210,10 @@ async function smoke() {
   console.log("\n[smoke] app loads and renders the block catalog");
   const page = await newPage();
   await openApp(page);
-  const hexes = await page.locator("svg g.cursor-pointer").count();
+  const hexes = await countHexes(page);
   const t = await readTransform(page);
-  // Exact, not `> 40`: the catalog is 47 blocks (counted from public/data at
-  // startup), so a missing entry must fail rather than squeak by.
+  // Exact, not `> 40`: the catalog is counted from public/data at startup, so a
+  // missing entry must fail rather than squeak by.
   check(
     "every block hex rendered",
     hexes === EXPECTED_BLOCKS,
@@ -386,7 +403,7 @@ async function views() {
     await btn.click();
     await settled(page);
     const t = await readTransform(page);
-    const hexes = await page.locator("svg g.cursor-pointer").count();
+    const hexes = await countHexes(page);
     check(
       `${name} view renders`,
       !!parse(t.transform) && hexes > 0 && t.visibility !== "hidden",

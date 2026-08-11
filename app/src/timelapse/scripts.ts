@@ -9,20 +9,30 @@ export const SCRIPTS: TimeLapseScript[] = [
     // A well-funded program that plans within its means — the point of this
     // story is a serious attempt, not a solved problem.
     //
-    // The plan is SIZED to the budget: 34 programs cost ~$1,384M at the shared
+    // The plan is SIZED to the budget: 33 programs cost ~$2,610M at the shared
     // risk_tolerance 0.65 basis (`min + (1 - rt) * (max - min)`), against the
-    // $1,400M cap. Nothing is capped at `implementing` and every block reaches
-    // `mature` by 2030, so the residual ~16% vs OC4 is what a fully-delivered
+    // $2,800M cap. Nothing is capped at `implementing` and every block reaches
+    // `mature` by 2030, so the residual vs OC4 is what a fully-delivered
     // program actually leaves on the table — not an artifact of a plan the org
     // could never pay for.
     //
-    // ~$1.4B is what SL 3.5 costs, and that is the headline finding rather than
-    // a budget the story was handed. SL measures coverage across the whole
-    // threat model: 45 of 47 blocks are threat-relevant, so the score is a
-    // BREADTH measure and a 23-block plan structurally caps out near 2.5
-    // whatever it buys. Reaching 3.5 takes 34 blocks; the full catalog matured
-    // ($3,668M) reaches only 4.42, because slider penalties and AI erosion mean
-    // even a maxed posture is not a 5.
+    // ~$2.8B is what SL 3.5 costs, and that is the headline finding rather than
+    // a budget the story was handed. The number was ~$1.4B until the 2026 value
+    // audit found PHY-01 priced as a conventional SCIF — a room — while its own
+    // feasibility note assumed AI-datacenter scale. It is now priced as the
+    // classified-grade PREMIUM on a 50-100MW secure enclave (~$20M/MW, the delta
+    // between commercial and classified build rates), which lands it at ~$1,395M,
+    // 53% of this program. Pricing the whole campus to that grade instead would
+    // put the program near $8B and make the other 31 controls a rounding error,
+    // which models construction rather than security. The lesson survives either
+    // way: the single largest line item in an SL5 program is the building, and
+    // it was the one nobody had costed.
+    //
+    // SL measures coverage across the whole threat model: 44 of 46 blocks are
+    // threat-relevant, so the score is a BREADTH measure and a 23-block plan
+    // structurally caps out near 2.5 whatever it buys. Reaching 3.5 takes 33
+    // blocks; the full catalog matured ($4,474M) reaches only ~4.4, because
+    // slider penalties and AI erosion mean even a maxed posture is not a 5.
     //
     // The two omissions are deliberate and they are the whole reason the number
     // isn't single digits. `long-game` is an all-personnel chain (PER-02/03/04/
@@ -30,12 +40,12 @@ export const SCRIPTS: TimeLapseScript[] = [
     // control) and PER-04 (continuous vetting). Every plan measured that closes
     // all four collapses breach to ~4.7%, because breach is a max over chains
     // and the other six are then all sitting on the residual floor. SL 3.5 with
-    // a real 16% residual requires leaving exactly one chain meaningfully open.
+    // a real residual requires leaving exactly one chain meaningfully open.
     //
     // gov_cooperation is set high: a program this well-resourced assumes
     // government partnership, so personnel/supply-chain controls aren't
     // govMult-penalized.
-    sliderOverrides: { budget_millions: 1400, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 0.65 },
+    sliderOverrides: { budget_millions: 2800, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 0.65 },
     deployments: [
       // 2024 — the long-lead foundations plus every cheap quick win. HW-01 and
       // HW-03 are 48-month builds and HW-01 gates HW-05/07/09 and SC-06;
@@ -58,7 +68,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "AI-01", startYear: 2024.5 },
       { blockId: "PER-03", startYear: 2024.5 },
       { blockId: "NET-07", startYear: 2024.5 },
-      // 2025 — the physical perimeter ($305M, 36mo) and the 24-month tier.
+      // 2025 — the physical perimeter ($1,395M, 18–48mo) and the 24-month tier.
       { blockId: "PER-06", startYear: 2025 },
       { blockId: "PHY-01", startYear: 2025 },
       // Bundled with PHY-01 because the data says it must be: TEMPEST
@@ -66,13 +76,12 @@ export const SCRIPTS: TimeLapseScript[] = [
       // also PHY-01's and PHY-05's `completed_by` companion — shielding assumes
       // the emitters are the ones you shielded — so buying all three is what
       // makes the physical family count for what it claims rather than for
-      // `standalone_share` of it. $54.5M, and it is the difference between this
-      // story landing at SL 3.42 and at 3.53.
+      // `standalone_share` of it. $218M, and it is the difference between this
+      // story landing near SL 3.4 and at 3.6.
       { blockId: "PHY-02", startYear: 2025 },
       { blockId: "HW-05", startYear: 2025 },
       { blockId: "SC-02", startYear: 2025 },
       { blockId: "PHY-07", startYear: 2025 },
-      { blockId: "HW-08", startYear: 2025.5 },
       { blockId: "SC-04", startYear: 2025.5 },
       { blockId: "AI-06", startYear: 2025.5 },
       // 2026 — 18-month tier, still comfortably inside the 2030 horizon.
@@ -102,7 +111,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { atYear: 2029, message: "SL passes 3.4. Everything cheap is bought, everything expensive is matured.", highlight: { type: "chain", id: "long-game" } },
       // Why it doesn't reach zero: the plan is fully funded and fully matured,
       // and it still leaves an all-personnel chain open.
-      { atYear: 2030, message: "$1.38B of $1.4B, all 34 programs matured, SL 3.5 — and an insider chain still gets through 16% of the time", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2030, message: "$2.61B of $2.8B, all 33 programs matured, SL 3.6 — and an insider chain still gets through 16% of the time", highlight: { type: "chain", id: "long-game" } },
     ],
   },
   {
@@ -111,11 +120,18 @@ export const SCRIPTS: TimeLapseScript[] = [
     description: "Deploy defenses only after threats materialize. Always a step behind.",
     type: "scripted",
     // Every story plans at the same risk_tolerance (0.65) so the cost basis is
-    // one rule, not per-story special pleading. This budget then covers the
-    // ~$620M the panic deployments below actually cost at that basis: the
-    // reactive failure mode is lateness, NOT underfunding, so nothing here
-    // should cap. Raising it further changes no outcome (measured).
-    sliderOverrides: { budget_millions: 700, org_transformation: 0.3, risk_tolerance: 0.65 },
+    // one rule, not per-story special pleading. This budget covers the ~$1,710M
+    // the panic deployments below cost at that basis, so nothing caps: the
+    // reactive failure mode is lateness, and the story has to isolate it from
+    // underfunding to make that point.
+    //
+    // The figure moved from $700M with the 2026 PHY-01 repricing, and that
+    // exposed something the old numbers hid. At $700M this story ran with 12 of
+    // its 16 blocks frozen by the funding queue, so its breach number was really
+    // measuring "late AND broke" — two failure modes at once, only one of which
+    // this story is about. Funded to what its own plan costs, lateness is the
+    // only thing left, which is the point.
+    sliderOverrides: { budget_millions: 1800, org_transformation: 0.3, risk_tolerance: 0.65 },
     deployments: [
       // After first network probe detected ~mid-2025
       { blockId: "NET-02", startYear: 2025.5 },

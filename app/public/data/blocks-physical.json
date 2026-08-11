@@ -15,25 +15,25 @@
     },
     "dimensions": {
       "technical_feasibility": {
-        "value": 98,
-        "notes": "Completely proven technology. Decades of government construction experience. The only novelty is scaling to AI datacenter power density (5-10 GW facilities).",
+        "value": 85,
+        "notes": "Proven technology with decades of government construction experience, but the AI-scale version is not yet demonstrated. The Utah Data Center - the usual parallel - is roughly 65MW at about 1M sq ft, took around 3.5 years and overran its budget, which is the right order of magnitude for the enclave this block prices but well below a full training campus. Passing tens to hundreds of MW of power and liquid cooling through a continuous shielded envelope is the genuinely unproven part.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
         "min": 18,
-        "max": 36,
-        "notes": "Site selection, permitting, specialized construction. Cannot be rushed below 18 months. Retrofitting existing facilities is much harder than new construction."
+        "max": 48,
+        "notes": "Site selection, permitting, specialised construction, then accreditation. Cannot be rushed below 18 months for a small facility. Conventional GW-scale AI campuses already take 1-3.6 years to first power; SCIF-grade adds 15-30% schedule drag plus accreditation, which has stretched toward 24-36 months under the updated standards and is a government-controlled dependency that money cannot compress. Retrofitting is much harder than new construction."
       },
       "cost": {
         "upfront_millions": {
-          "min": 200,
-          "max": 500
+          "min": 800,
+          "max": 2500
         },
         "annual_ongoing_millions": {
-          "min": 20,
-          "max": 50
+          "min": 60,
+          "max": 200
         },
-        "notes": "Massive but predictable. 2-3x cost premium over standard datacenter construction. Ongoing = maintaining accreditation, physical security staff, integrity checks."
+        "notes": "Prices the SECURITY PREMIUM for a secure enclave, not a whole datacenter. A lab builds the compute facility regardless, so what this control costs is the delta for classified-grade construction: commercial AI datacenter runs $15-20M/MW and AWS's classified buildout implies roughly $38M/MW, making the attributable premium about $20M/MW. The unit is a 50-100MW enclave holding weights at rest - the same scope NET-02 assumes - not the entire training fleet, which does not need to sit inside a shielded envelope. 50-100MW at a $15-23M/MW premium gives this range. Per square foot SCIF construction ($350-1,200) and AI datacenter construction ($1,100-1,500) are comparable; the premium comes from cleared labour, 15-30% schedule drag and security-driven rework. Ongoing covers accreditation maintenance, a dedicated security force and integrity checks. Building the whole campus to this grade would be several times larger and is not what SL5 requires."
       },
       "vendor_dependency": {
         "value": 60,
@@ -103,12 +103,12 @@
       {
         "question": "Private self-certification (CSO/Site Security Manager) vs government accreditation: does private accreditation provide meaningful security assurance?",
         "uncertainty_level": "medium",
-        "impact_if_resolved_negatively": "Government accreditation required \u2014 adds timeline and access constraints"
+        "impact_if_resolved_negatively": "Government accreditation required — adds timeline and access constraints"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "NSA's Utah Data Center (2013) is a SCIF-grade facility at datacenter scale \u2014 proving the concept is feasible. It houses classified computing at massive scale with full ICD 705 compliance.",
+        "description": "NSA's Utah Data Center (2013) is a SCIF-grade facility at datacenter scale — proving the concept is feasible. It houses classified computing at massive scale with full ICD 705 compliance.",
         "source": "NSA Utah Data Center",
         "year": 2013
       }
@@ -119,7 +119,7 @@
     "name": "TEMPEST Countermeasures",
     "category": "physical",
     "summary_group": "physical_facility",
-    "description": "RF shielding preventing electromagnetic signal egress from computing areas, plus dedicated power conditioning preventing power-line analysis. Per NSTISSAM TEMPEST/1-92. All equipment hardwired \u2014 no wireless devices permitted.",
+    "description": "RF shielding preventing electromagnetic signal egress from computing areas, plus dedicated power conditioning preventing power-line analysis. Per NSTISSAM TEMPEST/1-92. All equipment hardwired — no wireless devices permitted.",
     "current_state": {
       "summary": "Integral to SCIF construction (PHY-01). Cannot be deployed independently without facility-grade shielding. Individual TEMPEST-rated equipment exists but facility-level protection requires construction.",
       "deployed_by": [
@@ -130,7 +130,7 @@
     "dimensions": {
       "technical_feasibility": {
         "value": 95,
-        "notes": "Mature technology. Part of ICD 705 construction. The AI-specific concern is whether models can deliberately modulate emissions \u2014 but physical shielding works regardless of intent.",
+        "notes": "Mature technology. Part of ICD 705 construction. The AI-specific concern is whether models can deliberately modulate emissions — but physical shielding works regardless of intent.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -140,14 +140,14 @@
       },
       "cost": {
         "upfront_millions": {
-          "min": 30,
-          "max": 100
+          "min": 120,
+          "max": 400
         },
         "annual_ongoing_millions": {
           "min": 5,
           "max": 15
         },
-        "notes": "Included in SCIF construction cost. Ongoing = periodic testing of shielding effectiveness, power conditioning maintenance."
+        "notes": "Scales with the shielded floor area of PHY-01 rather than being a fixed line item, so it tracks the enclave rather than the whole campus. Must be engineered into construction: retrofitting is possible but degraded, since existing penetrations and legacy routing make shielding continuity hard to achieve. Estimate is directional - facility-scale TEMPEST pricing is not published."
       },
       "vendor_dependency": {
         "value": 55,
@@ -217,7 +217,7 @@
     ],
     "real_world_parallels": [
       {
-        "description": "During the Cold War, the Soviets placed a resonant cavity bugging device (\"The Thing\") inside a gift to the US ambassador \u2014 demonstrating that EM emissions and RF devices can be weaponized for espionage at the highest levels.",
+        "description": "During the Cold War, the Soviets placed a resonant cavity bugging device (\"The Thing\") inside a gift to the US ambassador — demonstrating that EM emissions and RF devices can be weaponized for espionage at the highest levels.",
         "source": "Great Seal Bug / Leon Theremin",
         "year": 1945
       }
@@ -258,7 +258,7 @@
           "min": 0.5,
           "max": 2
         },
-        "notes": "Per-entry-point cost \u00d7 number of entry points. Lower cost relative to other physical blocks."
+        "notes": "Per-entry-point cost × number of entry points. Lower cost relative to other physical blocks."
       },
       "vendor_dependency": {
         "value": 30,
@@ -269,7 +269,7 @@
       },
       "supply_scarcity": {
         "value": 10,
-        "bottleneck": "None \u2014 widely available",
+        "bottleneck": "None — widely available",
         "notes": "No supply constraint"
       },
       "organizational_readiness": {
@@ -289,7 +289,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 0.0,
-      "exploit_narrative": "Without mantraps, an adversary can tailgate an authorized employee through a badge-access door. This is the simplest physical access attack \u2014 requires no technology, just social engineering or waiting for someone to hold the door."
+      "exploit_narrative": "Without mantraps, an adversary can tailgate an authorized employee through a badge-access door. This is the simplest physical access attack — requires no technology, just social engineering or waiting for someone to hold the door."
     },
     "dependencies": {
       "requires": [],
@@ -319,7 +319,7 @@
     "name": "Intrusion Detection Systems (5/15-min Response)",
     "category": "physical",
     "summary_group": "physical_facility",
-    "description": "Sensors covering all Red Zone perimeter entry points and motion detection within the space. ICD 705 requires alarm response within 5 minutes for open storage (weights accessible without containers) or 15 minutes for closed storage.",
+    "description": "Intrusion detection to ICD 705 standards with alarm response by an armed reaction force. Response time depends on approved security-in-depth: open storage requires response within 15 minutes where SID has been approved, or five minutes where it has not; closed storage requires 15 minutes. Continuous monitoring of all Red Zone boundaries.",
     "current_state": {
       "summary": "Standard datacenter security has cameras and badge systems. ICD 705-grade IDS with guaranteed 5-minute armed response is government-level and not deployed by AI labs. Requires dedicated security force.",
       "deployed_by": [
@@ -331,7 +331,7 @@
     "dimensions": {
       "technical_feasibility": {
         "value": 97,
-        "notes": "Proven technology. Sensors, cameras, alarm systems are commodity. The challenge is the response guarantee \u2014 5-minute armed response requires on-site security force 24/7.",
+        "notes": "Proven technology. Sensors, cameras, alarm systems are commodity. The challenge is the response guarantee — 5-minute armed response requires on-site security force 24/7.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -348,10 +348,10 @@
           "min": 10,
           "max": 30
         },
-        "notes": "Sensors are cheap. 24/7 armed security force is expensive ongoing (team of 20-40 people for shifts + overhead)."
+        "notes": "Dominated by the guard force rather than the sensors, and priced conservatively at the five-minute response standard. ICD 705 permits a 15-minute response for open storage only where security-in-depth has been APPROVED - DCSA treats SID as a formal determination, not something a perimeter confers automatically - so the cheaper staffing model is not available on the strength of companion controls alone. Representing approved and unapproved response modes as distinct cost bases would need a schema change; until then this holds the conservative figure."
       },
       "vendor_dependency": {
-        "value": 25,
+        "value": 60,
         "key_vendors": [
           "security_systems_vendor",
           "guard_force_contractor"
@@ -370,7 +370,7 @@
           "liability_concerns",
           "remote_site_staffing"
         ],
-        "notes": "Armed guards at a tech company is culturally jarring. But datacenter physical security is an accepted practice \u2014 just needs to be upgraded."
+        "notes": "Armed guards at a tech company is culturally jarring. But datacenter physical security is an accepted practice — just needs to be upgraded."
       }
     },
     "defense_type": "probabilistic",
@@ -381,7 +381,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 0.0,
-      "exploit_narrative": "Without rapid-response IDS, a physical intruder has unlimited time once past the perimeter. Even a detected intrusion is meaningless if response time is 30-60 minutes \u2014 an adversary can install implants, copy data, or cause damage within that window."
+      "exploit_narrative": "Without rapid-response IDS, a physical intruder has unlimited time once past the perimeter. Even a detected intrusion is meaningless if response time is 30-60 minutes — an adversary can install implants, copy data, or cause damage within that window."
     },
     "dependencies": {
       "requires": [
@@ -403,7 +403,7 @@
     "open_questions": [],
     "real_world_parallels": [
       {
-        "description": "Nuclear facilities maintain armed response forces with 5-minute response requirements under NRC regulations. The same concept applies \u2014 high-value assets requiring rapid physical protection.",
+        "description": "Nuclear facilities maintain armed response forces with 5-minute response requirements under NRC regulations. The same concept applies — high-value assets requiring rapid physical protection.",
         "source": "NRC 10 CFR 73",
         "year": 2000
       }
@@ -416,7 +416,7 @@
     "summary_group": "physical_facility",
     "description": "Complete prohibition of wireless devices (WiFi, Bluetooth, cellular, NFC) inside Red Zones. All equipment hardwired with wireless capabilities physically removed or disabled. No phones, no wireless keyboards/mice, no wireless headsets.",
     "current_state": {
-      "summary": "Standard SCIF requirement. Enforced in government classified facilities universally. Not enforced in any AI lab \u2014 would be highly disruptive to current work culture.",
+      "summary": "Standard SCIF requirement. Enforced in government classified facilities universally. Not enforced in any AI lab — would be highly disruptive to current work culture.",
       "deployed_by": [
         "government_scif"
       ],
@@ -425,7 +425,7 @@
     "dimensions": {
       "technical_feasibility": {
         "value": 99,
-        "notes": "Not a technology problem \u2014 it's a policy and enforcement problem. Hardwired alternatives exist for everything.",
+        "notes": "Not a technology problem — it's a policy and enforcement problem. Hardwired alternatives exist for everything.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -646,7 +646,7 @@
       "supply_scarcity": {
         "value": 55,
         "bottleneck": "Hardware inspection specialists who can interpret X-ray/IR results for modern semiconductors",
-        "notes": "Rare skill set \u2014 mostly exists in government counterintelligence and defense contractors"
+        "notes": "Rare skill set — mostly exists in government counterintelligence and defense contractors"
       },
       "organizational_readiness": {
         "value": 30,
@@ -686,7 +686,7 @@
       {
         "question": "Can automated inspection scale to datacenter hardware volumes without unacceptable procurement delays?",
         "uncertainty_level": "medium",
-        "impact_if_resolved_negatively": "Must rely on sampling rather than exhaustive inspection \u2014 reduces detection probability"
+        "impact_if_resolved_negatively": "Must rely on sampling rather than exhaustive inspection — reduces detection probability"
       }
     ],
     "real_world_parallels": [

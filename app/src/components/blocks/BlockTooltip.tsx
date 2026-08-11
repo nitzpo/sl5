@@ -5,7 +5,7 @@ import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { formatCost } from "../../utils/format";
-import { computeDecisionWindows } from "../../utils/decision-windows";
+import { computeDecisionWindows, effectiveDeployMonths } from "../../utils/decision-windows";
 import { STATE_LABELS } from "../../utils/colors";
 
 interface BlockTooltipProps {
@@ -29,6 +29,7 @@ export function BlockTooltip({
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
   const blockStates = useSimulationStore((s) => s.blockStates);
+  const allBlocks = useSimulationStore((s) => s.blocks);
   const { budgetExceededIds, dependencyUnmetIds, dependencyUnmetRequires } =
     useSimulationResults();
 
@@ -52,7 +53,14 @@ export function BlockTooltip({
   const SERVING_ONLY = new Set(["AI-07", "AI-08", "AI-04", "NET-04"]);
   const irrelevantAirgapped = !modelServed && SERVING_ONLY.has(block.id);
 
-  const decisionWindow = computeDecisionWindows([block], { [block.id]: state }, year)[0];
+  // The whole catalogue and the live posture, not just this block: the deadline
+  // counts the `requires` chain, so passing `[block]` alone silently fell back
+  // to its own duration and the tooltip disagreed with the grid badge beside it.
+  const decisionWindow = computeDecisionWindows(
+    allBlocks,
+    { ...blockStates, [block.id]: state },
+    year
+  ).find((w) => w.block.id === block.id);
   const uncertainty = block.open_questions.some((q) => q.uncertainty_level === "fundamental")
     ? "fundamental"
     : block.open_questions.some((q) => q.uncertainty_level === "high")
@@ -143,7 +151,7 @@ export function BlockTooltip({
         >
           !{" "}
           {decisionWindow.urgency === "overdue"
-            ? `Window closed: needs up to ${block.dimensions.time_to_deploy_months.max}mo to deploy — starting now misses 2030`
+            ? `Window closed: needs up to ${effectiveDeployMonths(block, allBlocks, blockStates)}mo to deploy — starting now misses 2030`
             : `Window closing: must start by ${decisionWindow.mustStartBy.toFixed(1)} to deploy by 2030`}
         </div>
       )}

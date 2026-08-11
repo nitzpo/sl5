@@ -32,7 +32,7 @@
           "min": 15,
           "max": 50
         },
-        "notes": "Program design + vetting infrastructure + ongoing rescreening. Cost scales with headcount. Each SenL-5 vetting may cost $50-100K per person."
+        "notes": "Dominated by program staff rather than per-head investigation fees: adjudicators, insider-threat analysts and the monitoring team. For reference, DCSA FY2026 billing is $455 (Tier 3) and $5,890 (Tier 5) per investigation with continuous vetting near $90 per person per year, though a private lab pays a real multiple of those subsidised rates and gets no subpoena power. RAND's SL5 benchmark asks for a security team of about 100 people or more, which at frontier-lab compensation dominates every other line."
       },
       "vendor_dependency": {
         "value": 25,
@@ -93,17 +93,17 @@
       {
         "question": "Is private-sector vetting sufficient for SL5, or does it require government involvement (classified contract pathways, information sharing)?",
         "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "SL5 personnel security may be fundamentally infeasible without government partnership \u2014 a major dependency"
+        "impact_if_resolved_negatively": "SL5 personnel security may be fundamentally infeasible without government partnership — a major dependency"
       },
       {
         "question": "Can intensive vetting coexist with competitive hiring in the AI talent market?",
         "uncertainty_level": "medium",
-        "impact_if_resolved_negatively": "Labs may face talent loss to competitors without equivalent vetting requirements \u2014 collective action problem"
+        "impact_if_resolved_negatively": "Labs may face talent loss to competitors without equivalent vetting requirements — collective action problem"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "The US government clearance system (Confidential \u2192 Secret \u2192 Top Secret \u2192 TS/SCI) takes 249 days for TS processing on average. The SenL framework attempts to achieve similar assurance faster and without citizenship constraints.",
+        "description": "The US government clearance system (Confidential → Secret → Top Secret → TS/SCI) takes 249 days for TS processing on average. The SenL framework attempts to achieve similar assurance faster and without citizenship constraints.",
         "source": "ODNI clearance processing statistics",
         "year": 2024
       }
@@ -278,7 +278,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 1.0,
-      "exploit_narrative": "Without behavioral monitoring, a recruited insider operates freely \u2014 accessing weight systems, exfiltrating data, or installing backdoors with no detection mechanism beyond after-the-fact audit. Changes in behavior (new foreign contacts, financial stress, unusual access patterns) go unnoticed."
+      "exploit_narrative": "Without behavioral monitoring, a recruited insider operates freely — accessing weight systems, exfiltrating data, or installing backdoors with no detection mechanism beyond after-the-fact audit. Changes in behavior (new foreign contacts, financial stress, unusual access patterns) go unnoticed."
     },
     "dependencies": {
       "requires": [
@@ -308,7 +308,7 @@
     ],
     "real_world_parallels": [
       {
-        "description": "The Snowden case (2013) demonstrated failure of insider threat monitoring \u2014 NSA's systems were insufficient to detect a system administrator copying classified material over months. This drove Executive Order 13587 mandating insider threat programs.",
+        "description": "The Snowden case (2013) demonstrated failure of insider threat monitoring — NSA's systems were insufficient to detect a system administrator copying classified material over months. This drove Executive Order 13587 mandating insider threat programs.",
         "source": "Post-Snowden reforms",
         "year": 2013
       }
@@ -321,7 +321,7 @@
     "summary_group": "personnel_program",
     "description": "Comprehensive background disclosure form modeled on the government SF-86 (Standard Form 86). Covers personal history, foreign contacts, financial status, drug use, mental health. Higher tiers (SenL-4/5) add verified subject and reference interviews.",
     "current_state": {
-      "summary": "No AI lab performs SF-86-equivalent background checks. Standard tech hiring involves basic criminal check and maybe reference calls. The gulf between tech hiring standards and government clearance standards is enormous.",
+      "summary": "No AI lab performs SF-86-equivalent background checks; standard tech hiring involves a basic criminal check and reference calls. The government model this block mirrors has itself moved: SF-86/e-QIP are being replaced by the Personnel Vetting Questionnaire on eApp/NBIS, and DCSA dropped periodic reinvestigations for contractor personnel in April 2026 in favour of continuous vetting plus a five-year questionnaire. The gulf between tech hiring standards and government clearance standards remains enormous.",
       "deployed_by": [
         "government_clearance_system"
       ],
@@ -347,7 +347,7 @@
           "min": 10,
           "max": 40
         },
-        "notes": "Per-investigation cost: $10-30K (SenL-3), $50-100K (SenL-5). \u00d7 headcount. Plus infrastructure for managing disclosures, adjudication, and reinvestigation."
+        "notes": "Per-investigation cost is far lower than a naive private-vetting estimate: DCSA FY2026 rates are $455 (Tier 3) and $5,890 (Tier 5), with continuous vetting near $90 per person per year. A lab contracting commercially pays a multiple of that - call it $3-8K at the lower tier and $10-40K all-in at the highest - but the recurring cost is still driven by adjudication and analyst headcount rather than the investigations themselves."
       },
       "vendor_dependency": {
         "value": 35,
@@ -414,12 +414,12 @@
       {
         "question": "Screening equivalency standards for non-US citizens and international offices?",
         "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "May be unable to vet international workforce to SL5 standard \u2014 forces geographic concentration or excludes foreign nationals from sensitive roles"
+        "impact_if_resolved_negatively": "May be unable to vet international workforce to SL5 standard — forces geographic concentration or excludes foreign nationals from sensitive roles"
       }
     ],
     "real_world_parallels": [
       {
-        "description": "Manhattan Project infiltration rate was ~0.5% despite wartime security measures (Klaus Fuchs, Ted Hall). The SenL framework aims to achieve similar or better detection in peacetime private sector \u2014 an unprecedented goal.",
+        "description": "Manhattan Project infiltration rate was ~0.5% despite wartime security measures (Klaus Fuchs, Ted Hall). The SenL framework aims to achieve similar or better detection in peacetime private sector — an unprecedented goal.",
         "source": "Manhattan Project espionage history",
         "year": 1945
       }
@@ -430,9 +430,9 @@
     "name": "Post-Employment Restrictions",
     "category": "personnel",
     "summary_group": "personnel_program",
-    "description": "Obligations that continue after employment ends: non-compete for competitors, reporting requirements for foreign contacts, restrictions on sabbaticals at foreign-affiliated institutions. Scaled by SenL tier \u2014 SenL-5 has most restrictive post-employment obligations.",
+    "description": "Obligations that continue after employment ends: non-compete for competitors, reporting requirements for foreign contacts, restrictions on sabbaticals at foreign-affiliated institutions. Scaled by SenL tier — SenL-5 has most restrictive post-employment obligations.",
     "current_state": {
-      "summary": "Some labs have basic NDAs and non-competes (where legal). None have the graduated post-employment framework with foreign contact reporting or sabbatical restrictions. California has banned non-competes, complicating enforcement.",
+      "summary": "Some labs have basic NDAs and non-competes where legal. None have the graduated post-employment framework with foreign contact reporting or sabbatical restrictions. The binding constraint is state law rather than federal: California SB 699 and AB 1076 (effective 2024) void non-competes even where the employment and the agreement were out of state, and add a private right of action. The FTC's federal non-compete rule was vacated and never took effect. Since most major labs are California-based, garden leave and foreign-contact reporting are the workable levers, not enforceable non-competes.",
       "deployed_by": [
         "government_clearance_holders",
         "some_defense_contractors"
@@ -527,13 +527,15 @@
     "summary_group": "personnel_program",
     "description": "Two authorized individuals required to execute privileged commands involving covered models or their cryptographic keys. Technical enforcement via cryptographic split-knowledge or multi-party authorization workflows. At least one SenL-5 custodian must participate.",
     "current_state": {
-      "summary": "Some labs require approval for production deployments (PR review, deploy approval). None have cryptographically-enforced dual authorization for weight operations. Code review is a soft equivalent but not the same as mandatory dual-key operations.",
+      "summary": "At least one frontier lab has deployed the mechanism: Anthropic's ASL-3 Standard includes two-party authorization for model weight access, alongside binary allowlisting and enhanced change management. What remains absent is dual authorization tied to a defined sensitivity tier and covering the full set of critical operations. Anthropic states that sophisticated insiders and nation-state attackers remain out of scope for ASL-3, which is precisely the threat this block exists to address.",
       "deployed_by": [
         "nuclear_launch",
         "banking_wire_transfers",
-        "some_cloud_providers_root_access"
+        "some_cloud_providers_root_access",
+        "partial_some_frontier_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2025
     },
     "dimensions": {
       "technical_feasibility": {
@@ -587,7 +589,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 0.5,
-      "exploit_narrative": "Without dual authorization, a single compromised privileged account (via credential theft, insider, or escalation) can execute any operation on weights \u2014 export, copy, modify, destroy. Dual auth requires compromising two independent accounts simultaneously."
+      "exploit_narrative": "Without dual authorization, a single compromised privileged account (via credential theft, insider, or escalation) can execute any operation on weights — export, copy, modify, destroy. Dual auth requires compromising two independent accounts simultaneously."
     },
     "dependencies": {
       "requires": [
@@ -610,7 +612,7 @@
     "open_questions": [],
     "real_world_parallels": [
       {
-        "description": "SWIFT banking transfers above threshold require dual authorization \u2014 multiple officers must approve. This prevented numerous attempted bank heists (though Bangladesh Bank hack 2016 succeeded partly by circumventing dual controls).",
+        "description": "SWIFT banking transfers above threshold require dual authorization — multiple officers must approve. This prevented numerous attempted bank heists (though Bangladesh Bank hack 2016 succeeded partly by circumventing dual controls).",
         "source": "SWIFT security controls",
         "year": 2016
       }
@@ -661,7 +663,7 @@
       },
       "supply_scarcity": {
         "value": 10,
-        "bottleneck": "None \u2014 commodity equipment",
+        "bottleneck": "None — commodity equipment",
         "notes": "No supply constraint"
       },
       "organizational_readiness": {
@@ -724,7 +726,7 @@
     "dimensions": {
       "technical_feasibility": {
         "value": 90,
-        "notes": "Technically straightforward \u2014 disable/remove BMC network interfaces, remove remote management tools. Challenge is operational: need 24/7 on-site staff capable of handling any issue that previously would have been handled remotely.",
+        "notes": "Technically straightforward — disable/remove BMC network interfaces, remove remote management tools. Challenge is operational: need 24/7 on-site staff capable of handling any issue that previously would have been handled remotely.",
         "trajectory": "stable"
       },
       "time_to_deploy_months": {
@@ -772,7 +774,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 2,
       "ai_oc_shift": 0.5,
-      "exploit_narrative": "BMCs are 'god mode' by design \u2014 they can read/write system memory, power cycle servers, access consoles, all independent of the main OS. A compromised BMC gives complete control below the OS level. Multiple BMC vulnerabilities are discovered annually. Remote management interfaces are a massive attack surface that no amount of patching makes secure against state actors."
+      "exploit_narrative": "BMCs are 'god mode' by design — they can read/write system memory, power cycle servers, access consoles, all independent of the main OS. A compromised BMC gives complete control below the OS level. Multiple BMC vulnerabilities are discovered annually. Remote management interfaces are a massive attack surface that no amount of patching makes secure against state actors."
     },
     "dependencies": {
       "requires": [],
@@ -787,7 +789,7 @@
           "PER-02"
         ],
         "standalone_share": 0.65,
-        "why": "Eliminating remote management moves every maintenance action into the facility \u2014 which is a gain only if firmware is verified on boot and nobody performs those actions alone. Otherwise you have traded a remote adversary for an unobserved local one."
+        "why": "Eliminating remote management moves every maintenance action into the facility — which is a gain only if firmware is verified on boot and nobody performs those actions alone. Otherwise you have traded a remote adversary for an unobserved local one."
       }
     },
     "defense_in_depth": {
@@ -800,9 +802,129 @@
     "open_questions": [],
     "real_world_parallels": [
       {
-        "description": "CVE-2019-6260 (Pantsdown) \u2014 BMC vulnerability allowing arbitrary read/write of BMC flash affecting multiple vendors. AMT vulnerabilities (CVE-2017-5689) allowed remote unauthenticated access to Intel management engine. These are recurring, structural vulnerabilities in remote management.",
+        "description": "CVE-2019-6260 (Pantsdown) — BMC vulnerability allowing arbitrary read/write of BMC flash affecting multiple vendors. AMT vulnerabilities (CVE-2017-5689) allowed remote unauthenticated access to Intel management engine. These are recurring, structural vulnerabilities in remote management.",
         "source": "BMC/AMT vulnerability history",
         "year": 2019
+      }
+    ]
+  },
+  {
+    "id": "PER-09",
+    "name": "Coercion and Duress Protection",
+    "category": "personnel",
+    "summary_group": "personnel_program",
+    "description": "Protection for the people who hold weight access against being threatened, extorted or coerced into acting: counterintelligence support, physical protection for those at highest exposure, foreign-travel briefings and debriefings, family-threat reporting channels, financial-distress support, and duress signalling that lets a coerced operator raise an alarm without the coercer knowing. Pairs with two-person integrity, which is what makes a single coerced individual insufficient.",
+    "current_state": {
+      "summary": "No AI lab runs a coercion-protection program. Standard practice covers the voluntary insider - background checks, monitoring, access control - and assumes the person with access is acting on their own initiative. Government and military programs treat coercion as a distinct threat with its own countermeasures, and the SL5 source material specifies proactive protection and counterintelligence support for anyone handling sensitive materials. Nothing equivalent exists in the commercial AI sector.",
+      "deployed_by": [
+        "government_counterintelligence",
+        "military_facilities",
+        "nuclear_weapons_programs"
+      ],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 70,
+        "notes": "Mostly a program rather than a technology: briefings, reporting channels, liaison with national counterintelligence, and protective services procurement are all well-established practice. The genuinely hard part is duress signalling that survives an adversary who anticipates it - a signal the coercer can detect is worse than none, because it endangers the person using it.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 30,
+        "notes": "Briefings and reporting channels stand up in a year. Counterintelligence liaison depends on a government relationship that may not exist yet, and protective services for named individuals take longer to staff and are the part that cannot be rushed."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 3,
+          "max": 12
+        },
+        "annual_ongoing_millions": {
+          "min": 8,
+          "max": 30
+        },
+        "notes": "Ongoing dominates, as with every headcount-driven personnel control. Close protection for a small number of highest-exposure individuals is the largest line; the briefing, reporting and support apparatus is comparatively cheap. Scales with how many people hold weight access, which PER-01's sensitivity framework is what defines."
+      },
+      "vendor_dependency": {
+        "value": 35,
+        "key_vendors": [
+          "protective_services",
+          "counterintelligence_consultancies"
+        ],
+        "notes": "Executive protection is a mature commercial market. Genuine counterintelligence support is not purchasable and depends on a government relationship, which is the part a lab cannot simply procure."
+      },
+      "supply_scarcity": {
+        "value": 55,
+        "bottleneck": "Counterintelligence practitioners who can operate in a commercial setting rather than a cleared government one",
+        "notes": "Protective services are readily available. People who can run a credible counterintelligence program outside government are scarce, and the ones who exist are largely former government."
+      },
+      "organizational_readiness": {
+        "value": 20,
+        "barriers": [
+          "privacy_concerns",
+          "cultural_resistance",
+          "perceived_paranoia",
+          "family_intrusion"
+        ],
+        "notes": "Harder culturally than technically. Foreign-travel debriefs and family-threat reporting read as surveillance to a workforce that did not sign up for a clearance regime, and the framing problem is acute: the program protects employees but is easily heard as suspecting them. Lands better when it is offered as support - financial-distress help, a channel for a threatened family member - rather than imposed as a control."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.3,
+      "exploit_narrative": "A nation-state that cannot beat the technical controls can go after the people who hold the keys. Coercion needs no exploit and leaves no artifact: leverage over a family member abroad, a debt, a threat. Without duress signalling the coerced operator has no safe way to raise an alarm, and without two-person integrity their access alone is enough."
+    },
+    "dependencies": {
+      "requires": [
+        "PER-01"
+      ],
+      "enhances": [
+        "PER-02",
+        "PER-04"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "PER-02",
+          "PER-03"
+        ],
+        "standalone_share": 0.6,
+        "why": "Protection reduces the chance someone is successfully coerced; it cannot make coercion impossible. Two-person integrity (PER-02) is what makes one coerced individual insufficient, and behavioural monitoring (PER-03) is what notices the person acting under duress who never used the panic channel. Alone, this block lowers the odds without bounding the damage."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "personnel_trust"
+      ],
+      "shared_dependencies": []
+    },
+    "open_questions": [
+      {
+        "question": "Can a commercial lab run credible counterintelligence without a government partnership, given it has no subpoena power, no access to intelligence reporting, and no legal standing to investigate foreign contacts?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Coercion protection reduces to executive protection plus briefings - useful, but leaving the detection half of the problem unaddressed and pushing labs toward the classified-contract pathway that PER-01 and PER-04 also point at."
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "US government counterintelligence and foreign-travel briefing programs for cleared personnel",
+        "source": "NITTF / DCSA counterintelligence awareness requirements",
+        "year": 2014
+      },
+      {
+        "description": "Nuclear Personnel Reliability Program duress provisions and no-lone-zone rules",
+        "source": "DoDM 5210.42",
+        "year": 2015
+      },
+      {
+        "description": "Financial-sector duress codes and silent-alarm protocols for coerced staff",
+        "source": "Banking physical security practice",
+        "year": 1968
       }
     ]
   }

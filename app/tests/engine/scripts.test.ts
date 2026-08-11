@@ -26,7 +26,7 @@ const blockById = new Map(blocks.map((b) => [b.id, b]));
 // Sliders as a story actually plays them: neutral defaults, then the story's own
 // overrides. The budget MUST come from `sliderOverrides` — a literal here would
 // let a cost or schedule regression be checked against a more-funded posture
-// than playback ever runs (Proactive is a $1,400M plan, not the $2,000M default).
+// than playback ever runs (Proactive is a $2,800M plan, not the $2,000M default).
 function scriptSliders(script: (typeof SCRIPTS)[number]): Sliders {
   return {
     ai_timeline: 0.5,
@@ -181,21 +181,33 @@ describe("time-lapse scripts", () => {
     const constrained = worst("budget-constrained");
     const nothing = worst("do-nothing");
 
-    expect(nothing).toBeGreaterThan(0.95);
+    // Doing nothing no longer means a bare field: since the baseline change,
+    // every story starts from the posture labs actually have (see
+    // `engine/baseline.ts`), so "Do Nothing" is "today's controls, eroding as
+    // AI improves" rather than zero defenses. That puts it near 0.68 instead of
+    // above 0.95 — the story is now about erosion, not absence.
+    expect(nothing).toBeGreaterThan(0.6);
     // The top of the ordering, pinned relatively too: doing nothing must never
     // come out better than spending $200M badly.
     expect(nothing).toBeGreaterThan(constrained);
     expect(constrained).toBeGreaterThan(reactive);
-    expect(reactive).toBeGreaterThan(proactive * 1.5); // substantially better, not marginally
-    // Proactive: $1,384M of a $1,400M budget, every program matured, and an
-    // all-personnel chain still gets through ~15% of the time. The floor matters
+    // Reactive stays worse than proactive, but the margin narrowed sharply when
+    // PHY-01 was repriced (~19% vs ~16%, where it used to be a 1.5x gap). That
+    // is the model reporting something real: once the facility is $6.5B, a
+    // reactive program that starts it in 2026 is not meaningfully cheaper than
+    // a proactive one starting in 2024 — it just has less time to mature what
+    // it bought. The old gap partly measured underfunding, because at $700M
+    // this story ran with 12 of its 16 blocks frozen by the funding queue.
+    expect(reactive).toBeGreaterThan(proactive);
+    // Proactive: $2,610M of a $2,800M budget, every program matured, and an
+    // all-personnel chain still gets through ~16% of the time. The floor matters
     // as much as the ceiling — if this ever drops into single digits the story
     // reads as "solved", which is the failure mode the recalibration removed.
     // Both bounds are load-bearing: every measured plan that ALSO closes PER-02
     // and PER-04 collapses to ~4.7%, because the other six chains are then all
     // sitting on the residual floor and breach is a max.
     expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeGreaterThan(0.10);
-    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeLessThan(0.20);
+    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeLessThan(0.25);
   });
 
   it("land Proactive at SL 3.5-4.0 by 2030", () => {
@@ -203,18 +215,18 @@ describe("time-lapse scripts", () => {
     // breach band alone let the story drift to SL 2.5, which reads as a failing
     // grade on a $1.3B program that cut its worst path by 85%.
     //
-    // SL is a BREADTH measure — 45 of 47 blocks are threat-relevant, so a plan
+    // SL is a BREADTH measure — 44 of 46 blocks are threat-relevant, so a plan
     // that buys 23 of them structurally caps near 2.5 no matter which 23. 3.5
-    // takes 34 blocks — one of which, PHY-02, earns its place by completing
+    // takes 33 blocks — one of which, PHY-02, earns its place by completing
     // PHY-01 and PHY-05 rather than by covering new ground; see `completed_by`.
-    // The ceiling is 4.42 (whole catalog matured, $3,668M), not
+    // The ceiling is ~4.4 (whole catalog matured, $4,474M), not
     // 5.0, because slider penalties and AI erosion never fully clear.
     const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
     const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
     const sliders = scriptSliders(script);
     // Calibrate against the budget the story is documented and validated at, so
     // this never silently grades a better-funded posture than playback runs.
-    expect(sliders.budget_millions, "proactive must calibrate at its own budget").toBe(1400);
+    expect(sliders.budget_millions, "proactive must calibrate at its own budget").toBe(2800);
     const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
     const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
       order: (script.deployments ?? []).map((d) => d.blockId),

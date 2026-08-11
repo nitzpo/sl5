@@ -148,7 +148,7 @@ describe("playing it", () => {
     await openGame();
     // The air gap is two thirds of the budget; the next big pick can't fit behind it.
     fireEvent.click(screen.getByText("Air-Gapped SL5 Network"));
-    fireEvent.click(screen.getByText("Hardware Inspection Pipeline (X-ray, IR, Destructive)"));
+    fireEvent.click(screen.getByText("Inference Channel Outbound Defense"));
     fireEvent.click(screen.getByText("Tamper-Evident Enclosures (Rack/Room Scale)"));
     await waitFor(() => expect(screen.getByText(/over budget — capped at/)).toBeTruthy());
     expect(screen.getByText(/funding follows click order/)).toBeTruthy();

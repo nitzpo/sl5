@@ -9,7 +9,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     // A well-funded program that plans within its means — the point of this
     // story is a serious attempt, not a solved problem.
     //
-    // The plan is SIZED to the budget: 33 programs cost ~$2,610M at the shared
+    // The plan is SIZED to the budget: 33 programs cost ~$2,590M at the shared
     // risk_tolerance 0.65 basis (`min + (1 - rt) * (max - min)`), against the
     // $2,800M cap. Nothing is capped at `implementing` and every block reaches
     // `mature` by 2030, so the residual vs OC4 is what a fully-delivered
@@ -37,7 +37,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     // The two omissions are deliberate and they are the whole reason the number
     // isn't single digits. `long-game` is an all-personnel chain (PER-02/03/04/
     // 05); this plan buys PER-03 and PER-05 and skips PER-02 (two-person
-    // control) and PER-04 (continuous vetting). Every plan measured that closes
+    // control) and PER-04 (SF-86-style background vetting). Every plan measured that closes
     // all four collapses breach to ~4.7%, because breach is a max over chains
     // and the other six are then all sitting on the residual floor. SL 3.5 with
     // a real residual requires leaving exactly one chain meaningfully open.
@@ -77,7 +77,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       // the emitters are the ones you shielded — so buying all three is what
       // makes the physical family count for what it claims rather than for
       // `standalone_share` of it. $218M, and it is the difference between this
-      // story landing near SL 3.4 and at 3.6.
+      // story landing near SL 3.4 and at 3.5.
       { blockId: "PHY-02", startYear: 2025 },
       { blockId: "HW-05", startYear: 2025 },
       { blockId: "SC-02", startYear: 2025 },
@@ -111,7 +111,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { atYear: 2029, message: "SL passes 3.4. Everything cheap is bought, everything expensive is matured.", highlight: { type: "chain", id: "long-game" } },
       // Why it doesn't reach zero: the plan is fully funded and fully matured,
       // and it still leaves an all-personnel chain open.
-      { atYear: 2030, message: "$2.61B of $2.8B, all 33 programs matured, SL 3.6 — and an insider chain still gets through 16% of the time", highlight: { type: "chain", id: "long-game" } },
+      { atYear: 2030, message: "$2.59B of $2.8B, all 33 programs matured, SL 3.5 — and an insider chain still gets through 16% of the time", highlight: { type: "chain", id: "long-game" } },
     ],
   },
   {
@@ -180,7 +180,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     // 12 blocks cost ~$196M at that basis (they were ~$91M at optimistic
     // minimums), so the cap moves to $200M for the identical program — the
     // constraint is which blocks you can afford at all, not the cost basis.
-    // Outcome is unchanged either way (measured: 99.4% at both).
+    // Outcome is unchanged either way (measured: identical at both).
     sliderOverrides: { budget_millions: 200, org_transformation: 0.4, risk_tolerance: 0.65 },
     deployments: [
       // Highest-impact blocks that fit ~$196M of upfront capital at rt 0.65
@@ -207,7 +207,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { atYear: 2024, message: "2024: a $200M cap — only the highest-impact blocks make the cut." },
       { atYear: 2025.5, message: "Cheap personnel controls land first — the one dip this story gets" },
       // The reversal is this story's real lesson and it was previously
-      // unnarrated: breach bottoms out ~93% then climbs back toward 99%.
+      // unnarrated: breach bottoms out just above 50% then creeps back up.
       { atYear: 2026, message: "And now it rises again: AI erodes these probabilistic controls faster than the budget can add more" },
       { atYear: 2027, message: "No air gap, no physical perimeter, no hardware encryption — every structural control is unaffordable.", highlight: { type: "chain", id: "zero-day-cascade" } },
       { atYear: 2028.5, message: "Supply chain completely unprotected — Poisoned Chip exploitable", highlight: { type: "chain", id: "poisoned-chip" } },
@@ -216,16 +216,16 @@ export const SCRIPTS: TimeLapseScript[] = [
   {
     id: "do-nothing",
     name: "Do Nothing",
-    description: "No defenses deployed. Watch AI erode everything.",
+    description: "Nothing new deployed. Watch AI erode today's posture.",
     type: "scripted",
     initialBlockStates: {},
     deployments: [],
     annotations: [
-      { atYear: 2024, message: "2024: no defenses, and no plan to build any. We just watch." },
-      { atYear: 2025.5, message: "AI at 15% — first attack chains becoming viable" },
-      { atYear: 2027, message: "AI at 65% — probabilistic defenses would be deeply eroded by now", highlight: { type: "chain", id: "patient-distillation" } },
-      { atYear: 2028.5, message: "AI at 88% — even OC3 adversaries succeed on multiple paths" },
-      { atYear: 2030, message: "Full AI capability. All chains wide open." },
+      { atYear: 2024, message: "2024: today's posture, frozen — nothing new gets started. We just watch." },
+      { atYear: 2025.5, message: "Controls the labs had already begun keep landing — exposure improves without any new decisions" },
+      { atYear: 2027, message: "The last baseline control arrived in 2026. From here AI erodes what exists and nothing replaces it", highlight: { type: "chain", id: "patient-distillation" } },
+      { atYear: 2028.5, message: "AI at 88% — the probabilistic controls in the baseline are deeply eroded" },
+      { atYear: 2030, message: "Full AI capability. About half of what the posture gained by 2026 has eroded away." },
     ],
   },
   {

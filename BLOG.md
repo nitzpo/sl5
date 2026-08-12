@@ -15,9 +15,8 @@ introduction →](https://nitzpo.github.io/sl5/intro/)**
 There is a security standard for AI labs, called SL5, that describes what holding off that kind of
 attacker would involve, and it comes with a 1-to-5 scale. The short version of what I found: a lab
 that starts early, spends about $2.6 billion, chooses sensibly and finishes what it starts reaches
-roughly 3.5 on that scale by 2030, with an insider-driven attack path still succeeding about one
-time in six. That is the best of the four scenarios in the tool, and the other three are more
-instructive.
+roughly 3.6 on that scale by 2030, with an insider-driven attack path still succeeding about once in
+six. That is the best of the four scenarios in the tool, and the other three are more instructive.
 
 ## Where this came from
 
@@ -77,12 +76,13 @@ grows over time: a scenario set in 2024 begins with fourteen controls partly in 
 
 ## Four programs
 
-The **proactive program** starts in 2024, spends $2.59 billion of a $2.8 billion budget, begins the
-long-lead items immediately and matures all 33 of its programs. It reaches 3.5. Its remaining risk
-is not spread thinly across everything it skipped; it sits almost entirely in one personnel program
-left half-finished. The plan implements background screening and insider monitoring but skips
-two-person control and continuous vetting, and one attack path made entirely of personnel failures
-goes through that gap. Closing all four brings the breach probability down sharply.
+The **proactive program** starts in 2024, spends about $2.61 billion of a $2.8 billion budget, begins
+the long-lead items immediately and matures all 33 of its programs. It reaches 3.6. Its remaining
+risk is not spread thinly across everything it skipped; it sits almost entirely in the personnel
+category, where two of the four controls were left out on purpose. The plan implements background
+screening and insider monitoring but skips two-person control and continuous vetting, and one attack
+path made entirely of personnel failures goes through that gap. Closing all four brings the breach
+probability down sharply.
 
 Over half of that budget is one line item: the building. Constructing a secure enclave to classified
 standards, and shielding it, costs more than every other control in the program put together — and
@@ -92,8 +92,8 @@ described is a facility, which understated the programme by a factor of about si
 The **reactive program** waits for incidents. A network probe, an insider scare, a breach attempt,
 and each time it responds correctly and starts the appropriate project several years after it needed
 to. The air gap begins in 2026 and is not operational until late 2028. The AI-specific controls
-begin in 2028 and never finish. It ends at 2.1 against the proactive program's 3.5, having spent
-$1.7 billion — about two thirds as much for a little over half the result. The difficulty is rarely
+begin in 2028 and never finish. It ends at 2.1 against the proactive program's 3.6, having spent
+$1.7 billion — about two-thirds as much for a little over half the result. The difficulty is rarely
 the money. It is that each of these controls is genuinely hard to stand up, that a collection of
 them does not automatically become a coherent whole, and that a facility started in 2026 is not
 finished by 2030 no matter what it cost.
@@ -149,7 +149,7 @@ model drifts pessimistic as easily as optimistic once you stop checking it.
 
 The finding that survived all of that is the one at the top, and it survived a sixfold change in the
 price tag without moving: an early, serious, well-funded and well-executed program gets to somewhere
-around 3.5. Anything more realistic does noticeably worse, and the cheap version does not merely
+around 3.6. Anything more realistic does noticeably worse, and the cheap version does not merely
 fall short of the expensive one; after an initial improvement it starts losing ground.
 
 🔗 **[Try it →](https://nitzpo.github.io/sl5/)** · 📖
@@ -182,7 +182,8 @@ tried, which told players that one structural decision is most of security. It i
 stops remote exploitation immediately, but if there is no sanctioned way to move data across it then
 people carry drives, and if the management interface is still reachable then there is still a route
 in. So 20 blocks now name companion measures that complete them. The air gap on its own counts for a
-little over half of an air gap, and data diodes and bandwidth limits account for the rest. Nothing
-is blocked or capped by this; the control is simply not priced as more than it is.
+little over half of an air gap, and data diodes, bandwidth limits and taking remote management off
+the box account for the rest. Nothing is blocked or capped by this; the control is simply not priced
+as more than it is.
 
 <!-- END OPTIONAL: mechanics -->

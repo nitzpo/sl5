@@ -84,11 +84,12 @@ controls that stop it were left out on purpose: the plan implements insider moni
 post-employment restrictions but skips two-person control and background vetting. Closing all four
 brings the breach probability down sharply.
 
-Over half of that budget is one line item: the building. Constructing a secure enclave to classified
-standards, and shielding it, costs more than every other control in the program put together — and
-it is the number I got most wrong the first time. I had priced it as a room when the thing being
-described is a facility, which understated that one line four or five times over and roughly
-doubled the whole program.
+Over half of that budget is one line item: the building. Not the datacenter itself — a lab builds
+that regardless — but the premium for constructing the 50–100MW enclave that holds the weights to
+classified standards, and shielding it, over what a commercial build costs. That premium alone runs
+more than every other control in the program put together — and it is the number I got most wrong
+the first time. I had priced it as a room when the thing being described is a facility, which
+understated that one line four or five times over and roughly doubled the whole program.
 
 The **reactive program** waits for incidents. A network probe, an insider scare, a breach attempt,
 and each time it responds correctly and starts the appropriate project several years after it needed
@@ -186,8 +187,8 @@ tried, which told players that one structural decision is most of security. It i
 stops remote exploitation immediately, but if there is no sanctioned way to move data across it then
 people carry drives, and if the management interface is still reachable then there is still a route
 in. So 20 blocks now name companion measures that complete them. The air gap on its own counts for a
-little over half of an air gap, and data diodes, bandwidth limits and taking remote management off
-the box account for the rest. Nothing is blocked or capped by this; the control is simply not priced
+little over half of an air gap, and data diodes, hardware-enforced bandwidth caps and taking remote
+management off the box account for the rest. Nothing is blocked or capped by this; the control is simply not priced
 as more than it is.
 
 <!-- END OPTIONAL: mechanics -->

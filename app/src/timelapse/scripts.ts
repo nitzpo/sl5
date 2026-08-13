@@ -16,8 +16,8 @@ export const SCRIPTS: TimeLapseScript[] = [
     // program actually leaves on the table — not an artifact of a plan the org
     // could never pay for.
     //
-    // ~$2.8B is what SL 3.5 costs, and that is the headline finding rather than
-    // a budget the story was handed. The number was ~$1.4B until the 2026 value
+    // ~$2.6B of spend, planned under a $2.8B cap, is what SL 3.5 costs, and
+    // that is the headline finding rather than a budget the story was handed. The number was ~$1.4B until the 2026 value
     // audit found PHY-01 priced as a conventional SCIF — a room — while its own
     // feasibility note assumed AI-datacenter scale. It is now priced as the
     // classified-grade PREMIUM on a 50-100MW secure enclave (~$20M/MW, the delta

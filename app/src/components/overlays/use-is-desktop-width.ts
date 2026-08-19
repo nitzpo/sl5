@@ -17,6 +17,10 @@ const QUERY = `(min-width: ${MIN_WIDTH_PX}px)`;
  * load and a pan/zoom layout pass. */
 export function useIsDesktopWidth(): boolean {
   const subscribe = useCallback((onChange: () => void) => {
+    // `matchMedia` is absent in jsdom and in very old browsers. The intro
+    // imports this hook too, and the intro must render everywhere, so treat a
+    // missing implementation as "assume desktop" rather than throwing.
+    if (typeof window.matchMedia !== "function") return () => {};
     const mq = window.matchMedia(QUERY);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
@@ -24,7 +28,7 @@ export function useIsDesktopWidth(): boolean {
 
   return useSyncExternalStore(
     subscribe,
-    () => window.matchMedia(QUERY).matches,
+    () => (typeof window.matchMedia === "function" ? window.matchMedia(QUERY).matches : true),
     // Server/prerender has no viewport to measure; assume desktop so the gate
     // isn't baked into static HTML.
     () => true

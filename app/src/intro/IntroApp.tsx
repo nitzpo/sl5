@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SLIDES, ACT_LABELS } from "./slides";
+import { useIsDesktopWidth } from "../components/overlays/use-is-desktop-width";
 import { APP_URL, markIntroSeen } from "./nav";
 
 /** Slide index for the slug in `location.hash`, or 0 if there isn't one. */
@@ -12,6 +13,10 @@ function indexFromHash(): number {
 
 export function IntroApp() {
   const [index, setIndex] = useState(indexFromHash);
+  // The introduction reads fine on a phone; the instrument it links to does not.
+  // Links into the app are withheld below its width gate rather than leading to
+  // a "desktop required" screen whose only way out is back to here.
+  const isDesktop = useIsDesktopWidth();
   const headingRef = useRef<HTMLDivElement>(null);
   // Skip the focus-and-scroll effect on first paint: moving focus before the
   // reader has done anything would scroll a deep-linked slide oddly and steal
@@ -100,13 +105,17 @@ export function IntroApp() {
           <span className="text-[11px] font-mono text-gray-500 tabular-nums">
             {index + 1}/{SLIDES.length}
           </span>
-          <a
-            href={APP_URL}
-            onClick={markIntroSeen}
-            className="flex items-center gap-1 rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-800 hover:text-white"
-          >
-            Open the app →
-          </a>
+          {/* Below the app's own width gate this link only reaches a "desktop
+              required" screen, so it isn't offered. See `StoryPicker`. */}
+          {isDesktop && (
+            <a
+              href={APP_URL}
+              onClick={markIntroSeen}
+              className="flex items-center gap-1 rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-800 hover:text-white"
+            >
+              Open the app →
+            </a>
+          )}
         </div>
       </header>
 
@@ -142,7 +151,7 @@ export function IntroApp() {
             {ACT_LABELS[slide.act]}
           </span>
 
-          {atEnd ? (
+          {atEnd && isDesktop ? (
             <a
               href={APP_URL}
               onClick={markIntroSeen}
@@ -150,6 +159,9 @@ export function IntroApp() {
             >
               Open the app →
             </a>
+          ) : atEnd ? (
+            // The last slide's own panel explains why there's nothing to open.
+            <span className="text-[11px] text-gray-600">End of the introduction</span>
           ) : (
             <button
               onClick={() => go(index + 1)}

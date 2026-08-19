@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SCRIPTS } from "../timelapse/scripts";
+import { useIsDesktopWidth } from "../components/overlays/use-is-desktop-width";
 import { APP_URL, markIntroSeen, storyUrl } from "./nav";
 
 // The same filter the first-run modal applies: "Your Current Config" is a
@@ -14,9 +15,33 @@ const STORY_CHOICES = SCRIPTS.filter((s) => s.type !== "passthrough");
  *
  * Each choice is a plain link to `?story=<id>`; App.tsx starts the script on
  * mount and strips the param.
+ *
+ * Below the app's width gate these links go nowhere: the app would mount,
+ * `DesktopGate` would replace it, and its only button leads back here — a loop
+ * out of the introduction and straight back into it. So on a narrow screen we
+ * don't offer them at all and say why instead. The introduction itself stays
+ * fully readable; it's built for a phone. Only the links into the instrument
+ * are withheld.
  */
 export function StoryPicker() {
   const [choosing, setChoosing] = useState(false);
+  const isDesktop = useIsDesktopWidth();
+
+  if (!isDesktop) {
+    return (
+      <div className="mt-4 rounded-lg border border-gray-800 bg-gray-900/60 px-4 py-3.5">
+        <div className="text-sm font-medium text-gray-200">
+          🖥️ The instrument needs a desktop
+        </div>
+        <p className="mt-1.5 text-sm leading-relaxed text-gray-400">
+          That's the end of the introduction — you've read the whole thing. The
+          simulation itself is a map with side panels and a timeline, so it needs
+          a wider screen. Open this page on a desktop or laptop to run the
+          stories and build a posture of your own.
+        </p>
+      </div>
+    );
+  }
 
   if (choosing) {
     return (

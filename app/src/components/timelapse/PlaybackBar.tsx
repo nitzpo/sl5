@@ -3,7 +3,8 @@ import { usePlaybackStore } from "../../timelapse/playback-store";
 import { usePlaybackLoop } from "../../timelapse/use-playback-loop";
 import { useSimulationStore } from "../../store/simulation";
 import { useBudgetStatus, useSimulationResults } from "../../store/derived";
-import { formatCost, formatProbability, formatSl } from "../../utils/format";
+import { formatCost, formatProbability, formatSl, formatYear } from "../../utils/format";
+import { TIMELINE_START, TIMELINE_END, quantizeYear } from "../../utils/timeline";
 import { breachLevel, LEVEL_TEXT, SEMANTIC } from "../../utils/colors";
 import { ScriptSelector } from "./ScriptSelector";
 import type { PlaybackSpeed } from "../../timelapse/types";
@@ -60,7 +61,7 @@ function EndSummary({ onReplay }: { onReplay: () => void }) {
   return (
     <div className="flex items-center gap-3 text-xs bg-gray-900 border border-gray-700 rounded px-3 py-2">
       <span className="text-gray-400">
-        <span className="text-gray-200 font-semibold">{year}:</span>{" "}
+        <span className="text-gray-200 font-semibold">{formatYear(year)}:</span>{" "}
         <span className={overallSl >= target ? "text-emerald-400" : "text-red-300"}>
           SL {formatSl(overallSl)}
         </span>{" "}
@@ -140,8 +141,8 @@ export function PlaybackBar() {
     );
   }
 
-  const startYear = activeScript?.startYear ?? 2024;
-  const endYear = activeScript?.endYear ?? 2030;
+  const startYear = activeScript?.startYear ?? TIMELINE_START;
+  const endYear = activeScript?.endYear ?? TIMELINE_END;
   const totalRange = endYear - startYear;
   const progress = totalRange > 0 ? playbackT / totalRange : 0;
   const currentYear = startYear + playbackT;
@@ -167,7 +168,7 @@ export function PlaybackBar() {
         <button
           onClick={stepBack}
           className="text-xs text-gray-400 hover:text-gray-200 px-1"
-          title="Step back 0.5yr"
+          title="Previous event"
         >
           ◀◀
         </button>
@@ -181,7 +182,7 @@ export function PlaybackBar() {
         <button
           onClick={stepForward}
           className="text-xs text-gray-400 hover:text-gray-200 px-1"
-          title="Step forward 0.5yr"
+          title="Next event"
         >
           ▶▶
         </button>
@@ -224,9 +225,10 @@ export function PlaybackBar() {
           />
         </div>
 
-        {/* Year display */}
-        <span className="text-xs font-mono text-gray-300 w-12 text-right">
-          {currentYear.toFixed(1)}
+        {/* Year display — quantized the same way the simulation store is, so
+            the transport and the readouts can never name different months. */}
+        <span className="text-xs font-mono text-gray-300 w-16 text-right">
+          {formatYear(quantizeYear(currentYear))}
         </span>
 
         {/* Live spend — a story's money running out is a plot point, so it has

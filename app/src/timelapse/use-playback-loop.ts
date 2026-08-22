@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { usePlaybackStore } from "./playback-store";
 import { useSimulationStore } from "../store/simulation";
 import { computeScriptBlockStates } from "./compute-script-state";
+import { TIMELINE_START, TIMELINE_END, quantizeYear } from "../utils/timeline";
 
 const BASE_DURATION_SEC = 48;
 const UPDATE_INTERVAL_MS = 16;
@@ -39,8 +40,8 @@ export function usePlaybackLoop() {
       const script = store.activeScript;
       if (!script) return;
 
-      const startYear = script.startYear ?? 2024;
-      const endYear = script.endYear ?? 2030;
+      const startYear = script.startYear ?? TIMELINE_START;
+      const endYear = script.endYear ?? TIMELINE_END;
       const totalRange = endYear - startYear;
 
       const currentSpeed = store.speed;
@@ -54,7 +55,11 @@ export function usePlaybackLoop() {
       }
 
       const currentYear = startYear + newT;
-      const intYear = Math.min(Math.floor(currentYear), endYear);
+      // Monthly rather than floored to the whole year. Block states already
+      // advance continuously here (`computeScriptBlockStates` takes the raw
+      // fraction), so flooring left the scores leaping a year at a time while
+      // hexes lit up in between — the two halves of the story disagreeing.
+      const simYear = quantizeYear(Math.min(currentYear, endYear));
 
       if (timestamp - lastUpdateRef.current >= UPDATE_INTERVAL_MS) {
         lastUpdateRef.current = timestamp;
@@ -65,13 +70,13 @@ export function usePlaybackLoop() {
           const json = JSON.stringify(newStates);
           if (json !== lastBlockStatesJson) {
             lastBlockStatesJson = json;
-            useSimulationStore.setState({ year: intYear, blockStates: newStates });
-          } else if (useSimulationStore.getState().year !== intYear) {
-            useSimulationStore.setState({ year: intYear });
+            useSimulationStore.setState({ year: simYear, blockStates: newStates });
+          } else if (useSimulationStore.getState().year !== simYear) {
+            useSimulationStore.setState({ year: simYear });
           }
         } else {
-          if (useSimulationStore.getState().year !== intYear) {
-            useSimulationStore.setState({ year: intYear });
+          if (useSimulationStore.getState().year !== simYear) {
+            useSimulationStore.setState({ year: simYear });
           }
         }
       }

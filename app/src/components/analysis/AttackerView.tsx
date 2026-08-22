@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { getAiCapability } from "../../engine/ai-curve";
-import { formatProbability } from "../../utils/format";
+import { formatProbability, formatYear } from "../../utils/format";
 import type { AttackChain, BlockState } from "../../engine/types";
 import { STATE_ICONS, breachLevel, LEVEL_TEXT } from "../../utils/colors";
 
@@ -71,7 +71,7 @@ export function AttackerView() {
           </div>
         )}
         <div className="flex justify-between text-xs mt-1.5">
-          <span className="text-gray-500">AI capability ({year})</span>
+          <span className="text-gray-500">AI capability ({formatYear(year)})</span>
           <span className="text-violet-400">{Math.round(aiCap * 100)}%</span>
         </div>
         <div className="flex justify-between text-xs mt-1">

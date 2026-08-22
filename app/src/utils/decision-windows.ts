@@ -1,4 +1,5 @@
 import type { Block, BlockState } from "../engine/types";
+import { TIMELINE_END } from "./timeline";
 
 export type WindowUrgency = "overdue" | "urgent" | "upcoming";
 
@@ -86,7 +87,7 @@ export function computeDecisionWindows(
   year: number,
   opts?: { deadlineYear?: number; horizonYears?: number; minYear?: number }
 ): DecisionWindow[] {
-  const deadline = opts?.deadlineYear ?? 2030;
+  const deadline = opts?.deadlineYear ?? TIMELINE_END;
   const horizon = opts?.horizonYears ?? 2;
   const minYear = opts?.minYear ?? -Infinity;
 

@@ -1,6 +1,6 @@
 import { useSimulationResults } from "../../store/derived";
 import { useSimulationStore } from "../../store/simulation";
-import { formatSl, formatProbability, formatPercent, formatCost } from "../../utils/format";
+import { formatSl, formatProbability, formatPercent, formatCost, formatYear } from "../../utils/format";
 import { CATEGORY_LABELS } from "../../utils/geometry";
 import { LAYER_LABELS } from "../../utils/ring-geometry";
 import { breachLevel, slLevel, LEVEL_TEXT, LEVEL_HEX, SEMANTIC } from "../../utils/colors";
@@ -94,7 +94,7 @@ export function ScoreCard() {
           />
         </div>
         <div className="text-[10px] text-gray-500 mt-0.5">
-          {OC_ACTOR[adversaryOc] ?? "An attacker"} (OC{adversaryOc}), {year}
+          {OC_ACTOR[adversaryOc] ?? "An attacker"} (OC{adversaryOc}), {formatYear(year)}
           {bestChainName && (
             <span className="text-gray-400"> — {bestChainName}</span>
           )}

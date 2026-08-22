@@ -227,7 +227,10 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     const persisted: PersistedState = {
       blockStates: s.blockStates,
       advanceOrder: s.advanceOrder,
-      year: s.year,
+      // Whole years, as in copyShareUrl and saveScenario. This one writes both
+      // localStorage and the named-scenario list, and it is clickable mid-story,
+      // so it is the writer most likely to catch a fractional year.
+      year: Math.round(s.year),
       perspective: s.perspective,
       adversaryOc: s.adversaryOc,
       sliders: s.sliders,

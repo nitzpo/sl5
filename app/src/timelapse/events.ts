@@ -33,8 +33,16 @@ export function storyEvents(script: TimeLapseScript): StoryEvent[] {
     const k = monthKey(year);
     let event = byKey.get(k);
     if (!event) {
-      event = { year: k / 12, deployments: [] };
+      event = { year, deployments: [] };
       byKey.set(k, event);
+    } else if (year > event.year) {
+      // The month is only how moments are GROUPED. The stop itself takes the
+      // latest year in the bucket, because rounding to the nearest month could
+      // otherwise place it just before a deployment -- and "next" landing the
+      // moment before the thing it steps to is worse than landing a little
+      // after it. Every current script is month-aligned, so this is a guard for
+      // scripts not written yet.
+      event.year = year;
     }
     return event;
   };

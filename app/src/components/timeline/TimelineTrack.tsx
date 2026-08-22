@@ -10,17 +10,9 @@ import { computeDecisionWindows } from "../../utils/decision-windows";
 import { SEMANTIC, URGENCY_BADGE, chainSeries } from "../../utils/colors";
 import { formatSl, formatYear } from "../../utils/format";
 import { TIMELINE_START, TIMELINE_END, TIMELINE_YEARS, clampYear } from "../../utils/timeline";
+import { SAMPLE_YEARS, sampleAt, type RiskSample } from "../../utils/risk-samples";
 import { storyEvents } from "../../timelapse/events";
 
-/** The curves are sampled on this grid, not on the seven whole-year ticks.
- * Every scripted deployment starts on a .0/.25/.5 boundary, so a quarter-year
- * grid lands exactly on them and the defense line finally shows the step where
- * a block arrives instead of a straight line drawn through it. */
-const SAMPLE_STEP = 0.25;
-const SAMPLE_YEARS: number[] = Array.from(
-  { length: Math.round((TIMELINE_END - TIMELINE_START) / SAMPLE_STEP) + 1 },
-  (_, i) => TIMELINE_START + i * SAMPLE_STEP
-);
 
 // One normalized 0–1 axis (never dual-axis): threat and AI capability are
 // probabilities; the defense line is SL/5, direct-labeled as "SL x.x".
@@ -48,46 +40,6 @@ function yearToX(y: number): number {
 
 function valueToY(v: number): number {
   return PLOT_BOTTOM - v * PLOT_RANGE;
-}
-
-interface RiskSample {
-  year: number;
-  threat: number;
-  defense: number;
-  aiCap: number;
-  chainProbs: Record<string, number>;
-}
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-/**
- * The curve values at an arbitrary year, interpolated between the two samples
- * that bracket it.
- *
- * This used to be `riskData.find((d) => d.year === year)`, which silently fell
- * back to 2024's numbers the moment the year stopped being one of seven exact
- * integers — which is precisely what continuous playback made it.
- */
-function sampleAt(data: RiskSample[], year: number): RiskSample {
-  const first = data[0];
-  const last = data[data.length - 1];
-  if (year <= first.year) return first;
-  if (year >= last.year) return last;
-  const i = Math.min(data.length - 2, Math.floor((year - first.year) / SAMPLE_STEP));
-  const a = data[i];
-  const b = data[i + 1];
-  const t = (year - a.year) / (b.year - a.year);
-  const chainProbs: Record<string, number> = {};
-  for (const id of Object.keys(a.chainProbs)) {
-    chainProbs[id] = lerp(a.chainProbs[id], b.chainProbs[id] ?? a.chainProbs[id], t);
-  }
-  return {
-    year,
-    threat: lerp(a.threat, b.threat, t),
-    defense: lerp(a.defense, b.defense, t),
-    aiCap: lerp(a.aiCap, b.aiCap, t),
-    chainProbs,
-  };
 }
 
 interface Deadline {

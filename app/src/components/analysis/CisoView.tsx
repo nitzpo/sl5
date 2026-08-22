@@ -4,7 +4,7 @@ import { useSimulationResults } from "../../store/derived";
 import { blockEffectiveness } from "../../engine/scoring";
 import { CATEGORY_LABELS } from "../../utils/geometry";
 import { computeDecisionWindows } from "../../utils/decision-windows";
-import { formatCost, formatSl, formatDeployRange } from "../../utils/format";
+import { formatCost, formatSl, formatDeployRange, formatYear } from "../../utils/format";
 import type { Block, Category } from "../../engine/types";
 
 interface Recommendation {
@@ -151,7 +151,7 @@ export function CisoView() {
                     {block.id}: {block.name}
                   </span>
                   <span className="text-[10px] text-amber-400 shrink-0">
-                    by {mustStartBy.toFixed(0)}
+                    by {formatYear(mustStartBy)}
                   </span>
                 </div>
               </div>

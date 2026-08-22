@@ -3,6 +3,8 @@ import { useSimulationStore } from "../../store/simulation";
 import { usePlaybackStore } from "../../timelapse/playback-store";
 import { ScenariosDropdown } from "./ScenariosDropdown";
 import { HEADER_BTN } from "./header-button";
+import { TIMELINE_START, TIMELINE_END } from "../../utils/timeline";
+import { formatYear } from "../../utils/format";
 
 interface HeaderProps {
   onShowIntro: () => void;
@@ -23,20 +25,22 @@ export function Header({ onShowIntro }: HeaderProps) {
         SL5 Explorable
       </h1>
 
-      {/* Year slider */}
+      {/* Year slider — deliberately whole years. Picking a year by hand is its
+          own feature ("what does 2027 look like"), independent of any story;
+          only playback moves the clock at a finer grain. */}
       <div className="flex items-center gap-2 ml-4">
         <span className="text-xs text-gray-500">Year</span>
         <input
           type="range"
-          min={2024}
-          max={2030}
+          min={TIMELINE_START}
+          max={TIMELINE_END}
           step={1}
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
           className="w-28 accent-violet-500"
           disabled={playbackActive}
         />
-        <span className="text-xs font-mono text-gray-300 w-8">{year}</span>
+        <span className="text-xs font-mono text-gray-300 w-16">{formatYear(year)}</span>
       </div>
 
       {scenarioName && (

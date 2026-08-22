@@ -9,6 +9,7 @@ import type {
   OcDefinition,
 } from "../engine/types";
 import { baselineStates } from "../engine/baseline";
+import { TIMELINE_REFERENCE } from "../utils/timeline";
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -110,7 +111,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   dataLoaded: false,
   blockStates: {},
   advanceOrder: [],
-  year: 2026,
+  year: TIMELINE_REFERENCE,
   perspective: "ciso",
   adversaryOc: 4,
   sliders: DEFAULT_SLIDERS,
@@ -208,7 +209,10 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     const persisted: PersistedState = {
       blockStates: s.blockStates,
       advanceOrder: s.advanceOrder,
-      year: s.year,
+      // Whole years in shared and saved payloads. The store carries a monthly
+      // year so playback can move smoothly, but "2027" is what someone means
+      // when they share a posture — nobody means March.
+      year: Math.round(s.year),
       perspective: s.perspective,
       adversaryOc: s.adversaryOc,
       sliders: s.sliders,
@@ -223,7 +227,10 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     const persisted: PersistedState = {
       blockStates: s.blockStates,
       advanceOrder: s.advanceOrder,
-      year: s.year,
+      // Whole years, as in copyShareUrl and saveScenario. This one writes both
+      // localStorage and the named-scenario list, and it is clickable mid-story,
+      // so it is the writer most likely to catch a fractional year.
+      year: Math.round(s.year),
       perspective: s.perspective,
       adversaryOc: s.adversaryOc,
       sliders: s.sliders,
@@ -264,7 +271,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     set({
       blockStates: baselineStates,
       advanceOrder: deriveOrder(baselineStates),
-      year: 2026,
+      year: TIMELINE_REFERENCE,
       sliders: DEFAULT_SLIDERS,
       adversaryOc: 4,
       modelServedExternally: true,
@@ -281,7 +288,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       state: {
         blockStates: s.blockStates,
         advanceOrder: s.advanceOrder,
-        year: s.year,
+        year: Math.round(s.year),
         perspective: s.perspective,
         adversaryOc: s.adversaryOc,
         sliders: s.sliders,

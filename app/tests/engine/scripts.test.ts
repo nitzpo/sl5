@@ -143,6 +143,57 @@ describe("time-lapse scripts", () => {
     }
   });
 
+  it("keep the Proactive curve from sawtoothing at the resolution playback shows", () => {
+    // Playback now advances the year monthly rather than snapping to whole
+    // years, so the space *between* completions is visible for the first time.
+    // In that space AI advances against defenses that haven't finished, and
+    // breach genuinely ticks up a little — that is the futureproofing race, not
+    // a bug, so this does not assert strict monotonicity the way the half-year
+    // test above does. What it pins is that the drift stays far below the
+    // display's own resolution (integer percent) and that it never accumulates:
+    // every rolling 12 months is still downward.
+    const MAX_MONTHLY_RISE = 0.005; // 0.5pp; the real worst case is ~0.36pp
+    const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
+    const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
+    const sliders = scriptSliders(script);
+    const order = (script.deployments ?? []).map((d) => d.blockId);
+
+    const series: { year: number; p: number }[] = [];
+    for (let month = 2024 * 12; month <= 2030 * 12; month++) {
+      const year = month / 12;
+      const raw = computeScriptBlockStates(script, year, blocks) as Record<string, BlockState>;
+      const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
+        order,
+        riskTolerance: sliders.risk_tolerance,
+      });
+      series.push({
+        year,
+        p: Math.max(
+          ...Object.values(
+            computeBreachProbabilities(chains, blocks, effectiveStates, 4, year, sliders, true)
+          ),
+          0
+        ),
+      });
+    }
+
+    for (let i = 1; i < series.length; i++) {
+      const rise = series[i].p - series[i - 1].p;
+      expect(
+        rise,
+        `month-on-month jump at ${series[i].year.toFixed(2)}: +${(rise * 100).toFixed(2)}pp`
+      ).toBeLessThanOrEqual(MAX_MONTHLY_RISE);
+    }
+
+    for (let i = 12; i < series.length; i++) {
+      const change = series[i].p - series[i - 12].p;
+      expect(
+        change,
+        `the year ending ${series[i].year.toFixed(2)} lost ground: +${(change * 100).toFixed(2)}pp`
+      ).toBeLessThanOrEqual(1e-9);
+    }
+  });
+
   it("rank sensibly at 2030 against an OC4 adversary", () => {
     // The calibration contract for the four narrative stories. Numbers will
     // drift as data and constants are tuned; the ORDER and the size of the gaps

@@ -1,7 +1,7 @@
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { getAiCapability } from "../../engine/ai-curve";
-import { formatSl, formatProbability, formatPercent } from "../../utils/format";
+import { formatSl, formatProbability, formatPercent, formatYear } from "../../utils/format";
 import { CATEGORY_LABELS } from "../../utils/geometry";
 import { breachLevel } from "../../utils/colors";
 import type { Category } from "../../engine/types";
@@ -46,7 +46,7 @@ export function ObserverView() {
     <div className="space-y-3 text-xs">
       {/* World state */}
       <Section title="World State">
-        <Row label="Year" value={year.toString()} />
+        <Row label="Year" value={formatYear(year)} />
         <Row label="AI Capability" value={`${Math.round(aiCap * 100)}%`} />
         <Row label="Adversary OC" value={`OC${adversaryOc}`} />
         <Row label="Model" value={modelServed ? "Served externally" : "Air-gapped"} />

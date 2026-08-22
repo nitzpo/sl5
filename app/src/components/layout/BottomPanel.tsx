@@ -6,7 +6,7 @@ import { ScriptSelector } from "../timelapse/ScriptSelector";
 import { usePlaybackStore } from "../../timelapse/playback-store";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
-import { formatProbability, formatSl } from "../../utils/format";
+import { formatProbability, formatSl, formatYear } from "../../utils/format";
 import { breachLevel, LEVEL_TEXT } from "../../utils/colors";
 
 /** Which bottom section is open. `null` = both hidden (canvas gets full height). */
@@ -18,11 +18,8 @@ export function BottomPanel() {
   const [tab, setTab] = useState<BottomTab>(null);
   const [showSelector, setShowSelector] = useState(false);
   const playbackState = usePlaybackStore((s) => s.state);
-  const activeScript = usePlaybackStore((s) => s.activeScript);
-  const playbackT = usePlaybackStore((s) => s.playbackT);
   const year = useSimulationStore((s) => s.year);
   const { bestChain, overallSl } = useSimulationResults();
-  const currentYear = (activeScript?.startYear ?? 2024) + playbackT;
 
   // Auto-open the Timeline tab exactly when playback starts (idle → active); a
   // user who closes it mid-story is respected (pause/resume won't re-open it).
@@ -52,7 +49,7 @@ export function BottomPanel() {
         <div className="flex items-center gap-3">
           {/* Live readouts — always visible so the key numbers are never hidden */}
           <span className="flex items-center gap-2.5 text-[11px] font-mono">
-            <span className="text-gray-400">{year}</span>
+            <span className="text-gray-400">{formatYear(year)}</span>
             <span className={LEVEL_TEXT[breachLevel(breach)]}>
               breach {formatProbability(breach)}
             </span>
@@ -60,7 +57,10 @@ export function BottomPanel() {
           </span>
           {playbackState !== "idle" && (
             <span className="text-[10px] text-violet-300 font-mono bg-violet-950/40 px-1.5 py-0.5 rounded border border-violet-900/30">
-              {playbackState === "playing" ? "▶" : "⏸"} {currentYear.toFixed(1)}
+              {/* Transport state only. The year lives in the readout to the
+                  left; this used to print its own decimal copy, and the two
+                  clocks disagreeing was most of why playback read as "jumpy". */}
+              {playbackState === "playing" ? "▶ playing" : "⏸ paused"}
             </span>
           )}
           {playbackState === "idle" && (

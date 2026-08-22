@@ -4,7 +4,7 @@ import { blockEffectiveness, aiDegradation, enablementFactor } from "../../engin
 import { getAiCapability } from "../../engine/ai-curve";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
-import { formatCost } from "../../utils/format";
+import { formatCost, formatYear } from "../../utils/format";
 import { computeDecisionWindows, effectiveDeployMonths } from "../../utils/decision-windows";
 import { STATE_LABELS } from "../../utils/colors";
 
@@ -152,7 +152,7 @@ export function BlockTooltip({
           !{" "}
           {decisionWindow.urgency === "overdue"
             ? `Window closed: needs up to ${effectiveDeployMonths(block, allBlocks, blockStates)}mo to deploy — starting now misses 2030`
-            : `Window closing: must start by ${decisionWindow.mustStartBy.toFixed(1)} to deploy by 2030`}
+            : `Window closing: must start by ${formatYear(decisionWindow.mustStartBy)} to deploy by 2030`}
         </div>
       )}
       {uncertainty && (

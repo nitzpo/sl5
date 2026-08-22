@@ -8,9 +8,11 @@ import { applyBudgetConstraint } from "../../engine/budget";
 import { applyDependencyConstraint } from "../../engine/dependencies";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import { SEMANTIC, URGENCY_BADGE, chainSeries } from "../../utils/colors";
-import { formatSl } from "../../utils/format";
+import { formatSl, formatYear } from "../../utils/format";
+import { TIMELINE_START, TIMELINE_END, TIMELINE_YEARS, clampYear } from "../../utils/timeline";
+import { SAMPLE_YEARS, sampleAt, type RiskSample } from "../../utils/risk-samples";
+import { storyEvents } from "../../timelapse/events";
 
-const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
 
 // One normalized 0–1 axis (never dual-axis): threat and AI capability are
 // probabilities; the defense line is SL/5, direct-labeled as "SL x.x".
@@ -31,7 +33,9 @@ const AXIS = "#374151";
 const MUTED = "#6b7280";
 
 function yearToX(y: number): number {
-  return PAD_L + ((y - YEARS[0]) / (YEARS[YEARS.length - 1] - YEARS[0])) * (W - PAD_L - PAD_R);
+  return (
+    PAD_L + ((y - TIMELINE_START) / (TIMELINE_END - TIMELINE_START)) * (W - PAD_L - PAD_R)
+  );
 }
 
 function valueToY(v: number): number {
@@ -73,14 +77,14 @@ export function TimelineTrack() {
   const [hoveredLegend, setHoveredLegend] = useState<string | null>(null);
   const [hoveredBeat, setHoveredBeat] = useState<number | null>(null);
 
-  const riskData = useMemo(() => {
+  const riskData: RiskSample[] = useMemo(() => {
     const { effectiveStates: budgeted } = applyBudgetConstraint(
       blocks, blockStates, sliders.budget_millions,
       { order: advanceOrder, riskTolerance: sliders.risk_tolerance }
     );
     const { effectiveStates } = applyDependencyConstraint(blocks, budgeted);
     const relevantIds = relevantBlockIds(attackChains);
-    return YEARS.map((y) => {
+    return SAMPLE_YEARS.map((y) => {
       const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders, relevantIds);
       const sl = overallSlScore(catScores);
       const defense = sl / 5;
@@ -105,9 +109,9 @@ export function TimelineTrack() {
 
   const aiCurvePoints = toPoints((d) => d.aiCap);
   const aiAreaPoints = [
-    `${yearToX(YEARS[0])},${PLOT_BOTTOM}`,
+    `${yearToX(TIMELINE_START)},${PLOT_BOTTOM}`,
     aiCurvePoints,
-    `${yearToX(YEARS[YEARS.length - 1])},${PLOT_BOTTOM}`,
+    `${yearToX(TIMELINE_END)},${PLOT_BOTTOM}`,
   ].join(" ");
   const threatPoints = toPoints((d) => d.threat);
   const defensePoints = toPoints((d) => d.defense);
@@ -142,17 +146,14 @@ export function TimelineTrack() {
       const points = riskData
         .map((d) => `${yearToX(d.year)},${valueToY(d.chainProbs[chain.id] ?? 0)}`)
         .join(" ");
-      const atYearProb =
-        riskData.find((d) => d.year === year)?.chainProbs[chain.id] ??
-        riskData[riskData.length - 1]?.chainProbs[chain.id] ??
-        0;
+      const atYearProb = sampleAt(riskData, year).chainProbs[chain.id] ?? 0;
       const series = chainSeries(chain.id, i);
       return { chainId: chain.id, chainName: chain.name, points, atYearProb, ...series };
     });
   }, [showDecomposed, riskData, attackChains, year]);
 
   const currentX = yearToX(year);
-  const currentData = riskData.find((d) => d.year === year) ?? riskData[0];
+  const currentData = sampleAt(riskData, year);
   // Near the right edge, value labels flip to the left of the dot
   const labelsFlip = currentX > W - PAD_R - 70;
   const labelX = labelsFlip ? currentX - 9 : currentX + 9;
@@ -164,7 +165,7 @@ export function TimelineTrack() {
 
   const buckets = useMemo(() => {
     const items: Deadline[] = computeDecisionWindows(blocks, blockStates, year, {
-      minYear: 2024,
+      minYear: TIMELINE_START,
     }).map((w) => ({ id: w.block.id, name: w.block.name, mustStartBy: w.mustStartBy }));
 
     const bucketMap = new Map<number, Deadline[]>();
@@ -185,20 +186,24 @@ export function TimelineTrack() {
     return result.sort((a, b) => a.center - b.center);
   }, [blocks, blockStates, year]);
 
-  // Story beats: each annotation plotted at its year while a script is playing.
-  const startYear = activeScript?.startYear ?? 2024;
+  // Story landmarks: every moment the story does something — a narrative beat, a
+  // programme breaking ground, or both. These are exactly what the transport's
+  // step buttons snap to, so each one has to be visible on the track.
+  const startYear = activeScript?.startYear ?? TIMELINE_START;
   const beats = useMemo(() => {
-    if (!activeScript?.annotations) return [];
+    if (!activeScript) return [];
     const currentYear = startYear + playbackT;
-    return activeScript.annotations
-      .filter((a) => a.atYear >= YEARS[0] && a.atYear <= YEARS[YEARS.length - 1])
-      .map((a) => ({
-        atYear: a.atYear,
-        message: a.message,
-        x: yearToX(a.atYear),
-        reached: currentYear >= a.atYear,
+    const names = new Map(blocks.map((b) => [b.id, b.name]));
+    return storyEvents(activeScript)
+      .filter((e) => e.year >= TIMELINE_START && e.year <= TIMELINE_END)
+      .map((e) => ({
+        atYear: e.year,
+        message: e.message,
+        starts: e.deployments.map((id) => names.get(id) ?? id),
+        x: yearToX(e.year),
+        reached: currentYear >= e.year,
       }));
-  }, [activeScript, startYear, playbackT]);
+  }, [activeScript, startYear, playbackT, blocks]);
 
   const legendItems = [
     { id: "threat", color: SEMANTIC.threat, dashed: true, label: "Threat", tip: "Highest breach probability across all attack chains at each year. Rises as AI makes attacks easier. Hidden while chains are decomposed (it is their upper envelope)." },
@@ -324,9 +329,11 @@ export function TimelineTrack() {
         ))}
 
         {/* Year ticks — small labels tucked just under the axis ticks */}
-        {YEARS.map((y) => {
+        {TIMELINE_YEARS.map((y) => {
           const x = yearToX(y);
-          const isActive = y === year;
+          // The year the readouts name, so the highlight and the label agree
+          // even when the clock is sitting mid-year.
+          const isActive = Math.floor(Math.round(year * 12) / 12) === y;
           return (
             <g key={y} className="cursor-pointer" onClick={() => setYear(y)}>
               {/* generous invisible hit target */}
@@ -356,7 +363,7 @@ export function TimelineTrack() {
         {/* Must-start deadline markers — sit ON the axis (small triangles just
             below it, pointing up at the axis), no separate lane or side label */}
         {buckets.map((bucket, i) => {
-          const x = yearToX(Math.max(2024, Math.min(2030, bucket.center)));
+          const x = yearToX(clampYear(bucket.center));
           const style = URGENCY_BADGE[bucket.urgency];
           const isHovered = hoveredBucket === i;
           const yBase = DEADLINE_Y + 9;
@@ -380,7 +387,10 @@ export function TimelineTrack() {
           );
         })}
 
-        {/* Story beats — one marker per annotation while a script plays */}
+        {/* Story landmarks — narrated beats as diamonds, silent programme
+            starts as lighter ticks in the same lane. Two weights, one lane:
+            everything the transport can step to is here, and the beats that
+            carry a line of narration still read as the loud ones. */}
         {beats.map((beat, i) => {
           const isHovered = hoveredBeat === i;
           const yTop = PLOT_TOP + 2;
@@ -394,13 +404,25 @@ export function TimelineTrack() {
               onClick={() => setPlaybackT(beat.atYear - startYear)}
             >
               <rect x={beat.x - 8} y={PLOT_TOP - 2} width={16} height={16} fill="transparent" />
-              <polygon
-                points={`${beat.x},${yTop} ${beat.x + 4},${yTop + 4} ${beat.x},${yTop + 8} ${beat.x - 4},${yTop + 4}`}
-                fill={fill}
-                stroke="#111827"
-                strokeWidth={1}
-                opacity={isHovered ? 1 : 0.9}
-              />
+              {beat.message ? (
+                <polygon
+                  points={`${beat.x},${yTop} ${beat.x + 4},${yTop + 4} ${beat.x},${yTop + 8} ${beat.x - 4},${yTop + 4}`}
+                  fill={fill}
+                  stroke="#111827"
+                  strokeWidth={1}
+                  opacity={isHovered ? 1 : 0.9}
+                />
+              ) : (
+                <line
+                  x1={beat.x}
+                  y1={yTop + 1}
+                  x2={beat.x}
+                  y2={yTop + 7}
+                  stroke={fill}
+                  strokeWidth={isHovered ? 2 : 1.5}
+                  opacity={isHovered ? 0.95 : 0.5}
+                />
+              )}
             </g>
           );
         })}
@@ -465,14 +487,14 @@ export function TimelineTrack() {
         <div
           className="absolute z-[100] bg-gray-800 border border-gray-700 rounded shadow-lg p-2 text-[11px] max-w-[240px]"
           style={{
-            left: `${(yearToX(Math.max(2024, Math.min(2030, buckets[hoveredBucket].center))) / W) * 100}%`,
+            left: `${(yearToX(clampYear(buckets[hoveredBucket].center)) / W) * 100}%`,
             bottom: "18%",
             transform: "translateX(-50%)",
           }}
           onMouseLeave={() => setHoveredBucket(null)}
         >
           <div className="text-gray-500 mb-1">
-            Start by {buckets[hoveredBucket].center.toFixed(1)}
+            Start by {formatYear(buckets[hoveredBucket].center)}
           </div>
           {buckets[hoveredBucket].items.map((d) => (
             <button
@@ -507,8 +529,15 @@ export function TimelineTrack() {
             transform: "translateX(-50%)",
           }}
         >
-          <span className="text-gray-500">{beats[hoveredBeat].atYear}</span>{" "}
+          <span className="text-gray-500">{formatYear(beats[hoveredBeat].atYear)}</span>{" "}
           {beats[hoveredBeat].message}
+          {beats[hoveredBeat].starts.length > 0 && (
+            <div className="text-gray-400 mt-0.5">
+              Starts: {beats[hoveredBeat].starts.slice(0, 3).join(", ")}
+              {beats[hoveredBeat].starts.length > 3 &&
+                ` +${beats[hoveredBeat].starts.length - 3} more`}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -199,7 +199,7 @@ describe("time-lapse scripts", () => {
     // it bought. The old gap partly measured underfunding, because at $700M
     // this story ran with 12 of its 16 blocks frozen by the funding queue.
     expect(reactive).toBeGreaterThan(proactive);
-    // Proactive: $2,610M of a $2,800M budget, every program matured, and an
+    // Proactive: $2,590M of a $2,800M budget, every program matured, and an
     // all-personnel chain still gets through ~16% of the time. The floor matters
     // as much as the ceiling — if this ever drops into single digits the story
     // reads as "solved", which is the failure mode the recalibration removed.

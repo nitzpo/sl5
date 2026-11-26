@@ -150,10 +150,10 @@ describe("playing it", () => {
     fireEvent.click(screen.getByText("Air-Gapped SL5 Network"));
     fireEvent.click(screen.getByText("Inference Channel Outbound Defense"));
     fireEvent.click(screen.getByText("Tamper-Evident Enclosures (Rack/Room Scale)"));
-    await waitFor(() => expect(screen.getByText(/over budget — capped at/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/over budget — not built/)).toBeTruthy());
     expect(screen.getByText(/funding follows click order/)).toBeTruthy();
     // The blocks picked first keep their money — only the last one is capped.
-    expect(screen.getAllByText(/over budget — capped at/).length).toBe(1);
+    expect(screen.getAllByText(/over budget — not built/).length).toBe(1);
   });
 
   it("shows the dependency cap and clears it when the prerequisite is bought", async () => {
@@ -174,7 +174,7 @@ describe("playing it", () => {
     // nor dependency-capped here, so neither ring fires — it is simply not the
     // whole control its name implies until data can cross it in a controlled way.
     fireEvent.click(screen.getByText("Air-Gapped SL5 Network"));
-    expect(screen.queryByText(/over budget — capped at/)).toBeNull();
+    expect(screen.queryByText(/over budget — not built/)).toBeNull();
     expect(screen.queryByText(/needs .* first/)).toBeNull();
     await waitFor(() =>
       expect(screen.getAllByText(/% of full — incomplete without/).length).toBeGreaterThan(0)

@@ -9,13 +9,13 @@ import type { Block, BlockState } from "./types";
  *
  * `partially_deployed` becomes `implementing` rather than getting a state of its
  * own. `implementing` is already the engine's universal "real but unfinished"
- * marker — `breach.ts` gives it half defense-in-depth credit, `dependencies.ts`
- * caps unmet prerequisites to it, and `budget.ts` caps what a program cannot
- * afford to it. A sixth state would mean re-answering all three of those
- * questions for a distinction worth 0.2 of effectiveness. The cost is that
- * `implementing` (0.4) understates the 0.6 the raw data implies, which errs
- * toward modelling labs as weaker than the research says — the safe direction
- * for a tool about how hard this is.
+ * marker — `breach.ts` gives it half defense-in-depth credit and
+ * `dependencies.ts` caps unmet prerequisites to it — and `budget.ts` drops a
+ * block a program cannot afford back to this baseline, so a sixth state would
+ * mean re-answering all three of those questions for a distinction worth 0.2 of
+ * effectiveness. The cost is that `implementing` (0.4) understates the 0.6 the
+ * raw data implies, which errs toward modelling labs as weaker than the research
+ * says — the safe direction for a tool about how hard this is.
  *
  * The two "not a lab posture" values collapse to `not_started`:
  * `proven_not_deployed` means the technology is real and fielded elsewhere

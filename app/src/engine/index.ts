@@ -15,11 +15,22 @@ export {
   blockExploitProbability,
   defenseInDepthDiscount,
   chainBreachProbability,
+  chainResidualFloor,
   computeBreachProbabilities,
 } from "./breach";
 export { supportingBlocks, SUPPORTING_WEIGHT } from "./supporting";
 export { applyBudgetConstraint, blockCostBasis } from "./budget";
 export { applyDependencyConstraint } from "./dependencies";
+export {
+  scorePosture,
+  effectivePosture,
+  orderAfterActivating,
+  threatRelevance,
+  isHeldAtResidualFloor,
+  RESIDUAL_FLOOR_MARGIN,
+  targetSl,
+} from "./posture";
+export type { PostureInput, PostureScore } from "./posture";
 export {
   distillationProgress,
   distillationDefenseReduction,

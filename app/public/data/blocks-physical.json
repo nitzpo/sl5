@@ -308,7 +308,7 @@
     "open_questions": [],
     "real_world_parallels": [
       {
-        "description": "Every SCIF facility worldwide uses mantraps. The 2019 Mar-a-Lago intrusion attempt was stopped by a mantrap-equivalent access control point.",
+        "description": "Interlocking-door vestibules are standard at SCIFs and other high-security facilities. The 2019 Mar-a-Lago intrusion shows why a single checkpoint is not enough: the intruder talked her way past the Secret Service screening point and was only stopped at the reception desk, where staff found no record of the event she claimed to be attending and alerted the Secret Service.",
         "source": "Standard SCIF construction",
         "year": 2000
       }

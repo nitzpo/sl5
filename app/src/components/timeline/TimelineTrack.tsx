@@ -1,32 +1,40 @@
 import { useMemo, useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { usePlaybackStore } from "../../timelapse/playback-store";
-import { getAiCapability } from "../../engine/ai-curve";
-import { computeCategoryScores, overallSlScore, relevantBlockIds } from "../../engine/scoring";
-import { computeBreachProbabilities } from "../../engine/breach";
-import { applyBudgetConstraint } from "../../engine/budget";
-import { applyDependencyConstraint } from "../../engine/dependencies";
 import { computeDecisionWindows } from "../../utils/decision-windows";
 import { SEMANTIC, URGENCY_BADGE, chainSeries } from "../../utils/colors";
 import { formatSl, formatYear } from "../../utils/format";
 import { TIMELINE_START, TIMELINE_END, TIMELINE_YEARS, clampYear } from "../../utils/timeline";
-import { SAMPLE_YEARS, sampleAt, type RiskSample } from "../../utils/risk-samples";
+import { sampleAt, sampleRiskCurve, type RiskSample } from "../../utils/risk-samples";
 import { storyEvents } from "../../timelapse/events";
+import { targetSl } from "../../engine/posture";
 
 
-// One normalized 0–1 axis (never dual-axis): threat and AI capability are
-// probabilities; the defense line is SL/5, direct-labeled as "SL x.x".
+// Two panels on one shared year axis, never one dual-axis chart. The breach
+// panel is a 0–100% probability scale (breach, per-chain breach, and AI
+// capability, which is also a 0–1 fraction). SL is a 1–5 score, not a
+// probability, so it gets its own small strip underneath on its own scale.
+// It used to be drawn as SL/5 on the probability axis with the area between
+// the two lines labeled an "exposure gap" — a probability minus a fifth of a
+// score, which is not a quantity.
 const W = 1400;
-const H = 196;
 const PAD_L = 52;
 const PAD_R = 70;
 const PLOT_TOP = 12;
-const PLOT_BOTTOM = 168;
-// Must-start deadline markers sit ON the axis (just below it); year labels sit
-// just under those, small and close to the ticks — no separate deadline lane.
-const DEADLINE_Y = PLOT_BOTTOM + 2;
-const YEAR_LABEL_Y = PLOT_BOTTOM + 22;
+const PLOT_BOTTOM = 134;
 const PLOT_RANGE = PLOT_BOTTOM - PLOT_TOP;
+// The SL strip: its own 1–5 scale, sharing the x-axis with the breach panel.
+const SL_TOP = 154;
+const SL_BOTTOM = 198;
+const SL_RANGE = SL_BOTTOM - SL_TOP;
+const SL_MIN = 1;
+const SL_MAX = 5;
+// The shared year axis sits under the strip. Must-start deadline markers sit ON
+// it (just below); year labels sit just under those — no separate lane.
+const AXIS_Y = SL_BOTTOM;
+const DEADLINE_Y = AXIS_Y + 2;
+const YEAR_LABEL_Y = AXIS_Y + 22;
+const H = AXIS_Y + 28;
 
 const GRID = "#1f2937";
 const AXIS = "#374151";
@@ -40,6 +48,11 @@ function yearToX(y: number): number {
 
 function valueToY(v: number): number {
   return PLOT_BOTTOM - v * PLOT_RANGE;
+}
+
+function slToY(sl: number): number {
+  const clamped = Math.min(SL_MAX, Math.max(SL_MIN, sl));
+  return SL_BOTTOM - ((clamped - SL_MIN) / (SL_MAX - SL_MIN)) * SL_RANGE;
 }
 
 interface Deadline {
@@ -59,7 +72,6 @@ export function TimelineTrack() {
   const setYear = useSimulationStore((s) => s.setYear);
   const setPerspective = useSimulationStore((s) => s.setPerspective);
   const sliders = useSimulationStore((s) => s.sliders);
-  const aiTimeline = sliders.ai_timeline;
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const advanceOrder = useSimulationStore((s) => s.advanceOrder);
@@ -77,32 +89,22 @@ export function TimelineTrack() {
   const [hoveredLegend, setHoveredLegend] = useState<string | null>(null);
   const [hoveredBeat, setHoveredBeat] = useState<number | null>(null);
 
-  const riskData: RiskSample[] = useMemo(() => {
-    const { effectiveStates: budgeted } = applyBudgetConstraint(
-      blocks, blockStates, sliders.budget_millions,
-      { order: advanceOrder, riskTolerance: sliders.risk_tolerance }
-    );
-    const { effectiveStates } = applyDependencyConstraint(blocks, budgeted);
-    const relevantIds = relevantBlockIds(attackChains);
-    return SAMPLE_YEARS.map((y) => {
-      const catScores = computeCategoryScores(blocks, effectiveStates, y, sliders, relevantIds);
-      const sl = overallSlScore(catScores);
-      const defense = sl / 5;
-
-      const breachProbs = computeBreachProbabilities(
-        attackChains, blocks, effectiveStates, adversaryOc, y, sliders, modelServedExternally
-      );
-      const threat = Math.max(...Object.values(breachProbs), 0);
-
-      return {
-        year: y,
-        threat,
-        defense,
-        aiCap: getAiCapability(y, aiTimeline),
-        chainProbs: breachProbs,
-      };
-    });
-  }, [blocks, blockStates, advanceOrder, sliders, adversaryOc, attackChains, aiTimeline, modelServedExternally]);
+  // The same pipeline as the Score card (`scorePosture`), so the track at the
+  // store's year reads the card's numbers — it used to score over 19 named
+  // blocks instead of the 45 threat-relevant ones and disagree by ~0.1 SL.
+  const riskData: RiskSample[] = useMemo(
+    () =>
+      sampleRiskCurve({
+        blocks,
+        chains: attackChains,
+        blockStates,
+        advanceOrder,
+        sliders,
+        adversaryOc,
+        modelServedExternally,
+      }),
+    [blocks, blockStates, advanceOrder, sliders, adversaryOc, attackChains, modelServedExternally]
+  );
 
   const toPoints = (get: (d: (typeof riskData)[number]) => number) =>
     riskData.map((d) => `${yearToX(d.year)},${valueToY(get(d))}`).join(" ");
@@ -114,31 +116,10 @@ export function TimelineTrack() {
     `${yearToX(TIMELINE_END)},${PLOT_BOTTOM}`,
   ].join(" ");
   const threatPoints = toPoints((d) => d.threat);
-  const defensePoints = toPoints((d) => d.defense);
-
-  const riskGapPoints = [
-    ...riskData.map((d) => `${yearToX(d.year)},${valueToY(Math.max(d.threat, d.defense))}`),
-    ...riskData.slice().reverse().map((d) => `${yearToX(d.year)},${valueToY(d.defense)}`),
-  ].join(" ");
-
-  // Label the exposure gap once, at its widest year (only when it's substantial)
-  const gapLabel = useMemo(() => {
-    let bestIdx = -1;
-    let bestGap = 0.18; // only label gaps worth talking about
-    riskData.forEach((d, i) => {
-      const gap = Math.max(d.threat, d.defense) - d.defense;
-      if (gap > bestGap) {
-        bestGap = gap;
-        bestIdx = i;
-      }
-    });
-    if (bestIdx < 0) return null;
-    const d = riskData[bestIdx];
-    return {
-      x: yearToX(d.year),
-      y: (valueToY(Math.max(d.threat, d.defense)) + valueToY(d.defense)) / 2,
-    };
-  }, [riskData]);
+  const slPoints = riskData.map((d) => `${yearToX(d.year)},${slToY(d.sl)}`).join(" ");
+  // The SL a posture should reach to stop this adversary: RAND's SL-n is meant
+  // to stop OC-n, the same target the Security Posture card shows.
+  const targetLevel = targetSl(adversaryOc);
 
   const chainLines = useMemo(() => {
     if (!showDecomposed) return [];
@@ -158,10 +139,8 @@ export function TimelineTrack() {
   const labelsFlip = currentX > W - PAD_R - 70;
   const labelX = labelsFlip ? currentX - 9 : currentX + 9;
   const labelAnchor = labelsFlip ? "end" : "start";
-  // Keep the two labels from colliding when the lines cross
   const threatY = valueToY(currentData.threat);
-  const defenseYraw = valueToY(currentData.defense) + 12;
-  const defenseY = Math.abs(defenseYraw - (threatY - 5)) < 14 ? defenseYraw + 14 : defenseYraw;
+  const slY = slToY(currentData.sl);
 
   const buckets = useMemo(() => {
     const items: Deadline[] = computeDecisionWindows(blocks, blockStates, year, {
@@ -207,7 +186,7 @@ export function TimelineTrack() {
 
   const legendItems = [
     { id: "threat", color: SEMANTIC.threat, dashed: true, label: "Threat", tip: "Highest breach probability across all attack chains at each year. Rises as AI makes attacks easier. Hidden while chains are decomposed (it is their upper envelope)." },
-    { id: "defense", color: SEMANTIC.defense, dashed: false, label: "Defense", tip: "Your overall security level (SL/5, shown on the same 0-100% scale). Improves as you deploy and mature defenses." },
+    { id: "defense", color: SEMANTIC.defense, dashed: false, label: "Security level", tip: "Your overall security level, SL 1–5, in its own strip under the breach panel — a coverage score, not a probability, so it has its own scale. The dashed line is the target for this adversary (SL-n is meant to stop OC-n)." },
     { id: "ai", color: SEMANTIC.ai, dashed: false, label: "AI Cap", tip: "AI capability growth (0→100%). Drives threat up and erodes probabilistic defenses over time." },
   ];
 
@@ -252,7 +231,7 @@ export function TimelineTrack() {
       </div>
 
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="select-none">
-        {/* Gridlines + probability axis (one normalized scale for everything) */}
+        {/* Breach panel: gridlines + the 0–100% probability axis */}
         {[0, 0.25, 0.5, 0.75, 1].map((v) => (
           <g key={v}>
             <line
@@ -279,25 +258,42 @@ export function TimelineTrack() {
         <polygon points={aiAreaPoints} fill={SEMANTIC.ai} opacity={0.06} />
         <polyline points={aiCurvePoints} fill="none" stroke={SEMANTIC.ai} strokeWidth={1.75} opacity={0.35} />
 
-        {/* Exposure gap between threat and defense */}
-        <polygon points={riskGapPoints} fill={SEMANTIC.threat} opacity={0.07} />
-        {gapLabel && !showDecomposed && (
-          <text
-            x={gapLabel.x}
-            y={gapLabel.y}
-            textAnchor="middle"
-            fontSize={11}
-            fill="#f87171"
-            opacity={0.6}
-            className="pointer-events-none uppercase"
-            letterSpacing={1.5}
-          >
-            exposure gap
-          </text>
-        )}
-
-        {/* Defense line */}
-        <polyline points={defensePoints} fill="none" stroke={SEMANTIC.defense} strokeWidth={2.5} opacity={0.85} />
+        {/* SL strip — its own 1–5 scale under the breach panel, same x-axis */}
+        {[SL_MIN, 3, SL_MAX].map((v) => (
+          <g key={`sl-${v}`}>
+            <line
+              x1={PAD_L}
+              y1={slToY(v)}
+              x2={W - PAD_R}
+              y2={slToY(v)}
+              stroke={v === SL_MIN ? AXIS : GRID}
+              strokeWidth={1}
+            />
+            <text x={PAD_L - 8} y={slToY(v) + 4} textAnchor="end" fontSize={11} fill={MUTED}>
+              SL{v}
+            </text>
+          </g>
+        ))}
+        <line
+          x1={PAD_L}
+          y1={slToY(targetLevel)}
+          x2={W - PAD_R}
+          y2={slToY(targetLevel)}
+          stroke={SEMANTIC.defense}
+          strokeWidth={1}
+          strokeDasharray="2 4"
+          opacity={0.45}
+        />
+        <text
+          x={W - PAD_R + 6}
+          y={slToY(targetLevel) + 4}
+          fontSize={10}
+          fill={MUTED}
+          className="pointer-events-none"
+        >
+          target
+        </text>
+        <polyline points={slPoints} fill="none" stroke={SEMANTIC.defense} strokeWidth={2} opacity={0.85} />
 
         {/* Threat line — hidden while decomposed (it is the chains' upper envelope) */}
         {!showDecomposed && (
@@ -337,12 +333,12 @@ export function TimelineTrack() {
           return (
             <g key={y} className="cursor-pointer" onClick={() => setYear(y)}>
               {/* generous invisible hit target */}
-              <rect x={x - 40} y={PLOT_BOTTOM} width={80} height={H - PLOT_BOTTOM} fill="transparent" />
+              <rect x={x - 40} y={AXIS_Y} width={80} height={H - AXIS_Y} fill="transparent" />
               <line
                 x1={x}
-                y1={PLOT_BOTTOM - 4}
+                y1={AXIS_Y - 4}
                 x2={x}
-                y2={PLOT_BOTTOM + 4}
+                y2={AXIS_Y + 4}
                 stroke={isActive ? "#a78bfa" : "#4b5563"}
                 strokeWidth={isActive ? 2 : 1}
               />
@@ -427,12 +423,12 @@ export function TimelineTrack() {
           );
         })}
 
-        {/* Current year vertical marker */}
+        {/* Current year vertical marker — spans both panels */}
         <line
           x1={currentX}
           y1={PLOT_TOP}
           x2={currentX}
-          y2={PLOT_BOTTOM}
+          y2={AXIS_Y}
           stroke="#a78bfa"
           strokeWidth={1}
           strokeDasharray="3 2"
@@ -443,7 +439,7 @@ export function TimelineTrack() {
         {!showDecomposed && (
           <circle cx={currentX} cy={threatY} r={4} fill={SEMANTIC.threat} stroke="#111827" strokeWidth={1.5} />
         )}
-        <circle cx={currentX} cy={valueToY(currentData.defense)} r={4} fill={SEMANTIC.defense} stroke="#111827" strokeWidth={1.5} />
+        <circle cx={currentX} cy={slY} r={4} fill={SEMANTIC.defense} stroke="#111827" strokeWidth={1.5} />
         <circle cx={currentX} cy={valueToY(currentData.aiCap)} r={3} fill={SEMANTIC.ai} stroke="#111827" strokeWidth={1.5} opacity={0.6} />
 
         {/* Current year value labels — flip near the right edge, never collide */}
@@ -459,8 +455,15 @@ export function TimelineTrack() {
             {Math.round(currentData.threat * 100)}%
           </text>
         )}
-        <text x={labelX} y={defenseY} textAnchor={labelAnchor} fontSize={13} fontWeight={600} fill="#86efac">
-          SL {formatSl(currentData.defense * 5)}
+        <text
+          x={labelX}
+          y={Math.min(Math.max(slY - 5, SL_TOP + 6), SL_BOTTOM - 4)}
+          textAnchor={labelAnchor}
+          fontSize={13}
+          fontWeight={600}
+          fill="#86efac"
+        >
+          SL {formatSl(currentData.sl)}
         </text>
       </svg>
 

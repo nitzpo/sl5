@@ -30,8 +30,12 @@ export function BlockTooltip({
   const modelServed = useSimulationStore((s) => s.modelServedExternally);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const allBlocks = useSimulationStore((s) => s.blocks);
-  const { budgetExceededIds, dependencyUnmetIds, dependencyUnmetRequires } =
+  const { budgetExceededIds, dependencyUnmetIds, dependencyUnmetRequires, effectiveStates } =
     useSimulationResults();
+  // What the scores actually counted this block as, after the budget and
+  // prerequisite caps — so the readout agrees with the SL and breach numbers.
+  // (Only when the tooltip shows the live state; a hypothetical one is shown as is.)
+  const scoredState = blockStates[block.id] === state ? (effectiveStates[block.id] ?? state) : state;
 
   const cappedByBudget = budgetExceededIds.has(block.id);
   const cappedByDependency = dependencyUnmetIds.has(block.id);
@@ -40,9 +44,11 @@ export function BlockTooltip({
     ? (dependencyUnmetRequires?.get(block.id) ?? block.dependencies?.requires ?? []).join(", ")
     : null;
 
-  // Against the whole posture, so this matches what the SL score used.
-  const effectiveness = blockEffectiveness(block, state, year, sliders, { blockStates });
-  const enablement = enablementFactor(block, blockStates);
+  // Against the whole effective posture, so this matches what the SL score used.
+  const effectiveness = blockEffectiveness(block, scoredState, year, sliders, {
+    blockStates: effectiveStates,
+  });
+  const enablement = enablementFactor(block, effectiveStates);
   const incomplete = enablement < 1 && state !== "not_started";
   const degradation = aiDegradation(block, year, sliders.ai_timeline);
   const showErosion = degradation > 0.02 && block.defense_type !== "hard_stop";
@@ -122,7 +128,7 @@ export function BlockTooltip({
           Incomplete on its own — {Math.round(enablement * 100)}% of full without{" "}
           {(block.dependencies.completed_by?.blocks ?? [])
             .filter((id) => {
-              const s = blockStates[id] ?? "not_started";
+              const s = effectiveStates[id] ?? "not_started";
               return s !== "deployed" && s !== "mature";
             })
             .join(", ")}
@@ -130,7 +136,7 @@ export function BlockTooltip({
       )}
       {cappedByBudget && !cappedByDependency && (
         <div className="text-[10px] text-pink-400 mt-0.5">
-          ⚠ Capped at Implementing — over budget
+          ⚠ Over budget — not funded, so it counts as {STATE_LABELS[scoredState]}
         </div>
       )}
       {beyondAdversary && state === "not_started" && (

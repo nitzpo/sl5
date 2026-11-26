@@ -63,7 +63,7 @@ describe("time-lapse scripts", () => {
     // Stories are costed at their OWN `risk_tolerance`, which selects where in
     // each block's authored min–max range the plan is budgeted (see
     // `blockCostBasis`). Every story must plan inside its own budget: a plan that
-    // outruns its funding gets capped at `implementing` by the funding queue, and
+    // outruns its funding is left at its baseline by the funding queue, and
     // the start years past the budget line stop meaning anything — the blocks sit
     // frozen regardless of when the story says they began.
     //
@@ -89,7 +89,7 @@ describe("time-lapse scripts", () => {
     }
   });
 
-  it("never cap a scripted deployment at implementing", () => {
+  it("never leave a scripted deployment unfunded", () => {
     // The corollary of the affordability test, checked through the engine rather
     // than by summing costs: no story should be narrating a block that the
     // funding queue has frozen. If this fails, some story's start years are
@@ -105,7 +105,7 @@ describe("time-lapse scripts", () => {
       });
       expect(
         [...exceededIds],
-        `${script.id} caps ${exceededIds.size} block(s) at implementing`
+        `${script.id} leaves ${exceededIds.size} block(s) unfunded`
       ).toEqual([]);
     }
   });

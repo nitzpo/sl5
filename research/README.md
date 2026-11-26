@@ -22,7 +22,7 @@ Methodology, design notes, schemas, and source material behind [SL5 Explorable](
 
 ## Schemas
 
-`schema/` holds JSON Schemas for the data shapes (`building-block`, `attack-chain`, `world-state`, `simulation-config`) plus worked examples. Use these when adding or editing data.
+`schema/` holds JSON Schemas for the data shapes (`building-block`, `attack-chain`, `world-state`) plus worked examples. Use these when adding or editing data. (A `simulation-config` schema and `app/public/data/simulation-config.json` used to live alongside them; nothing ever loaded the file, its constants contradicted the engine — weakest-link 0.6, layer factor 0.6 — and both were removed. The model's constants live in `app/src/engine/` and are documented in `scoring-model.md`.)
 
 ## Data
 

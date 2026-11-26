@@ -3,20 +3,12 @@
 // Split out from the component for one reason: every number the game shows has
 // to come from the real engine, and the only way to prove that is a test that
 // loads the shipped JSON and runs `evaluatePosture` directly. Nothing here is a
-// re-implementation — `applyBudgetConstraint`, `applyDependencyConstraint`,
-// `blockCostBasis`, `computeCategoryScores`, `overallSlScore` and
-// `computeBreachProbabilities` are the same functions `store/derived.ts` calls
-// for the app's own Security Posture card, in the same order.
+// re-implementation — the score is `scorePosture`, the exact pipeline
+// `store/derived.ts` runs for the app's own Security Posture card (budget, then
+// prerequisites, then category scores and breach), and the price is the same
+// `blockCostBasis` the app's budget line charges.
 
-import {
-  applyBudgetConstraint,
-  applyDependencyConstraint,
-  blockCostBasis,
-  computeBreachProbabilities,
-  computeCategoryScores,
-  overallSlScore,
-  relevantBlockIds,
-} from "../engine";
+import { blockCostBasis, isHeldAtResidualFloor, scorePosture } from "../engine";
 import type { AttackChain, Block, BlockState, Category, Sliders } from "../engine/types";
 
 /** A deliberately tight year. The app's own default is $200M; $150M is enough
@@ -26,8 +18,6 @@ export const BUDGET_MILLIONS = 150;
 export const YEAR = 2026;
 /** OC4 — a leading nation-state, which is the app's baseline adversary. */
 export const ADVERSARY_OC = 4;
-/** Below this, the app's Attacker perspective files a chain under "blocked". */
-export const VIABLE_THRESHOLD = 0.02;
 
 /** The ten blocks you choose from. Picked to make the trade-offs land, under
  * four constraints the tests enforce:
@@ -106,8 +96,10 @@ export interface PostureResult {
   categories: Record<Category, number>;
   /** Chance at least one chain works, i.e. the app's headline number. */
   breach: number;
-  /** Every chain, most likely first — the Attacker perspective's ordering. */
-  ranked: { chain: AttackChain; p: number }[];
+  /** Every chain, most likely first — the Attacker perspective's ordering.
+   * `floor` is the chain's residual floor, and `held` is the Attacker view's
+   * own test: within half a point of it, as low as defense can push it. */
+  ranked: { chain: AttackChain; p: number; floor: number; held: boolean }[];
   /** Total planned spend, and what the budget couldn't pay for. */
   spentMillions: number;
   budgetExceeded: Set<string>;
@@ -128,63 +120,57 @@ export interface PostureResult {
  * Blocks outside `chosen` are scored as `not_started` rather than at their
  * real-world baseline: the game is "build a posture from nothing", so the
  * reader sees their own choices move the number instead of reading a score they
- * didn't earn.
+ * didn't earn. For the same reason a block the budget can't reach falls back to
+ * `not_started` — the game's baseline — not to the lab's real-world one: an
+ * unfunded block is simply not built.
  */
 export function evaluatePosture(data: GameData, chosen: string[]): PostureResult {
   const requested: Record<string, BlockState> = {};
   for (const b of data.blocks) requested[b.id] = "not_started";
   for (const id of chosen) requested[id] = "deployed";
 
-  const {
-    effectiveStates: budgeted,
-    exceededIds: budgetExceeded,
-    spentMillions,
-  } = applyBudgetConstraint(data.blocks, requested, BUDGET_MILLIONS, {
-    order: chosen,
-    riskTolerance: SLIDERS.risk_tolerance,
+  const score = scorePosture({
+    blocks: data.blocks,
+    chains: data.chains,
+    blockStates: requested,
+    advanceOrder: chosen,
+    year: YEAR,
+    sliders: SLIDERS,
+    adversaryOc: ADVERSARY_OC,
+    modelServedExternally: true,
+    budgetFloorStates: FROM_NOTHING(data.blocks),
   });
 
-  const {
-    effectiveStates,
-    unmetIds: dependencyUnmet,
-    unmetRequires: dependencyUnmetRequires,
-  } = applyDependencyConstraint(data.blocks, budgeted);
-
-  const categories = computeCategoryScores(
-    data.blocks,
-    effectiveStates,
-    YEAR,
-    SLIDERS,
-    relevantBlockIds(data.chains, data.blocks)
-  );
-  const breaches = computeBreachProbabilities(
-    data.chains,
-    data.blocks,
-    effectiveStates,
-    ADVERSARY_OC,
-    YEAR,
-    SLIDERS
-  );
-
   const ranked = data.chains
-    .map((chain) => ({ chain, p: breaches[chain.id] ?? 0 }))
+    .map((chain) => {
+      const p = score.breachProbabilities[chain.id] ?? 0;
+      const floor = score.residualFloors[chain.id] ?? 0;
+      return { chain, p, floor, held: isHeldAtResidualFloor(p, floor) };
+    })
     .sort((a, b) => b.p - a.p);
 
-  const entries = Object.entries(categories) as [Category, number][];
+  const entries = Object.entries(score.categoryScores) as [Category, number][];
   const weakestCategory = entries.reduce((lo, e) => (e[1] < lo[1] ? e : lo))[0];
 
   return {
-    sl: overallSlScore(categories),
-    categories,
+    sl: score.overallSl,
+    categories: score.categoryScores,
     // The app's headline breach number is the worst live chain, which after the
     // sort is the first one.
     breach: ranked[0]?.p ?? 0,
     ranked,
-    spentMillions,
-    budgetExceeded,
-    dependencyUnmet,
-    dependencyUnmetRequires,
-    effectiveStates,
+    spentMillions: score.spentMillions,
+    budgetExceeded: score.budgetExceededIds,
+    dependencyUnmet: score.dependencyUnmetIds,
+    dependencyUnmetRequires: score.dependencyUnmetRequires,
+    effectiveStates: score.effectiveStates,
     weakestCategory,
   };
+}
+
+/** The game's baseline: nothing built. */
+function FROM_NOTHING(blocks: Block[]): Record<string, BlockState> {
+  const states: Record<string, BlockState> = {};
+  for (const b of blocks) states[b.id] = "not_started";
+  return states;
 }

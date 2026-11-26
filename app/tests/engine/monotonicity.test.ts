@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { chainBreachProbability, defenseInDepthDiscount } from "../../src/engine/breach";
 import { applyBudgetConstraint, blockCostBasis } from "../../src/engine/budget";
+import { baselineStateFor, baselineStates } from "../../src/engine/baseline";
+import { orderAfterActivating, scorePosture } from "../../src/engine/posture";
 import { applyDependencyConstraint } from "../../src/engine/dependencies";
 import { computeCategoryScores, overallSlScore } from "../../src/engine/scoring";
 import type { AttackChain, Block, BlockState, Sliders } from "../../src/engine/types";
@@ -149,7 +151,91 @@ describe("budget constraint (advancement order)", () => {
     expect(exceededIds.has(expensive.id)).toBe(false);
     expect(exceededIds.has(cheap.id)).toBe(true);
     expect(effectiveStates[expensive.id]).toBe("deployed");
-    expect(effectiveStates[cheap.id]).toBe("implementing");
+    // Unfunded means unbuilt: it falls back to what the lab already ran.
+    expect(effectiveStates[cheap.id]).toBe(baselineStateFor(cheap));
+  });
+
+  it("an unaffordable block falls back to its baseline, not to a free `implementing`", () => {
+    // Was: capped at implementing, which handed every unpaid click 0.4
+    // effectiveness and half a layer of depth. Now an over-budget block counts
+    // as exactly what the lab already runs — and that holds for every state it
+    // might have been advanced to, not just deployed/mature.
+    const partial = blocks.find(
+      (b) => b.current_state.baseline_state === "partially_deployed" && !b.current_state.baseline_since
+    )!;
+    const none = blocks.find((b) => baselineStateFor(b) === "not_started")!;
+    for (const state of ["investing", "implementing", "deployed", "mature"] as BlockState[]) {
+      const states = { [partial.id]: "mature", [none.id]: state } as Record<string, BlockState>;
+      const { effectiveStates, exceededIds } = applyBudgetConstraint(blocks, states, 0, {
+        order: [partial.id, none.id],
+      });
+      expect(exceededIds.has(none.id), `${none.id} at ${state} costs money`).toBe(true);
+      expect(effectiveStates[none.id], `${none.id} at ${state}`).toBe("not_started");
+      expect(effectiveStates[partial.id]).toBe("implementing");
+    }
+  });
+
+  it("a $0 budget buys nothing: clicking everything leaves the starting posture's numbers", () => {
+    // The bug this pins: with every block clicked to mature and no money, breach
+    // still fell ~65% → ~44%, because every unpaid block counted as implementing.
+    const base = baselineStates(blocks);
+    const score = (states: Record<string, BlockState>, budget: number) =>
+      scorePosture({
+        blocks,
+        chains,
+        blockStates: states,
+        advanceOrder: blocks.map((b) => b.id),
+        year: 2026,
+        sliders: { ...SLIDERS, budget_millions: budget },
+        adversaryOc: 4,
+        modelServedExternally: true,
+      });
+    const start = score(base, 0);
+    const everything = score(allState("mature"), 0);
+    expect(everything.breach).toBeCloseTo(start.breach, 12);
+    expect(everything.overallSl).toBeCloseTo(start.overallSl, 12);
+    // ...and money is what buys the difference.
+    expect(score(allState("mature"), 100_000).breach).toBeLessThan(start.breach - 0.3);
+  });
+
+  it("advancing any block never raises breach through the full pipeline, under any budget", () => {
+    // The engine-level property, re-asserted with the budget and prerequisite
+    // caps in the loop: a block that becomes costly joins the end of the funding
+    // queue (as the store does), so it can only unfund itself — and an unfunded
+    // block sits at its baseline, never below what it held for free.
+    const rng = makeRng(2027);
+    for (let trial = 0; trial < 60; trial++) {
+      const states = baselineStates(blocks);
+      for (const b of blocks) if (rng() < 0.35) states[b.id] = STATES[Math.floor(rng() * STATES.length)];
+      const order = blocks.map((b) => b.id).filter(() => rng() < 0.9);
+      const target = blocks[Math.floor(rng() * blocks.length)];
+      const fromIdx = STATES.indexOf(states[target.id]);
+      if (fromIdx === STATES.length - 1) continue;
+      const input = {
+        blocks,
+        chains,
+        advanceOrder: order,
+        year: rng() < 0.5 ? 2026 : 2030,
+        sliders: { ...SLIDERS, budget_millions: rng() * 600 },
+        adversaryOc: 3 + Math.floor(rng() * 3),
+        modelServedExternally: true,
+      };
+      const before = scorePosture({ ...input, blockStates: states });
+      const advancedStates = { ...states, [target.id]: STATES[fromIdx + 1] };
+      const after = scorePosture({
+        ...input,
+        blockStates: advancedStates,
+        advanceOrder: orderAfterActivating({ blocks, blockStates: states, advanceOrder: order }, [
+          target.id,
+        ]),
+      });
+      for (const chain of chains) {
+        expect(
+          after.breachProbabilities[chain.id],
+          `${chain.id}: advancing ${target.id} ${states[target.id]}→${STATES[fromIdx + 1]} raised breach`
+        ).toBeLessThanOrEqual(before.breachProbabilities[chain.id] + 1e-9);
+      }
+    }
   });
 
   it("overall SL never drops when one more block is activated", () => {

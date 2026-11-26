@@ -193,9 +193,9 @@ export function WhyItGetsWorse() {
         </DemoFrame>
 
         <Aside>
-          The forecasters in <ExternalLink href="https://ai-2027.com">AI 2027</ExternalLink>{" "}
-          put a number on it: 78% of their workshop participants expect a state actor to
-          steal US frontier model weights before 2030.
+          <ExternalLink href="https://ai-2027.com">AI 2027</ExternalLink> cites a number
+          for it: at the FAR.Labs AI Security Workshop (Nov 2024), 78% of participants polled
+          expected a state actor to steal US frontier model weights before 2030.
         </Aside>
       </div>
     </SlideShell>

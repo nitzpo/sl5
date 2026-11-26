@@ -2,8 +2,13 @@
 
 This describes the model **as implemented**. It is the reference for `app/src/engine/`:
 `scoring.ts` (SL scores), `breach.ts` (adversary success), `supporting.ts` (which
-blocks count toward a chain), `budget.ts` (what a program can pay for), and
-`ai-curve.ts` (the capability curve both channels read).
+blocks count toward a chain), `budget.ts` (what a program can pay for),
+`ai-curve.ts` (the capability curve both channels read), and `posture.ts` — the one
+pipeline (`scorePosture`: budget → prerequisites → category scores, SL, per-chain
+breach and residual floors) that every number in the UI goes through. The Score
+card, the timeline, the Policy and CISO analyses and the introduction's mini-game
+all call it, and `tests/engine/posture.test.ts` asserts they agree exactly; before
+it existed the same posture read SL 2.02 / 2.12 / 2.46 depending on the panel.
 
 The tool computes two numbers from the same posture, and they are *not* two views
 of one quantity:
@@ -43,11 +48,11 @@ effectiveness = stateEffectiveness(state)
 Those five are the whole `BlockState` union (`engine/types.ts`) and the whole
 advancement cycle the UI can reach. `STATE_EFFECTIVENESS` carries one extra key,
 `partially_deployed` → 0.60, which is **not** a `BlockState`: it survives because
-19 blocks in `public/data/blocks-*.json` still declare it as their
-`baseline_state`, and `getStateEffectiveness` accepts a bare `string`. The store
-coerces any baseline outside the cycle to `not_started`
-(`store/simulation.ts:baselineStatesFor`), so the running app never scores a
-block at 0.60 — only direct-from-data callers such as `scoring.test.ts` do.
+21 blocks in `public/data/blocks-*.json` declare it as their `baseline_state`, and
+`getStateEffectiveness` accepts a bare `string`. The app maps it onto
+`implementing` when it builds the starting posture (`engine/baseline.ts`), so the
+running app never scores a block at 0.60 — only direct-from-data callers such as
+`scoring.test.ts` do.
 
 **AI degradation** = `ai_oc_shift × aiCapability(year) × 0.1`, and is **zero for
 hard stops**. A probabilistic block with `ai_oc_shift: 3` loses 30% of its
@@ -67,7 +72,7 @@ it is meaningful:
 
 ### Enablement — no control is the whole thing its name implies alone
 
-19 of 47 blocks declare `dependencies.completed_by`: a list of companion blocks, a
+20 of 47 blocks declare `dependencies.completed_by`: a list of companion blocks, a
 `standalone_share`, and a reader-facing `why`. Absent all its companions the block
 counts for `standalone_share` of its effectiveness; each *operational*
 (`deployed`/`mature`) companion closes an equal part of the remainder.
@@ -331,6 +336,13 @@ The floor is not doing the calibration work — it binds on the *secondary* chai
 of a mature posture (they'd otherwise sit at 0.3–1.9%), while the headline number
 is set by real defense math on the worst path.
 
+`chainResidualFloor(chain, …)` exposes the floor on its own (and `scorePosture`
+returns it per chain as `residualFloors`), because the UI needs it: against OC4 an
+OC4 chain's floor is ≈2.6–3.0%, so the Attacker view's old "blocked below 2%" bucket
+was unreachable for every chain the adversary could attempt. A chain is now filed as
+**held at the residual floor** when it is within half a point of its own floor
+(`isHeldAtResidualFloor`) — as low as any posture can push it.
+
 ---
 
 ## Part 4 — Budget
@@ -341,13 +353,29 @@ costBasis(block, riskTolerance) = min + (1 − rt) × (max − min)
 
 Risk tolerance selects **where in a block's authored cost range you plan**:
 conservative (0) budgets the worst case, aggressive (1) bets on the optimistic
-estimate. Active blocks consume the budget in advancement order; blocks past the
-budget line are capped at `implementing` — a `mature` state the org cannot pay
-for is not real.
+estimate. Active blocks — those advanced past their real-world baseline; blocks at
+or below it are sunk cost — consume the budget in advancement order. A block past
+the budget line is **not funded, so it is not built**: it falls back to its
+baseline (`baselineStateFor`), which for most of the catalogue is `not_started`.
+
+It used to be capped at `implementing` instead — 0.4 effectiveness plus half a
+layer of depth credit for money nobody spent — so the budget barely bound: at the
+default 2026 posture with a **$0** budget, clicking every block to mature still cut
+breach from 65.3% to ~44%. It now leaves breach at 65.3% and SL at 1.38, exactly the
+starting posture (`monotonicity.test.ts` pins this). The floor is the *undated*
+baseline, the same one the sunk-cost rule reads, so the most an unfunded block can
+be is exactly what it is for free; a year-dated floor would let deploying a block
+before its `baseline_since` drop it below the `implementing` it held free. (The
+introduction's mini-game builds from nothing, so it passes an all-`not_started`
+floor.)
 
 Funding is **order-stable**: blocks advanced earlier are funded first, so turning
 on one more block can only cap *that* block. It never evicts an earlier
-commitment.
+commitment. Because baseline blocks are already in the advancement order, the store
+moves a block to the end of the order at the moment it first crosses its baseline
+(the moment it starts costing money); the CISO and Policy what-ifs use the same rule
+(`orderAfterActivating`), and a property test advances random blocks through the
+full pipeline under random budgets and asserts no chain's breach ever rises.
 
 `rt = 1.0` is the trap. It plans every program at its best case, and since cost
 ranges are 4–5× wide (`HW-04`: $200M–$1,000M), an "$800M program" buys a $3.2B
@@ -358,37 +386,47 @@ wishlist. That single value was the largest cause of security being too cheap.
 ## Part 5 — Calibration
 
 Measured at **2030 against an OC4 adversary**, worst chain, all four narrative
-stories (pinned by `tests/engine/scripts.test.ts`):
+stories, through `scorePosture` (budget, then prerequisites, then scores), at the
+sliders `tests/engine/scripts.test.ts` uses — neutral 0.5 plus each story's own
+overrides. Regenerated from the code with a tsx script for this revision:
 
-| Scenario | Breach | SL | Spend vs budget | Capped | Worst chain |
+| Scenario | Breach | SL | Spend at 2030 vs budget | Unfunded | Worst chain |
 |---|---|---|---|---|---|
-| Do Nothing | 100.0% | 1.00 | $0M | — | patient-distillation |
-| Budget-Constrained | 99.4% | 1.43 | $196M / $200M | 0 | zero-day-cascade |
-| Reactive CISO | 51.1% | 1.67 | $620M / $700M | 0 | poisoned-chip |
-| Proactive Program | 16.1% | 3.53 | $1,384M / $1,400M | 0 | long-game |
+| Do Nothing | 68.1% | 1.40 | $0M | — | long-game |
+| Budget-Constrained | 50.8% | 1.84 | $148M / $200M | 0 | patient-distillation |
+| Reactive CISO | 18.9% | 2.07 | $1,662M / $1,800M | 0 | poisoned-chip |
+| Proactive Program | 16.1% | 3.53 | $2,590M / $2,800M | 0 | long-game |
+
+Playback in the app layers the story overrides on the reader's own sliders, which
+default to gov 0.2 / vendor 0.3 / org 0.3. There a first-time reader sees Do Nothing
+at 71.7% / SL 1.37, Budget-Constrained 51.6% / 1.79, Reactive 20.8% / 2.02 and
+Proactive 16.1% / 3.53 (Proactive overrides all three).
 
 Both numbers order the stories the same way, which is the point of weighting SL
 and breach identically (Part 2).
 
 All four plan at the **same** `risk_tolerance: 0.65` (asserted by a test), so the
 cost basis is one rule rather than per-story special pleading, and **every story
-plans inside its own budget** (also asserted) — nothing is capped at
-`implementing` anywhere. Raising any budget changes no outcome (measured:
-Reactive is identical from $600M to $800M; Budget-Constrained is 99.4% at every
-combination from $100M/1.0 to $200M/0.65, because its number comes from hard
-stops it cannot afford *at all*, not from the cost basis).
+plans inside its own budget** (also asserted) — nothing is left unfunded anywhere.
+"Spend at 2030" is what the budget line charges then; it is below each plan's
+summed cost basis because a story block that hasn't yet passed its baseline by
+2030 is still sunk cost. Raising a budget changes no outcome (measured: Reactive is
+identical from $1,710M up, Proactive from $2,610M up, and Budget-Constrained reads
+50.8% at every combination from $100M/rt 1.0 to $400M/0.65). Cutting one now does,
+because an unfunded block is simply not built: Reactive at $1,500M leaves 8 blocks
+unfunded and reads 47.2% / SL 1.69, and Proactive at $2,400M leaves 15 unfunded at
+30.7% / SL 2.44.
 
-Proactive's trajectory is a steady decline over all 13 playback steps:
-`100 → 81.6 → 66.3 → 59.4 → 44.2 → 41.7 → 38.2 → 37.9 → 28.2 → 19.0 → 18.2 →
-16.2 → 16.1%`.
+Proactive's trajectory never rises over the 13 playback steps:
+`76.5 → 54.7 → 47.9 → 45.9 → 33.1 → 31.6 → 29.2 → 29.2 → 28.2 → 19.0 → 18.2 →
+16.2 → 16.1%`. (It starts at 76.5%, not 100%, because every story opens on the
+researched baseline posture rather than a bare field.)
 
-The three incomplete stories all sit slightly worse than they did before
-`enablementFactor` landed (Reactive 43.9% → 51.1%, SL 1.80 → 1.67), which is the
-mechanic working: a posture that buys `NET-01` and no way to move data across it
-is now priced as the partial control it bought. Proactive is the one story the
-change *improved*, and only because it was amended in response to it — adding
-`PHY-02` ($54.5M, the companion of both `PHY-01` and `PHY-05`) took it from
-SL 3.42 to 3.53 and made the physical family count for what it claims.
+When `enablementFactor` landed, the three incomplete stories got slightly worse —
+the mechanic working: a posture that buys `NET-01` and no way to move data across
+it is priced as the partial control it bought. Proactive was amended in response
+(adding `PHY-02`, the companion of both `PHY-01` and `PHY-05`), which is what makes
+the physical family count for what it claims.
 
 ### SL is a breadth measure, and that sets the price of SL 3.5
 
@@ -403,24 +441,29 @@ its categories half-empty. Measured, all mature at 2030:
 
 | Posture | Cost | SL | Breach |
 |---|---|---|---|
-| first 23 of the Proactive plan | $1,242M | 2.56 | 39.3% |
-| first 30 | $1,363M | 3.11 | 37.2% |
-| all 34 (**the Proactive plan**) | $1,384M | **3.53** | **16.1%** |
-| all 47 blocks | $3,668M | 4.42 | 4.7% |
+| first 23 of the Proactive plan | $2,462M | 2.60 | 39.3% |
+| first 28 | $2,557M | 3.02 | 37.2% |
+| all 33 (**the Proactive plan**) | $2,590M | **3.47** | **16.1%** |
+| all 47 blocks | $4,461M | 4.41 | 4.0% |
 
-The prefixes are the plan's own blocks in start-year order, all matured, so the
-rows differ only in *how many* of them the org got to — which is exactly the
-question a reader has.
+The prefixes are the plan's own blocks in start-year order, all matured and with
+nothing else in place (no baseline), so the rows differ only in *how many* of them
+the org got to — which is exactly the question a reader has. The story itself reads
+SL 3.53, not 3.47, because it also keeps the lab's existing baseline controls.
 
 Three consequences:
 
-1. **A 23-block plan structurally caps near SL 2.5**, whichever 23 it buys.
-   Reaching 3.5 takes 34. This is why Proactive's budget is $1.4B and not $800M:
-   ~$1.4B is what SL 3.5 costs in this model, and that *is* the finding.
-2. **The ceiling is 4.42, not 5.0.** Even with the entire catalog matured, slider
+1. **A 23-block plan structurally caps near SL 2.6**, whichever 23 it buys.
+   Reaching 3.5 takes the whole 33-block plan on top of the lab's baseline. This is
+   why Proactive's budget is $2.8B: ~$2.6B is what SL 3.5 costs in this model, and
+   that *is* the finding — more than half of it ($1,395M) is `PHY-01`, the building,
+   since the 2026 value audit priced it as a classified-grade AI datacenter rather
+   than a SCIF-sized room.
+2. **The ceiling is 4.41, not 5.0.** Even with the entire catalog matured, slider
    penalties (org 0.7 / vendor 0.6 / gov 0.7) and AI erosion never fully clear.
-   At perfect sliders and no erosion it reaches exactly 5.00, so the gap is
-   entirely those two channels, not a bug in the mean.
+   At perfect sliders and no erosion (2024, before the AI curve leaves zero) it
+   reaches exactly 5.00, so the gap is entirely those two channels, not a bug in the
+   mean.
 3. **`sl_requirement` is authored but unscored.** Every block declares
    `{first_recommended, first_required}` (21× `{3,4}`, 19× `{4,5}`, 3× `{3,3}`,
    3× `{4,4}`, 1× `{5,5}`), and `scoring.ts` never reads it — only `PolicyView`
@@ -440,24 +483,25 @@ with exactly one deliberate gap. `long-game` is an all-personnel chain
 (two-person control, $5M) and **PER-04** (continuous vetting, $10M).
 
 That $15M omission is load-bearing, and it is a *choice*, not an affordability
-constraint — buying both fits the same $1,400M budget with $1M to spare, and
-lands at **4.7% breach and SL 3.70**. Breach is a `max` over chains, and with
-breadth this wide the other six are already on the residual floor (`long-game`
-4.7%, everything else 2.6–3.0%), so $15M of personnel controls buys 0.17 of SL
-and cuts the headline number by two-thirds. A $1.4B program that reads as
+constraint — buying both costs $2,605M of the same $2,800M budget, and lands at
+**4.7% breach and SL 3.78**. Breach is a `max` over chains, and with breadth this
+wide the other six are already on the residual floor (`long-game` 4.7%, everything
+else 2.6–3.0%), so $15M of personnel controls buys 0.25 of SL and cuts the headline
+number by more than two-thirds. A $2.6B program that reads as
 "solved" is the exact failure mode the recalibration removed, so the story leaves
 one chain meaningfully open and says so in its own captions.
 
-Enumerating the alternatives (full catalog minus each candidate omission set,
-$3.6B, so plan cost is not the binding constraint) shows how narrow the band is:
+Enumerating the alternatives (full catalog minus each candidate omission set, all
+matured, ~$4.5B, so plan cost is not the binding constraint) shows how narrow the
+band is:
 
 | Omitted | SL | Breach |
 |---|---|---|
-| PER-04 only | 4.20 | 8.7% |
-| PER-04, PER-02 | 3.92 | 16.1% |
-| PER-04, PER-03 | 3.99 | 16.5% |
-| PER-04, PER-03, PER-05 | 3.76 | 30.7% |
-| all four | 3.48 | 52.1% |
+| PER-04 only | 4.22 | 7.4% |
+| PER-04, PER-02 | 3.94 | 14.1% |
+| PER-04, PER-03 | 4.00 | 14.4% |
+| PER-04, PER-03, PER-05 | 3.78 | 26.9% |
+| all four | 3.50 | 47.2% |
 
 Two further constraints shaped the schedule:
 
@@ -465,30 +509,36 @@ Two further constraints shaped the schedule:
   completes is a step where AI advances unopposed and breach ticks up. Ten blocks
   start in 2024 — including the cheap 12–18-month items (PHY-03/04, NET-04/07,
   SC-05, PER-08) — specifically so the curve falls through 2024.5–2025 instead of
-  sitting at 100% waiting for 48-month hardware. The 2027–2028.25 tail (AI-04,
+  sitting at the baseline's ~77% waiting for 48-month hardware. The 2027–2028.25 tail (AI-04,
   PER-05, PHY-05, PER-07) lands completions in the steps that would otherwise be
   flat. A local search over start years found this schedule; the seed ordering,
   which front-loaded the mega-projects, had two rising steps.
 - **The mega-projects pay off late and all at once.** HW-01, HW-03 and HW-07 are
-  48-month builds and PHY-01 is 36, so the biggest single drop in the story
-  (34% → 18%) is those four completing across 2028–2028.5.
+  48-month builds and PHY-01 is 36, so the largest late drop in the story
+  (28% → 19%, 2028 → 2028.5) is those four completing.
 
-Budget-Constrained lands next to Do Nothing because $200M funds none of the
-three hard stops on `zero-day-cascade` (NET-01 $50M, HW-07 $50M + its $100M
-HW-01 prerequisite, HW-09). Its personnel spend does cut `long-game` to 14% and
-`alignment-researcher` to 5% — but breach is a max, so the one open path sets
-the number. That is the intended lesson, not a calibration failure: a budget too
-small to buy any structural control buys very little breach reduction.
+Budget-Constrained buys no structural control at all: at the 0.65 basis $200M
+funds none of the hard stops on `zero-day-cascade` (NET-01 $85M, HW-07 $138M plus
+its $240M HW-01 prerequisite, HW-09 $10M on top of HW-01), and none of the AI-07 /
+AI-08 extraction defenses. Its personnel spend does cut `long-game` to 11.7% and
+`alignment-researcher` to 6.3% — but breach is a max, so the open path sets the
+number: `patient-distillation` at 50.8%, with `zero-day-cascade` (30.6%) and
+`poisoned-chip` (26.4%) behind it. That is the intended lesson, not a calibration
+failure: a budget too small to buy any structural control buys little breach
+reduction.
 
 ### Invariants under test
 
 - **Monotonicity** (`monotonicity.test.ts`) — a property test over random
   postures: advancing or adding any block never raises breach. Every term above
   is built to preserve this.
-- **Ordering** (`scripts.test.ts`) — Do Nothing > Budget-Constrained > Reactive
-  ≫ Proactive, with Reactive at least 1.5× Proactive and Proactive inside
-  10–20%. The floor matters as much as the ceiling: single digits would read as
-  "solved".
+- **One pipeline** (`posture.test.ts`) — the Score card, the timeline sampler, the
+  Policy view and the CISO view report the identical SL, headline breach and
+  per-chain breach for a posture with budget caps, a dependency cap and non-unit
+  slider multipliers all in play.
+- **Ordering** (`scripts.test.ts`) — Do Nothing > Budget-Constrained > Reactive >
+  Proactive, with Do Nothing above 60% and Proactive inside 10–25%. The floor
+  matters as much as the ceiling: single digits would read as "solved".
 - **Proactive SL band** (`scripts.test.ts`) — Proactive must land at SL 3.5–4.0
   at 2030. Pinning breach alone let the story drift to SL 2.5, which reads as a
   failing grade on a program that cut its worst path by 85%; the two numbers have
@@ -496,8 +546,12 @@ small to buy any structural control buys very little breach reduction.
 - **Affordability** (`scripts.test.ts`) — every story must plan *inside* its own
   budget, checked twice: by summing `blockCostBasis` at the story's own
   `risk_tolerance`, and through the engine by asserting `applyBudgetConstraint`
-  caps nothing. A story that overruns has decorative start years past its budget
-  line.
+  leaves nothing unfunded. A story that overruns has decorative start years past
+  its budget line.
+- **The budget binds** (`monotonicity.test.ts`) — an over-budget block falls back
+  to its baseline from every state; a $0 budget with everything clicked reproduces
+  the starting posture's numbers exactly; and advancing any block through the full
+  pipeline, under any budget, never raises any chain's breach.
 - **Proactive monotonicity** (`scripts.test.ts`) — breach never rises across the
   13 playback steps. Distinct from the engine-level invariant below: this one
   catches a *schedule* with a gap in it, not a formula that misbehaves.
@@ -518,16 +572,17 @@ small to buy any structural control buys very little breach reduction.
   fraction with a `why` long enough to be a reason. A soft factor can't crash,
   so a bad entry would silently misprice a block forever.
 
-### Known limitation: Do Nothing is flat at the default adversary
+### Known limitation: Do Nothing doesn't rise the way its captions say
 
-The app defaults to OC4. Undefended against OC4, the worst chain is already 100%
-in 2024 and stays there for all 13 playback steps, so the Do Nothing story plays
-as a flat line while its captions narrate a rising threat. The rise is real, just
-not at that tier — undefended goes 10% → 94% at OC1, and 10% → 76% at OC2 with
-the model air-gapped. Fixing it properly needs either a per-script `adversaryOc`
-override (scripts currently cannot set one) or captions rewritten to describe
-what OC4 actually shows: everything is open from the start, and AI only widens
-the margin.
+The app defaults to OC4. Do Nothing opens on the researched baseline posture, so
+its worst chain starts at 77% in 2024, *drops* to 63% in 2026 as the dated baseline
+controls arrive (`baseline_since`: ASL-3 egress controls and two-party weight
+authorization in 2025, the LLM supervisor and production classifiers in 2026),
+and only then climbs back to 68% by 2030 as AI erodes them. Its captions narrate
+a steadily rising threat, which describes only the second half. The undefended
+rise is real, just steeper at lower tiers. Fixing it properly needs either a
+per-script `adversaryOc` override (scripts currently cannot set one) or captions
+rewritten to describe what OC4 actually shows.
 
 ---
 
@@ -543,11 +598,19 @@ the margin.
 - Experts disagree on whether full SL5 (5.0) is achievable at all. The residual
   floor is the model's way of not pretending otherwise.
 
-## Not implemented
+## Distillation exposure
 
-The **distillation exposure accumulator** (a continuous "adversary model
-fidelity %" integrating query volume × info-per-query × AI efficiency over
-serving time) was designed but never built. Today the model handles distillation
-as the binary `requires_external_serving` precondition on `patient-distillation`
-plus the AI-07 / AI-08 blocks. A continuous accumulator would be a better
-representation of a threat that is cumulative rather than event-driven.
+The **distillation exposure accumulator** is built (`engine/distillation.ts`): for
+an externally served model, `distillationProgress` integrates a monthly extraction
+rate from 2026 to the current year — a 0.5%/month base, multiplied by
+`1 + 4 × aiCapability` and by `1 − reduction`, where operational AI-07 (outbound
+channel defense, −60%) and NET-04 (rate limiting, −40%) compose multiplicatively —
+capped at 100%. The Score card shows it as the "Extraction … distilled" meter, and
+it reads 0 when the model is not served externally.
+
+What it does *not* do is feed either headline number. Breach still handles
+distillation through the `patient-distillation` chain — the binary
+`requires_external_serving` precondition plus the AI-07 / AI-08 blocks — and the
+accumulator's `isModelCompromised` threshold (80%) is not wired to anything. Making
+the chain read the accumulator, so a threat that is cumulative rather than
+event-driven is scored as one, is still open.

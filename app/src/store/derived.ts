@@ -1,16 +1,13 @@
 import { useMemo } from "react";
 import { useSimulationStore } from "./simulation";
 import {
-  computeCategoryScores,
-  overallSlScore,
   computeBreachProbabilities,
   distillationProgress,
   distillationDefenseReduction,
   applyBudgetConstraint,
-  applyDependencyConstraint,
-  relevantBlockIds,
+  scorePosture,
 } from "../engine";
-import type { Block } from "../engine/types";
+import type { AttackChain, Block, BlockState, Sliders } from "../engine/types";
 import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
 import type { LayerId } from "../utils/ring-geometry";
 
@@ -43,70 +40,64 @@ export function useBudgetStatus(): {
   }, [blocks, blockStates, advanceOrder, budgetMillions, riskTolerance]);
 }
 
+/** Everything `deriveSimulationResults` reads — the store's simulation inputs. */
+export interface SimulationSnapshot {
+  blocks: Block[];
+  attackChains: AttackChain[];
+  blockStates: Record<string, BlockState>;
+  advanceOrder: string[];
+  year: number;
+  sliders: Sliders;
+  adversaryOc: number;
+  modelServedExternally: boolean;
+}
+
 /**
- * Hook that computes all derived simulation results from current store state.
- * React components subscribe to this for live-updating scores.
+ * All derived simulation results for one store snapshot. Pure, so the
+ * consistency test can call it without React; `useSimulationResults` is a
+ * memoized wrapper around it.
+ *
+ * The scores themselves come from `scorePosture` — the same pipeline the
+ * timeline, the Policy and CISO analyses and the intro's mini-game run — so no
+ * panel can show a different SL or breach for the same posture.
  */
-export function useSimulationResults() {
+export function deriveSimulationResults(snapshot: SimulationSnapshot) {
   const {
     blocks,
+    attackChains,
     blockStates,
     advanceOrder,
     year,
     sliders,
     adversaryOc,
-    attackChains,
     modelServedExternally,
-  } = useSimulationStore();
+  } = snapshot;
 
-  // Over-budget blocks are capped at "implementing" for all scoring purposes;
-  // funding follows advancement order so a new block can only cap itself.
-  const {
-    effectiveStates: budgetedStates,
-    exceededIds: budgetExceededIds,
-    spentMillions,
-  } = applyBudgetConstraint(blocks, blockStates, sliders.budget_millions, {
-    order: advanceOrder,
-    riskTolerance: sliders.risk_tolerance,
-  });
-
-  // A block whose hard prerequisites aren't operational is capped too.
-  const {
-    effectiveStates,
-    unmetIds: dependencyUnmetIds,
-    unmetRequires: dependencyUnmetRequires,
-  } = applyDependencyConstraint(blocks, budgetedStates);
-
-  // Score each category over the blocks that matter to the threat model, so SL
-  // tracks real coverage instead of being diluted by never-deployed catalog depth.
-  const relevantIds = relevantBlockIds(attackChains, blocks);
-  const categoryScores = computeCategoryScores(
+  // Over-budget blocks fall back to their baseline and unmet prerequisites cap
+  // at implementing, for every number below; funding follows advancement order
+  // so a new block can only cap itself.
+  const score = scorePosture({
     blocks,
-    effectiveStates,
+    chains: attackChains,
+    blockStates,
+    advanceOrder,
     year,
     sliders,
-    relevantIds
-  );
-
-  const overall = overallSlScore(categoryScores);
-
-  const breachProbabilities = computeBreachProbabilities(
-    attackChains,
-    blocks,
-    effectiveStates,
     adversaryOc,
-    year,
-    sliders,
-    modelServedExternally
-  );
-
-  const bestChain = Object.entries(breachProbabilities).reduce<{
-    id: string;
-    probability: number;
-  } | null>((best, [id, prob]) => {
-    if (!best || prob > best.probability) return { id, probability: prob };
-    return best;
-  }, null);
+    modelServedExternally,
+  });
+  const {
+    effectiveStates,
+    budgetExceededIds,
+    spentMillions,
+    dependencyUnmetIds,
+    dependencyUnmetRequires,
+    categoryScores,
+    overallSl: overall,
+    breachProbabilities,
+    residualFloors,
+    bestChain,
+  } = score;
 
   // Distillation defenses: AI-07 (outbound channel defense) and NET-04
   // (bandwidth/rate limitation) each reduce the extraction rate.
@@ -198,9 +189,11 @@ export function useSimulationResults() {
   }
 
   return {
+    effectiveStates,
     categoryScores,
     overallSl: overall,
     breachProbabilities,
+    residualFloors,
     bestChain,
     extractionProgress,
     breachByOc,
@@ -213,4 +206,36 @@ export function useSimulationResults() {
     spentMillions,
     overBudget: budgetExceededIds.size > 0,
   };
+}
+
+/**
+ * Hook that computes all derived simulation results from current store state.
+ * React components subscribe to this for live-updating scores. Memoized on the
+ * simulation inputs, so UI-only store changes (selected chain, perspective)
+ * don't re-run the engine.
+ */
+export function useSimulationResults() {
+  const blocks = useSimulationStore((s) => s.blocks);
+  const attackChains = useSimulationStore((s) => s.attackChains);
+  const blockStates = useSimulationStore((s) => s.blockStates);
+  const advanceOrder = useSimulationStore((s) => s.advanceOrder);
+  const year = useSimulationStore((s) => s.year);
+  const sliders = useSimulationStore((s) => s.sliders);
+  const adversaryOc = useSimulationStore((s) => s.adversaryOc);
+  const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
+
+  return useMemo(
+    () =>
+      deriveSimulationResults({
+        blocks,
+        attackChains,
+        blockStates,
+        advanceOrder,
+        year,
+        sliders,
+        adversaryOc,
+        modelServedExternally,
+      }),
+    [blocks, attackChains, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
+  );
 }

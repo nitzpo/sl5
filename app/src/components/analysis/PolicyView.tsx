@@ -1,107 +1,36 @@
 import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
-import {
-  computeCategoryScores,
-  overallSlScore,
-  relevantBlockIds,
-} from "../../engine/scoring";
+import { policyLeverImpacts } from "../../utils/policy-levers";
 import { formatSl } from "../../utils/format";
-
-interface LeverImpact {
-  lever: string;
-  currentValue: number;
-  targetValue: number;
-  slDelta: number;
-  unlockedBlocks: string[];
-  acceleratedBlocks: string[];
-}
-
-// Which blocks each slider affects
-const GOV_BLOCKS = ["PER-04", "PHY-01", "SC-05", "NET-03", "PER-01"];
-const VENDOR_BLOCKS = ["HW-01", "HW-02", "HW-03", "HW-04", "HW-06", "HW-07", "HW-10"];
-const ORG_BLOCKS = ["NET-01", "PER-02", "PER-08", "PHY-01", "PER-01", "PER-04", "PER-05"];
 
 export function PolicyView() {
   const blocks = useSimulationStore((s) => s.blocks);
   const blockStates = useSimulationStore((s) => s.blockStates);
+  const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
+  const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const attackChains = useSimulationStore((s) => s.attackChains);
-  const relevantIds = useMemo(() => relevantBlockIds(attackChains), [attackChains]);
+  const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
 
-  // Compute current SL
-  const currentSl = useMemo(() => {
-    const cats = computeCategoryScores(blocks, blockStates, year, sliders.ai_timeline, relevantIds);
-    return overallSlScore(cats);
-  }, [blocks, blockStates, year, sliders, relevantIds]);
-
-  // Simulate "what if" for each policy lever at high value
-  const levers = useMemo(() => {
-    const results: LeverImpact[] = [];
-
-    // Gov cooperation → 0.8
-    const govBlocks = blocks.filter((b) => GOV_BLOCKS.includes(b.id));
-    const govUnlocked = govBlocks.filter(
-      (b) => (blockStates[b.id] ?? "not_started") === "not_started"
-    );
-    // Simulate: move gov-affected blocks from not_started to implementing
-    const govStates = { ...blockStates };
-    for (const b of govUnlocked) govStates[b.id] = "implementing";
-    const govCats = computeCategoryScores(blocks, govStates, year, sliders.ai_timeline, relevantIds);
-    const govSl = overallSlScore(govCats);
-    results.push({
-      lever: "Government Cooperation",
-      currentValue: sliders.gov_cooperation,
-      targetValue: 0.8,
-      slDelta: govSl - currentSl,
-      unlockedBlocks: govUnlocked.map((b) => b.id),
-      acceleratedBlocks: govBlocks
-        .filter((b) => !govUnlocked.includes(b))
-        .map((b) => b.id),
-    });
-
-    // Vendor cooperation → 0.9
-    const vendorBlocks = blocks.filter((b) => VENDOR_BLOCKS.includes(b.id));
-    const vendorUnlocked = vendorBlocks.filter(
-      (b) => (blockStates[b.id] ?? "not_started") === "not_started"
-    );
-    const vendorStates = { ...blockStates };
-    for (const b of vendorUnlocked) vendorStates[b.id] = "implementing";
-    const vendorCats = computeCategoryScores(blocks, vendorStates, year, sliders.ai_timeline, relevantIds);
-    const vendorSl = overallSlScore(vendorCats);
-    results.push({
-      lever: "Vendor Cooperation",
-      currentValue: sliders.vendor_cooperation,
-      targetValue: 0.9,
-      slDelta: vendorSl - currentSl,
-      unlockedBlocks: vendorUnlocked.map((b) => b.id),
-      acceleratedBlocks: vendorBlocks
-        .filter((b) => !vendorUnlocked.includes(b))
-        .map((b) => b.id),
-    });
-
-    // Org transformation → 0.9
-    const orgBlocks = blocks.filter((b) => ORG_BLOCKS.includes(b.id));
-    const orgUnlocked = orgBlocks.filter(
-      (b) => (blockStates[b.id] ?? "not_started") === "not_started"
-    );
-    const orgStates = { ...blockStates };
-    for (const b of orgUnlocked) orgStates[b.id] = "implementing";
-    const orgCats = computeCategoryScores(blocks, orgStates, year, sliders.ai_timeline, relevantIds);
-    const orgSl = overallSlScore(orgCats);
-    results.push({
-      lever: "Org Transformation",
-      currentValue: sliders.org_transformation,
-      targetValue: 0.9,
-      slDelta: orgSl - currentSl,
-      unlockedBlocks: orgUnlocked.map((b) => b.id),
-      acceleratedBlocks: orgBlocks
-        .filter((b) => !orgUnlocked.includes(b))
-        .map((b) => b.id),
-    });
-
-    return results.sort((a, b) => b.slDelta - a.slDelta);
-  }, [blocks, blockStates, year, sliders, currentSl, relevantIds]);
+  // The current posture and each lever's what-if both go through the shared
+  // pipeline (`scorePosture`), so "current" here is the Score card's SL and the
+  // deltas include the slider the lever actually moves.
+  const { current, levers } = useMemo(
+    () =>
+      policyLeverImpacts({
+        blocks,
+        chains: attackChains,
+        blockStates,
+        advanceOrder,
+        year,
+        sliders,
+        adversaryOc,
+        modelServedExternally,
+      }),
+    [blocks, attackChains, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
+  );
+  const currentSl = current.overallSl;
 
   // Industry bottlenecks
   const bottlenecks = useMemo(() => {
@@ -140,7 +69,13 @@ export function PolicyView() {
                 </span>
               </div>
               <div className="text-[10px] text-gray-500 mt-1">
-                {lever.currentValue.toFixed(1)} → {lever.targetValue}
+                {lever.currentValue.toFixed(1)} → {Math.max(lever.currentValue, lever.targetValue).toFixed(1)}
+                {Math.abs(lever.breachDelta) >= 0.0005 && (
+                  <span className="ml-2">
+                    breach {lever.breachDelta < 0 ? "−" : "+"}
+                    {(Math.abs(lever.breachDelta) * 100).toFixed(1)}pt
+                  </span>
+                )}
               </div>
               {lever.unlockedBlocks.length > 0 && (
                 <div className="text-[10px] text-emerald-500 mt-1">
@@ -170,8 +105,8 @@ export function PolicyView() {
             Blocks not deployed:{" "}
             {blocks.filter(
               (b) =>
-                (blockStates[b.id] ?? "not_started") !== "deployed" &&
-                (blockStates[b.id] ?? "not_started") !== "mature"
+                (current.effectiveStates[b.id] ?? "not_started") !== "deployed" &&
+                (current.effectiveStates[b.id] ?? "not_started") !== "mature"
             ).length}{" "}
             / {blocks.length}
           </div>

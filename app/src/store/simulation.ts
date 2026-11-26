@@ -8,7 +8,7 @@ import type {
   AttackChain,
   OcDefinition,
 } from "../engine/types";
-import { baselineStates } from "../engine/baseline";
+import { baselineStates, isAtOrBelowBaseline } from "../engine/baseline";
 import { TIMELINE_REFERENCE } from "../utils/timeline";
 import {
   saveToLocalStorage,
@@ -81,12 +81,29 @@ const DEFAULT_SLIDERS: Sliders = {
   risk_tolerance: 0.5,
 };
 
-/** Keep the advancement order in sync with a single block-state change. */
-function orderWith(order: string[], blockId: string, nextState: BlockState): string[] {
+/** Keep the advancement order in sync with a single block-state change.
+ *
+ * A block that crosses its baseline — from a state the lab already runs for
+ * free to one it has to pay for — moves to the END of the order, because that
+ * is the moment it joins the funding queue. Baseline blocks are seeded into the
+ * order at load, so without this, advancing one past its baseline would queue
+ * it ahead of every later purchase and could unfund one of them: exactly the
+ * "a new block evicts an earlier commitment" failure the order exists to rule
+ * out. */
+function orderWith(
+  order: string[],
+  block: Block | undefined,
+  blockId: string,
+  prevState: BlockState,
+  nextState: BlockState
+): string[] {
   const active = nextState !== "not_started";
   const has = order.includes(blockId);
-  if (active && !has) return [...order, blockId];
-  if (!active && has) return order.filter((id) => id !== blockId);
+  if (!active) return has ? order.filter((id) => id !== blockId) : order;
+  const startsCosting =
+    !!block && !isAtOrBelowBaseline(block, nextState) && isAtOrBelowBaseline(block, prevState);
+  if (has && startsCosting) return [...order.filter((id) => id !== blockId), blockId];
+  if (!has) return [...order, blockId];
   return order;
 }
 
@@ -176,7 +193,13 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   setBlockState: (blockId, state) => {
     set((s) => ({
       blockStates: { ...s.blockStates, [blockId]: state },
-      advanceOrder: orderWith(s.advanceOrder, blockId, state),
+      advanceOrder: orderWith(
+        s.advanceOrder,
+        s.blocks.find((b) => b.id === blockId),
+        blockId,
+        s.blockStates[blockId] ?? "not_started",
+        state
+      ),
       scenarioName: null,
     }));
   },
@@ -187,7 +210,13 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     const next = STATE_CYCLE[(idx + 1) % STATE_CYCLE.length];
     set((s) => ({
       blockStates: { ...s.blockStates, [blockId]: next },
-      advanceOrder: orderWith(s.advanceOrder, blockId, next),
+      advanceOrder: orderWith(
+        s.advanceOrder,
+        s.blocks.find((b) => b.id === blockId),
+        blockId,
+        current,
+        next
+      ),
       scenarioName: null,
     }));
   },

@@ -234,45 +234,6 @@ export interface WorldState {
   };
 }
 
-export interface SimulationConfig {
-  scoring: {
-    method: "weakest_link" | "weighted_harmonic" | "hybrid";
-    hybrid_weights: {
-      weakest_link_weight: number;
-      harmonic_mean_weight: number;
-    };
-    category_weights: Record<Category, number>;
-    baseline_floor: number;
-  };
-  breach_probability: {
-    model: "chain_max" | "chain_aggregate";
-    sigmoid_steepness: number;
-    hard_stop_bypass_when_deployed: number;
-    probabilistic_bypass_when_deployed: number;
-    implementing_bypass: number;
-    defense_in_depth_discount: {
-      per_additional_layer_factor: number;
-      correlation_penalty: number;
-    };
-  };
-  block_maturation: {
-    states: BlockState[];
-    partial_effectiveness: Record<BlockState, number>;
-    deployed_to_mature_months: number;
-  };
-  distillation_model: {
-    base_extraction_rate_per_month: number;
-    ai_efficiency_multiplier_at_full: number;
-    defense_effectiveness: {
-      rate_limiting_reduction: number;
-      output_perturbation_reduction: number;
-      pattern_detection_reduction: number;
-      restricted_output_format_reduction: number;
-    };
-    compromise_threshold: number;
-  };
-}
-
 export interface Sliders {
   ai_timeline: number; // 0 (pessimistic) to 1 (optimistic)
   gov_cooperation: number;

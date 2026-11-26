@@ -419,7 +419,7 @@
     ],
     "real_world_parallels": [
       {
-        "description": "Manhattan Project infiltration rate was ~0.5% despite wartime security measures (Klaus Fuchs, Ted Hall). The SenL framework aims to achieve similar or better detection in peacetime private sector — an unprecedented goal.",
+        "description": "Wartime vetting did not stop Soviet intelligence penetrating the Manhattan Project (Klaus Fuchs, Ted Hall and others), even under the strictest security measures of the era. The SenL framework aims for detection at least that good in a peacetime private-sector setting — an unprecedented goal.",
         "source": "Manhattan Project espionage history",
         "year": 1945
       }

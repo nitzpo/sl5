@@ -1,4 +1,6 @@
 import { TIMELINE_START, TIMELINE_END } from "./timeline";
+import { getAiCapability } from "../engine/ai-curve";
+import { scorePosture, type PostureInput } from "../engine/posture";
 
 /**
  * Sampling the risk curves, and reading a value off them at an arbitrary year.
@@ -10,7 +12,7 @@ import { TIMELINE_START, TIMELINE_END } from "./timeline";
 
 /** The curves are sampled on this grid, not on the seven whole-year ticks.
  * Every scripted deployment starts on a .0/.25/.5 boundary, so a quarter-year
- * grid lands exactly on them and the defense line finally shows the step where
+ * grid lands exactly on them and the SL line finally shows the step where
  * a block arrives instead of a straight line drawn through it. */
 export const SAMPLE_STEP = 0.25;
 
@@ -21,10 +23,36 @@ export const SAMPLE_YEARS: number[] = Array.from(
 
 export interface RiskSample {
   year: number;
+  /** Headline breach probability (max over chains), 0–1. */
   threat: number;
-  defense: number;
+  /** Overall security level, on its own 1–5 scale — never drawn on the
+   * probability axis, which is why it is not normalised to 0–1 here. */
+  sl: number;
+  /** AI capability, 0–1. */
   aiCap: number;
   chainProbs: Record<string, number>;
+}
+
+/**
+ * The timeline's curves: the CURRENT posture held fixed and scored at each
+ * sample year, through `scorePosture` — the same pipeline as the Score card,
+ * so the track's value at the store's year is the card's value, not a cousin
+ * of it computed with different inputs.
+ */
+export function sampleRiskCurve(
+  input: Omit<PostureInput, "year">,
+  years: number[] = SAMPLE_YEARS
+): RiskSample[] {
+  return years.map((year) => {
+    const score = scorePosture({ ...input, year });
+    return {
+      year,
+      threat: score.breach,
+      sl: score.overallSl,
+      aiCap: getAiCapability(year, input.sliders.ai_timeline),
+      chainProbs: score.breachProbabilities,
+    };
+  });
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -60,7 +88,7 @@ export function sampleAt(data: RiskSample[], year: number): RiskSample {
   return {
     year,
     threat: lerp(a.threat, b.threat, t),
-    defense: lerp(a.defense, b.defense, t),
+    sl: lerp(a.sl, b.sl, t),
     aiCap: lerp(a.aiCap, b.aiCap, t),
     chainProbs,
   };

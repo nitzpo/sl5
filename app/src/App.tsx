@@ -258,7 +258,7 @@ function App() {
                 badge="overBudget"
                 swatch={<span className="w-2 h-2 rounded-sm border border-dashed border-pink-500" />}
                 label="Over budget"
-                tip="Cost exceeds budget — effectiveness capped at Implementing level. Click to toggle."
+                tip="Cost exceeds budget — not funded, so it counts only as what your lab already runs (its baseline, usually not started). Click to toggle."
               />
             </div>
           </div>

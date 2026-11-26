@@ -1,5 +1,5 @@
 import type { Block, BlockState } from "./types";
-import { isAtOrBelowBaseline } from "./baseline";
+import { baselineStateFor, isAtOrBelowBaseline } from "./baseline";
 
 /**
  * Planning cost of a block, in upfront $M. Risk tolerance sets which end of
@@ -21,12 +21,33 @@ export interface BudgetOptions {
    * can only cap THAT block — it never evicts an earlier commitment. */
   order?: string[];
   riskTolerance?: number;
+  /** Where an unfunded block falls back to, overriding the real-world baseline.
+   * The introduction's mini-game builds from nothing, so its floor is
+   * `not_started` for every block. A missing id falls back to the baseline.
+   * Only for postures that never sit a block between this floor and its
+   * baseline — otherwise deploying it unfunded could drop it below the state it
+   * held for free. */
+  floorStates?: Record<string, BlockState>;
 }
+
+const STATE_ORDER: BlockState[] = [
+  "not_started",
+  "investing",
+  "implementing",
+  "deployed",
+  "mature",
+];
 
 /**
  * Budget constraint: active blocks consume the upfront budget in advancement
- * order; blocks past the budget line are funded only to "implementing" level —
- * a deployed/mature state the org cannot actually pay for is capped.
+ * order; a block past the budget line is not funded at all, so it stays where
+ * the lab already was — its real-world baseline (`baselineStateFor`), which for
+ * most of the catalogue is `not_started`.
+ *
+ * It used to be capped at `implementing` instead, which is 0.4 effectiveness
+ * plus half a layer of depth credit for money nobody spent: with a $0 budget,
+ * clicking every block still cut breach from ~65% to ~44%. A program the org
+ * cannot pay for is not 40% built; it is not built.
  *
  * Blocks sitting at or below their real-world baseline are SUNK COST and never
  * enter the funding queue: a lab does not re-buy the controls it already runs,
@@ -80,9 +101,22 @@ export function applyBudgetConstraint(
 
   const effectiveStates: Record<string, BlockState> = { ...blockStates };
   for (const id of exceededIds) {
-    const state = blockStates[id];
-    if (state === "deployed" || state === "mature") {
-      effectiveStates[id] = "implementing";
+    const block = blockById.get(id);
+    if (!block) continue;
+    // The UNDATED baseline, deliberately — the same one the sunk-cost rule
+    // above reads (`isAtOrBelowBaseline`). The floor has to be exactly the most
+    // a block can be for free: a dated floor (`baselineStateFor(block, year)`)
+    // would drop an unfunded block to `not_started` before its `baseline_since`
+    // while the same block at `implementing` still counts as free, so deploying
+    // it would make the posture worse. Keeping the two rules on one baseline is
+    // also what keeps effective states independent of the year.
+    const floor = opts.floorStates?.[id] ?? baselineStateFor(block);
+    const state = blockStates[id] ?? "not_started";
+    // The floor is a ceiling on what an unfunded block can claim, never a
+    // boost. (An exceeded block is active, so it already sits above its
+    // baseline and this always applies; the guard is for `floorStates`.)
+    if (STATE_ORDER.indexOf(floor) < STATE_ORDER.indexOf(state)) {
+      effectiveStates[id] = floor;
     }
   }
   return { effectiveStates, exceededIds, spentMillions: total };

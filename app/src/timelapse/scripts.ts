@@ -11,7 +11,7 @@ export const SCRIPTS: TimeLapseScript[] = [
     //
     // The plan is SIZED to the budget: 33 programs cost ~$2,610M at the shared
     // risk_tolerance 0.65 basis (`min + (1 - rt) * (max - min)`), against the
-    // $2,800M cap. Nothing is capped at `implementing` and every block reaches
+    // $2,800M cap. Nothing is left unfunded and every block reaches
     // `mature` by 2030, so the residual vs OC4 is what a fully-delivered
     // program actually leaves on the table — not an artifact of a plan the org
     // could never pay for.

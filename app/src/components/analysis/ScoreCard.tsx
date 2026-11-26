@@ -5,6 +5,7 @@ import { CATEGORY_LABELS } from "../../utils/geometry";
 import { LAYER_LABELS } from "../../utils/ring-geometry";
 import { breachLevel, slLevel, LEVEL_TEXT, LEVEL_HEX, SEMANTIC } from "../../utils/colors";
 import { useDeltaFlash } from "../../utils/use-delta-flash";
+import { targetSl } from "../../engine/posture";
 import type { Category } from "../../engine/types";
 
 const OC_ACTOR: Record<number, string> = {
@@ -41,14 +42,14 @@ export function ScoreCard() {
     spentMillions,
     defenseLayerStatus,
   } = useSimulationResults();
-  const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
   const budget = useSimulationStore((s) => s.sliders.budget_millions);
   const attackChains = useSimulationStore((s) => s.attackChains);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const year = useSimulationStore((s) => s.year);
   const selectedChainId = useSimulationStore((s) => s.selectedChainId);
   const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
-  const requiredSl = 5.0 - riskTolerance * 2.0;
+  // SL-n is meant to stop OC-n, so the target follows the adversary tier.
+  const requiredSl = targetSl(adversaryOc);
 
   // Weakest defense layer — the narrative "where they get in" that used to live
   // in the (now-removed) canvas verdict banner.
@@ -137,12 +138,15 @@ export function ScoreCard() {
           <div
             className="absolute top-0 h-2 w-0.5 bg-gray-400"
             style={{ left: `${(requiredSl / 5) * 100}%` }}
-            title={`Required: SL ${formatSl(requiredSl)}`}
+            title={`Target: SL ${formatSl(requiredSl)} — the level meant to stop an OC${adversaryOc} adversary`}
           />
         </div>
         <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-gray-600">
-            Target: SL {formatSl(requiredSl)}
+          <span
+            className="text-[10px] text-gray-600"
+            title={`RAND's SL-n is the level meant to stop an OC-n adversary; the target follows the Adversary OC setting.`}
+          >
+            Target vs OC{adversaryOc}: SL {formatSl(requiredSl)}
           </span>
           <span className={`text-[10px] font-medium ${
             overallSl >= requiredSl ? "text-emerald-500" : "text-red-400"

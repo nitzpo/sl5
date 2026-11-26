@@ -6,9 +6,9 @@
 // Two rules this file exists to respect:
 //
 //  1. Real engine, real data. All arithmetic is in `../posture-game`, which
-//     calls the same functions `store/derived.ts` does, over the shipped
-//     blocks-*.json and attack-chains.json. Nothing is re-implemented, so these
-//     numbers cannot drift from the app's.
+//     runs the same `scorePosture` pipeline `store/derived.ts` does, over the
+//     shipped blocks-*.json and attack-chains.json. Nothing is re-implemented,
+//     so these numbers cannot drift from the app's.
 //  2. The intro still fetches nothing on load. The data is fetched lazily the
 //     first time someone opens the game, so the rest of the deck stays instant
 //     for the readers who never touch it.
@@ -20,7 +20,6 @@ import {
   BLOCK_FILES,
   BUDGET_MILLIONS,
   SHORTLIST,
-  VIABLE_THRESHOLD,
   YEAR,
   costOf,
   evaluatePosture,
@@ -215,7 +214,7 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
                     {formatCost(costOf(block))} ·{" "}
                     {overBudget ? (
                       <span className="text-pink-400">
-                        over budget — capped at {STATE_LABELS.implementing}
+                        over budget — not built
                       </span>
                     ) : unmet ? (
                       <span className="text-sky-400">needs {missing.join(", ")} first</span>
@@ -307,15 +306,18 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
             <div className="mt-2 space-y-1.5 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
               <p className="mb-2 text-xs leading-relaxed text-gray-500">
                 All {result.ranked.length} chains, ranked exactly as the app's{" "}
-                <Em>Attacker</Em> perspective ranks them — viable above{" "}
-                {Math.round(VIABLE_THRESHOLD * 100)}%, blocked below.
+                <Em>Attacker</Em> perspective ranks them. A chain is only ever{" "}
+                <Em>held</Em> — within half a point of its residual floor, the lowest any
+                posture can push it — never at zero.
               </p>
-              {result.ranked.map(({ chain, p }) => {
-                const blocked = p < VIABLE_THRESHOLD;
+              {result.ranked.map(({ chain, p, held }) => {
                 return (
                   <div key={chain.id} className="flex items-baseline gap-2 text-sm">
-                    <span className={blocked ? "text-emerald-500" : "text-red-500"}>
-                      {blocked ? "■" : "✗"}
+                    <span
+                      className={held ? "text-emerald-500" : "text-red-500"}
+                      title={held ? "Held at its residual floor" : "Viable"}
+                    >
+                      {held ? "■" : "✗"}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-gray-400">
                       {chain.name}
@@ -391,10 +393,10 @@ function Coaching({
     return (
       <p className="text-sm leading-relaxed text-gray-400">
         Out of money. The <span className="text-pink-300">pink dashed</span> blocks are the
-        ones the budget couldn't reach, so they're held at{" "}
-        <Em>{STATE_LABELS.implementing}</Em> — 40% effective instead of 85%, however firmly
-        you clicked. Deselect something you picked <Em>earlier</Em> to free the money up:
-        funding follows click order, so a later pick can only ever cap itself.
+        ones the budget couldn't reach, so they aren't built at all — they count for
+        nothing, however firmly you clicked. Deselect something you picked{" "}
+        <Em>earlier</Em> to free the money up: funding follows click order, so a later
+        pick can only ever cap itself.
       </p>
     );
   }

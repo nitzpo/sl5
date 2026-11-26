@@ -626,7 +626,7 @@
     "name": "Confidential Computing / TEE",
     "category": "machine",
     "summary_group": "confidential_computing",
-    "description": "Trusted Execution Environments that protect model weights during computation. Even with full host/OS compromise, the TEE keeps data encrypted and inaccessible. For AI accelerators, this means the GPU/TPU processes weights inside a hardware-protected enclave.",
+    "description": "Trusted Execution Environments that protect model weights during computation. With confidential computing on, the hardware refuses the host OS, hypervisor and DMA access to protected accelerator memory, and attestation proves that configuration before weights are released. NVIDIA's GPU CC protects on-package HBM by access control rather than runtime memory encryption, and its trust anchor is a CPU TEE (which does encrypt the VM's own memory). It defends against a compromised host's software, not against an attacker with physical access: in 2025 a sub-$1,000 DDR5 bus interposer extracted CPU-TEE attestation keys (TEE.fail).",
     "current_state": {
       "summary": "NVIDIA H100/Blackwell have GPU TEE (CC mode) and Rubin extends confidential computing across CPU, GPU and NVLink, but all commercial paths still pair the accelerator with a CPU TEE rather than excluding the CPU from the TCB. Physical attacks are excluded from the commercial threat model, and TEE.Fail (2025) demonstrated that exclusion is load-bearing: a sub-$1,000 DDR5 memory-bus interposer defeated Intel SGX/TDX, AMD SEV-SNP and NVIDIA Confidential Computing, recovering attestation keys. Research (GuardAIn, IEEE S&P 2025, formerly Ascend-CC) shows accelerator-only TEE is possible but has not shipped commercially.",
       "deployed_by": [
@@ -687,7 +687,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 1.0,
-      "exploit_narrative": "Without confidential computing, any adversary who achieves host-level compromise (root/kernel access via zero-day chain) can read model weights directly from accelerator memory. TEE makes this impossible even with full host compromise."
+      "exploit_narrative": "Without confidential computing, any adversary who achieves host-level compromise (root/kernel access via zero-day chain) can read model weights directly from accelerator memory. A TEE closes that route against a software-only host compromise; it does not stop an attacker with physical access to the memory bus."
     },
     "dependencies": {
       "requires": [

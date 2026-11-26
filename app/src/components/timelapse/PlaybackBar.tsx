@@ -6,6 +6,7 @@ import { useBudgetStatus, useSimulationResults } from "../../store/derived";
 import { formatCost, formatProbability, formatSl, formatYear } from "../../utils/format";
 import { TIMELINE_START, TIMELINE_END, quantizeYear } from "../../utils/timeline";
 import { breachLevel, LEVEL_TEXT, SEMANTIC } from "../../utils/colors";
+import { targetSl } from "../../engine/posture";
 import { ScriptSelector } from "./ScriptSelector";
 import type { PlaybackSpeed } from "../../timelapse/types";
 
@@ -26,7 +27,7 @@ function SpendChip() {
       style={{ color: capped > 0 ? SEMANTIC.overBudget : "#9ca3af" }}
       title={
         capped > 0
-          ? `Planned spend exceeds the budget: ${capped} block(s) held at implementing because they can't be funded`
+          ? `Planned spend exceeds the budget: ${capped} block(s) can't be funded, so they stay at their baseline`
           : "Planned upfront spend vs budget (basis follows Risk Tolerance)"
       }
     >
@@ -42,17 +43,16 @@ function EndSummary({ onReplay }: { onReplay: () => void }) {
   const attackChains = useSimulationStore((s) => s.attackChains);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const year = useSimulationStore((s) => s.year);
-  const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
   const budget = useSimulationStore((s) => s.sliders.budget_millions);
   const stop = usePlaybackStore((s) => s.stop);
   const chainName = bestChain
     ? attackChains.find((c) => c.id === bestChain.id)?.name ?? bestChain.id
     : null;
   const p = bestChain?.probability ?? 0;
-  // Same target the Security Posture card shows (risk tolerance sets it)
-  const target = 5 - riskTolerance * 2;
+  // Same target the Security Posture card shows: SL-n is meant to stop OC-n.
+  const target = targetSl(adversaryOc);
   // The money line. A posture whose plan outruns its budget ends with blocks
-  // capped at `implementing`, and that capping is usually the whole reason the
+  // left at their baseline, and that capping is usually the whole reason the
   // residual risk is what it is — so the summary has to say it, not leave it to
   // per-block badges nobody hovers. The scripted stories all plan inside their
   // budgets now, so this branch is for configs the user builds themselves.
@@ -81,8 +81,8 @@ function EndSummary({ onReplay }: { onReplay: () => void }) {
           against a {formatCost(budget)} budget
           {cappedCount > 0 && (
             <>
-              {" "}— {cappedCount} block{cappedCount === 1 ? "" : "s"} capped at
-              implementing, unaffordable at this budget
+              {" "}— {cappedCount} block{cappedCount === 1 ? "" : "s"} unaffordable at
+              this budget, left at {cappedCount === 1 ? "its" : "their"} baseline
             </>
           )}
           .

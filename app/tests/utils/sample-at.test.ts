@@ -4,7 +4,7 @@ import { sampleAt, type RiskSample } from "../../src/utils/risk-samples";
 /** A stand-in for the quarter-year grid the track builds, on a rising ramp. */
 const grid: RiskSample[] = Array.from({ length: 25 }, (_, i) => {
   const year = 2024 + i * 0.25;
-  return { year, threat: i / 24, defense: 1 - i / 24, aiCap: i / 24, chainProbs: { "a-chain": i / 24 } };
+  return { year, threat: i / 24, sl: 5 - (4 * i) / 24, aiCap: i / 24, chainProbs: { "a-chain": i / 24 } };
 });
 
 describe("sampleAt", () => {
@@ -12,7 +12,7 @@ describe("sampleAt", () => {
     // Halfway between grid points, on a linear ramp: the exact midpoint.
     const mid = sampleAt(grid, 2024.125);
     expect(mid.threat).toBeCloseTo(0.5 / 24, 10);
-    expect(mid.defense).toBeCloseTo(1 - 0.5 / 24, 10);
+    expect(mid.sl).toBeCloseTo(5 - (4 * 0.5) / 24, 10);
     expect(mid.chainProbs["a-chain"]).toBeCloseTo(0.5 / 24, 10);
   });
 

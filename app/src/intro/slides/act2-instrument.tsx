@@ -178,8 +178,9 @@ export function Constraints() {
                 <p className="mt-1 text-sm leading-relaxed text-gray-400">
                   Your annual budget is binding. Blocks are funded in the order you advanced
                   them, so activating one more can only cap <Em>that</Em> block — it never
-                  evicts an earlier commitment. Anything that doesn't fit is held at{" "}
-                  <Em>Implementing</Em>, no matter what you clicked.
+                  evicts an earlier commitment. Anything that doesn't fit isn't built: it
+                  stays where your lab already was — for most controls,{" "}
+                  <Em>not started</Em> — no matter what you clicked.
                 </p>
               </div>
             </div>
@@ -359,7 +360,8 @@ export function Timeline() {
         <Aside>
           You can also just <Em>drag the year</Em> in the header to scrub the whole
           simulation, or press <Em>▶</Em> to play a scripted 2024→2030 programme and watch
-          the two lines race — with captions calling out what's happening and why.
+          the breach line fall (or not) as defenses land, with the security level climbing
+          in its own strip underneath — and captions calling out what's happening and why.
         </Aside>
       </div>
     </SlideShell>

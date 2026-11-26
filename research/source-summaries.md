@@ -54,7 +54,7 @@
 ### 6. AI 2027 Security Forecast
 - Extends RAND with WSL1-5 (weights) and SSL1-5 (secrets)
 - Models offense-defense balance shifting over time (2024-2027)
-- 78% of workshop participants agree state actors will steal US weights before 2030
+- Cites a FAR.Labs AI Security Workshop poll (Nov 2024): 78% of participants expected a state actor to steal US frontier weights before 2030 (the poll is FAR.Labs', not AI 2027's own forecast)
 - Key metrics: Cybench scores, hacking horizon, top-hacker-equivalents
 - Self-subversion probability: 30% by Dec 2027 (OpenBrain)
 - China achieves WSL5 a few months before US due to centralization advantages

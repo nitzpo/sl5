@@ -236,6 +236,53 @@ export function defenseInDepthDiscount(
  * its `stoppers` — every block the data names as stopping this chain is
  * mechanically real, not narrative-only.
  */
+/** Effective OC and capability gate for a chain — everything about the chain
+ * that depends only on the adversary and the clock, never on what is deployed. */
+function chainGate(
+  chain: AttackChain,
+  blockMap: Map<string, Block>,
+  adversaryOc: number,
+  year: number,
+  sliders: Sliders | number
+): { effectiveOc: number; gate: number } {
+  const aiTimelineSlider = typeof sliders === "number" ? sliders : sliders.ai_timeline;
+  const exploitedBlocks = chain.blocks_exploited
+    .map((id) => blockMap.get(id))
+    .filter((b): b is Block => b !== undefined);
+  const effectiveOc = chainEffectiveOc(exploitedBlocks, adversaryOc, year, aiTimelineSlider);
+  // Capability gate: comfortably attemptable at min_oc, largely closed a tier below.
+  const gate = sigmoidProbability(
+    effectiveOc - (chain.adversary_profile.min_oc - GATE_OFFSET),
+    GATE_STEEPNESS
+  );
+  return { effectiveOc, gate };
+}
+
+/**
+ * The lowest breach probability any posture can drive this chain to: the
+ * residual (`gate × RESIDUAL_RISK`), or exactly 0 for a chain held inert by an
+ * unmet precondition.
+ *
+ * State-independent by construction — it depends on the adversary, the year and
+ * the sliders, never on what is deployed — so the UI can ask "is this chain
+ * already as low as defense can push it?" without re-running the defense math.
+ * Against OC4 a live OC4 chain floors at ≈2.6%, so any fixed "blocked below 2%"
+ * threshold is unreachable; compare against this instead.
+ */
+export function chainResidualFloor(
+  chain: AttackChain,
+  allBlocks: Block[],
+  adversaryOc: number,
+  year: number,
+  sliders: Sliders | number = 0.5,
+  modelServedExternally: boolean = true
+): number {
+  if (chain.requires_external_serving && !modelServedExternally) return 0;
+  const blockMap = new Map(allBlocks.map((b) => [b.id, b]));
+  const { gate } = chainGate(chain, blockMap, adversaryOc, year, sliders);
+  return gate * RESIDUAL_RISK;
+}
+
 export function chainBreachProbability(
   chain: AttackChain,
   allBlocks: Block[],
@@ -248,23 +295,13 @@ export function chainBreachProbability(
   // Precondition: API-extraction chains are inert unless the model is served externally.
   if (chain.requires_external_serving && !modelServedExternally) return 0;
 
-  const aiTimelineSlider = typeof sliders === "number" ? sliders : sliders.ai_timeline;
   const blockMap = new Map(allBlocks.map((b) => [b.id, b]));
-  const exploitedBlocks = chain.blocks_exploited
-    .map((id) => blockMap.get(id))
-    .filter((b): b is Block => b !== undefined);
   const defenseIds = new Set<string>([...chain.blocks_exploited, ...(chain.stoppers ?? [])]);
   const defenseBlocks = [...defenseIds]
     .map((id) => blockMap.get(id))
     .filter((b): b is Block => b !== undefined);
 
-  const effectiveOc = chainEffectiveOc(exploitedBlocks, adversaryOc, year, aiTimelineSlider);
-
-  // Capability gate: comfortably attemptable at min_oc, largely closed a tier below.
-  const gate = sigmoidProbability(
-    effectiveOc - (chain.adversary_profile.min_oc - GATE_OFFSET),
-    GATE_STEEPNESS
-  );
+  const { effectiveOc, gate } = chainGate(chain, blockMap, adversaryOc, year, sliders);
 
   let pass = 1.0;
   for (const block of defenseBlocks) {

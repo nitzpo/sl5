@@ -43,7 +43,7 @@ export const GLOSSARY = {
   hardStop: {
     label: "Hard stop",
     definition:
-      "A control that removes a route rather than watching it — an air gap, a one-way data diode, encrypted memory. Not unbreakable: an air gap is still crossed by a person carrying a drive. But it rests on physics rather than on someone noticing, so rising AI capability erodes it slowly instead of gutting it.",
+      "A control that removes a route rather than watching it — an air gap, a one-way data diode, hardware memory isolation. Not unbreakable: an air gap is still crossed by a person carrying a drive. But it rests on physics rather than on someone noticing, so rising AI capability erodes it slowly instead of gutting it.",
   },
   probabilistic: {
     label: "Probabilistic control",
@@ -103,7 +103,7 @@ export const GLOSSARY = {
   tee: {
     label: "TEE — Trusted Execution Environment",
     definition:
-      "Hardware that keeps data encrypted even while it is being computed on, so an attacker who fully owns the machine still can't read it. Also called confidential computing.",
+      "Hardware that walls data off while it is being computed on: the chip refuses the host OS, hypervisor and DMA access to protected memory, and attestation proves that configuration to whoever releases the data. Also called confidential computing. It stops a compromised machine's software, not someone with physical access — in 2025 a sub-$1,000 memory-bus interposer pulled the attestation keys out of CPU TEEs (TEE.fail).",
   },
   sf86: {
     label: "SF-86",
@@ -380,7 +380,7 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     aiOcShift: 1.0,
     deployMonths: { min: 24, max: 48 },
     blurb:
-      "Weights stay encrypted in accelerator memory — unreadable even to an attacker who owns the host.",
+      "The GPU walls its memory off from the host and DMA, and attestation proves it — a compromised OS can't read the weights. Physical access is another matter.",
   },
 };
 
@@ -471,6 +471,6 @@ export const SOURCES: SourceLink[] = [
     href: "https://ai-2027.com",
     year: "2025",
     gives:
-      "The timeline argument: how the offense–defense balance shifts as capabilities climb. 78% of its workshop participants expect a state actor to steal US frontier weights before 2030.",
+      "The timeline argument: how the offense–defense balance shifts as capabilities climb. It cites a FAR.Labs AI Security Workshop poll (Nov 2024) in which 78% of participants expected a state actor to steal US frontier weights before 2030.",
   },
 ];

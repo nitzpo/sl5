@@ -19,7 +19,6 @@ import {
   BUDGET_MILLIONS,
   SHORTLIST,
   SLIDERS,
-  VIABLE_THRESHOLD,
   YEAR,
   costOf,
   evaluatePosture,
@@ -231,7 +230,10 @@ describe("evaluatePosture", () => {
 
     const r = evaluatePosture(data, picks);
     expect([...r.budgetExceeded]).toEqual([last]);
-    expect(r.effectiveStates[last]).toBe("implementing");
+    // Unfunded means unbuilt: the game builds from nothing, so the block falls
+    // back to the game's baseline, not to a free `implementing` (which used to
+    // hand the reader 0.4 effectiveness for money they didn't have).
+    expect(r.effectiveStates[last]).toBe("not_started");
     for (const id of picks.slice(0, -1)) {
       expect(r.effectiveStates[id], `${id} was funded first and must keep it`).toBe(
         "deployed"
@@ -296,20 +298,41 @@ describe("evaluatePosture", () => {
     expect(r.breach).toBe(ps[0]);
   });
 
+  it("gives an over-budget block nothing — not even its real-world baseline", () => {
+    // AI-07 ships partially deployed (baseline `implementing`). In the app an
+    // unfunded AI-07 falls back to that baseline; in the game, which builds from
+    // nothing, it must fall back to nothing, or an unaffordable click would still
+    // buy 40% of an outbound-channel defense. The air gap and the enclosures
+    // leave too little of the year for it.
+    expect(byId.get("AI-07")!.current_state.baseline_state).toBe("partially_deployed");
+    const before = evaluatePosture(data, ["NET-01", "HW-05"]);
+    const after = evaluatePosture(data, ["NET-01", "HW-05", "AI-07"]);
+    expect([...after.budgetExceeded]).toEqual(["AI-07"]);
+    expect(after.effectiveStates["AI-07"]).toBe("not_started");
+    expect(after.sl).toBe(before.sl);
+    expect(after.breach).toBe(before.breach);
+  });
+
   it("agrees with the engine called directly — no re-implemented arithmetic", () => {
     // The game's whole claim is that its numbers are the app's numbers. Recompute
     // one posture the long way, exactly as store/derived.ts does, and compare.
-    const chosen = ["PER-01", "PER-04", "PHY-03", "SC-05"];
+    // The pick that won't fit the budget keeps the budget cap in the comparison.
+    const chosen = ["PER-01", "PER-04", "PHY-03", "SC-05", "NET-01"];
     const requested: Record<string, string> = {};
     for (const b of blocks) requested[b.id] = "not_started";
     for (const id of chosen) requested[id] = "deployed";
 
-    const { effectiveStates: budgeted } = applyBudgetConstraint(
+    const { effectiveStates: budgeted, exceededIds } = applyBudgetConstraint(
       blocks,
       requested as never,
       BUDGET_MILLIONS,
-      { order: chosen, riskTolerance: SLIDERS.risk_tolerance }
+      {
+        order: chosen,
+        riskTolerance: SLIDERS.risk_tolerance,
+        floorStates: Object.fromEntries(blocks.map((b) => [b.id, "not_started"])),
+      }
     );
+    expect(exceededIds.size).toBeGreaterThan(0);
     const { effectiveStates } = applyDependencyConstraint(blocks, budgeted);
     const categories = computeCategoryScores(
       blocks,
@@ -333,10 +356,20 @@ describe("evaluatePosture", () => {
     expect(r.breach).toBe(Math.max(...Object.values(breaches)));
   });
 
-  it("cannot be won: no shortlist posture reaches SL5 or a blocked top chain", () => {
-    // The copy tells the reader this outright, so it had better be true.
+  it("cannot be won: no shortlist posture reaches SL5 or holds the top chain at its floor", () => {
+    // The copy tells the reader this outright, so it had better be true. "Held"
+    // is the app's Attacker-view test (within half a point of the chain's
+    // residual floor) — a fixed 2% cut was unreachable for every live chain.
     const everything = evaluatePosture(data, [...SHORTLIST]);
     expect(everything.sl).toBeLessThan(5);
-    expect(everything.breach).toBeGreaterThan(VIABLE_THRESHOLD);
+    expect(everything.ranked[0].held).toBe(false);
+    expect(everything.ranked[0].p).toBeGreaterThan(everything.ranked[0].floor);
+  });
+
+  it("files chains with the Attacker view's own residual-floor test", () => {
+    for (const { p, floor, held } of evaluatePosture(data, [...SHORTLIST]).ranked) {
+      expect(p).toBeGreaterThanOrEqual(floor - 1e-12);
+      expect(held).toBe(p <= floor + 0.005);
+    }
   });
 });

@@ -2,13 +2,13 @@ import { useMemo } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { useSimulationResults } from "../../store/derived";
 import { getAiCapability } from "../../engine/ai-curve";
+import { isHeldAtResidualFloor } from "../../engine/posture";
 import { formatProbability, formatYear } from "../../utils/format";
 import type { AttackChain, BlockState } from "../../engine/types";
 import { STATE_ICONS, breachLevel, LEVEL_TEXT } from "../../utils/colors";
 
 export function AttackerView() {
   const blocks = useSimulationStore((s) => s.blocks);
-  const blockStates = useSimulationStore((s) => s.blockStates);
   const attackChains = useSimulationStore((s) => s.attackChains);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const year = useSimulationStore((s) => s.year);
@@ -16,7 +16,11 @@ export function AttackerView() {
   const selectedChainId = useSimulationStore((s) => s.selectedChainId);
   const setSelectedChain = useSimulationStore((s) => s.setSelectedChain);
   const ocDefinitions = useSimulationStore((s) => s.ocDefinitions);
-  const { breachProbabilities } = useSimulationResults();
+  const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
+  // Effective states, not raw clicks: a stopper the budget can't pay for, or
+  // whose prerequisite is missing, is not stopping anything.
+  const { breachProbabilities, residualFloors, effectiveStates: blockStates } =
+    useSimulationResults();
 
   const ocDef = ocDefinitions.find((d) => d.level === adversaryOc);
   const nextOcDef = ocDefinitions.find((d) => d.level === adversaryOc + 1);
@@ -35,13 +39,18 @@ export function AttackerView() {
       .map((chain) => ({
         chain,
         probability: breachProbabilities[chain.id] ?? 0,
+        floor: residualFloors[chain.id] ?? 0,
       }))
       .sort((a, b) => b.probability - a.probability);
-  }, [attackChains, breachProbabilities]);
+  }, [attackChains, breachProbabilities, residualFloors]);
 
-  // Blocked chains (all blocks deployed)
-  const blockedChains = rankedChains.filter((c) => c.probability < 0.02);
-  const viableChains = rankedChains.filter((c) => c.probability >= 0.02);
+  // No live chain reaches zero: the engine floors each one at gate × residual
+  // risk (≈2.6% for an OC4 chain against OC4). A fixed "blocked below 2%" cut
+  // was therefore unreachable for every chain the adversary can attempt, so a
+  // chain is filed here once defense has pushed it to within half a point of
+  // its own floor — as low as defense can push it.
+  const heldChains = rankedChains.filter((c) => isHeldAtResidualFloor(c.probability, c.floor));
+  const viableChains = rankedChains.filter((c) => !isHeldAtResidualFloor(c.probability, c.floor));
 
   // Effective OC computation
   const avgAiShift = useMemo(() => {
@@ -98,7 +107,8 @@ export function AttackerView() {
         </h3>
         {viableChains.length === 0 ? (
           <div className="text-xs text-gray-500 italic">
-            All chains blocked at this posture.
+            Every chain is held at its residual floor — what's left is the insider
+            never caught and the zero-day nobody found.
           </div>
         ) : (
           <div className="space-y-2">
@@ -119,26 +129,42 @@ export function AttackerView() {
         )}
       </div>
 
-      {/* Blocked chains */}
-      {blockedChains.length > 0 && (
+      {/* Chains held at the residual floor */}
+      {heldChains.length > 0 && (
         <div>
           <h3 className="text-xs font-semibold text-emerald-500 uppercase tracking-wide mb-2">
-            Blocked Chains
+            Held at the Residual Floor
           </h3>
           <div className="space-y-1">
-            {blockedChains.map(({ chain }) => {
-              const deployedStopper = chain.stoppers.find((id) => {
+            {heldChains.map(({ chain, probability, floor }) => {
+              const operationalStoppers = chain.stoppers.filter((id) => {
                 const s = blockStates[id] ?? "not_started";
-                return s === "deployed" || s === "mature" || s === "implementing";
+                return s === "deployed" || s === "mature";
               });
-              const reason = deployedStopper
-                ? `stopped by ${deployedStopper}`
-                : `too complex for OC${adversaryOc}`;
+              let reason: string;
+              if (probability === 0 && chain.requires_external_serving && !modelServedExternally) {
+                // Inert, not defended: no extraction channel exists at all.
+                reason = "no API to extract from";
+              } else if (floor < 0.005) {
+                // The capability gate is all but shut: beyond this adversary.
+                reason = `beyond OC${adversaryOc} for now`;
+              } else if (operationalStoppers.length > 0) {
+                reason = `held by ${operationalStoppers.slice(0, 3).join(", ")}${
+                  operationalStoppers.length > 3 ? "…" : ""
+                }`;
+              } else {
+                reason = "at its floor";
+              }
               return (
                 <button
                   key={chain.id}
                   onClick={() =>
                     setSelectedChain(selectedChainId === chain.id ? null : chain.id)
+                  }
+                  title={
+                    floor > 0
+                      ? `${formatProbability(probability)} — within half a point of this chain's ${formatProbability(floor)} residual floor, the lowest any posture can push it against OC${adversaryOc}.`
+                      : undefined
                   }
                   className={`flex items-center gap-2 text-xs w-full text-left rounded px-1.5 py-0.5 transition-colors ${
                     selectedChainId === chain.id
@@ -148,11 +174,18 @@ export function AttackerView() {
                 >
                   <span className="text-emerald-600">■</span>
                   <span>{chain.name}</span>
-                  <span className="text-gray-700 ml-auto">{reason}</span>
+                  <span className="text-gray-600 ml-auto font-mono">
+                    {formatProbability(probability)}
+                  </span>
+                  <span className="text-gray-700">{reason}</span>
                 </button>
               );
             })}
           </div>
+          <p className="text-[10px] text-gray-600 mt-1.5 leading-snug">
+            No live chain reaches zero: each keeps a residual floor (the insider never
+            caught, the zero-day nobody found) that no posture removes.
+          </p>
         </div>
       )}
     </div>

@@ -5,8 +5,8 @@
     "adversary_profile": { "min_oc": 4, "typical_oc": 4 },
     "blocks_exploited": ["PHY-01", "PER-02", "HW-03"],
     "narrative": {
-      "brief": "Physical access to datacenter + bypassed two-person integrity + unencrypted interconnect tap. Extract weights from physical layer.",
-      "detailed": "An insider or physically-present operative gains unescorted access to the facility (PHY-01 absent), performs maintenance alone (PER-02 absent), and attaches a tap to accelerator interconnects (HW-03 absent). Model weights are read directly from the wire over hours/days.",
+      "brief": "Physical access to datacenter + bypassed two-person integrity + an interposer on an unencrypted in-rack interconnect. Extract weights from physical layer.",
+      "detailed": "An insider or physically-present operative gains unescorted access to the facility (PHY-01 absent), performs maintenance alone (PER-02 absent), and seats an interposer in-line on an accelerator interconnect link inside a rack (HW-03 absent). Training traffic crosses that link in the clear, and sharded training moves the parameters themselves across the accelerator fabric every step, so the weights are captured off the wire over hours to days.",
       "steps": [
         {
           "phase": "Infiltration",
@@ -15,12 +15,12 @@
         },
         {
           "phase": "Implant",
-          "description": "During a solo maintenance window — no second person required — a passive optical splitter is epoxied onto an accelerator interconnect tray.",
+          "description": "During a solo maintenance window — no second person required — a custom interposer is seated in-line on one of the rack's copper accelerator-interconnect links, behind a compute tray where nobody looks.",
           "block_gap_used": "PER-02"
         },
         {
           "phase": "Capture",
-          "description": "The tap records unencrypted weight traffic during checkpoint syncs to internal flash.",
+          "description": "The interposer records the parameter shards the training job gathers across the accelerator fabric every step — plaintext on the wire — to onboard flash.",
           "block_gap_used": "HW-03"
         },
         {
@@ -32,7 +32,7 @@
     "stoppers": ["PHY-01", "PER-02", "HW-03"],
     "stopper_details": [
       { "block_id": "PHY-01", "how_it_stops": "SCIF-grade physical access control: no unescorted entry to hardware, implant can't be placed." },
-      { "block_id": "PER-02", "how_it_stops": "Two-person integrity: a second person present means the splitter can't be installed unobserved." },
+      { "block_id": "PER-02", "how_it_stops": "Two-person integrity: a second person present means the interposer can't be installed unobserved." },
       { "block_id": "HW-03", "how_it_stops": "Interconnect encryption: tapped data is ciphertext — the recording is useless." }
     ],
     "probability_model": { "base_probability": 0.15 }
@@ -136,7 +136,7 @@
         },
         {
           "phase": "Capture",
-          "description": "A GPU-driver escalation reads weights directly from unencrypted accelerator memory.",
+          "description": "A GPU-driver escalation reads weights straight out of accelerator memory, which nothing walls off from the compromised host.",
           "block_gap_used": "HW-07"
         },
         {
@@ -148,7 +148,7 @@
     "stoppers": ["NET-01", "HW-07", "HW-09"],
     "stopper_details": [
       { "block_id": "NET-01", "how_it_stops": "Air gap removes the external attack surface — no gateway to exploit, no path out." },
-      { "block_id": "HW-07", "how_it_stops": "Confidential computing keeps GPU memory encrypted even under full host compromise." },
+      { "block_id": "HW-07", "how_it_stops": "Confidential computing: the GPU blocks host and DMA access to its protected memory (access control on on-package HBM, not encryption), and attestation proves that mode before weights load — a compromised host OS can't read them out. It is not a defense against physical access." },
       { "block_id": "HW-09", "how_it_stops": "Measured boot detects the implant against known-good measurements on every restart." }
     ],
     "probability_model": { "base_probability": 0.2 }
@@ -198,8 +198,8 @@
     "adversary_profile": { "min_oc": 3, "typical_oc": 4 },
     "blocks_exploited": ["NET-01", "HW-07", "PER-08"],
     "narrative": {
-      "brief": "Remote access via BMC/management plane. No air gap means reachable; no TEE means weights in clear memory; remote maintenance means always-on attack surface.",
-      "detailed": "Attacker exploits a vulnerability in baseboard management controllers (BMCs) or out-of-band management interfaces — which are reachable because there's no air gap (NET-01). Through the BMC, they gain hardware-level access to GPU memory where weights reside unencrypted (HW-07 absent). The attack surface exists because remote maintenance is allowed (PER-08 absent) — management interfaces are always listening.",
+      "brief": "Remote access via BMC/management plane. No air gap means reachable; no TEE means nothing walls GPU memory off from the host; remote maintenance means always-on attack surface.",
+      "detailed": "Attacker exploits a vulnerability in baseboard management controllers (BMCs) or out-of-band management interfaces — which are reachable because there's no air gap (NET-01). Through the BMC, they gain hardware-level access to GPU memory, which nothing walls off from the host (HW-07 absent). The attack surface exists because remote maintenance is allowed (PER-08 absent) — management interfaces are always listening.",
       "steps": [
         {
           "phase": "Reachability",
@@ -213,7 +213,7 @@
         },
         {
           "phase": "Capture",
-          "description": "Via DMA, the attacker reads model weights sitting in clear GPU memory — no trace in host OS logs.",
+          "description": "Via DMA, the attacker reads model weights straight out of GPU memory, which nothing fences off from the host — no trace in host OS logs.",
           "block_gap_used": "HW-07"
         }
       ]
@@ -221,7 +221,7 @@
     "stoppers": ["NET-01", "HW-07", "PER-08"],
     "stopper_details": [
       { "block_id": "NET-01", "how_it_stops": "Air gap: the management VLAN is unreachable from any external network." },
-      { "block_id": "HW-07", "how_it_stops": "Confidential computing: even DMA reads return ciphertext." },
+      { "block_id": "HW-07", "how_it_stops": "Confidential computing: the GPU refuses DMA and host reads of its protected memory, the CPU TEE encrypts the VM's own memory, and attestation proves both are on before weights load — the BMC's DMA path gets nothing usable." },
       { "block_id": "PER-08", "how_it_stops": "No remote maintenance: BMC network interfaces are physically disabled or removed." }
     ],
     "probability_model": { "base_probability": 0.18 }

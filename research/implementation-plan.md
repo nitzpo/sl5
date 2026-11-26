@@ -31,7 +31,7 @@ sl5-explorable/
 │       ├── blocks-ai-specific.json
 │       ├── attack-chains.json
 │       ├── world-state.json
-│       └── simulation-config.json
+│       └── simulation-config.json   # never loaded; since removed (constants live in src/engine/)
 ├── src/
 │   ├── main.tsx
 │   ├── App.tsx
@@ -171,7 +171,7 @@ sl5-explorable/
 **Goal:** Fill attack chain narratives, polish text, test with users.
 
 1. Write `attack-chains.json` from draft (7 chains with full data)
-2. Write `simulation-config.json` with calibrated parameters
+2. Write `simulation-config.json` with calibrated parameters *(superseded: the shipped engine hard-codes its constants in `app/src/engine/`, and this file was removed as unused)*
 3. Write `world-state.json` (already exists in schema dir — finalize)
 4. Review all block descriptions for clarity
 5. Add "inspect formula" click-through on scores

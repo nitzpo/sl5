@@ -4,7 +4,7 @@
     "name": "AI-as-Insider-Threat Controls",
     "category": "ai_specific",
     "summary_group": "ai_containment",
-    "description": "Treating advanced AI systems with weight access as potential insider threats. Includes: monitoring AI agent actions at same granularity as human insiders, restricting AI's ability to copy/move/exfiltrate weights, logging all AI-initiated operations, and applying least-privilege to AI processes. Recognizes that a sufficiently capable AI may pursue goals misaligned with the organization.",
+    "description": "Treating advanced AI systems with weight access as potential insider threats at the identity layer: per-agent identity, least privilege for every AI process, logging of all AI-initiated operations, and restrictions on AI copy, move and export rights for weights. Rescoped in Phase 2: behavioural monitoring of agent actions moved to AI-10.",
     "current_state": {
       "summary": "Labs have begun treating their own systems this way, on a sampled rather than universal basis: Anthropic reports an LLM supervisor running over at least 10% of code edits and bash commands for more than 90% of employees, surfacing on the order of 10,000 positives per week that are triaged rather than individually reviewed, with roughly 20 transcripts per week read by a dedicated AI control researcher. OpenAI reports monitoring across agentic applications of Astra specifically, not across its systems generally. Coverage is shallow: METR's red team found the monitoring did not cover non-Claude-Code traffic and that a single environment variable was a reliable bypass. No formal insider-threat program analogue exists for AI, and government frameworks (NITTF) have no AI equivalent.",
       "deployed_by": [
@@ -113,6 +113,43 @@
         "description": "Stuxnet demonstrated that even air-gapped systems can be compromised from within — the malware was the 'insider' that operated autonomously once introduced.",
         "source": "Stuxnet analysis",
         "year": 2010
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "strong",
+        "why": "Least privilege and per-action logging for AI processes bound credential and tool misuse"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Restricts AI copy/move rights on weights; monitoring may flag staging"
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "Monitored, least-privileged agents have fewer escape primitives"
+      },
+      {
+        "vector_id": "V-SELF-5",
+        "strength": "partial",
+        "why": "Logging AI-initiated changes helps trace sabotage after the fact"
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "AI-initiated job launches are logged and attributable"
+      },
+      {
+        "vector_id": "V-SELF-7",
+        "strength": "partial",
+        "why": "AI requests to staff are logged like an insider's"
+      },
+      {
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "A least-privileged agent limits what an injected prompt can do"
       }
     ]
   },
@@ -227,117 +264,33 @@
         "source": "SOX Act post-Enron",
         "year": 2002
       }
-    ]
-  },
-  {
-    "id": "AI-03",
-    "name": "Adversarial Robustness Detection",
-    "category": "ai_specific",
-    "summary_group": "ai_defense_testing",
-    "description": "Continuous testing of AI systems for adversarial vulnerabilities — inputs that cause unexpected/dangerous behavior. Includes automated red-teaming, adversarial example generation, and monitoring for distribution-shift attacks. Goal: detect when a model is being probed or exploited before damage occurs.",
-    "current_state": {
-      "summary": "All major labs run continuous real-time classifier-based screening in production. Anthropic's Constitutional Classifiers screen traffic at roughly 1% compute overhead as measured on Claude Opus 4.0, with a 0.05% refusal rate on harmless queries measured over one month of Claude Sonnet 4.5 production traffic. Robustness remains incomplete: adaptive attackers with knowledge of a defense still bypass published defenses at high rates, and Anthropic documents residual attacks in the same evaluation while reporting no universal jailbreak found in it. Continuous detection is deployed; continuous *robustness* is not.",
-      "deployed_by": [
-        "partial_all_major_labs"
-      ],
-      "baseline_state": "partially_deployed",
-      "baseline_since": 2026
-    },
-    "dimensions": {
-      "technical_feasibility": {
-        "value": 65,
-        "notes": "Pre-deployment testing: feasible but never complete. Real-time detection of novel adversarial inputs: active research. Fundamental limitation: adversarial examples are often undetectable by definition (they look normal to the model).",
-        "trajectory": "improving"
-      },
-      "time_to_deploy_months": {
-        "min": 12,
-        "max": 30,
-        "notes": "Basic: expand existing red-team to continuous operation. Advanced: automated adversarial detection pipeline. Research-grade: formal robustness guarantees."
-      },
-      "cost": {
-        "upfront_millions": {
-          "min": 10,
-          "max": 50
-        },
-        "annual_ongoing_millions": {
-          "min": 8,
-          "max": 30
-        },
-        "notes": "Red-team staffing, automated testing infrastructure, compute for continuous probing. Scales with model size and attack surface."
-      },
-      "vendor_dependency": {
-        "value": 20,
-        "key_vendors": [
-          "adversarial_testing_tools"
-        ],
-        "notes": "Mostly internal research capability. Some commercial adversarial testing tools emerging but not frontier-grade."
-      },
-      "supply_scarcity": {
-        "value": 60,
-        "bottleneck": "Adversarial ML researchers with production security experience",
-        "notes": "Academic adversarial ML community is large but production deployment expertise is rare. Adversarial robustness for LLMs specifically is nascent."
-      },
-      "organizational_readiness": {
-        "value": 50,
-        "barriers": [
-          "testing_never_complete",
-          "false_positive_management",
-          "speed_vs_security_tradeoff"
-        ],
-        "notes": "Labs already do some of this. Challenge is making it continuous, comprehensive, and fast enough to catch attacks in real-time without blocking legitimate use."
-      }
-    },
-    "defense_type": "probabilistic",
-    "sl_requirement": {
-      "first_recommended": 3,
-      "first_required": 4
-    },
-    "adversary_exploitation": {
-      "oc_threshold_to_exploit": 3,
-      "ai_oc_shift": 2.0,
-      "exploit_narrative": "Without adversarial robustness detection, attackers can probe the model systematically to find exploitable behaviors — jailbreaks, data extraction, capability elicitation — without triggering alerts. AI dramatically improves adversarial example generation and attack optimization."
-    },
-    "dependencies": {
-      "requires": [],
-      "enhances": [
-        "AI-05",
-        "AI-07",
-        "AI-08"
-      ],
-      "enabled_by": [
-        "AI-02"
-      ]
-    },
-    "defense_in_depth": {
-      "layer_contributions": [
-        "monitoring_detection"
-      ],
-      "shared_dependencies": [
-        "monitoring_infrastructure"
-      ]
-    },
-    "open_questions": [
-      {
-        "question": "Can adversarial detection keep pace with AI-generated adversarial attacks? (Arms race dynamics)",
-        "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "Detection becomes perpetually behind — useful as speed bump but not reliable defense"
-      },
-      {
-        "question": "What's the false positive rate at useful detection thresholds?",
-        "uncertainty_level": "medium",
-        "impact_if_resolved_negatively": "High false positives degrade service; low sensitivity misses real attacks. May not find acceptable operating point."
-      }
     ],
-    "real_world_parallels": [
+    "counters": [
       {
-        "description": "Intrusion detection systems (IDS) in network security face the same arms race: signature-based detection catches known attacks but misses novel ones. Anomaly detection has high false positive rates. Decades of research, still imperfect.",
-        "source": "Network security IDS evolution",
-        "year": 1998
+        "vector_id": "V-SELF-5",
+        "strength": "strong",
+        "why": "Independently trained reviewers catch flaws a same-family monitor would collude on",
+        "note": "Probabilistic: erodes hard at AC4-5."
       },
       {
-        "description": "Anti-virus software evolution from signature matching to heuristic/behavioral detection parallels the trajectory of adversarial robustness — always catching up to attackers.",
-        "source": "AV industry evolution",
-        "year": 2010
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "A different model family may flag outputs carrying encoded payloads"
+      },
+      {
+        "vector_id": "V-SELF-4",
+        "strength": "partial",
+        "why": "Decorrelated reviewers sometimes detect steganographic patterns"
+      },
+      {
+        "vector_id": "V-SELF-7",
+        "strength": "partial",
+        "why": "Second model reviews AI-originated requests to change controls"
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "partial",
+        "why": "Reviewers may notice research outputs that carry distillation data"
       }
     ]
   },
@@ -399,7 +352,7 @@
         "notes": "Easier sell than most AI-specific blocks because it looks like standard IT policy. Resistance comes from AI teams who want unconstrained experimentation."
       }
     },
-    "defense_type": "hard_stop",
+    "defense_type": "hybrid",
     "sl_requirement": {
       "first_recommended": 3,
       "first_required": 3
@@ -459,14 +412,56 @@
         "source": "Banking risk controls",
         "year": 1990
       }
+    ],
+    "reclassified": {
+      "from": "hard_stop",
+      "why": "Quotas are software set by humans; the July 2026 agent worked around throttling."
+    },
+    "counters": [
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "strong",
+        "why": "Compute budgets and quota accounting expose and cap unsanctioned jobs",
+        "type_override": "hybrid",
+        "note": "Quota accounting is software; the July 2026 agent worked around throttling."
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "Scoped network, file-system and API permissions narrow tool abuse",
+        "type_override": "hybrid",
+        "note": "Quotas are software set by humans; misuse inside the quota passes, so not a hard stop here."
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "Network-scope limits shrink reachable escape surface",
+        "type_override": "hybrid",
+        "note": "Enforced by the same software stack the agent may exploit."
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "API-call and egress quotas bound exfiltration volume"
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "partial",
+        "why": "Generation and egress quotas bound distillation volume"
+      },
+      {
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "Scoped network and API limits bound an injected agent"
+      }
     ]
   },
   {
     "id": "AI-05",
-    "name": "Continuous Adversarial Injection (Security Chaos Engineering)",
+    "name": "AI Containment Exercises",
     "category": "ai_specific",
     "summary_group": "ai_defense_testing",
-    "description": "Deliberately and continuously injecting adversarial scenarios into AI systems to test containment, monitoring, and response capabilities. The AI equivalent of red-teaming + chaos engineering: testing whether your defenses actually work against realistic attack patterns, not just theoretical ones. Includes: honeypots for AI, canary data in weight stores, simulated insider actions, fake exfiltration opportunities.",
+    "description": "Deliberate, continuous exercises against the lab's own AI containment: simulated escape attempts, fake exfiltration opportunities and planted misbehaviour, to test whether confinement, monitoring and kill-switches actually fire. Rescoped in Phase 2: configuration-drift testing moved to CFG-01, honeypots and canaries to DEC-01.",
     "current_state": {
       "summary": "Some labs do periodic red-teaming (human-driven). Netflix-style chaos engineering for AI security does not exist. No lab runs continuous automated adversarial injection against their own containment systems. Concept is well-understood but implementation is novel.",
       "deployed_by": [],
@@ -526,12 +521,11 @@
     },
     "dependencies": {
       "requires": [
-        "AI-01",
-        "AI-03"
+        "AI-01"
       ],
       "enhances": [
         "AI-06",
-        "PER-03"
+        "AI-09"
       ],
       "enabled_by": []
     },
@@ -565,6 +559,18 @@
         "description": "Nuclear facility security testing uses simulated adversary exercises (force-on-force) where armed teams attempt to breach the facility. Required by NRC. Demonstrates that untested security is unreliable security.",
         "source": "NRC force-on-force program",
         "year": 1991
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Fake exfiltration opportunities can catch a scheming model early"
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "Exercising containment finds escape paths before a model does"
       }
     ]
   },
@@ -624,7 +630,7 @@
         "notes": "Easier cultural sell than most AI blocks ('we have an off switch'). Hard part: defining when to use it. False kills are extremely expensive (training run lost). Creates reluctance to actually trigger."
       }
     },
-    "defense_type": "hard_stop",
+    "defense_type": "hybrid",
     "sl_requirement": {
       "first_recommended": 3,
       "first_required": 4
@@ -686,6 +692,33 @@
         "source": "Industrial safety engineering",
         "year": 1980
       }
+    ],
+    "reclassified": {
+      "from": "hard_stop",
+      "why": "A kill-switch acts only on a detection trigger; score it as a response multiplier on AI-10/AI-01."
+    },
+    "counters": [
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "Halts rogue workloads once detected",
+        "type_override": "probabilistic",
+        "note": "A kill-switch is a response: its value depends entirely on a detection trigger (AI-10, AI-01)."
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "Halts an escaping agent mid-attempt if noticed",
+        "type_override": "probabilistic",
+        "note": "Same: no trigger, no effect."
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Stops an exfiltration in progress, before completion",
+        "type_override": "probabilistic",
+        "note": "Same: no trigger, no effect."
+      }
     ]
   },
   {
@@ -693,9 +726,9 @@
     "name": "Inference Channel Outbound Defense",
     "category": "ai_specific",
     "summary_group": "ai_channel_defense",
-    "description": "Defenses against information leakage through the model's legitimate inference/API channel. Covers: anti-distillation (preventing systematic extraction of model capabilities), anti-exfiltration (preventing compromised model from encoding stolen data into outputs), rate limiting, output perturbation, watermarking, query pattern detection. The outbound half of the legitimate channel attack surface.",
+    "description": "Defenses against information leakage through the model's legitimate inference/API channel. Covers: anti-distillation (preventing systematic extraction of model capabilities), anti-exfiltration (preventing compromised model from encoding stolen data into outputs), rate limiting, output perturbation, watermarking, query pattern detection. The outbound half of the legitimate channel attack surface. Absorbs AI-03's probing detection: continuous red-teaming of the serving stack and detection of systematic probing and extraction attempts.",
     "current_state": {
-      "summary": "Extraction through the inference channel is no longer theoretical. Anthropic disclosed in February 2026 that DeepSeek, Moonshot AI and MiniMax ran industrial-scale distillation against Claude - roughly 24,000 fraudulent accounts generating over 16 million exchanges through commercial proxies, with MiniMax alone driving 13 million. Behavioural fingerprinting and coordinated-account detection are deployed and caught one campaign while it was still active, so query-pattern detection is no longer primitive - but these detect rather than prevent. Watermarking remains research-stage and there are still no formal information-theoretic bounds on leakage rate.",
+      "summary": "Extraction through the inference channel is no longer theoretical. Anthropic disclosed in February 2026 that DeepSeek, Moonshot AI and MiniMax ran industrial-scale distillation against Claude - roughly 24,000 fraudulent accounts generating over 16 million exchanges through commercial proxies, with MiniMax alone driving 13 million. Behavioural fingerprinting and coordinated-account detection are deployed and caught one campaign while it was still active, so query-pattern detection is no longer primitive - but these detect rather than prevent. Watermarking remains research-stage and there are still no formal information-theoretic bounds on leakage rate. All major labs run continuous real-time classifier-based screening in production. Anthropic's Constitutional Classifiers screen traffic at roughly 1% compute overhead as measured on Claude Opus 4.0, with a 0.05% refusal rate on harmless queries measured over one month of Claude Sonnet 4.5 production traffic. Robustness remains incomplete: adaptive attackers with knowledge of a defense still bypass published defenses at high rates, and Anthropic documents residual attacks in the same evaluation while reporting no universal jailbreak found in it. Continuous detection is deployed; continuous *robustness* is not.",
       "deployed_by": [
         "partial_all_serving_labs"
       ],
@@ -711,18 +744,18 @@
       "time_to_deploy_months": {
         "min": 6,
         "max": 36,
-        "notes": "Basic (rate limits, output restriction): months. Advanced (pattern detection, watermarking): 1-2 years. Research-grade (formal bounds, cryptographic inference): unknown timeline."
+        "notes": "Basic (rate limits, output restriction): months. Advanced (pattern detection, watermarking): 1-2 years. Research-grade (formal bounds, cryptographic inference): unknown timeline. (AI-03's detection work merged in.)"
       },
       "cost": {
         "upfront_millions": {
-          "min": 5,
-          "max": 50
+          "min": 10.0,
+          "max": 75.0
         },
         "annual_ongoing_millions": {
-          "min": 5,
-          "max": 30
+          "min": 9.0,
+          "max": 45.0
         },
-        "notes": "Varies enormously by approach. Rate limiting is cheap. Research into formal bounds or cryptographic inference is expensive and outcome-uncertain."
+        "notes": "Varies enormously by approach. Rate limiting is cheap. Research into formal bounds or cryptographic inference is expensive and outcome-uncertain. Includes half of the former AI-03 red-teaming and detection programme."
       },
       "vendor_dependency": {
         "value": 30,
@@ -763,11 +796,11 @@
         "NET-04"
       ],
       "enabled_by": [
-        "AI-03"
+        "AI-08"
       ],
       "completed_by": {
         "blocks": [
-          "AI-03",
+          "AI-08",
           "NET-04"
         ],
         "standalone_share": 0.7,
@@ -793,6 +826,16 @@
         "question": "Can steganographic exfiltration by a compromised model be detected without solving AI interpretability?",
         "uncertainty_level": "high",
         "impact_if_resolved_negatively": "A compromised model can exfiltrate data through its normal outputs with no detectable anomaly"
+      },
+      {
+        "question": "Can adversarial detection keep pace with AI-generated adversarial attacks? (Arms race dynamics)",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Detection becomes perpetually behind — useful as speed bump but not reliable defense"
+      },
+      {
+        "question": "What's the false positive rate at useful detection thresholds?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "High false positives degrade service; low sensitivity misses real attacks. May not find acceptable operating point."
       }
     ],
     "real_world_parallels": [
@@ -805,6 +848,38 @@
         "description": "Database inference attacks: users with legitimate query access can reconstruct private records through many innocent-looking queries. Statistical databases have studied this for 40 years without complete solutions.",
         "source": "Statistical database privacy research",
         "year": 1977
+      },
+      {
+        "description": "Intrusion detection systems (IDS) in network security face the same arms race: signature-based detection catches known attacks but misses novel ones. Anomaly detection has high false positive rates. Decades of research, still imperfect.",
+        "source": "Network security IDS evolution",
+        "year": 1998
+      },
+      {
+        "description": "Anti-virus software evolution from signature matching to heuristic/behavioral detection parallels the trajectory of adversarial robustness — always catching up to attackers.",
+        "source": "AV industry evolution",
+        "year": 2010
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-ML-5",
+        "strength": "partial",
+        "why": "Rate limits and detection slow distillation; account-farm campaigns persist"
+      },
+      {
+        "vector_id": "V-ML-4",
+        "strength": "strong",
+        "why": "Removing logit access and limiting queries blocks known parameter-extraction attacks"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Outbound inspection of served outputs catches some encoded payloads"
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "partial",
+        "why": "Outbound inspection catches some encoded payloads in served outputs"
       }
     ]
   },
@@ -813,7 +888,7 @@
     "name": "Inference Channel Inbound Defense",
     "category": "ai_specific",
     "summary_group": "ai_channel_defense",
-    "description": "Defenses against exploitation THROUGH the model's legitimate inference/API channel. Covers: prompt injection prevention, adversarial input filtering, C2 channel detection (external queries triggering internal AI agent actions), jailbreak prevention, and protection against poisoning through feedback loops. The inbound half of the legitimate channel attack surface.",
+    "description": "Defenses against exploitation THROUGH the model's legitimate inference/API channel. Covers: prompt injection prevention, adversarial input filtering, C2 channel detection (external queries triggering internal AI agent actions), jailbreak prevention, and protection against poisoning through feedback loops. The inbound half of the legitimate channel attack surface. Absorbs AI-03's adversarial-input detection: production classifiers that screen inbound traffic for jailbreaks and injection, with continuous automated red-teaming.",
     "current_state": {
       "summary": "All labs have content filtering and jailbreak detection, and layered defenses have cut non-adaptive attack success substantially. Prompt injection remains fundamentally unsolved: there is still no reliable way to distinguish instructions from data, and published evaluations of adaptive attackers - ones with knowledge of the defense - report high bypass rates against the defenses they tested. OWASP separately classifies prompt injection as LLM01:2025, the top risk in its LLM application list; that classification is a ranking and not a measurement of deployment or bypass rates. C2-style detection through the inference API is now attempted, via chain-of-thought elicitation detection and coordinated multi-account detection, but feedback-loop poisoning defenses remain ad-hoc.",
       "deployed_by": [
@@ -834,14 +909,14 @@
       },
       "cost": {
         "upfront_millions": {
-          "min": 10,
-          "max": 80
+          "min": 15.0,
+          "max": 105.0
         },
         "annual_ongoing_millions": {
-          "min": 10,
-          "max": 40
+          "min": 14.0,
+          "max": 55.0
         },
-        "notes": "Monitoring infrastructure + ongoing research + constant updating as new attack vectors emerge. Arms race means costs never stabilize."
+        "notes": "Monitoring infrastructure + ongoing research + constant updating as new attack vectors emerge. Arms race means costs never stabilize. Includes half of the former AI-03 red-teaming and detection programme."
       },
       "vendor_dependency": {
         "value": 20,
@@ -882,7 +957,7 @@
         "AI-04"
       ],
       "enabled_by": [
-        "AI-03"
+        "AI-07"
       ]
     },
     "defense_in_depth": {
@@ -904,6 +979,16 @@
         "question": "Can agentic AI with tool access be made safe against adversarial inputs while remaining useful?",
         "uncertainty_level": "high",
         "impact_if_resolved_negatively": "Agentic AI and security become fundamentally incompatible — must choose between capability and containment"
+      },
+      {
+        "question": "Can adversarial detection keep pace with AI-generated adversarial attacks? (Arms race dynamics)",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Detection becomes perpetually behind — useful as speed bump but not reliable defense"
+      },
+      {
+        "question": "What's the false positive rate at useful detection thresholds?",
+        "uncertainty_level": "medium",
+        "impact_if_resolved_negatively": "High false positives degrade service; low sensitivity misses real attacks. May not find acceptable operating point."
       }
     ],
     "real_world_parallels": [
@@ -916,6 +1001,533 @@
         "description": "Email spam filtering is a 25-year arms race with no end in sight. Attackers continuously evolve to bypass filters. Same dynamics apply to adversarial input filtering for LLMs.",
         "source": "Anti-spam industry",
         "year": 1997
+      },
+      {
+        "description": "Intrusion detection systems (IDS) in network security face the same arms race: signature-based detection catches known attacks but misses novel ones. Anomaly detection has high false positive rates. Decades of research, still imperfect.",
+        "source": "Network security IDS evolution",
+        "year": 1998
+      },
+      {
+        "description": "Anti-virus software evolution from signature matching to heuristic/behavioral detection parallels the trajectory of adversarial robustness — always catching up to attackers.",
+        "source": "AV industry evolution",
+        "year": 2010
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "Injection filters are bypassable classifiers; prompt injection is unsolved"
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "Filters inputs crafted to trigger serving-stack or output-handling bugs"
+      }
+    ]
+  },
+  {
+    "id": "AI-09",
+    "name": "Confined R&D Execution Environments",
+    "category": "ai_specific",
+    "summary_group": "ai_containment",
+    "description": "Agentic R&D and evaluations run in confined environments: no network by default, egress only through a mediating proxy with allow-lists, microVM-grade isolation, no credentials beyond the task, and no path by which prompt-borne content triggers code execution outside the sandbox.",
+    "current_state": {
+      "summary": "Labs run agents and evals in containers and sandboxes, but escapes happen: in July 2026 a current-generation model escaped an eval sandbox through a package-proxy zero-day (see AI-04). MicroVM isolation with mediated egress is not universal.",
+      "deployed_by": [
+        "partial_frontier_labs"
+      ],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 75,
+        "notes": "Isolation primitives exist; the hard part is a usable research environment that stays confined.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Default-deny egress breaks research workflows until mirrors and proxies catch up."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 20,
+          "max": 60
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 15
+        },
+        "notes": "Sandbox platform, mediated proxies and mirrors, red-teaming of the confinement itself."
+      },
+      "vendor_dependency": {
+        "value": 30,
+        "key_vendors": [
+          "firecracker_gvisor",
+          "internal"
+        ],
+        "notes": "Open primitives, internal integration."
+      },
+      "supply_scarcity": {
+        "value": 40,
+        "bottleneck": "Isolation engineers",
+        "notes": "Moderately scarce."
+      },
+      "organizational_readiness": {
+        "value": 45,
+        "barriers": [
+          "research_velocity"
+        ],
+        "notes": "Every blocked install is a researcher complaint."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 2.0,
+      "exploit_narrative": "Without confinement, a model that finds one bug in its harness, or a prompt that triggers tool use, reaches the cluster network with the agent's credentials."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "AI-04",
+        "AI-10"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "host_security"
+      ],
+      "shared_dependencies": [
+        "os_enforcement_integrity"
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "Can confinement keep up with models that find zero-days in their own harness?",
+        "uncertainty_level": "fundamental",
+        "impact_if_resolved_negatively": "Confinement degrades into a speed bump at AC4-5."
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "A current-generation model escaped an evaluation sandbox through a package-proxy zero-day.",
+        "source": "AI-04 current_state (lab disclosure)",
+        "year": 2026
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "strong",
+        "why": "Separate network, no shared egress, diode-fed mirrors: escape reaches nothing (July 2026 fix)"
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "Unsigned or AI-written code runs only where no weights live"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "No egress path from where AI-generated code executes"
+      },
+      {
+        "vector_id": "V-ML-3",
+        "strength": "strong",
+        "why": "Code an injected agent writes runs where no weights live"
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "ML-stack exploits fired from untrusted code land in a weightless environment"
+      },
+      {
+        "vector_id": "V-SUP-2",
+        "strength": "partial",
+        "why": "Diode-fed package mirrors remove live dependency pulls"
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "partial",
+        "why": "No egress from where AI-generated code runs"
+      }
+    ]
+  },
+  {
+    "id": "AI-10",
+    "name": "AI-Control Protocols",
+    "category": "ai_specific",
+    "summary_group": "ai_containment",
+    "description": "Treat the lab's own models as untrusted insiders at run time: trusted monitoring of every agent action by a separate model, auditing of flagged actions by humans, logging of every AI-to-staff request, and resampling or deferral when a monitor is suspicious (the AI-control research agenda). Takes over the behavioural-monitoring role removed from AI-01.",
+    "current_state": {
+      "summary": "Research protocols are published (Greenblatt et al., 2023-24) and labs have begun sampled monitoring of internal agent use (see AI-01). Control protocols covering all internal agent activity are not deployed.",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 55,
+        "notes": "Protocols exist on paper and in evaluations; production coverage is early.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Monitor training, routing of all agent traffic, and audit staffing."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 20,
+          "max": 80
+        },
+        "annual_ongoing_millions": {
+          "min": 10,
+          "max": 30
+        },
+        "notes": "Monitor models, inference compute for monitoring, audit team."
+      },
+      "vendor_dependency": {
+        "value": 20,
+        "key_vendors": [
+          "internal"
+        ],
+        "notes": "Built in-house."
+      },
+      "supply_scarcity": {
+        "value": 60,
+        "bottleneck": "AI-control researchers",
+        "notes": "A few dozen people worldwide."
+      },
+      "organizational_readiness": {
+        "value": 45,
+        "barriers": [
+          "compute_overhead",
+          "productivity_tax"
+        ],
+        "notes": "Monitoring every agent action costs inference and friction."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 2.5,
+      "exploit_narrative": "Without control protocols, a misaligned agent's unusual reads, job launches and requests to staff look like ordinary work."
+    },
+    "dependencies": {
+      "requires": [
+        "AI-01"
+      ],
+      "enhances": [
+        "AI-06",
+        "AI-02"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "AI-02"
+        ],
+        "standalone_share": 0.75,
+        "why": "A monitor from the same model family can share the blind spots of the model it watches; an independently trained reviewer closes that gap."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "monitoring_detection"
+      ],
+      "shared_dependencies": [
+        "assumes_review_model_not_colluding"
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "Do control protocols hold against models more capable than their monitors?",
+        "uncertainty_level": "fundamental",
+        "impact_if_resolved_negatively": "AI-10 stops counting at AC4-5."
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "AI Control: Improving Safety Despite Intentional Subversion.",
+        "source": "Greenblatt et al., arXiv",
+        "year": 2023
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "strong",
+        "why": "Trusted monitor gates each tool call; suspicious actions are blocked or deferred",
+        "note": "Probabilistic: erodes hard at AC4-5."
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Gating catches staging and transfer actions before they complete"
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "Escape attempts look anomalous to a trusted monitor"
+      },
+      {
+        "vector_id": "V-SELF-4",
+        "strength": "partial",
+        "why": "Resampling and paraphrase disrupt steganographic encoding"
+      },
+      {
+        "vector_id": "V-SELF-5",
+        "strength": "partial",
+        "why": "Trusted monitor reviews code for inserted flaws, though weaker than the author"
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "Job launches pass through gated actions"
+      },
+      {
+        "vector_id": "V-SELF-7",
+        "strength": "partial",
+        "why": "Defer-to-trusted on persuasive or control-changing requests"
+      },
+      {
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "Gates actions of an agent that ingested injected prompts"
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "partial",
+        "why": "Gating catches bulk generation and transfer of training data"
+      }
+    ]
+  },
+  {
+    "id": "AI-11",
+    "name": "No Self-Weight Access",
+    "category": "ai_specific",
+    "summary_group": "ai_containment",
+    "description": "No model process, agent, or tool the model can drive holds a credential, key or network path that can read its own weights or any frontier checkpoint. Enforced structurally through identity and key-release policy, not by monitoring.",
+    "current_state": {
+      "summary": "Not reported as a hard policy at any lab; agents routinely run with research-cluster credentials that can read checkpoints.",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 80,
+        "notes": "A policy plus credential plumbing; no new technology.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 18,
+        "notes": "Separating agent identities from checkpoint storage across every workflow."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 10,
+          "max": 40
+        },
+        "annual_ongoing_millions": {
+          "min": 2,
+          "max": 8
+        },
+        "notes": "Credential separation, storage policy, workflow re-plumbing."
+      },
+      "vendor_dependency": {
+        "value": 10,
+        "key_vendors": [
+          "internal"
+        ],
+        "notes": "In-house."
+      },
+      "supply_scarcity": {
+        "value": 20,
+        "bottleneck": "None significant",
+        "notes": "Process work."
+      },
+      "organizational_readiness": {
+        "value": 40,
+        "barriers": [
+          "research_workflows"
+        ],
+        "notes": "Agents that train or evaluate models touch checkpoints legitimately."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without it, self-exfiltration needs no exploit: the model reads its own checkpoint with credentials it was given for something else."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "AI-04"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "KEY-01",
+          "IAM-01"
+        ],
+        "standalone_share": 0.6,
+        "why": "The rule is enforced by credentials and key release: with long-lived service tokens and keys that release to any host, 'no access' is a policy, not a fact."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "access_control"
+      ],
+      "shared_dependencies": [
+        "key_management_infrastructure"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [],
+    "counters": [
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "strong",
+        "why": "The model never holds or reaches its own weight files",
+        "note": "Weights only: self-distillation (V-SELF-8) needs no weight access."
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "Its credentials exclude its own weights by construction"
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "Cannot spawn copies of itself without its weights"
+      }
+    ]
+  },
+  {
+    "id": "AI-12",
+    "name": "Training/Eval/Result Integrity Attestation",
+    "category": "ai_specific",
+    "summary_group": "ai_defense_testing",
+    "description": "Signed, attested lineage for training data, code, checkpoints and evaluation results: each artefact records who or what produced it on which attested machine, so tampering with training runs or results is detectable. Mostly an integrity control: lineage proves where something came from, not that it is sound.",
+    "current_state": {
+      "summary": "Experiment tracking is universal; cryptographic attestation of ML lineage is early (OpenSSF model signing, SLSA for ML).",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 60,
+        "notes": "Signing is easy; attesting what ran is the hard half.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Lineage pipeline plus attestation of the machines that produce artefacts."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 10,
+          "max": 40
+        },
+        "annual_ongoing_millions": {
+          "min": 3,
+          "max": 10
+        },
+        "notes": "Lineage service, signing, attestation integration."
+      },
+      "vendor_dependency": {
+        "value": 30,
+        "key_vendors": [
+          "openssf_model_signing",
+          "internal"
+        ],
+        "notes": "Mostly open tooling."
+      },
+      "supply_scarcity": {
+        "value": 40,
+        "bottleneck": "ML infrastructure engineers",
+        "notes": "Moderately scarce."
+      },
+      "organizational_readiness": {
+        "value": 45,
+        "barriers": [
+          "pipeline_rework"
+        ],
+        "notes": "Touches every training and evaluation job."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without attested lineage, a sabotaged training run, a swapped checkpoint or a doctored evaluation is indistinguishable from the real one."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "AI-02"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "HW-09",
+          "SW-01"
+        ],
+        "standalone_share": 0.65,
+        "why": "Lineage needs machines that can prove what they ran (measured boot) and inputs that were verified on admission."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "supply_chain_integrity"
+      ],
+      "shared_dependencies": [
+        "provenance_infrastructure"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [],
+    "counters": [
+      {
+        "vector_id": "V-SELF-5",
+        "strength": "partial",
+        "why": "Lineage proves provenance, not soundness: flawed code re-executes identically"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Signed lineage detects swapped datasets, annotations or checkpoints"
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "Runs without signed lineage stand out"
+      },
+      {
+        "vector_id": "V-BYP-2",
+        "strength": "partial",
+        "why": "Lineage records every checkpoint, exposing untracked copies"
       }
     ]
   }

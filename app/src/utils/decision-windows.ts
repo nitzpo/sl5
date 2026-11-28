@@ -30,8 +30,8 @@ const OPERATIONAL: ReadonlySet<string> = new Set(["deployed", "mature"]);
  * Worst-case months of work REMAINING to reach operational, counting any
  * `requires` chain that is not yet in place.
  *
- * Twelve blocks in the catalogue declare a prerequisite slower than themselves —
- * `HW-09` is 18 months but needs `HW-01`'s 48, `PHY-05` is 9 but needs
+ * Thirteen blocks in the catalogue declare a prerequisite slower than themselves —
+ * `HW-09` is 18 months but needs `HW-01`'s 48, `PHY-08` is 12 but needs
  * `PHY-01`'s 48 — so their own `time_to_deploy_months` understates when they
  * must start. The engine already caps such a block at `implementing` until its
  * prerequisite lands (see `dependencies.ts`); this makes the *displayed*

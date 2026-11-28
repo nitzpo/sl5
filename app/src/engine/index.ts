@@ -4,33 +4,53 @@ export {
   categoryScore,
   overallSlScore,
   computeCategoryScores,
-  relevantBlockIds,
+  counterRelevance,
   getStateEffectiveness,
   aiDegradation,
   enablementFactor,
+  SUPPORTING_WEIGHT,
 } from "./scoring";
 export type { RelevanceWeights } from "./scoring";
+export { counterRetention } from "./breach";
 export {
-  sigmoidProbability,
-  blockExploitProbability,
-  defenseInDepthDiscount,
-  chainBreachProbability,
-  chainResidualFloor,
-  computeBreachProbabilities,
-} from "./breach";
-export { supportingBlocks, SUPPORTING_WEIGHT } from "./supporting";
+  SCORE_TO_P,
+  STRONG_MULTIPLIER,
+  LADDER,
+  DETECTION_BLOCKS,
+  DETECTION_AI_EROSION,
+  RESIDUAL_FLOOR_SHARE,
+  GOVERNMENT_RELIEF,
+  acBand,
+  baseFeasibility,
+  campaignSuccess,
+  effectiveTier,
+  stackCounters,
+} from "./vector-model";
+export type { ModelOptions } from "./vector-model";
+export {
+  SL_BAR_PRESETS,
+  DEFAULT_SL_BAR,
+  DEFAULT_AI_PROPENSITY,
+  bandWord,
+  icd203Word,
+  progressToward,
+  securityLevel,
+} from "./threat-sl";
+export type { BandWord, Icd203Word } from "./threat-sl";
 export { applyBudgetConstraint, blockCostBasis } from "./budget";
 export { applyDependencyConstraint } from "./dependencies";
 export {
   scorePosture,
   effectivePosture,
+  catalogueInForce,
   orderAfterActivating,
   threatRelevance,
   isHeldAtResidualFloor,
   RESIDUAL_FLOOR_MARGIN,
   targetSl,
 } from "./posture";
-export type { PostureInput, PostureScore } from "./posture";
+export type { PostureInput, PostureScore, TierResult, ApproachResult, SlResult, BlockRelevance } from "./posture";
+export { LEGACY_BLOCK_IDS, migrateBlockStates, migrateBlockOrder, scenarioAsChain } from "./catalogue";
 export {
   distillationProgress,
   distillationDefenseReduction,

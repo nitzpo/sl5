@@ -77,6 +77,8 @@ export function TimelineTrack() {
   const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const attackChains = useSimulationStore((s) => s.attackChains);
+  const threatModel = useSimulationStore((s) => s.threatModel);
+  const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
 
   const activeScript = usePlaybackStore((s) => s.activeScript);
@@ -96,14 +98,15 @@ export function TimelineTrack() {
     () =>
       sampleRiskCurve({
         blocks,
-        chains: attackChains,
+        model: threatModel,
+        futureCapabilities,
         blockStates,
         advanceOrder,
         sliders,
         adversaryOc,
         modelServedExternally,
       }),
-    [blocks, blockStates, advanceOrder, sliders, adversaryOc, attackChains, modelServedExternally]
+    [blocks, blockStates, advanceOrder, sliders, adversaryOc, threatModel, futureCapabilities, modelServedExternally]
   );
 
   const toPoints = (get: (d: (typeof riskData)[number]) => number) =>

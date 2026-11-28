@@ -3,7 +3,7 @@
   "title": "SL5 Explorable — Building Block",
   "description": "A single security capability building block in the SL5 framework",
   "type": "object",
-  "required": ["id", "name", "category", "description", "current_state", "dimensions", "defense_type", "sl_requirement", "dependencies"],
+  "required": ["id", "name", "category", "description", "current_state", "dimensions", "defense_type", "sl_requirement", "dependencies", "counters"],
   "properties": {
     "id": {
       "type": "string",
@@ -286,6 +286,46 @@
         },
         "required": ["description"]
       }
+    },
+    "counters": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The attack vectors (vectors.json) this block counters. Every block counters at least one: a block that counters nothing moves no number. strong = a primary counter for the vector (the best strong counter multiplies it by 0.3); partial = helps, on the 0.8/0.9/0.95 ladder. See research/scoring-model.md.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "vector_id": { "type": "string", "pattern": "^V-[A-Z]+-[0-9]+$" },
+          "strength": { "type": "string", "enum": ["strong", "partial"] },
+          "why": { "type": "string", "minLength": 10 },
+          "type_override": {
+            "type": "string",
+            "enum": ["hard_stop", "probabilistic", "hybrid"],
+            "description": "The declared defense_type is wrong for this vector; erode the counter as this type instead"
+          },
+          "note": { "type": "string" }
+        },
+        "required": ["vector_id", "strength", "why"],
+        "additionalProperties": false
+      }
+    },
+    "future": {
+      "type": "boolean",
+      "description": "A future-capability (R&D) block, id FUT-xx, counted only when the world toggle `future_capabilities` is on. Authored assumption; never a `requires` of a non-future block."
+    },
+    "future_note": {
+      "type": "string",
+      "description": "Required when `future` is true: what is assumed and why the numbers are illustrative"
+    },
+    "reclassified": {
+      "type": "object",
+      "description": "Present when Phase 2 changed the declared defense_type, with the reason",
+      "properties": {
+        "from": { "type": "string", "enum": ["hard_stop", "probabilistic", "hybrid"] },
+        "why": { "type": "string" }
+      },
+      "required": ["from", "why"]
     }
-  }
+  },
+  "if": { "properties": { "future": { "const": true } }, "required": ["future"] },
+  "then": { "required": ["future_note"], "properties": { "id": { "pattern": "^FUT-[0-9]+$" } } }
 }

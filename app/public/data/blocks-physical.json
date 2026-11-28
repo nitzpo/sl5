@@ -112,6 +112,39 @@
         "source": "NSA Utah Data Center",
         "year": 2013
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "strong",
+        "why": "Continuous barrier and controlled entry stop unescorted access",
+        "note": "Does not stop authorised entrants such as cleaners or recruited staff; PER-02 covers them."
+      },
+      {
+        "vector_id": "V-NET-2",
+        "strength": "partial",
+        "why": "RF shielding and acoustic attenuation reduce emanations"
+      },
+      {
+        "vector_id": "V-NET-3",
+        "strength": "partial",
+        "why": "Acoustic and RF bugs from outside are attenuated"
+      },
+      {
+        "vector_id": "V-PHYS-2",
+        "strength": "partial",
+        "why": "Fewer places for outsiders to leave devices"
+      },
+      {
+        "vector_id": "V-PHYS-6",
+        "strength": "partial",
+        "why": "Hardened construction delays forced entry"
+      },
+      {
+        "vector_id": "V-X-4",
+        "strength": "partial",
+        "why": "Controlled exits from the protected space"
+      }
     ]
   },
   {
@@ -195,7 +228,7 @@
       ],
       "completed_by": {
         "blocks": [
-          "PHY-05",
+          "PHY-08",
           "PHY-01"
         ],
         "standalone_share": 0.65,
@@ -220,6 +253,24 @@
         "description": "During the Cold War, the Soviets placed a resonant cavity bugging device (\"The Thing\") inside a gift to the US ambassador — demonstrating that EM emissions and RF devices can be weaponized for espionage at the highest levels.",
         "source": "Great Seal Bug / Leon Theremin",
         "year": 1945
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-NET-2",
+        "strength": "strong",
+        "why": "TEMPEST shielding and power conditioning stop emanation capture",
+        "note": "EM only: no effect on cache or timing channels."
+      },
+      {
+        "vector_id": "V-SELF-4",
+        "strength": "partial",
+        "why": "Deliberately modulated EM or power signals cannot leave"
+      },
+      {
+        "vector_id": "V-NET-1",
+        "strength": "partial",
+        "why": "Blocks RF covert channels out of the isolated network"
       }
     ]
   },
@@ -311,6 +362,18 @@
         "description": "Interlocking-door vestibules are standard at SCIFs and other high-security facilities. The 2019 Mar-a-Lago intrusion shows why a single checkpoint is not enough: the intruder talked her way past the Secret Service screening point and was only stopped at the reception desk, where staff found no record of the event she claimed to be attending and alerted the Secret Service.",
         "source": "Standard SCIF construction",
         "year": 2000
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Interlocks and anti-tailgating stop piggybacking"
+      },
+      {
+        "vector_id": "V-X-4",
+        "strength": "partial",
+        "why": "Vestibules allow exit screening"
       }
     ]
   },
@@ -407,95 +470,22 @@
         "source": "NRC 10 CFR 73",
         "year": 2000
       }
-    ]
-  },
-  {
-    "id": "PHY-05",
-    "name": "No Wireless Devices in Red Zones",
-    "category": "physical",
-    "summary_group": "physical_facility",
-    "description": "Complete prohibition of wireless devices (WiFi, Bluetooth, cellular, NFC) inside Red Zones. All equipment hardwired with wireless capabilities physically removed or disabled. No phones, no wireless keyboards/mice, no wireless headsets.",
-    "current_state": {
-      "summary": "Standard SCIF requirement. Enforced in government classified facilities universally. Not enforced in any AI lab — would be highly disruptive to current work culture.",
-      "deployed_by": [
-        "government_scif"
-      ],
-      "baseline_state": "not_started"
-    },
-    "dimensions": {
-      "technical_feasibility": {
-        "value": 99,
-        "notes": "Not a technology problem — it's a policy and enforcement problem. Hardwired alternatives exist for everything.",
-        "trajectory": "stable"
-      },
-      "time_to_deploy_months": {
-        "min": 3,
-        "max": 9,
-        "notes": "Policy creation and enforcement infrastructure (RF detection, device lockers at entries, hardwired replacements). Fast if org is willing."
-      },
-      "cost": {
-        "upfront_millions": {
-          "min": 2,
-          "max": 8
-        },
-        "annual_ongoing_millions": {
-          "min": 1,
-          "max": 5
-        },
-        "notes": "Device lockers, RF detection systems, hardwired equipment replacements, enforcement staff. Low relative to other blocks."
-      },
-      "vendor_dependency": {
-        "value": 10,
-        "key_vendors": [],
-        "notes": "Commodity equipment. No vendor dependency."
-      },
-      "supply_scarcity": {
-        "value": 5,
-        "bottleneck": "None",
-        "notes": "No supply constraint"
-      },
-      "organizational_readiness": {
-        "value": 15,
-        "barriers": [
-          "cultural_resistance",
-          "productivity_impact",
-          "communication_disruption",
-          "employee_morale"
-        ],
-        "notes": "Extremely culturally disruptive for tech workers accustomed to phones and wireless everything. This is one of the hardest blocks to implement purely due to human resistance."
-      }
-    },
-    "defense_type": "hard_stop",
-    "sl_requirement": {
-      "first_recommended": 4,
-      "first_required": 4
-    },
-    "adversary_exploitation": {
-      "oc_threshold_to_exploit": 3,
-      "ai_oc_shift": 0.0,
-      "exploit_narrative": "Wireless devices are covert exfiltration channels. A compromised phone can record audio, photograph screens, or relay data. Wireless implants (keyboard loggers, RF beacons) can be planted and transmit to nearby receivers. RF emissions from wireless devices can interfere with TEMPEST countermeasures."
-    },
-    "dependencies": {
-      "requires": [
-        "PHY-01"
-      ],
-      "enhances": [
-        "PHY-02"
-      ],
-      "enabled_by": []
-    },
-    "defense_in_depth": {
-      "layer_contributions": [
-        "physical_perimeter"
-      ],
-      "shared_dependencies": []
-    },
-    "open_questions": [],
-    "real_world_parallels": [
+    ],
+    "counters": [
       {
-        "description": "Every SCIF worldwide prohibits personal electronic devices. Employees leave phones in lockers outside the secured area. This has been standard practice for the intelligence community since mobile phones became ubiquitous.",
-        "source": "ICD 705 PED policy",
-        "year": 2005
+        "vector_id": "V-PHYS-6",
+        "strength": "strong",
+        "why": "Armed response within 5-15 minutes is the primary counter to forced entry"
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Detects intruders past the perimeter"
+      },
+      {
+        "vector_id": "V-PHYS-4",
+        "strength": "partial",
+        "why": "Layered sensors with human response survive single-system compromise"
       }
     ]
   },
@@ -597,6 +587,23 @@
         "source": "NSA facility design",
         "year": 1980
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Weight systems sit only behind Red Zone boundaries"
+      },
+      {
+        "vector_id": "V-BYP-2",
+        "strength": "partial",
+        "why": "All SL5 hardware, and so copies, must sit in Red Zones"
+      },
+      {
+        "vector_id": "V-NET-1",
+        "strength": "partial",
+        "why": "Black Zones have no network path to SL5 data"
+      }
     ]
   },
   {
@@ -671,8 +678,7 @@
     "dependencies": {
       "requires": [],
       "enhances": [
-        "SC-02",
-        "SC-05"
+        "SC-08"
       ],
       "enabled_by": []
     },
@@ -694,6 +700,145 @@
         "description": "The US DoD's Trusted Foundry program inspects semiconductor components for military systems. The process includes die-level imaging and comparison against golden references.",
         "source": "DMEA Trusted Foundry",
         "year": 2004
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "Catches hardware implants and counterfeits; RAND's vector is mostly software and services"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Inspects accelerators and boards for added logic"
+      },
+      {
+        "vector_id": "V-PHYS-2",
+        "strength": "partial",
+        "why": "Routine inspection finds planted devices"
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Post-maintenance inspection finds implants"
+      }
+    ]
+  },
+  {
+    "id": "PHY-08",
+    "name": "No Unapproved Devices or Ports",
+    "category": "physical",
+    "summary_group": "physical_facility",
+    "description": "Extends the red-zone wireless ban (former PHY-05) to every unapproved device, medium and port: personal electronics excluded from red zones, USB and other interfaces disabled in hardware, approved media only through controlled transfer, and entry and exit screening (RAND SL3 sweeps, SL4 device ban, SL5 hardware-disabled communication).",
+    "current_state": {
+      "summary": "Standard SCIF requirement. Enforced in government classified facilities universally. Not enforced in any AI lab — would be highly disruptive to current work culture. Port disabling and exit screening are standard in classified facilities and absent from AI labs.",
+      "deployed_by": [
+        "government_scif"
+      ],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 99,
+        "notes": "Not a technology problem — it's a policy and enforcement problem. Hardwired alternatives exist for everything.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Port disabling across the fleet and screening at every exit."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 7,
+          "max": 28
+        },
+        "annual_ongoing_millions": {
+          "min": 3,
+          "max": 10
+        },
+        "notes": "Former PHY-05 (device lockers, RF detection, hardwired replacements) plus hardware port disabling, controlled media transfer and exit screening."
+      },
+      "vendor_dependency": {
+        "value": 10,
+        "key_vendors": [],
+        "notes": "Commodity equipment. No vendor dependency."
+      },
+      "supply_scarcity": {
+        "value": 5,
+        "bottleneck": "None",
+        "notes": "No supply constraint"
+      },
+      "organizational_readiness": {
+        "value": 15,
+        "barriers": [
+          "cultural_resistance",
+          "productivity_impact",
+          "communication_disruption",
+          "employee_morale"
+        ],
+        "notes": "Extremely culturally disruptive for tech workers accustomed to phones and wireless everything. This is one of the hardest blocks to implement purely due to human resistance."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Wireless devices are covert exfiltration channels. A compromised phone can record audio, photograph screens, or relay data. Wireless implants (keyboard loggers, RF beacons) can be planted and transmit to nearby receivers. RF emissions from wireless devices can interfere with TEMPEST countermeasures. Without port and media control, weights leave on a drive or a phone and implants arrive on a USB stick."
+    },
+    "dependencies": {
+      "requires": [
+        "PHY-01"
+      ],
+      "enhances": [
+        "PHY-02"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "physical_perimeter"
+      ],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Every SCIF worldwide prohibits personal electronic devices. Employees leave phones in lockers outside the secured area. This has been standard practice for the intelligence community since mobile phones became ubiquitous.",
+        "source": "ICD 705 PED policy",
+        "year": 2005
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-PHYS-2",
+        "strength": "strong",
+        "why": "Hardware-disabled ports and a device ban leave nothing to plug in"
+      },
+      {
+        "vector_id": "V-X-4",
+        "strength": "strong",
+        "why": "No writable media or personal devices to carry weights out"
+      },
+      {
+        "vector_id": "V-NET-1",
+        "strength": "partial",
+        "why": "No media or RF bridges across the air gap"
+      },
+      {
+        "vector_id": "V-NET-3",
+        "strength": "partial",
+        "why": "No phones to record audio or photograph screens"
+      },
+      {
+        "vector_id": "V-SELF-4",
+        "strength": "partial",
+        "why": "No wireless device in the room to relay a covert signal"
       }
     ]
   }

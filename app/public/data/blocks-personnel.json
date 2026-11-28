@@ -74,7 +74,6 @@
         "PER-02",
         "PER-03",
         "PER-04",
-        "PER-05",
         "PER-06"
       ],
       "enabled_by": []
@@ -107,6 +106,23 @@
         "source": "ODNI clearance processing statistics",
         "year": 2024
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-HUM-1",
+        "strength": "partial",
+        "why": "Directs scrutiny to the roles worth recruiting; an enabler"
+      },
+      {
+        "vector_id": "V-HUM-3",
+        "strength": "partial",
+        "why": "Deepest vetting lands on the most sensitive positions"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "SenL tiers restrict who holds weight access"
+      }
     ]
   },
   {
@@ -114,7 +130,7 @@
     "name": "Two-Person Integrity (TPI)",
     "category": "personnel",
     "summary_group": "personnel_program",
-    "description": "All maintenance and critical operations on Weight Enclave systems require two authorized personnel present simultaneously. Pair assignments unpredictable to prevent collusion. Eliminates single-actor insider threat for physical operations.",
+    "description": "All maintenance and critical operations on Weight Enclave systems require two authorized personnel present simultaneously. Pair assignments unpredictable to prevent collusion. Eliminates single-actor insider threat for physical operations. Its evidence mechanism (absorbs PER-07): body-worn cameras with obstruction detection for physical maintenance outside SCIF-equivalent space.",
     "current_state": {
       "summary": "Standard in nuclear weapons programs and financial vaults. No AI lab implements TPI. Organizational culture in tech strongly resists this level of constraint.",
       "deployed_by": [
@@ -137,12 +153,12 @@
       },
       "cost": {
         "upfront_millions": {
-          "min": 2,
-          "max": 10
+          "min": 3,
+          "max": 15
         },
         "annual_ongoing_millions": {
-          "min": 5,
-          "max": 15
+          "min": 6,
+          "max": 18
         },
         "notes": "Roughly doubles maintenance staffing cost. Scheduling overhead. Maintenance windows may take longer (coordination). Per-facility cost."
       },
@@ -188,8 +204,7 @@
       "enabled_by": [],
       "completed_by": {
         "blocks": [
-          "PHY-04",
-          "PER-07"
+          "PHY-04"
         ],
         "standalone_share": 0.7,
         "why": "Two-person integrity is a rule about who was in the room, so it needs something that can tell. Without intrusion detection or body-worn cameras, a solo maintenance window on a quiet night leaves no trace."
@@ -207,6 +222,38 @@
         "description": "Nuclear missile launch requires two-person control (two keys turned simultaneously). This has been the gold standard for preventing single-actor catastrophic actions since the Cold War.",
         "source": "US nuclear launch procedures",
         "year": 1962
+      },
+      {
+        "description": "Nuclear facilities use CCTV monitoring of all maintenance activities in sensitive areas. Body cameras add the mobile/personal dimension that fixed CCTV misses.",
+        "source": "Nuclear facility security",
+        "year": 2010
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "strong",
+        "why": "A second person present stops solo implants during maintenance"
+      },
+      {
+        "vector_id": "V-PHYS-2",
+        "strength": "partial",
+        "why": "Device placement must happen in front of a second person"
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Vendor technicians are paired with staff"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "Physical weight operations need a second person present"
+      },
+      {
+        "vector_id": "V-X-4",
+        "strength": "partial",
+        "why": "A second person present makes carrying media out harder"
       }
     ]
   },
@@ -215,7 +262,7 @@
     "name": "Continuous Behavioral Monitoring",
     "category": "personnel",
     "summary_group": "personnel_program",
-    "description": "Ongoing monitoring of personnel behavior scaled by sensitivity level. From periodic account auditing (SenL-1/2) through intensive monitoring of compartmented system interactions (SenL-5). Combines rule-based detection, AI-assisted pattern analysis, and human oversight.",
+    "description": "Ongoing monitoring of personnel behavior scaled by sensitivity level. From periodic account auditing (SenL-1/2) through intensive monitoring of compartmented system interactions (SenL-5). Combines rule-based detection, AI-assisted pattern analysis, and human oversight. Includes departure-window monitoring (absorbs PER-05): heightened monitoring and access reduction around resignation, sabbaticals and post-employment obligations.",
     "current_state": {
       "summary": "Some AI labs have basic DLP and access logging. None have the graduated monitoring intensity tied to sensitivity levels, AI-assisted behavioral analytics, or the insider threat detection capabilities described in SL5 standards.",
       "deployed_by": [
@@ -237,12 +284,12 @@
       },
       "cost": {
         "upfront_millions": {
-          "min": 10,
-          "max": 30
+          "min": 12,
+          "max": 38
         },
         "annual_ongoing_millions": {
-          "min": 8,
-          "max": 25
+          "min": 11,
+          "max": 35
         },
         "notes": "UEBA tooling + security analytics team + legal counsel + investigation capacity. Ongoing cost scales with org size."
       },
@@ -311,6 +358,53 @@
         "description": "The Snowden case (2013) demonstrated failure of insider threat monitoring — NSA's systems were insufficient to detect a system administrator copying classified material over months. This drove Executive Order 13587 mandating insider threat programs.",
         "source": "Post-Snowden reforms",
         "year": 2013
+      },
+      {
+        "description": "Multiple Thousand Talents Program cases (2018-2023) involved researchers taking sabbaticals at Chinese institutions while retaining access to sensitive US research. Post-employment restrictions specifically target this vector.",
+        "source": "DOJ China Initiative cases",
+        "year": 2020
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-HUM-1",
+        "strength": "partial",
+        "why": "Detection only; the structural counter is PER-06 at the reach stage"
+      },
+      {
+        "vector_id": "V-HUM-2",
+        "strength": "partial",
+        "why": "Behavioural change under coercion can surface"
+      },
+      {
+        "vector_id": "V-HUM-3",
+        "strength": "partial",
+        "why": "Placed agents' collection behaviour can surface over time"
+      },
+      {
+        "vector_id": "V-CRED-3",
+        "strength": "partial",
+        "why": "Anomalous use of a legitimate account is flagged"
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Privilege escalation patterns are flagged"
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "Same monitoring applied to AI agents' account activity"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "Access-pattern monitoring flags unusual weight access"
+      },
+      {
+        "vector_id": "V-X-4",
+        "strength": "partial",
+        "why": "Departure-window monitoring catches pre-resignation copying"
       }
     ]
   },
@@ -388,8 +482,7 @@
         "PER-01"
       ],
       "enhances": [
-        "PER-03",
-        "PER-05"
+        "PER-03"
       ],
       "enabled_by": [],
       "completed_by": {
@@ -423,100 +516,27 @@
         "source": "Manhattan Project espionage history",
         "year": 1945
       }
-    ]
-  },
-  {
-    "id": "PER-05",
-    "name": "Post-Employment Restrictions",
-    "category": "personnel",
-    "summary_group": "personnel_program",
-    "description": "Obligations that continue after employment ends: non-compete for competitors, reporting requirements for foreign contacts, restrictions on sabbaticals at foreign-affiliated institutions. Scaled by SenL tier — SenL-5 has most restrictive post-employment obligations.",
-    "current_state": {
-      "summary": "Some labs have basic NDAs and non-competes where legal. None have the graduated post-employment framework with foreign contact reporting or sabbatical restrictions. The binding constraint is state law rather than federal: California SB 699 and AB 1076 (effective 2024) void non-competes even where the employment and the agreement were out of state, and add a private right of action. The FTC's federal non-compete rule was vacated and never took effect. Since most major labs are California-based, garden leave and foreign-contact reporting are the workable levers, not enforceable non-competes.",
-      "deployed_by": [
-        "government_clearance_holders",
-        "some_defense_contractors"
-      ],
-      "baseline_state": "partially_deployed"
-    },
-    "dimensions": {
-      "technical_feasibility": {
-        "value": 70,
-        "notes": "Legal frameworks exist for non-competes and post-employment restrictions. Challenge: California ban on non-competes, FTC restrictions, enforceability across jurisdictions. 'Foreign contact reporting' post-employment is novel for private sector.",
-        "trajectory": "stable"
-      },
-      "time_to_deploy_months": {
-        "min": 6,
-        "max": 12,
-        "notes": "Legal framework development + employment agreement revision + enforcement mechanisms. Applies to new hires immediately; existing employees need renegotiation."
-      },
-      "cost": {
-        "upfront_millions": {
-          "min": 2,
-          "max": 8
-        },
-        "annual_ongoing_millions": {
-          "min": 3,
-          "max": 10
-        },
-        "notes": "Legal counsel + enforcement + exit process. Ongoing = monitoring compliance, legal actions against violators, garden-leave compensation."
-      },
-      "vendor_dependency": {
-        "value": 10,
-        "key_vendors": [
-          "legal_counsel"
-        ],
-        "notes": "Primarily internal policy with external legal advice."
-      },
-      "supply_scarcity": {
-        "value": 20,
-        "bottleneck": "Employment lawyers experienced in security-cleared workforce restrictions",
-        "notes": "Exists in defense contractor legal community. Adapting to tech sector is novel."
-      },
-      "organizational_readiness": {
-        "value": 30,
-        "barriers": [
-          "legal_enforceability",
-          "talent_retention_impact",
-          "california_law",
-          "cultural_resistance"
-        ],
-        "notes": "AI researchers value mobility and academic collaboration. Post-employment restrictions conflict with this deeply. May need to compensate with higher salaries (garden leave)."
-      }
-    },
-    "defense_type": "probabilistic",
-    "sl_requirement": {
-      "first_recommended": 4,
-      "first_required": 5
-    },
-    "adversary_exploitation": {
-      "oc_threshold_to_exploit": 4,
-      "ai_oc_shift": 0.5,
-      "exploit_narrative": "Without post-employment restrictions, intelligence agencies recruit former employees who retain knowledge of security architecture, access procedures, and potentially residual access. Sabbaticals at foreign-affiliated institutions provide recruitment opportunities. Former employees aren't monitored for foreign contacts."
-    },
-    "dependencies": {
-      "requires": [
-        "PER-01"
-      ],
-      "enhances": [
-        "PER-04"
-      ],
-      "enabled_by": []
-    },
-    "defense_in_depth": {
-      "layer_contributions": [
-        "personnel_trust"
-      ],
-      "shared_dependencies": [
-        "legal_framework"
-      ]
-    },
-    "open_questions": [],
-    "real_world_parallels": [
+    ],
+    "counters": [
       {
-        "description": "Multiple Thousand Talents Program cases (2018-2023) involved researchers taking sabbaticals at Chinese institutions while retaining access to sensitive US research. Post-employment restrictions specifically target this vector.",
-        "source": "DOJ China Initiative cases",
-        "year": 2020
+        "vector_id": "V-HUM-3",
+        "strength": "strong",
+        "why": "SF-86-grade vetting with interviews is the primary filter for placed candidates"
+      },
+      {
+        "vector_id": "V-HUM-1",
+        "strength": "partial",
+        "why": "Surfaces financial or ideological vulnerabilities to recruitment"
+      },
+      {
+        "vector_id": "V-HUM-2",
+        "strength": "partial",
+        "why": "Surfaces foreign family and debt that enable coercion"
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Vetting extends to contractors with access"
       }
     ]
   },
@@ -616,97 +636,43 @@
         "source": "SWIFT security controls",
         "year": 2016
       }
-    ]
-  },
-  {
-    "id": "PER-07",
-    "name": "Body-Worn Cameras with Obstruction Detection",
-    "category": "personnel",
-    "summary_group": "personnel_program",
-    "description": "All personnel performing physical maintenance in non-SCIF areas wear cameras with tamper-evident features and automatic obstruction detection. Provides evidence trail and deters unauthorized physical actions. Prohibited inside SCIF-equivalent spaces due to EM constraints.",
-    "current_state": {
-      "summary": "Used in law enforcement and some industrial settings. Not deployed in tech/AI datacenter context. The intersection with SCIF EM restrictions creates a gap where cameras can't be used in the most sensitive areas.",
-      "deployed_by": [
-        "law_enforcement",
-        "some_industrial"
-      ],
-      "baseline_state": "not_started"
-    },
-    "dimensions": {
-      "technical_feasibility": {
-        "value": 85,
-        "notes": "Cameras exist. Obstruction detection AI exists. Challenge: cannot use wireless cameras in Red Zones (PHY-05 conflict). Must use hardwired or store-and-forward with shielded devices. Limited applicability in most sensitive areas.",
-        "trajectory": "improving"
-      },
-      "time_to_deploy_months": {
-        "min": 4,
-        "max": 9,
-        "notes": "Equipment procurement + policy + training. Fast to deploy technically. Legal review needed for employee recording consent."
-      },
-      "cost": {
-        "upfront_millions": {
-          "min": 1,
-          "max": 5
-        },
-        "annual_ongoing_millions": {
-          "min": 1,
-          "max": 3
-        },
-        "notes": "Camera hardware + storage + review infrastructure. Relatively low cost."
-      },
-      "vendor_dependency": {
-        "value": 25,
-        "key_vendors": [
-          "body_camera_vendor"
-        ],
-        "notes": "Multiple vendors. May need custom shielded variants for near-SCIF use."
-      },
-      "supply_scarcity": {
-        "value": 10,
-        "bottleneck": "None — commodity equipment",
-        "notes": "No supply constraint"
-      },
-      "organizational_readiness": {
-        "value": 35,
-        "barriers": [
-          "employee_surveillance_perception",
-          "union_concerns",
-          "legal_consent",
-          "scif_incompatibility"
-        ],
-        "notes": "Being recorded constantly is uncomfortable. Plus the limitation that cameras can't be used in the most sensitive areas reduces the value."
-      }
-    },
-    "defense_type": "probabilistic",
-    "sl_requirement": {
-      "first_recommended": 3,
-      "first_required": 4
-    },
-    "adversary_exploitation": {
-      "oc_threshold_to_exploit": 3,
-      "ai_oc_shift": 0.0,
-      "exploit_narrative": "Without body cameras, a maintenance worker's physical actions during solo access are unobserved and unrecorded. Any claims about what happened during maintenance windows are unverifiable. An insider can deny installing an implant with no evidence either way."
-    },
-    "dependencies": {
-      "requires": [],
-      "enhances": [
-        "PER-02"
-      ],
-      "enabled_by": []
-    },
-    "defense_in_depth": {
-      "layer_contributions": [
-        "monitoring_detection",
-        "personnel_trust"
-      ],
-      "shared_dependencies": []
-    },
-    "open_questions": [],
-    "real_world_parallels": [
+    ],
+    "counters": [
       {
-        "description": "Nuclear facilities use CCTV monitoring of all maintenance activities in sensitive areas. Body cameras add the mobile/personal dimension that fixed CCTV misses.",
-        "source": "Nuclear facility security",
-        "year": 2010
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Escalated single account still lacks a co-signer"
+      },
+      {
+        "vector_id": "V-BYP-3",
+        "strength": "partial",
+        "why": "Break-glass paths also require two parties"
+      },
+      {
+        "vector_id": "V-ACS-3",
+        "strength": "partial",
+        "why": "Human co-sign is independent of the software access-control system",
+        "note": "Only if co-sign is enforced out-of-band, not inside the ACS software."
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "AI-initiated weight operations need human co-signature"
+      },
+      {
+        "vector_id": "V-SELF-7",
+        "strength": "partial",
+        "why": "A persuaded operator still needs a second approver"
+      },
+      {
+        "vector_id": "V-HUM-5",
+        "strength": "partial",
+        "why": "No single executive can order a weight release"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "strong",
+        "why": "Two-person authorisation: one insider's access is not enough"
       }
     ]
   },
@@ -805,6 +771,38 @@
         "description": "CVE-2019-6260 (Pantsdown) — BMC vulnerability allowing arbitrary read/write of BMC flash affecting multiple vendors. AMT vulnerabilities (CVE-2017-5689) allowed remote unauthenticated access to Intel management engine. These are recurring, structural vulnerabilities in remote management.",
         "source": "BMC/AMT vulnerability history",
         "year": 2019
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-BYP-3",
+        "strength": "partial",
+        "why": "Removes BMC and vendor remote paths; RAND's main examples are identity fallbacks"
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Removes remote vendor access; on-site contractors and cloud staff remain"
+      },
+      {
+        "vector_id": "V-CODE-1",
+        "strength": "partial",
+        "why": "Removes perennially unpatched BMC interfaces"
+      },
+      {
+        "vector_id": "V-CODE-2",
+        "strength": "partial",
+        "why": "Removes management firmware with slow patch cycles"
+      },
+      {
+        "vector_id": "V-CRED-3",
+        "strength": "partial",
+        "why": "No remote interface to use leaked credentials on"
+      },
+      {
+        "vector_id": "V-PHYS-3",
+        "strength": "partial",
+        "why": "Hardware never leaves for off-site maintenance"
       }
     ]
   },
@@ -925,6 +923,129 @@
         "description": "Financial-sector duress codes and silent-alarm protocols for coerced staff",
         "source": "Banking physical security practice",
         "year": 1968
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-HUM-2",
+        "strength": "strong",
+        "why": "Duress signalling, counter-intelligence support and protection target coercion directly"
+      },
+      {
+        "vector_id": "V-HUM-1",
+        "strength": "partial",
+        "why": "Financial-distress support removes a recruitment lever"
+      },
+      {
+        "vector_id": "V-PHYS-3",
+        "strength": "partial",
+        "why": "Travel briefings reduce device compromise abroad"
+      }
+    ]
+  },
+  {
+    "id": "GOV-01",
+    "name": "Governance & Investor Vetting",
+    "category": "personnel",
+    "summary_group": "governance",
+    "description": "Vetting of investors, board members and anyone with leverage over the security programme; a security function with authority to block decisions; foreign-investment review and conflict-of-interest disclosure for positions of influence (RAND SL4).",
+    "current_state": {
+      "summary": "CFIUS reviews some foreign investment, and labs have board-level safety and security committees (2024), but none publishes vetting of investors or of influence over security decisions.",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 80,
+        "notes": "Legal and governance process; no technology.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 18,
+        "notes": "Board and investor agreements change slowly."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 1,
+          "max": 5
+        },
+        "annual_ongoing_millions": {
+          "min": 1,
+          "max": 3
+        },
+        "notes": "Legal counsel, investigations, governance staff."
+      },
+      "vendor_dependency": {
+        "value": 10,
+        "key_vendors": [
+          "legal_counsel"
+        ],
+        "notes": "Advisory only."
+      },
+      "supply_scarcity": {
+        "value": 20,
+        "bottleneck": "Investigators with counter-intelligence experience",
+        "notes": "Small but available."
+      },
+      "organizational_readiness": {
+        "value": 25,
+        "barriers": [
+          "fundraising_pressure",
+          "board_independence"
+        ],
+        "notes": "Labs raise money from whoever will fund the compute."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 4,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.3,
+      "exploit_narrative": "Without governance vetting, an adversary buys or pressures its way to influence and has security decisions relaxed from above."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "PER-01",
+        "PER-06"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "personnel_trust"
+      ],
+      "shared_dependencies": [
+        "legal_framework"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "CFIUS forced Beijing Kunlun to divest Grindr over access to US users' data.",
+        "source": "Reuters",
+        "year": 2019
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-HUM-4",
+        "strength": "strong",
+        "why": "Vets investors, partners and positions of influence (RAND SL4)"
+      },
+      {
+        "vector_id": "V-HUM-5",
+        "strength": "partial",
+        "why": "Board-level security authority resists covert executive-approved access"
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Partners and vendors with access are vetted too"
       }
     ]
   }

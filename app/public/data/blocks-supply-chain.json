@@ -73,7 +73,7 @@
     "dependencies": {
       "requires": [],
       "enhances": [
-        "SC-02",
+        "SC-08",
         "PHY-07"
       ],
       "enabled_by": []
@@ -97,107 +97,22 @@
         "source": "DoD supply chain policy",
         "year": 2010
       }
-    ]
-  },
-  {
-    "id": "SC-02",
-    "name": "Upstream Hardware Inspection (Pre-Facility)",
-    "category": "supply_chain",
-    "summary_group": "hardware_inspection",
-    "description": "Extends the facility inspection pipeline (PHY-07) upstream: sampling and verification at vendor sites, in transit, and at receiving, before components ever reach the datacenter. Reuses PHY-07's equipment, staff and golden-reference corpus, so this block is the incremental cost of the upstream reach - chain-of-custody, vendor-site access, and the logistics of intercepting hardware early - not a second lab.",
-    "current_state": {
-      "summary": "No AI lab inspects hardware upstream of its own receiving dock. Government defense procurement does some of this through trusted-supplier programs, but the practice depends on contractual access to vendor facilities that commercial buyers rarely have. The capability is meaningless without a reference to compare against, which is why it is gated on provenance tracking and supplier diversity.",
-      "deployed_by": [
-        "government_dmea",
-        "military_supply_chain"
-      ],
-      "baseline_state": "not_started"
-    },
-    "dimensions": {
-      "technical_feasibility": {
-        "value": 75,
-        "notes": "Same as PHY-07. Individual techniques proven; scaling to volume and automating detection is the challenge.",
-        "trajectory": "improving"
-      },
-      "time_to_deploy_months": {
-        "min": 6,
-        "max": 15,
-        "notes": "Shorter than PHY-07 because the lab already exists; the time is spent negotiating vendor-site access and standing up chain-of-custody, not procuring equipment."
-      },
-      "cost": {
-        "upfront_millions": {
-          "min": 4,
-          "max": 14
-        },
-        "annual_ongoing_millions": {
-          "min": 2,
-          "max": 8
-        },
-        "notes": "Incremental over PHY-07, which carries the equipment and lab cost. What is left is chain-of-custody logistics, vendor-site access (often a contractual fight rather than a purchase), and the sampling overhead of intercepting hardware before it ships. Deploying this without PHY-07 would cost far more, because the lab would have to be built first."
-      },
-      "vendor_dependency": {
-        "value": 70,
-        "key_vendors": [
-          "xray_equipment_vendor",
-          "inspection_services"
-        ],
-        "notes": "The binding constraint. Upstream inspection requires suppliers to permit sampling at their own facilities, which defense procurement obtains contractually and commercial buyers generally cannot. Without that access the block degrades to receiving-dock inspection, which PHY-07 already covers."
-      },
-      "supply_scarcity": {
-        "value": 55,
-        "bottleneck": "Hardware inspection specialists for modern semiconductors",
-        "notes": "Same as PHY-07."
-      },
-      "organizational_readiness": {
-        "value": 25,
-        "barriers": [
-          "procurement_delay",
-          "cost_of_destruction",
-          "expertise_gap"
-        ],
-        "notes": "Same as PHY-07."
-      }
-    },
-    "defense_type": "probabilistic",
-    "sl_requirement": {
-      "first_recommended": 4,
-      "first_required": 5
-    },
-    "adversary_exploitation": {
-      "oc_threshold_to_exploit": 4,
-      "ai_oc_shift": 0.0,
-      "exploit_narrative": "Same as PHY-07 — without inspection, supply chain compromises (hardware implants) go undetected."
-    },
-    "dependencies": {
-      "requires": [
-        "PHY-07"
-      ],
-      "enhances": [
-        "SC-01",
-        "SC-05"
-      ],
-      "enabled_by": [],
-      "completed_by": {
-        "blocks": [
-          "SC-01",
-          "SC-06"
-        ],
-        "standalone_share": 0.65,
-        "why": "An inspection pipeline can only flag deviation from a reference. Without provenance tracking and a second supplier to cross-reference against, there is no golden sample and a uniformly backdoored batch passes."
-      }
-    },
-    "defense_in_depth": {
-      "layer_contributions": [
-        "supply_chain_integrity"
-      ],
-      "shared_dependencies": []
-    },
-    "open_questions": [],
-    "real_world_parallels": [
+    ],
+    "counters": [
       {
-        "description": "Same as PHY-07 (DMEA Trusted Foundry).",
-        "source": "DMEA Trusted Foundry",
-        "year": 2004
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "A second source allows cross-checking and limits single-vendor compromise"
+      },
+      {
+        "vector_id": "V-ACS-2",
+        "strength": "partial",
+        "why": "Heterogeneous products dilute one vendor's backdoor"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Diverse hardware sources limit the reach of one compromised supplier"
       }
     ]
   },
@@ -270,7 +185,8 @@
       "requires": [],
       "enhances": [
         "AI-01",
-        "AI-03"
+        "AI-07",
+        "AI-08"
       ],
       "enabled_by": []
     },
@@ -294,6 +210,18 @@
         "description": "Antivirus/malware detection has been an arms race for 30+ years with no complete solution. Adversarial content detection for ML is the same problem in a new domain — and the attackers have a structural advantage because detection is harder than evasion.",
         "source": "Antivirus industry history",
         "year": 1990
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Screens poisoned data or annotations aimed at implanting backdoors"
+      },
+      {
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "Screens external text that could carry injection payloads"
       }
     ]
   },
@@ -370,8 +298,7 @@
       "requires": [],
       "enhances": [
         "SC-01",
-        "SC-02",
-        "SC-05"
+        "SC-08"
       ],
       "enabled_by": []
     },
@@ -388,190 +315,17 @@
         "source": "SolarWinds supply chain attack",
         "year": 2020
       }
-    ]
-  },
-  {
-    "id": "SC-05",
-    "name": "Counterfeit Detection (QBL/QML)",
-    "category": "supply_chain",
-    "summary_group": "hardware_inspection",
-    "description": "Anti-counterfeit program using Qualified Bidders Lists (QBL) and Qualified Manufacturers Lists (QML). Only procure from pre-qualified suppliers. Detect counterfeits via electrical testing, marking verification, and provenance tracking.",
-    "current_state": {
-      "summary": "Government uses QBL/QML for defense procurement. Trusted Foundry program available for government contractors. AI labs procure from distributors with basic authenticity checks but no formal QBL/QML program.",
-      "deployed_by": [
-        "government_defense_procurement"
-      ],
-      "baseline_state": "not_started"
-    },
-    "dimensions": {
-      "technical_feasibility": {
-        "value": 82,
-        "notes": "QBL/QML process is well-defined. Challenge for AI labs: Trusted Foundry requires government contracts (not available to private sector without government cooperation). Private equivalent must be built.",
-        "trajectory": "stable"
-      },
-      "time_to_deploy_months": {
-        "min": 9,
-        "max": 18,
-        "notes": "Supplier qualification process + testing infrastructure + procurement policy changes. Government cooperation accelerates if available."
-      },
-      "cost": {
-        "upfront_millions": {
-          "min": 5,
-          "max": 15
-        },
-        "annual_ongoing_millions": {
-          "min": 3,
-          "max": 10
-        },
-        "notes": "Supplier qualification + testing + procurement team expansion. Moderate cost."
-      },
-      "vendor_dependency": {
-        "value": 40,
-        "key_vendors": [
-          "testing_laboratories",
-          "government_trusted_foundry"
-        ],
-        "notes": "Testing labs exist. Trusted Foundry access requires government relationship."
-      },
-      "supply_scarcity": {
-        "value": 30,
-        "bottleneck": "Counterfeit detection capability for advanced semiconductors",
-        "notes": "Testing labs exist. Expertise for detecting sophisticated counterfeits (vs obvious fakes) is rarer."
-      },
-      "organizational_readiness": {
-        "value": 45,
-        "barriers": [
-          "procurement_speed_impact",
-          "limited_supplier_pool",
-          "government_access"
-        ],
-        "notes": "Restricting to qualified suppliers may limit procurement speed and options. Manageable with planning."
-      }
-    },
-    "defense_type": "probabilistic",
-    "sl_requirement": {
-      "first_recommended": 3,
-      "first_required": 4
-    },
-    "adversary_exploitation": {
-      "oc_threshold_to_exploit": 4,
-      "ai_oc_shift": 0.0,
-      "exploit_narrative": "Without counterfeit detection, an adversary can substitute compromised components that appear identical to legitimate ones. Counterfeit chips may have modified functionality (backdoors) or simply fail at critical moments (denial of service)."
-    },
-    "dependencies": {
-      "requires": [],
-      "enhances": [
-        "SC-02",
-        "SC-04"
-      ],
-      "enabled_by": []
-    },
-    "defense_in_depth": {
-      "layer_contributions": [
-        "supply_chain_integrity"
-      ],
-      "shared_dependencies": []
-    },
-    "open_questions": [],
-    "real_world_parallels": [
+    ],
+    "counters": [
       {
-        "description": "Counterfeit electronic parts have been found in US military systems multiple times. A 2012 Senate Armed Services Committee investigation found 1,800+ cases of counterfeit parts in DoD supply chains.",
-        "source": "Senate Armed Services Committee report",
-        "year": 2012
-      }
-    ]
-  },
-  {
-    "id": "SC-06",
-    "name": "Component Provenance / Authenticity Tracking",
-    "category": "supply_chain",
-    "summary_group": "hardware_inspection",
-    "description": "Cryptographic attestation of component origin and chain of custody. Software Bill of Materials (SBOM), Model Cards, Datasheets with cryptographic signatures. Enables verification that each component is what it claims to be and has traveled through expected supply chain path.",
-    "current_state": {
-      "summary": "SBOM tooling and standards continue to mature - CISA's 2025 Minimum Elements for a Software Bill of Materials expanded the technical standard and names AI software as an area for further consideration rather than adding AI-specific elements - but the federal mandate reversed: OMB M-26-05 (January 2026) rescinded the vendor self-attestation requirement in favour of an agency-led risk-based approach. Hardware provenance is much less mature and now advances through industry consortia (Caliptra, OCP S.A.F.E., DICE, SCITT) rather than policy; hardware bill-of-materials templates remain draft. Cryptographic attestation of physical components is cutting-edge.",
-      "deployed_by": [
-        "partial_some_software_sbom"
-      ],
-      "baseline_state": "partially_deployed"
-    },
-    "dimensions": {
-      "technical_feasibility": {
-        "value": 70,
-        "notes": "Software SBOM: maturing. Hardware provenance with cryptographic guarantees: early-stage. Requires chip-level identity (ties to HW-01 root-of-trust) plus supply chain tracking infrastructure.",
-        "trajectory": "improving"
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "Security requirements reach sub-tier suppliers contractually"
       },
-      "time_to_deploy_months": {
-        "min": 12,
-        "max": 24,
-        "notes": "Software side faster (SBOM tooling exists). Hardware side requires vendor cooperation for cryptographic provenance features."
-      },
-      "cost": {
-        "upfront_millions": {
-          "min": 5,
-          "max": 20
-        },
-        "annual_ongoing_millions": {
-          "min": 3,
-          "max": 10
-        },
-        "notes": "Tracking infrastructure + integration with procurement + ongoing verification. Moderate."
-      },
-      "vendor_dependency": {
-        "value": 65,
-        "key_vendors": [
-          "chip_vendors_for_hardware_provenance",
-          "sbom_tooling_vendors"
-        ],
-        "notes": "Hardware provenance requires vendor embedding cryptographic identity at manufacture time."
-      },
-      "supply_scarcity": {
-        "value": 40,
-        "bottleneck": "Hardware provenance standards and tooling are still emerging",
-        "notes": "Standards bodies working on this but not yet mature."
-      },
-      "organizational_readiness": {
-        "value": 50,
-        "barriers": [
-          "standards_immaturity",
-          "integration_complexity"
-        ],
-        "notes": "Conceptually understood. Practical implementation depends on ecosystem maturity."
-      }
-    },
-    "defense_type": "probabilistic",
-    "sl_requirement": {
-      "first_recommended": 3,
-      "first_required": 4
-    },
-    "adversary_exploitation": {
-      "oc_threshold_to_exploit": 4,
-      "ai_oc_shift": 0.0,
-      "exploit_narrative": "Without provenance tracking, a substituted or tampered component cannot be distinguished from a legitimate one by provenance alone. The supply chain becomes a trust-on-first-use system where compromise is undetectable unless caught by physical inspection."
-    },
-    "dependencies": {
-      "requires": [
-        "HW-01"
-      ],
-      "enhances": [
-        "SC-02",
-        "SC-05"
-      ],
-      "enabled_by": []
-    },
-    "defense_in_depth": {
-      "layer_contributions": [
-        "supply_chain_integrity"
-      ],
-      "shared_dependencies": [
-        "provenance_infrastructure"
-      ]
-    },
-    "open_questions": [],
-    "real_world_parallels": [
       {
-        "description": "Pharmaceutical supply chain uses track-and-trace (DSCSA in US) with cryptographic verification to prevent counterfeit drugs. Same concept applied to hardware components.",
-        "source": "Drug Supply Chain Security Act",
-        "year": 2013
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Contractors with access inherit obligations"
       }
     ]
   },
@@ -635,7 +389,7 @@
         "notes": "Only viable for the largest AI labs. Creates enormous ongoing maintenance burden. But provides the ultimate supply chain control."
       }
     },
-    "defense_type": "hard_stop",
+    "defense_type": "hybrid",
     "sl_requirement": {
       "first_recommended": 5,
       "first_required": 5
@@ -681,6 +435,303 @@
         "description": "The US DoD maintains custom ASIC design capability (DMEA) for exactly this reason — when you can't trust commercial supply chains for the most critical components, you build them yourself.",
         "source": "DMEA custom microelectronics",
         "year": 2000
+      }
+    ],
+    "reclassified": {
+      "from": "hard_stop",
+      "why": "In-house development relocates supply-chain risk to internal developers rather than removing it."
+    },
+    "counters": [
+      {
+        "vector_id": "V-SUP-2",
+        "strength": "partial",
+        "why": "Only critical components are in-house; SW-01 carries the rest",
+        "type_override": "hybrid",
+        "note": "Relocates supply-chain risk to internal developers (insiders, AI coders) rather than removing it."
+      },
+      {
+        "vector_id": "V-ACS-2",
+        "strength": "strong",
+        "why": "In-house access-control components remove vendor-planted backdoors",
+        "type_override": "hybrid",
+        "note": "Pair with NET-03: in-house code implementing a subverted standard keeps the backdoor (Dual_EC)."
+      },
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "Custom firmware and boards replace vendor parts where feasible",
+        "type_override": "hybrid"
+      },
+      {
+        "vector_id": "V-ACS-1",
+        "strength": "partial",
+        "why": "Owned, reviewable crypto and authentication code"
+      },
+      {
+        "vector_id": "V-ACS-3",
+        "strength": "partial",
+        "why": "Small, owned access-control code can be audited deeply"
+      },
+      {
+        "vector_id": "V-ACS-4",
+        "strength": "partial",
+        "why": "Own trust roots instead of public CAs or vendor keys"
+      }
+    ]
+  },
+  {
+    "id": "SW-01",
+    "name": "ML Software Supply-Chain Integrity",
+    "category": "supply_chain",
+    "summary_group": "supply_chain_integrity",
+    "description": "Every package, container image, model artefact and build that enters the training or serving environment is hash-pinned, mirrored internally, built with signed provenance (SLSA Build L3, Sigstore-style signatures) and verified against an SBOM before it is admitted. Takes over the software-bill-of-materials role from the old component-provenance block.",
+    "current_state": {
+      "summary": "Dependency pinning and internal package mirrors are common at frontier labs; signed provenance checked at admission is partial, and ML artefacts (checkpoints, datasets, pickled models, CUDA wheels) are rarely held to the same standard as application code. The December 2022 PyTorch torchtriton compromise and the 2024 xz-utils backdoor show both halves of the gap.",
+      "deployed_by": [
+        "google",
+        "large_tech_platforms",
+        "partial_frontier_labs"
+      ],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 80,
+        "notes": "SLSA, Sigstore and reproducible builds are mature for open-source code. Closed GPU driver and CUDA binaries can only be verified as vendor-signed, not rebuilt.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 9,
+        "max": 18,
+        "notes": "Admission policy and mirrors first; signed provenance for internal builds and ML artefacts follows. Long tail is third-party binaries."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 5,
+          "max": 25
+        },
+        "annual_ongoing_millions": {
+          "min": 3,
+          "max": 10
+        },
+        "notes": "Build infrastructure, signing service, admission tooling and the staff to keep exceptions from becoming the rule."
+      },
+      "vendor_dependency": {
+        "value": 30,
+        "key_vendors": [
+          "sigstore",
+          "artifact_registries"
+        ],
+        "notes": "Mostly open tooling; vendor binaries remain trust-the-signer."
+      },
+      "supply_scarcity": {
+        "value": 30,
+        "bottleneck": "Build and release engineers with supply-chain security experience",
+        "notes": "Available but contested with every large software company."
+      },
+      "organizational_readiness": {
+        "value": 50,
+        "barriers": [
+          "developer_velocity",
+          "exception_creep"
+        ],
+        "notes": "Researchers install packages freely today; an admission gate is felt every day."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without verified admission, a poisoned dependency or a tampered model artefact runs inside the trusted boundary with a developer's privileges, and nobody can say afterwards which build was clean."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "AI-12",
+        "SC-08"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "supply_chain_integrity",
+        "host_security"
+      ],
+      "shared_dependencies": [
+        "code_signing_infrastructure"
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "Can admission control cover closed GPU stacks that only the vendor can build?",
+        "uncertainty_level": "significant",
+        "impact_if_resolved_negatively": "The CUDA/driver layer stays a trust-the-vendor gap even at SLSA L3."
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "PyTorch nightly builds pulled a malicious 'torchtriton' package through dependency confusion.",
+        "source": "PyTorch security advisory",
+        "year": 2022
+      },
+      {
+        "description": "xz-utils backdoor (CVE-2024-3094) inserted by a long-term maintainer and caught by chance.",
+        "source": "Openwall oss-security",
+        "year": 2024
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SUP-2",
+        "strength": "strong",
+        "why": "Vendored, reviewed, hermetically built dependencies; no install-time scripts"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "strong",
+        "why": "Quarantined, signature-checked mirror and safetensors-only stop torchtriton-style compromises",
+        "note": "Software half; the hardware half sits with PHY-07 / SC-02."
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "Safetensors removes deserialisation RCE; reviewed dependencies shrink known-bug surface"
+      },
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "Hardened CI covers the build-system part of services used"
+      }
+    ]
+  },
+  {
+    "id": "SC-08",
+    "name": "Hardware Provenance & Authenticity",
+    "category": "supply_chain",
+    "summary_group": "hardware_inspection",
+    "description": "One programme for hardware the lab did not build: upstream inspection at vendor sites, in transit and at receiving (former SC-02), counterfeit detection through qualified bidder and manufacturer lists (former SC-05), and cryptographic provenance and chain of custody for components (former SC-06). Software bills of materials moved to SW-01.",
+    "current_state": {
+      "summary": "SBOM tooling and standards continue to mature - CISA's 2025 Minimum Elements for a Software Bill of Materials expanded the technical standard and names AI software as an area for further consideration rather than adding AI-specific elements - but the federal mandate reversed: OMB M-26-05 (January 2026) rescinded the vendor self-attestation requirement in favour of an agency-led risk-based approach. Hardware provenance is much less mature and now advances through industry consortia (Caliptra, OCP S.A.F.E., DICE, SCITT) rather than policy; hardware bill-of-materials templates remain draft. Cryptographic attestation of physical components is cutting-edge. No AI lab inspects hardware upstream of its own receiving dock. Government defense procurement does some of this through trusted-supplier programs, but the practice depends on contractual access to vendor facilities that commercial buyers rarely have. The capability is meaningless without a reference to compare against, which is why it is gated on provenance tracking and supplier diversity. Government uses QBL/QML for defense procurement. Trusted Foundry program available for government contractors. AI labs procure from distributors with basic authenticity checks but no formal QBL/QML program.",
+      "deployed_by": [
+        "government_defense_procurement",
+        "government_dmea",
+        "military_supply_chain",
+        "partial_some_software_sbom"
+      ],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 70,
+        "notes": "Software SBOM: maturing. Hardware provenance with cryptographic guarantees: early-stage. Requires chip-level identity (ties to HW-01 root-of-trust) plus supply chain tracking infrastructure.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Software side faster (SBOM tooling exists). Hardware side requires vendor cooperation for cryptographic provenance features."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 14,
+          "max": 49
+        },
+        "annual_ongoing_millions": {
+          "min": 8,
+          "max": 28
+        },
+        "notes": "Sum of the three former programmes: upstream inspection logistics (SC-02), supplier qualification and testing (SC-05), provenance infrastructure (SC-06)."
+      },
+      "vendor_dependency": {
+        "value": 65,
+        "key_vendors": [
+          "chip_vendors_for_hardware_provenance",
+          "sbom_tooling_vendors"
+        ],
+        "notes": "Hardware provenance requires vendor embedding cryptographic identity at manufacture time."
+      },
+      "supply_scarcity": {
+        "value": 40,
+        "bottleneck": "Hardware provenance standards and tooling are still emerging",
+        "notes": "Standards bodies working on this but not yet mature."
+      },
+      "organizational_readiness": {
+        "value": 50,
+        "barriers": [
+          "standards_immaturity",
+          "integration_complexity"
+        ],
+        "notes": "Conceptually understood. Practical implementation depends on ecosystem maturity."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without inspection, counterfeit screening or provenance, a substituted or implanted component is indistinguishable from a legitimate one until it acts."
+    },
+    "dependencies": {
+      "requires": [
+        "PHY-07"
+      ],
+      "enhances": [
+        "SC-01",
+        "SC-04"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "SC-01",
+          "HW-01"
+        ],
+        "standalone_share": 0.65,
+        "why": "Inspection needs a second supplier to compare against, and authenticity needs devices that can attest who made them; without them the programme catches clumsy implants only."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "supply_chain_integrity"
+      ],
+      "shared_dependencies": [
+        "provenance_infrastructure"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Pharmaceutical supply chain uses track-and-trace (DSCSA in US) with cryptographic verification to prevent counterfeit drugs. Same concept applied to hardware components.",
+        "source": "Drug Supply Chain Security Act",
+        "year": 2013
+      },
+      {
+        "description": "Same as PHY-07 (DMEA Trusted Foundry).",
+        "source": "DMEA Trusted Foundry",
+        "year": 2004
+      },
+      {
+        "description": "Counterfeit electronic parts have been found in US military systems multiple times. A 2012 Senate Armed Services Committee investigation found 1,800+ cases of counterfeit parts in DoD supply chains.",
+        "source": "Senate Armed Services Committee report",
+        "year": 2012
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "Upstream inspection, counterfeit testing and chain of custody together"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Accelerators sampled and attested before installation"
       }
     ]
   }

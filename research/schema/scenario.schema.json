@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SL5 Explorable — Scenarios",
+  "description": "scenarios.json: a path told as a story (the former attack chains, rebuilt on vectors). A scenario's success is the product over its distinct vectors; it is narrative, not the attacker's easiest path (that is the approach).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "id",
+      "name",
+      "approach",
+      "adversary_profile",
+      "vectors",
+      "narrative",
+      "steps",
+      "stopper_details",
+      "fit_note"
+    ],
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "approach": {
+        "type": "string",
+        "description": "An approach id from approaches.json."
+      },
+      "adversary_profile": {
+        "type": "object",
+        "required": [
+          "min_oc",
+          "typical_oc"
+        ],
+        "properties": {
+          "min_oc": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "typical_oc": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "description": "The tier the story is told at. Narrative only."
+      },
+      "vectors": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 1,
+        "description": "Distinct vectors the steps use, in order."
+      },
+      "narrative": {
+        "type": "object",
+        "required": [
+          "brief",
+          "detailed"
+        ],
+        "properties": {
+          "brief": {
+            "type": "string"
+          },
+          "detailed": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "phase",
+            "description",
+            "vector_ids"
+          ],
+          "properties": {
+            "phase": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "vector_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "block_gap_used": {
+              "type": "string",
+              "description": "The block whose absence lets this step succeed; it must counter one of the step's vectors."
+            }
+          }
+        }
+      },
+      "stopper_details": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "block_id",
+            "how_it_stops"
+          ],
+          "properties": {
+            "block_id": {
+              "type": "string"
+            },
+            "how_it_stops": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Blocks that stop the story; each must counter one of its vectors."
+      },
+      "fit_note": {
+        "type": "string",
+        "description": "How well RAND's vectors fit the story, from the vector review."
+      },
+      "requires_external_serving": {
+        "type": "boolean"
+      }
+    }
+  }
+}

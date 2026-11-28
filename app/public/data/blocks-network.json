@@ -115,6 +115,91 @@
         "source": "Stuxnet analysis",
         "year": 2010
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CODE-1",
+        "strength": "strong",
+        "why": "Removes network reach; remote n-day exploitation cannot start"
+      },
+      {
+        "vector_id": "V-CODE-2",
+        "strength": "strong",
+        "why": "Removes network reach for exploits of unpatched software"
+      },
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "strong",
+        "why": "Zero-days need delivery; residual route is V-NET-1"
+      },
+      {
+        "vector_id": "V-CODE-4",
+        "strength": "strong",
+        "why": "Even many zero-days need a path in; residual is V-NET-1"
+      },
+      {
+        "vector_id": "V-PHYS-3",
+        "strength": "strong",
+        "why": "Off-site laptops and phones are not on the isolated network"
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "No internet to escape to; the escape that matters is into the lab"
+      },
+      {
+        "vector_id": "V-CRED-1",
+        "strength": "partial",
+        "why": "Phished credentials are useless without a network path"
+      },
+      {
+        "vector_id": "V-CRED-2",
+        "strength": "partial",
+        "why": "No remote login surface to brute-force"
+      },
+      {
+        "vector_id": "V-CRED-3",
+        "strength": "partial",
+        "why": "Leaked credentials cannot be used remotely"
+      },
+      {
+        "vector_id": "V-BYP-3",
+        "strength": "partial",
+        "why": "Removes remote VPN and legacy remote-access paths"
+      },
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "SaaS and IT-vendor compromises cannot reach the isolated network"
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Remote vendor access to the isolated network is impossible"
+      },
+      {
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "External prompts cannot reach internal code-executing agents directly"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "No direct external path, but permitted output channels still cross",
+        "type_override": "hybrid",
+        "note": "A hard stop for network paths only; permitted transfers cross the gap by design."
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "partial",
+        "why": "No direct external path, but permitted outputs cross by design",
+        "type_override": "hybrid"
+      },
+      {
+        "vector_id": "V-X-3",
+        "strength": "strong",
+        "why": "No external network path for bulk transfer"
+      }
     ]
   },
   {
@@ -223,6 +308,78 @@
         "description": "Nuclear weapons design networks separate 'design' environments (where physicists run simulations) from 'production' environments (where weapon designs are stored), with controlled interfaces between them.",
         "source": "DOE/NNSA network architecture principles",
         "year": 2015
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CODE-1",
+        "strength": "partial",
+        "why": "Allow-listed software still carries n-days; patching is primary"
+      },
+      {
+        "vector_id": "V-CODE-2",
+        "strength": "partial",
+        "why": "Allow-listed software still carries reported bugs; patching is primary"
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "strong",
+        "why": "Lateral movement must breach a second, stricter perimeter"
+      },
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "partial",
+        "why": "Smaller surface, but allow-listed software still has zero-days"
+      },
+      {
+        "vector_id": "V-CODE-4",
+        "strength": "partial",
+        "why": "Second perimeter; a large zero-day pool crosses it"
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "Only a reviewed, minimal ML stack runs beside the weights"
+      },
+      {
+        "vector_id": "V-BYP-2",
+        "strength": "partial",
+        "why": "Weight copies belong inside the enclave boundary"
+      },
+      {
+        "vector_id": "V-PHYS-3",
+        "strength": "partial",
+        "why": "Weight access only from one facility"
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "No interactive coding where weights live"
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "An escape into the wider network still faces the enclave"
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "Unsanctioned code cannot run on weight-holding systems"
+      },
+      {
+        "vector_id": "V-NET-2",
+        "strength": "partial",
+        "why": "Dedicated weight hardware removes co-tenant cache and timing channels"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "Few staff can reach the enclave at all"
+      },
+      {
+        "vector_id": "V-X-3",
+        "strength": "partial",
+        "why": "Enclave boundary is a second egress checkpoint"
       }
     ]
   },
@@ -333,6 +490,29 @@
         "source": "NSA CSfC Customer Handbook",
         "year": 2021
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-NET-3",
+        "strength": "strong",
+        "why": "Two heterogeneous encryptors protect tapped inter-facility links",
+        "note": "Shares its failure mode with NET-07."
+      },
+      {
+        "vector_id": "V-ACS-1",
+        "strength": "partial",
+        "why": "One vendor's crypto flaw does not expose the link"
+      },
+      {
+        "vector_id": "V-ACS-2",
+        "strength": "partial",
+        "why": "A backdoored encryptor is covered by the second vendor"
+      },
+      {
+        "vector_id": "V-ACS-4",
+        "strength": "partial",
+        "why": "A second vendor's keys still protect the link if one is stolen"
+      }
     ]
   },
   {
@@ -412,7 +592,7 @@
       "completed_by": {
         "blocks": [
           "NET-05",
-          "PHY-05"
+          "PHY-08"
         ],
         "standalone_share": 0.75,
         "why": "A throughput cap only binds the channels it sits on. A wireless device in the room, or an uncontrolled crossing beside the metered one, is bandwidth the cap never counts."
@@ -441,6 +621,19 @@
         "description": "Air-gapped classified networks that allow one-way data diodes (e.g., from SECRET to UNCLASS) use hardware-enforced bandwidth caps and content filters. The principle: even if software is compromised, physics limits data flow.",
         "source": "Cross-domain solution architectures",
         "year": 2010
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "strong",
+        "why": "Hardware cap makes moving terabytes of weights take impractically long",
+        "note": "Weights only: keys, gradients and self-distilled data (V-SELF-8) fit under the cap."
+      },
+      {
+        "vector_id": "V-X-3",
+        "strength": "strong",
+        "why": "Hardware cap makes moving terabytes take impractically long"
       }
     ]
   },
@@ -553,6 +746,43 @@
         "source": "NSA Cross Domain Solution capabilities",
         "year": 2015
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-NET-1",
+        "strength": "partial",
+        "why": "One-way transfers replace hand-carried media; inbound malware and induced links remain"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "AI-monitored cross-domain transfers screen outbound artefacts"
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "Escaped code cannot send data back across a diode"
+      },
+      {
+        "vector_id": "V-PHYS-2",
+        "strength": "partial",
+        "why": "Removes the operational need to plug in media"
+      },
+      {
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "Cross-domain AI monitor screens inbound content"
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "partial",
+        "why": "AI-monitored cross-domain transfers screen outbound artefacts"
+      },
+      {
+        "vector_id": "V-X-3",
+        "strength": "partial",
+        "why": "One-way flows; outbound passes only through monitored cross-domain transfer"
+      }
     ]
   },
   {
@@ -643,6 +873,18 @@
         "description": "Every SCIF facility uses PDS for cable runs between secure areas. The technology and standards have been refined over decades of classified facility construction.",
         "source": "CNSSI 7003",
         "year": 2015
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-NET-3",
+        "strength": "strong",
+        "why": "Alarmed, hardened conduit makes cable taps detectable"
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Covers cable runs only, not the systems themselves"
       }
     ]
   },
@@ -740,6 +982,692 @@
         "description": "NSA/GCHQ MUSCULAR program (2013) tapped unencrypted links between Google and Yahoo data centers — demonstrating that inter-DC traffic without validated encryption is trivially intercepted by state actors.",
         "source": "Snowden documents / Washington Post",
         "year": 2013
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-NET-3",
+        "strength": "strong",
+        "why": "FIPS 140-3 encryption makes tapped inter-facility traffic ciphertext"
+      },
+      {
+        "vector_id": "V-ACS-1",
+        "strength": "partial",
+        "why": "Validated cryptography reduces implementation flaws"
+      }
+    ]
+  },
+  {
+    "id": "IAM-01",
+    "name": "Phishing-Resistant Identity & Privileged Access",
+    "category": "network",
+    "summary_group": "identity_access",
+    "description": "FIDO2/WebAuthn hardware authenticators for every human login with no SMS or OTP fallback; privileged access management with just-in-time, time-boxed elevation and no standing admin rights; identity proofing for help-desk and account-recovery requests; and short-lived workload identity (SPIFFE-style) instead of long-lived service credentials. Rescoped in Phase 2 to include help-desk recovery and workload identity.",
+    "current_state": {
+      "summary": "Hardware security keys are standard for staff at Google (since 2017) and widely adopted at frontier labs, and privileged-access tooling exists. Help-desk recovery and long-lived service tokens remain the common gaps: Uber (2022), MGM (2023) and the 2024 Snowflake customer breaches all went through them.",
+      "deployed_by": [
+        "google",
+        "cloudflare",
+        "partial_frontier_labs"
+      ],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 90,
+        "notes": "Off-the-shelf for humans; workload identity and recovery proofing need integration work.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 18,
+        "notes": "Keys roll out in months; removing standing privilege and every fallback path takes longer."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 10,
+          "max": 40
+        },
+        "annual_ongoing_millions": {
+          "min": 3,
+          "max": 10
+        },
+        "notes": "Authenticators, PAM platform, identity-proofing process and service-credential migration."
+      },
+      "vendor_dependency": {
+        "value": 40,
+        "key_vendors": [
+          "yubico",
+          "okta",
+          "cyberark"
+        ],
+        "notes": "Commodity products from several vendors."
+      },
+      "supply_scarcity": {
+        "value": 20,
+        "bottleneck": "Identity engineers",
+        "notes": "Not scarce."
+      },
+      "organizational_readiness": {
+        "value": 55,
+        "barriers": [
+          "break_glass_exceptions",
+          "legacy_service_accounts"
+        ],
+        "notes": "The hard part is deleting the fallbacks people rely on in an outage."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 2,
+      "first_required": 3
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without phishing-resistant authentication and controlled recovery, an attacker phishes or vishes a session, or talks the help desk into resetting MFA, then escalates through standing admin rights."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "KEY-01",
+        "PER-06",
+        "AI-01"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "access_control"
+      ],
+      "shared_dependencies": [
+        "identity_provider"
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "Does a single identity platform become the one flaw that reopens every credential vector?",
+        "uncertainty_level": "moderate",
+        "impact_if_resolved_negatively": "IAM-01 is the only strong counter on five vectors; one platform bug reopens the whole category."
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Google reported no successful phishing of its ~85,000 employees' work accounts after mandating security keys.",
+        "source": "KrebsOnSecurity",
+        "year": 2018
+      },
+      {
+        "description": "MGM Resorts compromised after a help-desk call reset an employee's credentials.",
+        "source": "MGM Resorts 8-K filing",
+        "year": 2023
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CRED-1",
+        "strength": "strong",
+        "why": "FIDO2 plus proofed help-desk recovery defeats credential phishing; pretexting for code remains",
+        "note": "Strong only because IAM-01's scope now includes help-desk and recovery identity proofing (proposals.json rescope)."
+      },
+      {
+        "vector_id": "V-CRED-2",
+        "strength": "strong",
+        "why": "No crackable passwords; hardware-bound keys"
+      },
+      {
+        "vector_id": "V-CRED-3",
+        "strength": "strong",
+        "why": "Device-bound, short-lived, vaulted credentials are useless when leaked",
+        "note": "Needs secrets vaulting and workload identity for service credentials (in scope)."
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "strong",
+        "why": "Zero standing privilege: nothing to escalate into without a fresh grant"
+      },
+      {
+        "vector_id": "V-BYP-3",
+        "strength": "strong",
+        "why": "FIDO2-only recovery and proofed break-glass close the fallback paths"
+      },
+      {
+        "vector_id": "V-ACS-4",
+        "strength": "partial",
+        "why": "Vaulted secrets narrow where signing material lives"
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "Agents get just-in-time, scoped, short-lived credentials"
+      },
+      {
+        "vector_id": "V-PHYS-3",
+        "strength": "partial",
+        "why": "A stolen laptop without its bound key grants nothing"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "Zero standing privilege: no standing access to use"
+      }
+    ]
+  },
+  {
+    "id": "DET-01",
+    "name": "Security Operations & Incident Response",
+    "category": "network",
+    "summary_group": "detection_response",
+    "description": "24/7 security operations with weight-aware detection (checkpoint access, unusual egress, privilege changes, implant indicators), threat hunting against state-actor tradecraft, and an incident-response team that can contain within hours. In the model it acts twice: as a partial counter on the vectors it can see, and as the chance that a failed attempt is caught and the whole campaign stopped.",
+    "current_state": {
+      "summary": "Every frontier lab runs a security operations function and incident response. Weight-specific detection content, hunting against OC4-5 tradecraft and rapid containment are uneven: Microsoft found the 2023 Storm-0558 and 2024 Midnight Blizzard intrusions weeks to months after they began.",
+      "deployed_by": [
+        "all_frontier_labs_partial"
+      ],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 85,
+        "notes": "Mature discipline; the gap is coverage and talent, not technology.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "Telemetry coverage of the enclave and a hunting team take longer than buying the SIEM."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 20,
+          "max": 60
+        },
+        "annual_ongoing_millions": {
+          "min": 15,
+          "max": 40
+        },
+        "notes": "Telemetry, SIEM/EDR, a 24/7 team, hunting and retained IR capacity."
+      },
+      "vendor_dependency": {
+        "value": 40,
+        "key_vendors": [
+          "edr_vendors",
+          "siem_vendors",
+          "ir_retainers"
+        ],
+        "notes": "Tooling from several vendors."
+      },
+      "supply_scarcity": {
+        "value": 70,
+        "bottleneck": "Experienced detection engineers and hunters",
+        "notes": "Competes with every national-security employer."
+      },
+      "organizational_readiness": {
+        "value": 50,
+        "barriers": [
+          "alert_fatigue",
+          "telemetry_gaps"
+        ],
+        "notes": "Coverage of research clusters is politically hard."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 2,
+      "first_required": 3
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without detection and response, a failed attempt costs the attacker nothing: they retry quietly until a path works."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "DEC-01",
+        "PER-03",
+        "AI-10"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "monitoring_detection"
+      ],
+      "shared_dependencies": [
+        "monitoring_infrastructure"
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "How much does AI-assisted evasion erode detection of a failed attempt?",
+        "uncertainty_level": "significant",
+        "impact_if_resolved_negatively": "The campaign-level stop chance (q) would fall faster than assumed."
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Midnight Blizzard's password spray into Microsoft corporate email was detected about two months later.",
+        "source": "Microsoft MSRC",
+        "year": 2024
+      },
+      {
+        "description": "FireEye detected the SolarWinds SUNBURST campaign roughly nine months after it began.",
+        "source": "FireEye / Mandiant",
+        "year": 2020
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "partial",
+        "why": "Threat hunting and telemetry catch exploitation mid-chain"
+      },
+      {
+        "vector_id": "V-CODE-4",
+        "strength": "partial",
+        "why": "Write-once logs survive; RAND warns many zero-days defeat monitoring"
+      },
+      {
+        "vector_id": "V-CRED-3",
+        "strength": "partial",
+        "why": "Anomalous use of valid credentials is investigated"
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Lateral movement in enclave telemetry is hunted"
+      },
+      {
+        "vector_id": "V-NET-1",
+        "strength": "partial",
+        "why": "Exfiltration testing finds unintended cross-gap communication"
+      },
+      {
+        "vector_id": "V-BYP-1",
+        "strength": "partial",
+        "why": "Compromise assessment against gold images finds drift"
+      },
+      {
+        "vector_id": "V-HUM-3",
+        "strength": "partial",
+        "why": "Counter-intelligence liaison can flag known officers"
+      },
+      {
+        "vector_id": "V-HUM-4",
+        "strength": "partial",
+        "why": "Counter-intelligence liaison can flag hostile investors or partners",
+        "note": "Weak: counter-intelligence liaison is not a SOC function."
+      },
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "SolarWinds was found by a victim's SOC"
+      },
+      {
+        "vector_id": "V-X-3",
+        "strength": "partial",
+        "why": "Egress telemetry flags bulk transfers"
+      }
+    ]
+  },
+  {
+    "id": "DEC-01",
+    "name": "Deception & Attribution",
+    "category": "network",
+    "summary_group": "detection_response",
+    "description": "Honeytokens and canary credentials, decoy weight files and decoy hosts, and per-copy watermarked checkpoints that identify which copy leaked. Raises the chance that probing is noticed and attributed. Takes over the honeypot and canary role rescoped out of AI-05.",
+    "current_state": {
+      "summary": "Canary tokens are used by mature security teams, but decoy weights and per-copy watermarking are not reported at any lab.",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 80,
+        "notes": "Cheap and proven in enterprise security; weight watermarking is newer.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Canaries in weeks; decoy infrastructure and watermarking in months."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 3,
+          "max": 10
+        },
+        "annual_ongoing_millions": {
+          "min": 1,
+          "max": 4
+        },
+        "notes": "Deception platform, decoy hosts, watermarking pipeline."
+      },
+      "vendor_dependency": {
+        "value": 25,
+        "key_vendors": [
+          "thinkst",
+          "deception_vendors"
+        ],
+        "notes": "Commodity."
+      },
+      "supply_scarcity": {
+        "value": 30,
+        "bottleneck": "Deception engineers",
+        "notes": "Small field."
+      },
+      "organizational_readiness": {
+        "value": 55,
+        "barriers": [
+          "alert_ownership"
+        ],
+        "notes": "Only works if someone answers the alert (requires DET-01)."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without decoys, an intruder enumerating the network meets only real assets, and a leaked checkpoint cannot be traced to the copy it came from."
+    },
+    "dependencies": {
+      "requires": [
+        "DET-01"
+      ],
+      "enhances": [
+        "CUS-01"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "monitoring_detection"
+      ],
+      "shared_dependencies": [
+        "monitoring_infrastructure"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Clifford Stoll's decoy files kept a KGB-paid intruder online long enough to trace him.",
+        "source": "The Cuckoo's Egg",
+        "year": 1989
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CRED-3",
+        "strength": "partial",
+        "why": "Honeytokens reveal stolen credentials when used"
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Lateral movement trips honeytokens"
+      },
+      {
+        "vector_id": "V-BYP-2",
+        "strength": "partial",
+        "why": "Per-copy fingerprints attribute any leaked copy"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Canary weights expose exfiltration attempts"
+      },
+      {
+        "vector_id": "V-HUM-1",
+        "strength": "partial",
+        "why": "Attribution raises the insider's expected cost",
+        "note": "Weak: deterrence through attribution."
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "Per-copy fingerprints attribute a leaked copy"
+      },
+      {
+        "vector_id": "V-X-3",
+        "strength": "partial",
+        "why": "Canary weights flag a transfer in progress"
+      }
+    ]
+  },
+  {
+    "id": "END-01",
+    "name": "Patch & Endpoint Management",
+    "category": "network",
+    "summary_group": "host_hardening",
+    "description": "An inventory of every endpoint and server, patch deadlines measured in days for internet-facing and critical systems, removal of end-of-life software, endpoint detection on every host, and attack-surface reduction (RAND SL2-SL3 software update management, SL4 limiting the attack surface).",
+    "current_state": {
+      "summary": "Universal practice in some form, and uneven everywhere: RAND scores exploitation of already-patched vulnerabilities at 3-5 for every tier because the practice lags (Equifax 2017; state-actor exploitation of unpatched Ivanti appliances in 2024).",
+      "deployed_by": [
+        "all_frontier_labs_partial"
+      ],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 95,
+        "notes": "Mature tooling.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Inventory and SLAs quickly; removing end-of-life systems and exceptions takes a year."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 5,
+          "max": 20
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 15
+        },
+        "notes": "Endpoint tooling, patch pipeline, asset inventory, the staff who chase exceptions."
+      },
+      "vendor_dependency": {
+        "value": 40,
+        "key_vendors": [
+          "edr_vendors",
+          "patch_management"
+        ],
+        "notes": "Commodity."
+      },
+      "supply_scarcity": {
+        "value": 20,
+        "bottleneck": "None significant",
+        "notes": "Ordinary IT security staff."
+      },
+      "organizational_readiness": {
+        "value": 60,
+        "barriers": [
+          "uptime_pressure"
+        ],
+        "notes": "Patching training clusters means scheduled downtime."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 2,
+      "first_required": 3
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.5,
+      "exploit_narrative": "Without disciplined patching, the attacker needs no zero-day: a months-old CVE on a forgotten host is the way in."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "CFG-01",
+        "DET-01"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "host_security"
+      ],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Equifax was breached through an Apache Struts flaw patched two months earlier.",
+        "source": "US GAO-18-559",
+        "year": 2017
+      },
+      {
+        "description": "State actors mass-exploited unpatched Ivanti Connect Secure appliances.",
+        "source": "CISA Emergency Directive 24-01",
+        "year": 2024
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CODE-1",
+        "strength": "strong",
+        "why": "Fast patching and asset inventory remove the known-vulnerability target"
+      },
+      {
+        "vector_id": "V-CODE-2",
+        "strength": "strong",
+        "why": "Patch SLAs, virtual patching and hardening shrink the disclosure window"
+      },
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "partial",
+        "why": "EDR and hardening raise exploitation cost"
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "ML-stack CVEs patched on the same cadence"
+      },
+      {
+        "vector_id": "V-PHYS-3",
+        "strength": "partial",
+        "why": "Managed, encrypted, EDR-equipped endpoints resist off-site tampering"
+      }
+    ]
+  },
+  {
+    "id": "CFG-01",
+    "name": "Configuration Integrity & Gold Image",
+    "category": "network",
+    "summary_group": "host_hardening",
+    "description": "Infrastructure as code with security policy enforced in code, gold images, continuous drift detection against the approved baseline, and integrity checks of security-relevant configuration (RAND SL3). Takes over the configuration-drift role rescoped out of AI-05.",
+    "current_state": {
+      "summary": "Infrastructure as code and CIS-benchmark hardening are common; continuous verification against a gold image and policy-as-code gates on security configuration are partial.",
+      "deployed_by": [
+        "partial_frontier_labs"
+      ],
+      "baseline_state": "partially_deployed"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 90,
+        "notes": "Mature tooling (policy as code, image pipelines).",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Codifying policy is fast; retiring hand-built hosts is not."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 5,
+          "max": 20
+        },
+        "annual_ongoing_millions": {
+          "min": 2,
+          "max": 6
+        },
+        "notes": "Policy-as-code tooling, image pipeline, drift detection."
+      },
+      "vendor_dependency": {
+        "value": 30,
+        "key_vendors": [
+          "internal",
+          "policy_as_code_tools"
+        ],
+        "notes": "Open and commercial options."
+      },
+      "supply_scarcity": {
+        "value": 25,
+        "bottleneck": "Platform engineers",
+        "notes": "Available."
+      },
+      "organizational_readiness": {
+        "value": 55,
+        "barriers": [
+          "hand_built_research_hosts"
+        ],
+        "notes": "Research clusters drift fastest."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 2,
+      "first_required": 3
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without configuration integrity, one mistaken bucket policy or a stale firewall rule opens a path no attacker had to build."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "END-01",
+        "DET-01"
+      ],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "host_security"
+      ],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Capital One customer data was taken through a misconfigured web application firewall.",
+        "source": "US OCC consent order",
+        "year": 2019
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-BYP-1",
+        "strength": "strong",
+        "why": "Policy-as-code and gold-image drift checks catch misconfiguration (RAND SL3)"
+      },
+      {
+        "vector_id": "V-BYP-2",
+        "strength": "partial",
+        "why": "Drift scans find unexpected stores holding weights"
+      },
+      {
+        "vector_id": "V-BYP-3",
+        "strength": "partial",
+        "why": "Configuration audits find legacy and fallback access paths"
+      },
+      {
+        "vector_id": "V-CODE-1",
+        "strength": "partial",
+        "why": "Gold images keep systems at a known patched baseline"
       }
     ]
   }

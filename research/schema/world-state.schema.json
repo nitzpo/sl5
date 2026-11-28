@@ -172,7 +172,29 @@
             "min_label": { "type": "string", "default": "Conservative" },
             "max_label": { "type": "string", "default": "Aggressive" },
             "default_value": { "type": "number", "default": 0.5, "minimum": 0, "maximum": 1 },
-            "effect": { "type": "string", "description": "Affects which SL score is 'acceptable' for the org" }
+            "effect": { "type": "string", "description": "Where in each block's cost range the plan is budgeted (conservative = worst case)" }
+          }
+        },
+        "sl_bar": {
+          "type": "object",
+          "description": "τ: OC-n is held when fewer than τ of its campaigns succeed. Presets strict 0.10 / standard 0.20 / lenient 0.33.",
+          "properties": {
+            "label": { "type": "string", "default": "SL bar (τ)" },
+            "min_label": { "type": "string" },
+            "max_label": { "type": "string" },
+            "default_value": { "type": "number", "default": 0.2, "minimum": 0.01, "maximum": 0.99 },
+            "effect": { "type": "string" }
+          }
+        },
+        "ai_propensity": {
+          "type": "object",
+          "description": "The chance a misaligned model tries at all; multiplies the lab's-own-model approach and the integrity meter.",
+          "properties": {
+            "label": { "type": "string", "default": "AI propensity" },
+            "min_label": { "type": "string" },
+            "max_label": { "type": "string" },
+            "default_value": { "type": "number", "default": 0.5, "minimum": 0, "maximum": 1 },
+            "effect": { "type": "string" }
           }
         }
       }

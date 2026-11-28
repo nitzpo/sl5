@@ -128,7 +128,7 @@ export const GLOSSARY = {
   block: {
     label: "Block",
     definition:
-      "One defensive building block — a single control you can invest in, drawn as a hexagon. The app ships 47 of them across 6 categories.",
+      "One defensive building block — a single control you can invest in, drawn as a hexagon. The app ships 56 of them across 6 categories.",
   },
   decisionWindow: {
     label: "Decision window",
@@ -361,22 +361,42 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
     deployMonths: { min: 12, max: 24 },
     blurb: "SF-86-grade background disclosure: foreign contacts, finances, history.",
   },
-  "PER-05": {
-    id: "PER-05",
-    name: "Post-Employment Restrictions",
-    shortLabel: "Post-Emp",
+  "PER-06": {
+    id: "PER-06",
+    name: "Dual Authorization for Critical Operations",
+    shortLabel: "Dual Auth",
     category: "personnel",
     defenseType: "probabilistic",
     aiOcShift: 0.5,
+    deployMonths: { min: 6, max: 15 },
+    blurb: "No single person can copy a checkpoint: every weight access needs a second, independent approval.",
+  },
+  "PHY-08": {
+    id: "PHY-08",
+    name: "No Unapproved Devices or Ports",
+    shortLabel: "No Ports",
+    category: "physical",
+    defenseType: "hybrid",
+    aiOcShift: 0.0,
     deployMonths: { min: 6, max: 12 },
-    blurb: "Obligations that outlive the badge — and deter recruitment upfront.",
+    blurb: "No unapproved devices, media or ports in the red zone, and screening at every exit.",
+  },
+  "CUS-01": {
+    id: "CUS-01",
+    name: "Weight Custody",
+    shortLabel: "Custody",
+    category: "machine",
+    defenseType: "probabilistic",
+    aiOcShift: 1.0,
+    deployMonths: { min: 6, max: 12 },
+    blurb: "A register of every copy of the weights, and deletion of the ones nobody approved.",
   },
   "HW-07": {
     id: "HW-07",
     name: "Confidential Computing / TEE",
     shortLabel: "TEE",
     category: "machine",
-    defenseType: "hard_stop",
+    defenseType: "hybrid",
     aiOcShift: 1.0,
     deployMonths: { min: 24, max: 48 },
     blurb:
@@ -384,12 +404,12 @@ export const DEMO_BLOCKS: Record<string, DemoBlock> = {
   },
 };
 
-/** The chain slide walks The Long Game. Mirrors attack-chains.json `long-game`. */
+/** The chain slide walks The Long Game. Mirrors scenarios.json `long-game`. */
 export interface DemoChainStep {
   phase: string;
   description: string;
   /** The block whose absence lets this step succeed. Undefined = no defense
-   * applies; the step uses legitimate access. */
+   * applies to the step as told. */
   blockGapUsed?: string;
   /** stopper_details.how_it_stops for `blockGapUsed`. */
   howItStops?: string;
@@ -400,7 +420,7 @@ export const LONG_GAME = {
   name: "The Long Game",
   typicalOc: 4,
   brief:
-    "Multi-year recruitment of a trusted employee. Passes basic vetting, avoids behavioral detection, extracts weights before post-employment controls activate.",
+    "Multi-year recruitment of a trusted employee. Passes basic vetting, avoids behavioral detection, copies weights alone and carries them out.",
   steps: [
     {
       phase: "Recruitment",
@@ -421,21 +441,25 @@ export const LONG_GAME = {
     {
       phase: "Extraction",
       description:
-        "Using legitimate access, they copy model checkpoints during normal workflow — nothing is hacked.",
+        "Using legitimate access, they copy model checkpoints during normal workflow - nothing is hacked, and nobody else has to approve it.",
+      blockGapUsed: "PER-06",
+      howItStops:
+        "Dual authorization for weight access: no single person can copy a checkpoint alone.",
     },
     {
       phase: "Delivery",
       description:
-        "They resign and hand over the weights; no post-employment restrictions create any legal or technical barrier.",
-      blockGapUsed: "PER-05",
+        "They carry the copy out on a personal drive and resign; nothing screens what leaves the building.",
+      blockGapUsed: "PHY-08",
       howItStops:
-        "Post-employment restrictions make delivery legally and practically costly — and deter recruitment upfront.",
+        "No unapproved devices or ports, and exit screening: the drive never leaves.",
     },
   ] satisfies DemoChainStep[],
 } as const;
 
 /** Total blocks and chains in the shipped data — asserted by the drift test. */
-export const CATALOG = { blocks: 47, categories: 6, chains: 7 } as const;
+/** Today's catalogue (future-capability blocks excluded) and the scenarios. */
+export const CATALOG = { blocks: 56, categories: 6, chains: 7 } as const;
 
 export interface SourceLink {
   title: string;

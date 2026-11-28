@@ -15,7 +15,8 @@ function formatPoints(delta: number): string {
 
 export function CisoView() {
   const blocks = useSimulationStore((s) => s.blocks);
-  const attackChains = useSimulationStore((s) => s.attackChains);
+  const threatModel = useSimulationStore((s) => s.threatModel);
+  const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const year = useSimulationStore((s) => s.year);
@@ -32,7 +33,8 @@ export function CisoView() {
     () =>
       recommendInvestments({
         blocks,
-        chains: attackChains,
+        model: threatModel,
+        futureCapabilities,
         blockStates,
         advanceOrder,
         year,
@@ -40,7 +42,7 @@ export function CisoView() {
         adversaryOc,
         modelServedExternally,
       }),
-    [blocks, attackChains, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
+    [blocks, threatModel, futureCapabilities, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
   );
   const recommendations = analysis.candidates.slice(0, TOP_N);
 

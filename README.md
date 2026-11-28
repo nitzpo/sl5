@@ -6,13 +6,13 @@
 
 ![SL5 Explorable](assets/screenshot.png)
 
-> ⚠️ **Disclaimer.** This is an educational, illustrative model — not authoritative security guidance. The blocks, attack chains, costs, and probabilities are a *modeling interpretation* synthesized from public sources (see [Data & sources](#data--sources)), not official figures. Use it to build intuition, not to make procurement or accreditation decisions.
+> ⚠️ **Disclaimer.** This is an educational, illustrative model — not authoritative security guidance. The blocks, attack-vector mappings, scenarios, costs, and probabilities are a *modeling interpretation* synthesized from public sources (see [Data & sources](#data--sources)), not official figures. Use it to build intuition, not to make procurement or accreditation decisions.
 
 ---
 
 ## What is this?
 
-SL5 Explorable is an *explorable explanation* — a manipulable instrument rather than a dashboard or a report. You assemble a security posture out of ~47 defensive **building blocks**, dial in **world-state assumptions** (AI timeline, budget, government/vendor cooperation, adversary capability), and watch the breach probability, security level, and attack viability respond in real time.
+SL5 Explorable is an *explorable explanation* — a manipulable instrument rather than a dashboard or a report. You assemble a security posture out of ~56 defensive **building blocks**, dial in **world-state assumptions** (AI timeline, budget, government/vendor cooperation, adversary capability), and watch the breach probability, security level, and attack viability respond in real time.
 
 "SL5" is the top of a 1–5 **Security Level** scale: resistance to a top-tier nation-state adversary (operational-capability level **OC5**) that is willing to spend years and hundreds of millions of dollars to steal a model's weights. Even **SL4** is aspirational for most labs today.
 
@@ -47,34 +47,95 @@ entry point, so it loads instantly, ships no simulation store, and every slide i
 
 ## How the model works
 
-Everything runs client-side from JSON data — no backend.
+Everything runs client-side from JSON data — no backend. The model as shipped, with
+every formula, constant and the calibration table, is in
+[`research/scoring-model.md`](research/scoring-model.md); the engine is
+`app/src/engine/` and every number in the UI goes through one function,
+`scorePosture` (`posture.ts`).
 
-- **Building blocks** (`app/public/data/blocks-*.json`) — each block has a category, a **defense type** (🔵 hard-stop / 🟠 probabilistic / 🔷 hybrid), cost, deploy time, an effectiveness curve, an AI-erosion rate, dependencies, and which defense-in-depth layer(s) it contributes to. A block moves through states: *not started → investing → implementing → deployed → mature.* Hard `requires` dependencies are enforced: a block claiming deployed while a prerequisite isn't operational is capped at implementing.
-- **No control is the whole thing its name implies on its own.** 20 blocks declare `completed_by` — companions without which the control genuinely works but is weaker than the version the standard describes. An air gap is the type specimen: it stops remote exploitation the day it exists, but with no controlled way to move data across it people carry drives, and with a live BMC on the management VLAN there is still a route in. So `NET-01` alone counts for 55% of `NET-01`, and each companion (`NET-05` diodes, `NET-04` bandwidth caps, `PER-08` no remote management) closes an equal part of the rest. This is deliberately *soft*, unlike `requires`: nothing is capped, the block just isn't priced as more than it is. It exists because the introduction's mini-game exposed the lesson-breaking alternative — one click on the air gap was the single best purchase at any budget, which taught that one structural buy is most of security. It isn't.
-- **Attack chains** (`app/public/data/attack-chains.json`) — multi-step exfiltration scenarios (e.g., *The Quiet Tap*, *The Poisoned Chip*, *Patient Distillation*). Each names the blocks it exploits and its stoppers — and both are mechanical: every listed stopper reduces its chain.
-- **Breach probability** is **capability-gated and monotonic**: for a chain,
+- **Attack vectors** (`app/public/data/vectors.json`) are the backbone: RAND's 38
+  vectors with their Table 5.2 feasibility (1–5) for each attacker tier OC1–OC5
+  against a minimally defended lab, read as a probability (1 → 0.02, 2 → 0.3, 3 → 0.5,
+  4 → 0.7, 5 → 0.9). Each sits at a **stage**: get in, reach the weights, get them out.
+  Two kinds are ours, not RAND's, and labelled as assumptions: 8 vectors for **the
+  lab's own model as an insider**, scored per AI-capability band, and 4 **structural
+  placeholders** ("nothing stops this stage" at a minimal lab).
+- **Approaches** (`approaches.json`) group the vectors into broad ways in — remote,
+  insider, physical, supply chain, the served model, and the lab's own model. An
+  **attack path** takes one vector per stage, and the engine finds the attacker's
+  easiest path in each approach. A **campaign** succeeds if any approach works: every
+  attacker tries every approach, most likely first.
+- **Building blocks** (`blocks-*.json`, 56 today) each **counter** the vectors they make
+  harder, strongly or partially, from a reviewed vector × control map. Counters have
+  **diminishing returns**: the best strong counter multiplies a vector by 0.3, further
+  counters by 0.8, 0.9 and 0.95, and partials together never beat one strong counter. A
+  block's state (not started → mature), the cooperation sliders and its `completed_by`
+  companions scale its effect, and counters **erode against stronger attackers**: hard
+  stops in a narrow band (0.98 → 0.86 of their effect from OC1 to OC5), probabilistic
+  controls in a wide one (0.95 → 0.40), hybrids between.
+- **AI lifts the attacker, once.** Each vector carries an authored `ai_shift`: as AI
+  capability grows (0 in 2024 → 1 in 2030 on the default curve), an OC-n attacker scores
+  like OC-n plus up to one tier on code, credential and ML-stack vectors, and barely
+  moves on physical and human ones. Feasibility and counter erosion are both read at
+  that tier; defender-side erosion is not applied on top.
+- **Detection and a floor.** Security operations and deception give a chance that a
+  failed attempt is caught and the campaign stopped (about half when mature, eroded by
+  AI). And no campaign reaches zero: a residual floor of 3% of what the same attacker
+  gets against an undefended lab applies once per campaign.
+- **The security level is threat-relative.** RAND's SL-n is the level meant to stop an
+  OC-n actor, so **tier n holds** when fewer than τ of OC-n's campaigns succeed (τ = 0.20
+  by default; strict 0.10 and lenient 0.33 in advanced settings), and the **SL** is the
+  highest n with every tier up to n held. SL5 also requires holding the lab's own model
+  as an insider, scored on this year's AI-capability band and multiplied by the chance
+  it tries at all (`ai_propensity`). The SL comes with a **progress** bar toward the next
+  level (how far that tier has come from certain success to the bar, on a log scale), a
+  *marginal* flag, what limits it, and a word per tier — *usually fails*, *contested*,
+  *usually succeeds* — rather than a percentage.
+- **SL5 is out of reach with today's catalogue**, as RAND says it currently is. A world
+  toggle adds five clearly labelled **future capabilities** (verified accelerator
+  hardware at scale, a government-cleared workforce with state counter-intelligence, a
+  formally verified weight-access stack, a sovereign protected facility, trustworthy AI
+  monitors). With all of them and a favourable world, SL5 is reachable for a few years,
+  marginally, before AI catches up.
+- **Things no lab can do alone** — military takeover, access the organisation itself
+  approves — are still scored, flagged, and relieved only by government cooperation.
+- **Outside the SL**: API distillation copies capability rather than weights, so it is a
+  separate *capability leakage* meter (per campaign, and cumulative since 2026); sabotage
+  by the lab's own model is a separate *integrity* meter.
+- **Scenarios** (`scenarios.json`) are the former attack chains — *The Quiet Tap*, *The
+  Long Game* — retold as specific paths through the vectors. They illustrate; the SL is
+  computed over approaches.
+- **Programme completeness** is the old coverage score (a weighted mean of block
+  effectiveness per category, 0.3·min + 0.7·mean), kept as a secondary readout. It
+  measures breadth, not whether any tier holds.
+- **Budget** is binding and order-aware: blocks are funded in the order you advanced
+  them, a block past the budget line is not built, and controls the lab already runs are
+  sunk cost. **Prerequisites** are hard: a block deployed without its `requires` is
+  capped at implementing. The **risk-tolerance** slider sets the planning cost basis.
+- **You don't start from nothing.** The app opens on a researched starting posture from
+  each block's `baseline_state` — SL1 in 2026, slipping to SL0 by 2028 if nothing is added,
+  as AI lifts attackers past today's controls.
 
-  ```
-  P(breach) = max( precondition × gate(min_OC) × ∏ get-past(block) × depth-discount,
-                   gate(min_OC) × residual_risk )
-  ```
-
-  The **capability gate** asks whether the adversary can even attempt the chain — it is steep (≈85% at the chain's minimum OC, ≈10% one tier below), so OC tiers are qualitative jumps, and AI capability lifts an adversary's *effective* OC over time, reopening gates from below. The per-block **get-past** term falls from 1 (absent) toward `1 − resist` as a defense matures — so improving a defense can *never* raise breach probability (asserted by property tests). Both defense types weaken against a stronger adversary, but hard stops erode across a narrow band (0.98→0.86) where probabilistic controls fall much further (0.95→0.40) — structural controls are the best buy without being absolute. AI is counted exactly once per number: breach takes AI's attacker-side lift through effective OC, while the SL score takes the defender-side erosion of probabilistic blocks. Independent deployed layers earn a defense-in-depth discount; a layer whose blocks share a failure mode (`shared_dependencies`) earns half credit.
-
-  Beyond a chain's 3–5 named steps, the rest of that defense **family** (same `summary_group`) counts at reduced weight — so most of the catalog bears on some path, and a chain can't be shut down by maturing three blocks. And no live chain reaches zero: a gate-scaled **residual risk** floor stands for the insider never caught and the zero-day nobody found. A chain held inert by a precondition (an air-gapped model has no extraction channel) stays exactly zero.
-- **Security Level** blends the weakest category with the average: `SL = 0.3·min(categories) + 0.7·mean(categories)`. The target it is judged against is the adversary tier — RAND's SL-n is the level meant to stop an OC-n actor. Each category is a weighted mean over the blocks the modeled threat actually touches — chain steps at full weight, their surrounding defense families at the same reduced weight breach gives them — so coverage of that threat drives the score rather than raw catalog depth, and a block is worth the same to both numbers.
-- **Budget** is binding and order-aware: blocks are funded in the order you advanced them (a block joins the queue when it first costs money), so activating one more block can only cap *that* block, never evict an earlier commitment. A block the budget can't reach is **not built** — it counts only as what the lab already runs (its baseline, usually *not started*), not as a free half-finished control. The **risk-tolerance** slider sets the planning cost basis (aggressive = optimistic costs, conservative = worst-case) — which is what decides whether a given budget buys the whole wishlist or leaves real gaps.
-- **You don't start from nothing.** Labs already run some of these controls, so the app opens on a researched **starting posture** (≈SL 1.4, not SL 1.0) rather than a bare field, taken from each block's `current_state.baseline_state`. Blocks at their baseline are **sunk cost** — they consume no budget, because a lab doesn't re-buy what it already operates; advancing one past its baseline is what costs. `partially_deployed` maps onto `implementing` rather than getting a state of its own, which slightly *understates* current postures — the safe direction for a tool about how hard this is. The posture also **grows over time**: eight blocks whose arrival can be pinned to a public disclosure carry `baseline_since` (ASL-3 egress controls and two-party weight authorization in 2025, the LLM supervisor and production classifiers in 2026), so a 2024 scenario starts from 14 active controls and a 2026 one from 21 — SL ≈1.28 rising to ≈1.38. Only datable arrivals are gated; inventing years for the rest would be precision the evidence doesn't support. See [`app/src/engine/baseline.ts`](app/src/engine/baseline.ts).
-
-The model as shipped — every formula, constant, and the scenario calibration — is documented in [`research/scoring-model.md`](research/scoring-model.md). The surrounding reasoning record lives in [`research/`](research/) (`design-decisions.md`, `distillation-analysis.md`, `formula-calibration-results.md`); those describe the earlier Python-prototype generation, and where they differ from the shipped engine (`app/src/engine/`), the engine and `scoring-model.md` are authoritative. JSON schemas live in [`research/schema/`](research/schema/).
+The calibration is honest about what it cannot hold: with the model served, a ~$3B
+programme that starts in 2024 reaches SL3 by 2030, only just; the full catalogue never
+reaches SL5. The constants that are ours rather than RAND's — the own-model scores, the
+structural placeholders, the future blocks, the AI shifts, detection and the floor — are
+listed as [authored assumptions](research/scoring-model.md#authored-assumptions). The
+reviewed calibration probe is reproduced by the engine as a test fixture, and the places
+where the engine departs from it are documented. JSON schemas live in
+[`research/schema/`](research/schema/). The older documents in [`research/`](research/)
+describe earlier generations of the model; where they differ, the engine and
+`scoring-model.md` are authoritative.
 
 ### Not modeled (yet)
 
 Ideas the research docs argue for that the simulation does not implement — listed here so the docs don't over-promise:
 
-- **Inbound inference-channel attacks** (prompt-driven exploitation of the serving stack; block AI-08 exists in the data but has no engine mechanics beyond a generic block).
-- **Uncertainty bands** on scores (`open_questions` are surfaced as contested badges, not as ±SL error bars).
-- **Split SL** for the same model (weights-at-rest vs served-externally) — the extraction meter carries the served-model story instead.
+- **Cross-approach compounds** — an external prompt injection that steers the lab's own
+  model, for instance. The campaign is a union over approaches and misses them.
+- **Uncertainty bands** on scores (`open_questions` are surfaced as contested badges, not as error bars).
+- **Split SL** for the same model (weights-at-rest vs served externally) — the serving
+  toggle and the capability-leakage meter carry that story instead.
 
 ---
 
@@ -108,12 +169,12 @@ Requires Node 20+. The app is desktop-only (it gates small screens).
 │   ├── intro/index.html       # second page entry → /sl5/intro/
 │   ├── src/
 │   │   ├── components/        # SVG views: clusters (default), grid, rings, analysis, timeline
-│   │   ├── engine/            # scoring, breach, budget, AI-curve, distillation
+│   │   ├── engine/            # vector model, threat-relative SL, budget, AI-curve, distillation
 │   │   ├── intro/             # the standalone introduction: slides + its own demos
 │   │   ├── store/             # Zustand state (simulation, derived, view, persistence)
 │   │   ├── timelapse/         # scripted scenario playback
 │   │   └── utils/             # geometry, ring/cluster layout, pan-zoom, colors, decision windows
-│   ├── public/data/           # canonical block + attack-chain data (JSON)
+│   ├── public/data/           # canonical blocks, vectors, approaches, scenarios (JSON)
 │   └── tests/                 # vitest unit tests (engine, layout geometry, introduction)
 ├── research/                 # methodology, design notes, JSON schemas, source material
 └── .github/workflows/        # GitHub Pages deploy
@@ -123,7 +184,7 @@ Requires Node 20+. The app is desktop-only (it gates small screens).
 
 ## Data & sources
 
-The block and attack-chain data is an **illustrative modeling interpretation** synthesized from public material — not a reproduction of any source document:
+The block, vector-mapping and scenario data is an **illustrative modeling interpretation** synthesized from public material — not a reproduction of any source document:
 
 - RAND, *Securing AI Model Weights* (RRA2849-1)
 - The **SL5 Standard for AI Security** and its **Novel Recommendations**
@@ -138,8 +199,9 @@ Canonical data the app loads is in `app/public/data/` — the single source of t
 Issues and PRs welcome. Common changes:
 
 - **Add or tune a building block** — edit `app/public/data/blocks-*.json` following `research/schema/building-block.schema.json`.
-- **Add an attack chain** — edit `app/public/data/attack-chains.json` (`research/schema/attack-chain.schema.json`); optional `narrative.steps` and `stopper_details` power the chain strip.
-- **Engine changes** — keep `npm test` green; the breach model's monotonicity and capability-scaling are asserted in `app/tests/engine/breach.test.ts`.
+- **Add or retune a counter** — edit a block's `counters` (vector id, strong or partial, why); `tests/engine/data-integrity.test.ts` checks every block counters something and every vector is countered or flagged.
+- **Add a scenario** — edit `app/public/data/scenarios.json` (`research/schema/scenario.schema.json`); every step's gap and every stopper must counter one of the scenario's vectors.
+- **Engine changes** — keep `npm test` green; monotonicity is asserted in `app/tests/engine/monotonicity.test.ts`, the reviewed calibration probe in `probe-fixture.test.ts`, and the calibration targets in `calibration.test.ts`. `npm run calibrate` regenerates the table in `research/scoring-model.md`.
 
 ---
 

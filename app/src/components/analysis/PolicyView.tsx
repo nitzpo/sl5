@@ -10,7 +10,8 @@ export function PolicyView() {
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
-  const attackChains = useSimulationStore((s) => s.attackChains);
+  const threatModel = useSimulationStore((s) => s.threatModel);
+  const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
 
   // The current posture and each lever's what-if both go through the shared
@@ -20,7 +21,8 @@ export function PolicyView() {
     () =>
       policyLeverImpacts({
         blocks,
-        chains: attackChains,
+        model: threatModel,
+        futureCapabilities,
         blockStates,
         advanceOrder,
         year,
@@ -28,7 +30,7 @@ export function PolicyView() {
         adversaryOc,
         modelServedExternally,
       }),
-    [blocks, attackChains, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
+    [blocks, threatModel, futureCapabilities, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
   );
   const currentSl = current.overallSl;
 

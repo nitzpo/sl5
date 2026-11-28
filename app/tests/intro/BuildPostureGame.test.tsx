@@ -12,7 +12,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/re
 import fs from "fs";
 import path from "path";
 import { IntroApp } from "../../src/intro/IntroApp";
-import { BLOCK_FILES, BUDGET_MILLIONS, SHORTLIST } from "../../src/intro/posture-game";
+import { BLOCK_FILES, BUDGET_MILLIONS, MODEL_FILES, SHORTLIST } from "../../src/intro/posture-game";
 
 const DATA = path.join(__dirname, "../../public/data");
 
@@ -66,8 +66,9 @@ describe("the mini-game is an optional detour", () => {
 
     fireEvent.click(screen.getByText("▶ Start the mini-game"));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    // attack-chains.json plus one file per block category.
-    expect(fetchMock).toHaveBeenCalledTimes(BLOCK_FILES.length + 1);
+    // The vector backbone (vectors, approaches, scenarios) plus one file per
+    // block category.
+    expect(fetchMock).toHaveBeenCalledTimes(BLOCK_FILES.length + MODEL_FILES.length);
   });
 
   it("is not a slide, so the deck is still the same length", () => {
@@ -117,30 +118,40 @@ describe("playing it", () => {
     await openGame();
     const sl = () => screen.getByText("SL score").parentElement!.textContent!;
     const before = sl();
-    // Cheap and dependency-free, so it lands as deployed and the score must move.
-    fireEvent.click(screen.getByText("Access Control Vestibules (Mantraps)"));
+    // Cheap and dependency-free, so it lands as deployed, and it counters vectors
+    // that decide OC1 against a lab built from nothing, so the (threat-relative)
+    // score must move.
+    fireEvent.click(screen.getByText("ML Software Supply-Chain Integrity"));
     expect(sl()).not.toBe(before);
   });
 
   it("moves the breach number once a stopper on the top chain is deployed", async () => {
     stubFetch();
     await openGame();
-    const breach = () => screen.getByText("Breach probability").parentElement!.textContent!;
+    // The headline is campaign success against OC4 (Phase 2): every way in at
+    // once. Read just the percentage — the "via" scenario after it can change
+    // without the number moving.
+    const breach = () =>
+      screen.getByText("Breach probability").parentElement!.textContent!.match(/[\d.]+%/)![0];
     const before = breach();
-    // The trap first: real score gain, no movement on the headline number,
-    // because the mantrap isn't on the worst route.
+    // The trap first: the mantrap narrows one scenario, but no way in that
+    // decides the campaign, so the headline holds.
     fireEvent.click(screen.getByText("Access Control Vestibules (Mantraps)"));
     expect(breach()).toBe(before);
     expect(screen.getByText(/only ever tracks the/)).toBeTruthy();
-    // Then a block that is on the worst route: the number has to move.
-    fireEvent.click(screen.getByText("Inference Channel Outbound Defense"));
+    // Then the air gap, which closes remote entry and bulk egress: the number has to move.
+    fireEvent.click(screen.getByText("Air-Gapped SL5 Network"));
     expect(breach()).not.toBe(before);
     // Note the coaching does NOT claim the number is moving here — closing the
     // worst route promotes the next one, which is also untouched, so the line
     // goes back to naming a route the reader hasn't addressed. That's the whole
     // lesson: there is always a worst remaining route.
-    expect(screen.getByText(/only ever tracks the|you're on the right route now/))
-      .toBeTruthy();
+    // The air gap arrives incomplete (no diode, no bandwidth cap), so the coaching
+    // may talk about finishing it instead of about routes; any of the three is
+    // the game working.
+    expect(
+      screen.getByText(/only ever tracks the|you're on the right route now|of the control its name implies/)
+    ).toBeTruthy();
   });
 
   it("shows the budget cap, and names click order as the way out of it", async () => {

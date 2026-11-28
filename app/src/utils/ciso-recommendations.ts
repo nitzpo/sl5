@@ -6,29 +6,27 @@ import {
   type PostureInput,
   type PostureScore,
 } from "../engine/posture";
-import type { AttackChain, Block, BlockState } from "../engine/types";
+import type { Block, BlockState } from "../engine/types";
 
 /**
  * The CISO view's "Priority investments", computed by running the real engine
  * on each candidate move rather than by a heuristic.
  *
- * The heuristic this replaces scored a block as Δeffectiveness ÷ blocks in its
- * category × 4. It disagreed with the engine almost everywhere: NET-06 showed
- * +0.49 SL against a real +0.05, AI-05 showed +0.35 and moved nothing, seven of
- * the top ten were silently capped by a prerequisite nobody had bought, and the
- * "top 3 cost" summed the optimistic minimums the budget model never uses.
+ * Each candidate is the current posture with one block advanced to `deployed`
+ * — together with any hard prerequisites it is missing, as a bundle, because
+ * deploying it alone would be capped at `implementing` — scored through
+ * `scorePosture`, the same pipeline as the Score card.
  *
- * Now each candidate is the current posture with one block advanced to
- * `deployed` — together with any hard prerequisites it is missing, as a bundle,
- * because deploying it alone would be capped at `implementing` — scored through
- * `scorePosture`, the same pipeline as the Score card. The ranking is by the
- * drop in the SUM of per-chain breach probabilities per $M: the headline number
- * is a max over chains, so most single moves leave it flat while still closing
- * real ground on the other paths, and a max-based ranking would read nearly
- * every investment as worthless. Cost is the budget model's own: the
- * `blockCostBasis` at the risk-tolerance slider, for the blocks the program
- * isn't already paying for.
+ * The objective is the threat-relative one: how much the move cuts campaign
+ * success against the CURRENT adversary tier, plus a small term
+ * (`NEXT_TIER_WEIGHT`) for the tier above, so that among moves that do the same
+ * against today's adversary the one that also prepares for the next wins. It is
+ * ranked per $M of the budget model's own cost (`blockCostBasis` at the
+ * risk-tolerance slider) for the blocks the programme isn't already paying for.
  */
+
+/** Weight of the next tier's campaign reduction in the objective. */
+export const NEXT_TIER_WEIGHT = 0.25;
 
 export interface InvestmentCandidate {
   /** The block being recommended. */
@@ -43,19 +41,18 @@ export interface InvestmentCandidate {
   costMillions: number;
   /** The same, per advanced block — so moves taken together count each block once. */
   costs: { id: string; millions: number }[];
-  /** Change in overall SL. */
+  /** Change in the threat-relative SL readout (level + progress). */
   slDelta: number;
-  /** Change in the headline (max-over-chains) breach probability. ≤ 0. */
+  /** Change in campaign success against the adversary tier. ≤ 0. */
   breachDelta: number;
-  /** Drop in the sum of per-chain breach probabilities. ≥ 0. The ranking key's
-   * numerator. */
+  /** The objective's reduction: campaign cut at the adversary tier plus
+   * NEXT_TIER_WEIGHT × the cut at the tier above. ≥ 0. */
   pathReduction: number;
-  /** `pathReduction` per $M (cost floored at $1M so a fully-funded finish
-   * doesn't divide by zero). The ranking key. */
+  /** `pathReduction` per $M (cost floored at $1M). The ranking key. */
   reductionPerMillion: number;
-  /** Chains this move narrows by at least 0.1pt, biggest drop first. */
-  narrowed: { chain: AttackChain; drop: number }[];
-  /** Truthful one-liner, e.g. "Narrows The Long Game and 2 more paths". */
+  /** Approaches this move narrows by at least 0.1pt, biggest drop first. */
+  narrowed: { approach: { id: string; name: string }; drop: number }[];
+  /** Truthful one-liner, e.g. "Narrows Human insider and 2 more approaches". */
   reason: string;
 }
 
@@ -70,7 +67,7 @@ export interface InvestmentAnalysis {
 }
 
 const OPERATIONAL: ReadonlySet<BlockState> = new Set(["deployed", "mature"]);
-/** A chain counts as "narrowed" in the reason text from this drop up. */
+/** An approach counts as "narrowed" in the reason text from this drop up. */
 const NARROWED_THRESHOLD = 0.001;
 /** Moves below both of these move no number the reader can see. */
 const MIN_PATH_REDUCTION = 1e-4;
@@ -106,19 +103,28 @@ function missingPrerequisites(
 }
 
 function reasonFor(
-  narrowed: { chain: AttackChain; drop: number }[],
-  worstChainId: string | undefined,
+  narrowed: InvestmentCandidate["narrowed"],
+  easiestId: string | undefined,
   slDelta: number
 ): string {
   if (narrowed.length === 0) {
-    return slDelta > 0 ? "Raises SL — no modelled attack path narrows" : "Moves no number";
+    return slDelta > 0 ? "Raises SL — no approach narrows at this tier" : "Moves no number";
   }
   const [first] = narrowed;
-  const worst = first.chain.id === worstChainId ? " (the worst path)" : "";
+  const worst = first.approach.id === easiestId ? " (the easiest way in)" : "";
   const more = narrowed.length - 1;
-  return `Narrows ${first.chain.name}${worst}${
-    more > 0 ? ` and ${more} more path${more === 1 ? "" : "s"}` : ""
+  return `Narrows ${first.approach.name}${worst}${
+    more > 0 ? ` and ${more} more approach${more === 1 ? "" : "es"}` : ""
   }`;
+}
+
+/** The objective: campaign success at the adversary tier plus a small weight
+ * on the tier above (none above OC5). */
+function objective(score: PostureScore, adversaryOc: number): number {
+  const oc = Math.min(5, Math.max(1, Math.round(adversaryOc)));
+  const here = score.tiers[oc - 1].p;
+  const next = oc < 5 ? score.tiers[oc].p : 0;
+  return here + NEXT_TIER_WEIGHT * next;
 }
 
 export function recommendInvestments(
@@ -129,9 +135,10 @@ export function recommendInvestments(
   const byId = new Map(input.blocks.map((b) => [b.id, b]));
   const rt = input.sliders.risk_tolerance;
   const remainingMillions = input.sliders.budget_millions - baseline.spentMillions;
-  const chainSum = (s: PostureScore) =>
-    Object.values(s.breachProbabilities).reduce((a, p) => a + p, 0);
-  const baseSum = chainSum(baseline);
+  const baseObjective = objective(baseline, input.adversaryOc);
+  const easiest = baseline.approaches.filter((a) => a.adversary === "human" && a.active)
+    .reduce<PostureScore["approaches"][number] | null>((m, a) => (!m || a.p > m.p ? a : m), null);
+  const catalogue = new Set(baseline.catalogue.map((b) => b.id));
 
   // What the program is already paying for: active and inside the budget line.
   const funded = (id: string) => {
@@ -144,6 +151,8 @@ export function recommendInvestments(
   let unaffordableCount = 0;
 
   for (const block of input.blocks) {
+    // Future blocks outside a future world are not on the menu.
+    if (!catalogue.has(block.id)) continue;
     const raw = input.blockStates[block.id] ?? "not_started";
     if (OPERATIONAL.has(raw)) continue;
 
@@ -160,7 +169,7 @@ export function recommendInvestments(
     const candidateOrder = orderAfterActivating(input, blockIds);
     const result = scorePosture({ ...input, blockStates: states, advanceOrder: candidateOrder });
 
-    const pathReduction = baseSum - chainSum(result);
+    const pathReduction = baseObjective - objective(result, input.adversaryOc);
     const slDelta = result.overallSl - baseline.overallSl;
     const movesSomething = pathReduction > MIN_PATH_REDUCTION || slDelta > MIN_SL_DELTA;
 
@@ -179,13 +188,9 @@ export function recommendInvestments(
     }));
     const costMillions = costs.reduce((sum, c) => sum + c.millions, 0);
 
-    const narrowed = input.chains
-      .map((chain) => ({
-        chain,
-        drop:
-          (baseline.breachProbabilities[chain.id] ?? 0) -
-          (result.breachProbabilities[chain.id] ?? 0),
-      }))
+    const after = new Map(result.approaches.map((a) => [a.id, a.p]));
+    const narrowed = baseline.approaches
+      .map((a) => ({ approach: { id: a.id, name: a.name }, drop: a.p - (after.get(a.id) ?? a.p) }))
       .filter((n) => n.drop >= NARROWED_THRESHOLD)
       .sort((a, b) => b.drop - a.drop);
 
@@ -196,11 +201,11 @@ export function recommendInvestments(
       costMillions,
       costs,
       slDelta,
-      breachDelta: result.breach - baseline.breach,
+      breachDelta: result.campaign - baseline.campaign,
       pathReduction,
       reductionPerMillion: pathReduction / Math.max(costMillions, 1),
       narrowed,
-      reason: reasonFor(narrowed, baseline.bestChain?.id, slDelta),
+      reason: reasonFor(narrowed, easiest?.id, slDelta),
     });
   }
 

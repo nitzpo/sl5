@@ -1,346 +1,255 @@
+// Breach mechanics of the vector model (rewritten in Phase 2: the chain model's
+// gate / get-past / depth-discount tests no longer describe anything the engine
+// does). Each test pins one rule from research/scoring-model.md.
 import { describe, it, expect } from "vitest";
+import { counterRetention } from "../../src/engine/breach";
 import {
-  sigmoidProbability,
-  chainBreachProbability,
-  computeBreachProbabilities,
-  blockExploitProbability,
-} from "../../src/engine/breach";
-import { supportingBlocks } from "../../src/engine/supporting";
-import type { AttackChain, Block, BlockState, Sliders } from "../../src/engine/types";
-import fs from "fs";
-import path from "path";
-
-const DATA = path.join(__dirname, "../../public/data");
-
-function loadBlocks(): Block[] {
-  const blocks: Block[] = [];
-  for (const file of fs.readdirSync(DATA)) {
-    if (file.startsWith("blocks-") && file.endsWith(".json")) {
-      blocks.push(...JSON.parse(fs.readFileSync(path.join(DATA, file), "utf-8")));
-    }
-  }
-  return blocks;
-}
-
-function loadChains(): AttackChain[] {
-  return JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
-}
+  baseFeasibility,
+  buildCounterIndex,
+  campaignSuccess,
+  effectiveTier,
+  stackCounters,
+  type CounterInForce,
+} from "../../src/engine/vector-model";
+import { scorePosture, type PostureInput } from "../../src/engine/posture";
+import type { BlockState, DefenseType } from "../../src/engine/types";
+import { allAt, loadBlocks, loadModel, NEUTRAL_SLIDERS } from "../load-data";
 
 const blocks = loadBlocks();
-const chains = loadChains();
+const model = loadModel();
+const vec = (id: string) => model.vectors.find((v) => v.id === id)!;
+const counter = (strength: "strong" | "partial", type: DefenseType, effectiveness = 1, id = "X"): CounterInForce => ({
+  blockId: id,
+  strength,
+  type,
+  effectiveness,
+});
+const NONE = allAt(blocks, "not_started");
 
-const SLIDERS: Sliders = {
-  ai_timeline: 0.5,
-  gov_cooperation: 0.5,
-  vendor_cooperation: 0.5,
-  budget_millions: 2000,
-  org_transformation: 0.5,
-  risk_tolerance: 0.5,
-};
-const STATES: BlockState[] = ["not_started", "investing", "implementing", "deployed", "mature"];
-const YEAR = 2024;
-
-const allState = (s: BlockState): Record<string, BlockState> =>
-  Object.fromEntries(blocks.map((b) => [b.id, s]));
-
-const maxChain = (states: Record<string, BlockState>, oc: number, served = true): number =>
-  Math.max(
-    ...Object.values(computeBreachProbabilities(chains, blocks, states, oc, YEAR, SLIDERS, served)),
-    0
-  );
-
-describe("sigmoidProbability", () => {
-  it("returns 0.5 at delta=0", () => {
-    expect(sigmoidProbability(0)).toBeCloseTo(0.5, 3);
+function score(over: Partial<PostureInput> = {}) {
+  return scorePosture({
+    blocks,
+    model,
+    blockStates: NONE,
+    year: 2026,
+    sliders: { ...NEUTRAL_SLIDERS, budget_millions: 1e6 },
+    adversaryOc: 4,
+    modelServedExternally: true,
+    ...over,
   });
-  it("returns >0.9 at delta=+2", () => {
-    expect(sigmoidProbability(2)).toBeGreaterThan(0.9);
+}
+
+describe("RAND score → probability", () => {
+  it("reads 1→0.02, 2→0.3, 3→0.5, 4→0.7, 5→0.9", () => {
+    // V-CODE-3 is 1 2 4 5 5 across OC1..OC5.
+    expect([1, 2, 3, 4, 5].map((t) => baseFeasibility(vec("V-CODE-3"), t))).toEqual([0.02, 0.3, 0.7, 0.9, 0.9]);
   });
-  it("returns <0.1 at delta=-2", () => {
-    expect(sigmoidProbability(-2)).toBeLessThan(0.1);
+
+  it("interpolates between whole tiers and caps at the top tier", () => {
+    const v = vec("V-CODE-3");
+    expect(baseFeasibility(v, 1.5)).toBeCloseTo((0.02 + 0.3) / 2, 12);
+    expect(baseFeasibility(v, 7)).toBe(0.9);
   });
-  it("is monotonically increasing", () => {
-    for (let d = -3; d < 3; d += 0.5) {
-      expect(sigmoidProbability(d + 0.5)).toBeGreaterThan(sigmoidProbability(d));
+});
+
+describe("attacker AI uplift", () => {
+  it("lifts a vector's tier by ai_shift × aiCapability, capped at OC5", () => {
+    expect(effectiveTier(vec("V-CODE-1"), 2, 0.5)).toBeCloseTo(2 + vec("V-CODE-1").ai_shift! * 0.5, 12);
+    expect(effectiveTier(vec("V-CODE-1"), 5, 1)).toBe(5);
+  });
+
+  it("leaves vectors with no shift alone, and scores the lab's own model on its AC band", () => {
+    expect(effectiveTier(vec("V-PHYS-7"), 3, 1)).toBe(3);
+    expect(effectiveTier(vec("V-SELF-2"), 2.4, 1)).toBe(2.4);
+  });
+
+  it("lifts code, credential and ML vectors more than physical and human ones", () => {
+    const shift = (cat: string) =>
+      Math.max(...model.vectors.filter((v) => v.category === cat).map((v) => v.ai_shift ?? 0));
+    for (const high of ["code", "credentials", "ai_specific"]) {
+      for (const low of ["physical", "humint"]) expect(shift(high)).toBeGreaterThan(shift(low));
     }
   });
 });
 
-describe("chain breach model", () => {
-  it("is monotonic in defense state: advancing any one block never raises chain breach", () => {
-    for (const chain of chains) {
-      for (const oc of [1, 2, 3, 4, 5]) {
-        for (const bid of chain.blocks_exploited) {
-          let prev = Infinity;
-          for (const st of STATES) {
-            const states = allState("not_started");
-            states[bid] = st;
-            const p = chainBreachProbability(chain, blocks, states, oc, YEAR, SLIDERS, true);
-            expect(p).toBeLessThanOrEqual(prev + 1e-9);
-            prev = p;
-          }
-        }
-      }
+describe("counter stacking (diminishing returns)", () => {
+  it("the best strong counter multiplies by 0.3", () => {
+    expect(stackCounters([counter("strong", "hard_stop")], 1, false).multiplier).toBeCloseTo(0.3, 12);
+  });
+
+  it("further counters take 0.8, then 0.9, then 0.95, and past that add nothing", () => {
+    const cs = [counter("strong", "hard_stop"), ...[1, 2, 3, 4].map((i) => counter("partial", "hard_stop", 1, `P${i}`))];
+    const r = stackCounters(cs, 1, false);
+    expect(r.multiplier).toBeCloseTo(0.3 * 0.8 * 0.9 * 0.95, 12);
+    expect(r.applied.map((a) => a.rung)).toEqual([0.3, 0.8, 0.9, 0.95, null]);
+  });
+
+  it("partial counters together never beat one strong counter", () => {
+    const partials = [1, 2, 3, 4, 5].map((i) => counter("partial", "hard_stop", 1, `P${i}`));
+    expect(stackCounters(partials, 1, false).multiplier).toBeGreaterThan(
+      stackCounters([counter("strong", "probabilistic", 1)], 1, false).multiplier
+    );
+  });
+
+  it("a block's state scales its effect", () => {
+    const at = (state: BlockState) =>
+      score({ blockStates: { ...NONE, "NET-01": state } }).approaches.find((a) => a.id === "remote")!.p;
+    expect(at("implementing")).toBeLessThan(at("investing"));
+    expect(at("deployed")).toBeLessThan(at("implementing"));
+    expect(at("mature")).toBeLessThan(at("deployed"));
+  });
+
+  it("honours a link's type_override", () => {
+    // AI-06 is declared hybrid but is a response (probabilistic) against V-SELF-1.
+    const ai06 = blocks.find((b) => b.id === "AI-06")!;
+    expect(ai06.defense_type).toBe("hybrid");
+    const index = buildCounterIndex([ai06], { "AI-06": "mature" }, 2026, NEUTRAL_SLIDERS, { idealCounters: true });
+    expect(index.get("V-SELF-1")![0].type).toBe("probabilistic");
+    const unoverridden = ai06.counters.find((c) => !c.type_override);
+    if (unoverridden) expect(index.get(unoverridden.vector_id)![0].type).toBe("hybrid");
+  });
+});
+
+describe("erosion bands", () => {
+  it("hard stops erode in a narrow band, probabilistic counters in a wide one", () => {
+    expect(counterRetention("hard_stop", 1)).toBeCloseTo(0.98, 12);
+    expect(counterRetention("hard_stop", 5)).toBeCloseTo(0.86, 12);
+    expect(counterRetention("probabilistic", 1)).toBeCloseTo(0.95, 12);
+    expect(counterRetention("probabilistic", 5)).toBeCloseTo(0.4, 12);
+  });
+
+  it("a hybrid sits between the two at every tier, and every band erodes monotonically", () => {
+    let last = { hard_stop: 1, hybrid: 1, probabilistic: 1 } as Record<DefenseType, number>;
+    for (let t = 1; t <= 5; t += 0.25) {
+      const r = {
+        hard_stop: counterRetention("hard_stop", t),
+        hybrid: counterRetention("hybrid", t),
+        probabilistic: counterRetention("probabilistic", t),
+      };
+      expect(r.hybrid).toBeLessThanOrEqual(r.hard_stop);
+      expect(r.hybrid).toBeGreaterThanOrEqual(r.probabilistic);
+      for (const k of Object.keys(r) as DefenseType[]) expect(r[k]).toBeLessThanOrEqual(last[k] + 1e-12);
+      last = r;
     }
   });
+});
 
-  it("undefended: breach scales with adversary capability and is high", () => {
-    const none = allState("not_started");
-    const byOc = [1, 2, 3, 4, 5].map((oc) => maxChain(none, oc));
-    for (let i = 1; i < byOc.length; i++) {
-      expect(byOc[i]).toBeGreaterThanOrEqual(byOc[i - 1] - 1e-9);
-    }
-    expect(byOc[1]).toBeGreaterThan(0.4); // OC2 clearly exposed
-    expect(byOc[4]).toBeGreaterThan(0.85); // OC5 near-certain
+describe("campaign", () => {
+  it("with q = 0 is the plain union across approaches", () => {
+    const ps = [0.3, 0.1, 0.05];
+    expect(campaignSuccess(ps, 0)).toBeCloseTo(1 - 0.7 * 0.9 * 0.95, 12);
   });
 
-  it("fully matured: low for weak adversaries, residual for the top tier", () => {
-    const mature = allState("mature");
-    expect(maxChain(mature, 2)).toBeLessThan(0.1);
-    expect(maxChain(mature, 5)).toBeGreaterThan(maxChain(mature, 2));
+  it("detection q stops the campaign after a caught failure", () => {
+    const ps = [0.3, 0.1, 0.05];
+    const q = 0.4;
+    // Tried in descending p: 0.3, then 0.1 if not caught, then 0.05.
+    const want = 0.3 + 0.7 * 0.6 * 0.1 + 0.7 * 0.6 * 0.9 * 0.6 * 0.05;
+    expect(campaignSuccess(ps, q)).toBeCloseTo(want, 12);
+    expect(campaignSuccess(ps, q)).toBeLessThan(campaignSuccess(ps, 0));
   });
 
-  it("never reaches zero: even a fully mature posture leaves residual risk", () => {
-    // The irreducible residual (insider never caught, zero-day nobody found).
-    // A posture that read as ~0% made near-perfect defense look free, which is
-    // the opposite of the SL5 premise.
-    const mature = allState("mature");
-    for (const chain of chains) {
-      const p = chainBreachProbability(chain, blocks, mature, 4, YEAR, SLIDERS, true);
-      expect(p, `${chain.id} drove to zero despite the residual floor`).toBeGreaterThan(0.01);
-    }
+  it("tries approaches most-likely first (the order that is best for the attacker)", () => {
+    expect(campaignSuccess([0.05, 0.3, 0.1], 0.4)).toBeCloseTo(campaignSuccess([0.3, 0.1, 0.05], 0.4), 12);
   });
 
-  it("residual floor is gated: a far-underqualified adversary gets no free shot", () => {
-    // The floor scales with the capability gate, so it applies only to chains
-    // the adversary could actually attempt — an OC1 actor doesn't get 3% at a
-    // chain needing OC4+.
-    const mature = allState("mature");
-    const oc4Chain = chains.find((c) => c.adversary_profile.min_oc >= 4)!;
-    const weak = chainBreachProbability(oc4Chain, blocks, mature, 1, YEAR, SLIDERS, true);
-    expect(weak).toBeLessThan(0.01);
+  it("q grows with DET-01 and DEC-01 to about 0.5 at maturity, and erodes with AI", () => {
+    const q = (states: Record<string, BlockState>, year: number) =>
+      score({ blockStates: { ...NONE, ...states }, year, options: { idealCounters: true } }).detection.q;
+    expect(q({}, 2024)).toBe(0);
+    expect(q({ "DET-01": "mature", "DEC-01": "mature" }, 2024)).toBeCloseTo(0.5, 12);
+    expect(q({ "DET-01": "mature", "DEC-01": "mature" }, 2030)).toBeLessThan(0.5);
   });
 
-  it("residual floor does not resurrect a precondition-inert chain", () => {
-    const mature = allState("mature");
-    const pd = chains.find((c) => c.requires_external_serving)!;
-    expect(chainBreachProbability(pd, blocks, mature, 5, YEAR, SLIDERS, false)).toBe(0);
-  });
-
-  it("supporting defenses matter: maturing a chain's family lowers its breach", () => {
-    // Blocks sharing a `summary_group` with a named step are no longer inert.
-    // Before this, ~28 of 47 blocks changed no number when deployed.
-    const chain = chains.find((c) => c.id === "quiet-tap")!;
-    const support = supportingBlocks(chain, blocks);
-    expect(support.length).toBeGreaterThan(0);
-
-    const none = allState("not_started");
-    const withSupport = { ...none };
-    for (const b of support) withSupport[b.id] = "mature";
-
-    const before = chainBreachProbability(chain, blocks, none, 4, YEAR, SLIDERS, true);
-    const after = chainBreachProbability(chain, blocks, withSupport, 4, YEAR, SLIDERS, true);
-    expect(after).toBeLessThan(before);
-  });
-
-  it("supporting defenses count for less than the chain's own named steps", () => {
-    // They harden a path without being steps you read in the story, so a single
-    // named block must outweigh a single supporting one. Compared one-for-one so
-    // the residual floor (which both saturate when fully built out) can't mask
-    // the difference.
-    const chain = chains.find((c) => c.id === "quiet-tap")!;
-    const namedId = chain.stoppers![0];
-    const supportId = supportingBlocks(chain, blocks)[0].id;
-    const none = allState("not_started");
-
-    const pNamed = chainBreachProbability(
-      chain, blocks, { ...none, [namedId]: "mature" }, 4, YEAR, SLIDERS, true
-    );
-    const pSupport = chainBreachProbability(
-      chain, blocks, { ...none, [supportId]: "mature" }, 4, YEAR, SLIDERS, true
-    );
-    expect(pNamed).toBeLessThan(pSupport);
-  });
-
-  it("hard stops erode against a stronger adversary, unlike before", () => {
-    // Hard stops used to be OC-independent: an identical wall for OC3 and OC6.
-    // They should still be the best buy, but a top-tier adversary bribes someone
-    // to carry a drive across the air gap.
-    const netOne = blocks.find((b) => b.id === "NET-01")!;
-    expect(netOne.defense_type).toBe("hard_stop");
-    const atOc3 = blockExploitProbability(netOne, "mature", 3, YEAR, SLIDERS);
-    const atOc6 = blockExploitProbability(netOne, "mature", 6, YEAR, SLIDERS);
-    expect(atOc6).toBeGreaterThan(atOc3);
-
-    // ...but they erode far less than probabilistic controls do.
-    const prob = blocks.find((b) => b.id === "PER-02")!;
-    expect(prob.defense_type).toBe("probabilistic");
-    const probSpread =
-      blockExploitProbability(prob, "mature", 6, YEAR, SLIDERS) -
-      blockExploitProbability(prob, "mature", 3, YEAR, SLIDERS);
-    expect(atOc6 - atOc3).toBeLessThan(probSpread);
-  });
-
-  it("a hybrid resists between a hard stop and a probabilistic control", () => {
-    // `hybrid` used to be silently unimplemented: both this function and
-    // `aiDegradation` branched on `hard_stop` alone, so all three hybrid blocks
-    // fell through to the pure-probabilistic path. NET-05 is a data diode — a
-    // hardware one-way flow with software inspection on top — and got no credit
-    // whatsoever for the half of it that is physics.
-    //
-    // Comparing get-past across three real blocks with different exploitation
-    // thresholds would confound type with threshold, so hold the block fixed and
-    // vary only `defense_type`. Same block, same threshold, same ai_oc_shift.
-    const netFive = blocks.find((b) => b.id === "NET-05")!;
-    expect(netFive.defense_type).toBe("hybrid");
-    const asType = (t: Block["defense_type"], oc: number) =>
-      blockExploitProbability({ ...netFive, defense_type: t }, "mature", oc, YEAR, SLIDERS);
-
-    // At every adversary tier, not just one: the interpolation is between the two
-    // branches, so bracketing has to hold wherever the bands sit.
-    for (const oc of [2, 3, 4, 5, 6]) {
-      const hard = asType("hard_stop", oc);
-      const hybrid = asType("hybrid", oc);
-      const prob = asType("probabilistic", oc);
-      expect(hybrid).toBeGreaterThan(hard);
-      expect(hybrid).toBeLessThan(prob);
-    }
-
-    // And it still erodes with adversary capability — half-structural, not immune.
-    expect(asType("hybrid", 6)).toBeGreaterThan(asType("hybrid", 3));
-  });
-
-  it("maturing a stopper lowers its chain's breach probability", () => {
-    const pd = chains.find((c) => c.id === "patient-distillation")!;
-    const before = chainBreachProbability(pd, blocks, allState("not_started"), 2, YEAR, SLIDERS, true);
-    const after = chainBreachProbability(
-      pd,
-      blocks,
-      { ...allState("not_started"), "AI-07": "mature" },
-      2,
-      YEAR,
-      SLIDERS,
-      true
-    );
-    expect(after).toBeLessThan(before);
-  });
-
-  it("a matured hard-stop sharply reduces the chains it gates", () => {
-    const zd = chains.find((c) => c.id === "zero-day-cascade")!; // NET-01 air gap is a stopper
-    const none = allState("not_started");
-    const before = chainBreachProbability(zd, blocks, none, 5, YEAR, SLIDERS, true);
-    const after = chainBreachProbability(
-      zd,
-      blocks,
-      { ...none, "NET-01": "mature" },
-      5,
-      YEAR,
-      SLIDERS,
-      true
-    );
-    // Hard stops are strong but not absolute, for two compounding reasons.
-    // Resist erodes from 0.98 toward 0.86 as the adversary outclasses the block;
-    // and an air gap bought on its own is only `standalone_share` of an air gap,
-    // because nothing yet moves data across it in a controlled way. So a lone
-    // matured air gap cuts this chain by about a third at OC5 — the tier where
-    // both effects are largest — rather than to a quarter of itself.
-    expect(after).toBeLessThan(before * 0.65);
-
-    // Complete it and it recovers the full structural cut. This is the pair of
-    // assertions that pins the mechanic's intent: the air gap is still the
-    // biggest single structural move on the board, but the version you get for
-    // one purchase is not the version the standard describes.
-    const completed = { ...none, "NET-01": "mature" as BlockState };
-    const airGap = blocks.find((b) => b.id === "NET-01")!;
-    for (const id of airGap.dependencies.completed_by!.blocks) completed[id] = "mature";
-    const whole = chainBreachProbability(zd, blocks, completed, 5, YEAR, SLIDERS, true);
-    expect(whole).toBeLessThan(before * 0.3);
-    expect(whole).toBeLessThan(after);
-  });
-
-  it("an air gap on its own does less than an air gap with its companions", () => {
-    // The mini-game exposed the lesson-breaking version of this: NET-01 alone was
-    // the single best purchase on any budget, so a reader learned that one
-    // structural buy is most of security. An air gap with no controlled crossing
-    // is one people carry drives across, so `completed_by` prices it as the
-    // partial thing it is — and completing it has to keep paying.
-    const zd = chains.find((c) => c.id === "zero-day-cascade")!;
-    const netOne = blocks.find((b) => b.id === "NET-01")!;
-    const companions = netOne.dependencies.completed_by!.blocks;
-    const none = allState("not_started");
-
-    const alone = { ...none, "NET-01": "mature" as BlockState };
-    let previous = chainBreachProbability(zd, blocks, alone, 5, YEAR, SLIDERS, true);
-    // Each companion coming online strictly improves the air gap, never the reverse.
-    const states = { ...alone };
-    for (const id of companions) {
-      states[id] = "mature";
-      const next = chainBreachProbability(zd, blocks, states, 5, YEAR, SLIDERS, true);
-      expect(next, `bringing ${id} online did not help NET-01`).toBeLessThan(previous);
-      previous = next;
-    }
-
-    // And the discount is real: the whole set beats the air gap alone by a
-    // margin a reader would notice, not a rounding difference.
-    expect(previous).toBeLessThan(
-      chainBreachProbability(zd, blocks, alone, 5, YEAR, SLIDERS, true) * 0.9
-    );
-  });
-
-  it("blocks with no `completed_by` are unaffected by the posture around them", () => {
-    // The mechanism must be opt-in per block: passing the whole posture through
-    // breach can't quietly change what an unannotated control is worth.
-    const plain = blocks.find((b) => !b.dependencies.completed_by)!;
-    const alone = { [plain.id]: "mature" as BlockState };
-    expect(blockExploitProbability(plain, "mature", 4, YEAR, SLIDERS, alone)).toBe(
-      blockExploitProbability(plain, "mature", 4, YEAR, SLIDERS)
-    );
-  });
-
-  it("air-gap precondition: external-serving chains are inert when not served externally", () => {
-    const pd = chains.find((c) => c.id === "patient-distillation")!;
-    expect(pd.requires_external_serving).toBe(true);
-    const none = allState("not_started");
-    expect(chainBreachProbability(pd, blocks, none, 5, YEAR, SLIDERS, false)).toBe(0);
-    // air-gapping removes the easy distillation win, lowering the undefended max chain
-    expect(maxChain(none, 2, false)).toBeLessThan(maxChain(none, 2, true));
-  });
-
-  it("OC tiers gate qualitatively: one tier below min_oc is largely locked out", () => {
-    // At year 2024 (no AI lift) an undefended chain reduces to its gate.
-    const none = allState("not_started");
-    for (const chain of chains) {
-      const minOc = chain.adversary_profile.min_oc;
-      const atMin = chainBreachProbability(chain, blocks, none, minOc, 2024, SLIDERS, true);
-      expect(atMin, `${chain.id} at min_oc`).toBeGreaterThan(0.7);
-      if (minOc > 1) {
-        const below = chainBreachProbability(chain, blocks, none, minOc - 1, 2024, SLIDERS, true);
-        expect(below, `${chain.id} one tier below min_oc`).toBeLessThan(0.2);
-      }
+  it("the residual floor applies once per campaign, scales with the undefended attacker, and does not depend on blocks", () => {
+    const bare = score();
+    const full = score({ blockStates: allAt(blocks, "mature") });
+    for (let n = 0; n < 5; n++) {
+      expect(full.tiers[n].floor).toBeCloseTo(bare.tiers[n].floor, 12);
+      expect(full.tiers[n].floor).toBeCloseTo(0.03 * bare.tiers[n].undefended, 12);
+      expect(full.tiers[n].p).toBeGreaterThanOrEqual(full.tiers[n].floor);
     }
   });
+});
 
-  it("AI lift reopens the gate for a below-threshold adversary over time", () => {
-    // The 'AI compresses the OC scale' thesis: an OC3 adversary against an
-    // OC4-minimum chain gains meaningfully by 2030 as AI capability grows.
-    const none = allState("not_started");
-    const chain = chains.find((c) => c.id === "zero-day-cascade")!;
-    const early = chainBreachProbability(chain, blocks, none, 3, 2024, SLIDERS, true);
-    const late = chainBreachProbability(chain, blocks, none, 3, 2030, SLIDERS, true);
-    expect(early).toBeLessThan(0.2);
-    expect(late).toBeGreaterThan(early * 2);
+describe("world toggles", () => {
+  it("serving switches the served approach and the capability meter on and off", () => {
+    const on = score({ modelServedExternally: true });
+    const off = score({ modelServedExternally: false });
+    expect(on.approaches.find((a) => a.id === "served")!.active).toBe(true);
+    expect(off.approaches.find((a) => a.id === "served")!.active).toBe(false);
+    expect(off.capabilityLeakage.p).toBe(0);
+    expect(off.capabilityLeakage.cumulative).toBe(0);
+    expect(on.capabilityLeakage.p).toBeGreaterThan(0);
+    for (let n = 0; n < 5; n++) expect(off.tiers[n].p).toBeLessThanOrEqual(on.tiers[n].p);
   });
 
-  it("AI capability raises breach over time", () => {
-    const none = allState("not_started");
-    const max2024 = Math.max(
-      ...Object.values(computeBreachProbabilities(chains, blocks, none, 3, 2024, SLIDERS, true)),
-      0
-    );
-    const max2030 = Math.max(
-      ...Object.values(computeBreachProbabilities(chains, blocks, none, 3, 2030, SLIDERS, true)),
-      0
-    );
-    expect(max2030).toBeGreaterThan(max2024);
+  it("future blocks count only with the future toggle on", () => {
+    const states = { ...allAt(blocks, "mature", true) };
+    const off = score({ blockStates: states, futureCapabilities: false, modelServedExternally: false });
+    const on = score({ blockStates: states, futureCapabilities: true, modelServedExternally: false });
+    expect(off.catalogue.some((b) => b.future)).toBe(false);
+    expect(on.catalogue.some((b) => b.future)).toBe(true);
+    expect(on.tiers[4].p).toBeLessThan(off.tiers[4].p);
+    // Clicked future blocks cost nothing while the toggle is off.
+    const cheap = score({ blockStates: { ...NONE, "FUT-04": "mature" }, sliders: { ...NEUTRAL_SLIDERS, budget_millions: 1 } });
+    expect(cheap.budgetExceededIds.has("FUT-04")).toBe(false);
+  });
+
+  it("government cooperation relieves the vectors no lab can counter alone", () => {
+    const flagged = model.vectors.filter((v) => v.needs_government).map((v) => v.id);
+    expect(flagged).toEqual(expect.arrayContaining(["V-PHYS-7", "V-HUM-5"]));
+    const at = (gov: number) =>
+      score({ sliders: { ...NEUTRAL_SLIDERS, gov_cooperation: gov }, adversaryOc: 5 }).approaches.find(
+        (a) => a.id === "physical"
+      )!;
+    // Undefended, V-PHYS-7 never binds the physical approach, so compare the vector itself.
+    const lo = score({ sliders: { ...NEUTRAL_SLIDERS, gov_cooperation: 0 } });
+    const hi = score({ sliders: { ...NEUTRAL_SLIDERS, gov_cooperation: 1 } });
+    expect(hi.tiers[4].p).toBeLessThanOrEqual(lo.tiers[4].p);
+    expect(at(1).p).toBeLessThanOrEqual(at(0).p);
+  });
+});
+
+describe("the lab's own model", () => {
+  it("is scored on the AC band 1 + 4·aiCapability, times the propensity to try", () => {
+    const r = score({ year: 2026 });
+    expect(r.aiInsider.acBand).toBeCloseTo(1 + 4 * 0.35, 9);
+    const half = score({ sliders: { ...NEUTRAL_SLIDERS, ai_propensity: 0.5 } });
+    const full = score({ sliders: { ...NEUTRAL_SLIDERS, ai_propensity: 1 } });
+    expect(half.aiInsider.pathP).toBeCloseTo(full.aiInsider.pathP, 12);
+    expect(half.aiInsider.p).toBeCloseTo(Math.max(0.5 * half.aiInsider.pathP, half.aiInsider.floor), 12);
+    expect(full.aiInsider.p).toBeGreaterThan(half.aiInsider.p);
+  });
+
+  it("keeps sabotage (V-SELF-5) out of SL and on the integrity meter", () => {
+    const ai = model.approaches.find((a) => a.id === "ai_insider")!;
+    expect(Object.values(ai.stages).flat()).not.toContain("V-SELF-5");
+    const r = score();
+    expect(r.integrity.path.map((s) => s.vectorId)).toEqual(["V-SELF-5"]);
+    expect(r.integrity.p).toBeGreaterThan(0);
+  });
+
+  it("keeps distillation (V-ML-5) out of the campaign and on the capability meter", () => {
+    for (const a of model.approaches.filter((x) => x.headline)) {
+      expect(Object.values(a.stages).flat()).not.toContain("V-ML-5");
+    }
+    expect(score().capabilityLeakage.path.map((s) => s.vectorId)).toEqual(["V-ML-5"]);
+  });
+});
+
+describe("adversary capability", () => {
+  it("undefended, campaign success rises with the OC tier", () => {
+    const r = score();
+    for (let n = 1; n < 5; n++) expect(r.tiers[n].p).toBeGreaterThanOrEqual(r.tiers[n - 1].p);
+    expect(r.tiers[0].p).toBeLessThan(0.5);
+    expect(r.tiers[4].p).toBeGreaterThan(0.95);
+  });
+
+  it("AI capability raises success over time against a fixed posture", () => {
+    const states = allAt(blocks, "mature");
+    const early = score({ blockStates: states, year: 2024 });
+    const late = score({ blockStates: states, year: 2030 });
+    for (let n = 0; n < 5; n++) expect(late.tiers[n].p).toBeGreaterThan(early.tiers[n].p);
   });
 });

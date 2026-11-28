@@ -9,7 +9,7 @@ import { DemoHex } from "./DemoHex";
 
 // Longest lead time first, so the badge weights read left-to-right as the
 // window closes: 48 months to stand up, 24, then 12.
-const SHOWN = ["HW-07", "NET-01", "PER-05"] as const;
+const SHOWN = ["HW-07", "NET-01", "CUS-01"] as const;
 
 /**
  * Slide 12: what the red `!` badge means, and why two of them look different.

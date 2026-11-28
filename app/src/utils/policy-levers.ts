@@ -39,19 +39,19 @@ const LEVERS: { key: LeverKey; lever: string; target: number; blocks: string[] }
     key: "gov_cooperation",
     lever: "Government Cooperation",
     target: 0.8,
-    blocks: ["PER-04", "PHY-01", "SC-05", "NET-03", "PER-01"],
+    blocks: ["PER-04", "PHY-01", "SC-08", "NET-03", "PER-01"],
   },
   {
     key: "vendor_cooperation",
     lever: "Vendor Cooperation",
     target: 0.9,
-    blocks: ["HW-01", "HW-02", "HW-03", "HW-04", "HW-06", "HW-07", "HW-10"],
+    blocks: ["HW-01", "HW-02", "HW-03", "HW-04", "HW-06", "HW-07"],
   },
   {
     key: "org_transformation",
     lever: "Org Transformation",
     target: 0.9,
-    blocks: ["NET-01", "PER-02", "PER-08", "PHY-01", "PER-01", "PER-04", "PER-05"],
+    blocks: ["NET-01", "PER-02", "PER-08", "PHY-01", "PER-01", "PER-04", "PER-03"],
   },
 ];
 
@@ -86,8 +86,10 @@ export function policyLeverImpacts(input: PostureInput): {
       lever,
       currentValue: input.sliders[key],
       targetValue: target,
+      // overallSl is the threat-relative readout (level + progress); breach is
+      // campaign success against the adversary tier.
       slDelta: whatIf.overallSl - current.overallSl,
-      breachDelta: whatIf.breach - current.breach,
+      breachDelta: whatIf.campaign - current.campaign,
       unlockedBlocks: unlocked.map((b) => b.id),
       acceleratedBlocks: affected.filter((b) => !unlocked.includes(b)).map((b) => b.id),
     };

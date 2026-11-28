@@ -122,6 +122,126 @@ export interface Block {
     source: string;
     year: number;
   }>;
+  /** The attack vectors this block counters, with how strongly (see
+   * `engine/vector-model.ts`). Every block counters at least one vector — a
+   * block that counters nothing moves no number, so the data-integrity test
+   * forbids it. */
+  counters: CounterLink[];
+  /** A future-capability (R&D) block: counted only when the world toggle
+   * `futureCapabilities` is on. Its numbers are illustrative, not measured. */
+  future?: boolean;
+  future_note?: string;
+  /** Present when Phase 2 changed the declared defense type, with why. */
+  reclassified?: { from: DefenseType; why: string };
+}
+
+export type Stage = "entry" | "reach" | "exfil";
+export const STAGES: readonly Stage[] = ["entry", "reach", "exfil"];
+
+export type CounterStrength = "strong" | "partial";
+
+/** One block → vector link: the block makes this attack vector harder. */
+export interface CounterLink {
+  vector_id: string;
+  strength: CounterStrength;
+  why: string;
+  /** The block's declared type is wrong for this vector (a kill-switch is a
+   * response, not a hard stop, against an escaping model). */
+  type_override?: DefenseType;
+  note?: string;
+}
+
+type Tiered<K extends string> = Record<K, number>;
+export type OcTable = Tiered<"oc1" | "oc2" | "oc3" | "oc4" | "oc5">;
+export type AcTable = Tiered<"ac1" | "ac2" | "ac3" | "ac4" | "ac5">;
+
+/** One attack technique. RAND vectors carry Table 5.2's 1–5 feasibility per OC
+ * tier; the lab's-own-model vectors (V-SELF) carry authored 1–5 scores per AI
+ * capability band; structural stage placeholders (V-X) carry a probability. */
+export interface AttackVector {
+  id: string;
+  category: string;
+  category_name: string;
+  name: string;
+  source: "rand" | "authored" | "structural";
+  rand_feasibility: OcTable | null;
+  ai_feasibility?: AcTable;
+  structural_p?: OcTable;
+  stage: Stage;
+  /** Stages a path using this vector does not need (seizure carries the
+   * hardware out; extraction works through the API). */
+  stages_skipped: Stage[];
+  /** Residual vector: RAND scored it as if these defenses exist, and none of
+   * them counters it. */
+  assumes_defense?: string[];
+  /** Nothing a lab can do alone stops this; `gov_cooperation` relieves it. */
+  needs_government?: boolean;
+  needs_government_note?: string;
+  /** Attacker AI uplift: effective tier = OC + ai_shift × aiCapability.
+   * Authored, RAND vectors only. */
+  ai_shift?: number;
+  ai_shift_basis?: string;
+  rapidly_changing?: boolean;
+  headline: boolean;
+  /** Off the weights-theft headline: `integrity` (sabotage) or `capability`
+   * (distillation) have their own meters. */
+  lane?: "integrity" | "capability";
+  description: string;
+  assumption?: boolean;
+  assumption_note?: string;
+  ai_rationale?: string;
+  stage_note?: string;
+  transcription_note?: string;
+  source_ref?: number | null;
+  appendix_a_ref?: number;
+  authored_basis?: string[];
+}
+
+/** A broad way in (remote, insider, physical, supply chain, served, the lab's
+ * own model). An attack path takes one vector per stage. */
+export interface Approach {
+  id: string;
+  name: string;
+  adversary: "human" | "ai";
+  /** In the campaign (human) or the AI-insider check (ai). Non-headline
+   * approaches are meters. */
+  headline: boolean;
+  requires_external_serving?: boolean;
+  meter?: "capability_leakage" | "integrity";
+  stages: Record<Stage, string[]>;
+  notes: string;
+}
+
+export interface ScenarioStep {
+  phase: string;
+  description: string;
+  vector_ids: string[];
+  /** The block whose absence lets this step succeed (it counters one of the
+   * step's vectors). Absent: no defense applies to the step as told. */
+  block_gap_used?: string;
+}
+
+/** A path told as a story — the old attack chains, now built on vectors. */
+export interface Scenario {
+  id: string;
+  name: string;
+  approach: string;
+  /** The tier the story is told at. Narrative only: the engine scores the
+   * scenario at whatever tier is asked. */
+  adversary_profile: { min_oc: number; typical_oc: number };
+  vectors: string[];
+  narrative: { brief: string; detailed: string };
+  steps: ScenarioStep[];
+  stopper_details: Array<{ block_id: string; how_it_stops: string }>;
+  fit_note: string;
+  requires_external_serving?: boolean;
+}
+
+/** Everything the engine needs besides the blocks. */
+export interface ThreatModel {
+  vectors: AttackVector[];
+  approaches: Approach[];
+  scenarios: Scenario[];
 }
 
 /** Adversary operational-capability tier, loaded from world-state.json. */
@@ -136,6 +256,9 @@ export interface OcDefinition {
   key_capabilities: string[];
 }
 
+/** COMPATIBILITY ONLY (Phase 2A → 2B). The chain-shaped view of a scenario
+ * that the pre-vector UI still reads; built by `scenarioAsChain`. Nothing in
+ * the engine scores it. */
 export interface AttackChainStep {
   phase: string;
   description: string;
@@ -159,11 +282,6 @@ export interface AttackChain {
   stopper_details?: Array<{ block_id: string; how_it_stops: string }>;
   // API-extraction chains are inert unless the model is served externally.
   requires_external_serving?: boolean;
-  probability_model: {
-    // Authored prior, kept for documentation; NOT used by the breach model
-    // (redundant with adversary_profile.min_oc and would cap chains).
-    base_probability: number;
-  };
 }
 
 export interface AiCapabilityCurve {
@@ -241,6 +359,13 @@ export interface Sliders {
   budget_millions: number;
   org_transformation: number;
   risk_tolerance: number;
+  /** τ, the bar a tier must stay under to "hold": OC-n is held when fewer than
+   * τ of its campaigns succeed. Presets: strict 0.10, standard 0.20 (default),
+   * lenient 0.33 — see `SL_BAR_PRESETS`. */
+  sl_bar: number;
+  /** The chance a misaligned model tries at all (0–1, default 0.5). Multiplies
+   * the AI-insider approach and the integrity meter. */
+  ai_propensity: number;
 }
 
 export interface SimulationState {
@@ -251,6 +376,7 @@ export interface SimulationState {
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
+  futureCapabilities: boolean;
 }
 
 export interface SimulationResults {

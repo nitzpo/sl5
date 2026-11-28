@@ -1,23 +1,21 @@
+// CISO "Priority investments". Rewritten in Phase 2 where the objective
+// changed: moves are ranked by the cut in campaign success against the current
+// adversary tier (plus NEXT_TIER_WEIGHT × the tier above) per $M, not by the
+// sum of per-chain breach.
 import { describe, it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
 import { baselineStates } from "../../src/engine/baseline";
 import { blockCostBasis } from "../../src/engine/budget";
 import { orderAfterActivating, scorePosture, type PostureInput } from "../../src/engine/posture";
 import {
   combinedCostMillions,
+  NEXT_TIER_WEIGHT,
   recommendInvestments,
 } from "../../src/utils/ciso-recommendations";
-import type { AttackChain, Block, BlockState } from "../../src/engine/types";
+import type { BlockState } from "../../src/engine/types";
+import { APP_SLIDERS, loadBlocks, loadModel } from "../load-data";
 
-const DATA = path.join(__dirname, "../../public/data");
-const blocks: Block[] = fs
-  .readdirSync(DATA)
-  .filter((f) => f.startsWith("blocks-") && f.endsWith(".json"))
-  .flatMap((f) => JSON.parse(fs.readFileSync(path.join(DATA, f), "utf-8")) as Block[]);
-const chains: AttackChain[] = JSON.parse(
-  fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8")
-);
+const blocks = loadBlocks();
+const model = loadModel();
 const byId = new Map(blocks.map((b) => [b.id, b]));
 
 /** The app as it opens: researched baseline, default sliders, 2026, OC4. */
@@ -25,25 +23,19 @@ function appDefault(overrides: Partial<PostureInput> = {}): PostureInput {
   const states = baselineStates(blocks);
   return {
     blocks,
-    chains,
+    model,
     blockStates: states,
     advanceOrder: Object.keys(states).filter((id) => states[id] !== "not_started"),
     year: 2026,
-    sliders: {
-      ai_timeline: 0.5,
-      gov_cooperation: 0.2,
-      vendor_cooperation: 0.3,
-      budget_millions: 200,
-      org_transformation: 0.3,
-      risk_tolerance: 0.5,
-    },
+    sliders: APP_SLIDERS,
     adversaryOc: 4,
     modelServedExternally: true,
     ...overrides,
   };
 }
 
-const sum = (r: Record<string, number>) => Object.values(r).reduce((a, p) => a + p, 0);
+/** The objective: campaign at the adversary tier plus a small weight on the next. */
+const objective = (r: ReturnType<typeof scorePosture>, oc = 4) => r.tiers[oc - 1].p + NEXT_TIER_WEIGHT * r.tiers[oc].p;
 
 describe("CISO priority investments", () => {
   const input = appDefault();
@@ -65,11 +57,8 @@ describe("CISO priority investments", () => {
         advanceOrder: orderAfterActivating(input, c.blockIds),
       });
       expect(c.slDelta, c.block.id).toBeCloseTo(after.overallSl - analysis.baseline.overallSl, 12);
-      expect(c.breachDelta, c.block.id).toBeCloseTo(after.breach - analysis.baseline.breach, 12);
-      expect(c.pathReduction, c.block.id).toBeCloseTo(
-        sum(analysis.baseline.breachProbabilities) - sum(after.breachProbabilities),
-        12
-      );
+      expect(c.breachDelta, c.block.id).toBeCloseTo(after.campaign - analysis.baseline.campaign, 12);
+      expect(c.pathReduction, c.block.id).toBeCloseTo(objective(analysis.baseline) - objective(after), 12);
       // Every recommended move lands: nothing capped by budget or prerequisite.
       for (const id of c.blockIds) expect(after.effectiveStates[id], `${c.block.id}: ${id}`).toBe("deployed");
     }
@@ -77,7 +66,7 @@ describe("CISO priority investments", () => {
     if (net06) expect(net06.slDelta).toBeLessThan(0.1);
   });
 
-  it("ranks by breach taken off all paths per $M", () => {
+  it("ranks by campaign success taken off this tier (and a little off the next) per $M", () => {
     const keys = analysis.candidates.map((c) => c.reductionPerMillion);
     expect([...keys].sort((a, b) => b - a)).toEqual(keys);
     for (const c of analysis.candidates) {
@@ -142,7 +131,10 @@ describe("CISO priority investments", () => {
   it("charges nothing to finish a block the program is already funding", () => {
     // Advance an affordable block to implementing first: it is then in the
     // funding queue, so deploying it costs no new money.
-    const id = "PER-07";
+    // Any recommended, prerequisite-free block the lab doesn't already run.
+    const id = analysis.candidates.find(
+      (c) => c.prerequisites.length === 0 && (input.blockStates[c.block.id] ?? "not_started") === "not_started"
+    )!.block.id;
     const states = { ...input.blockStates, [id]: "implementing" as BlockState };
     const funded = recommendInvestments({
       ...input,
@@ -157,11 +149,19 @@ describe("CISO priority investments", () => {
   it("explains itself truthfully", () => {
     for (const c of analysis.candidates) {
       if (c.narrowed.length > 0) {
-        expect(c.reason).toContain(c.narrowed[0].chain.name);
+        expect(c.reason).toContain(c.narrowed[0].approach.name);
         for (const n of c.narrowed) expect(n.drop).toBeGreaterThanOrEqual(0.001);
       }
       const more = c.narrowed.length - 1;
-      if (more > 0) expect(c.reason).toContain(`${more} more path`);
+      if (more > 0) expect(c.reason).toContain(`${more} more approach`);
     }
+  });
+
+  it("never offers a future-capability block outside a future world", () => {
+    expect(analysis.candidates.some((c) => c.block.future)).toBe(false);
+    const future = recommendInvestments(
+      appDefault({ futureCapabilities: true, sliders: { ...input.sliders, budget_millions: 20_000 } })
+    );
+    expect(future.candidates.some((c) => c.block.future)).toBe(true);
   });
 });

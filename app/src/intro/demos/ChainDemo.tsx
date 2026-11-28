@@ -5,14 +5,15 @@ import { LONG_GAME, DEMO_BLOCKS } from "../content";
 // gap it exploits, and every step after the first blocked one dims — the "your
 // defense stopped it here" read.
 
-const GAP_BLOCKS = ["PER-04", "PER-03", "PER-05"] as const;
+const GAP_BLOCKS = ["PER-04", "PER-03", "PER-06", "PHY-08"] as const;
 type GapBlock = (typeof GAP_BLOCKS)[number];
 
 export function ChainDemo() {
   const [deployed, setDeployed] = useState<Record<GapBlock, boolean>>({
     "PER-04": false,
     "PER-03": false,
-    "PER-05": false,
+    "PER-06": false,
+    "PHY-08": false,
   });
 
   const steps = LONG_GAME.steps;

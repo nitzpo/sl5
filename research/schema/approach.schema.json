@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SL5 Explorable — Approaches",
+  "description": "approaches.json: the broad ways in (remote, insider, physical, supply chain, served model, the lab's own model) and the two meters outside SL (capability copy, integrity). An attack path takes one vector per stage; the engine finds the easiest path in each approach.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "id",
+      "name",
+      "adversary",
+      "headline",
+      "stages",
+      "notes"
+    ],
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "adversary": {
+        "type": "string",
+        "enum": [
+          "human",
+          "ai"
+        ],
+        "description": "human approaches are scored at OC tiers and form the campaign; the ai approach at the AC band, times ai_propensity."
+      },
+      "headline": {
+        "type": "boolean",
+        "description": "In the campaign / AI-insider check. Non-headline approaches are meters."
+      },
+      "requires_external_serving": {
+        "type": "boolean"
+      },
+      "meter": {
+        "type": "string",
+        "enum": [
+          "capability_leakage",
+          "integrity"
+        ]
+      },
+      "stages": {
+        "type": "object",
+        "required": [
+          "entry",
+          "reach",
+          "exfil"
+        ],
+        "properties": {
+          "entry": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^V-[A-Z]+-[0-9]+$"
+            }
+          },
+          "reach": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^V-[A-Z]+-[0-9]+$"
+            }
+          },
+          "exfil": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^V-[A-Z]+-[0-9]+$"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "notes": {
+        "type": "string"
+      }
+    }
+  }
+}

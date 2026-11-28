@@ -7,7 +7,7 @@
 //
 //  1. Real engine, real data. All arithmetic is in `../posture-game`, which
 //     runs the same `scorePosture` pipeline `store/derived.ts` does, over the
-//     shipped blocks-*.json and attack-chains.json. Nothing is re-implemented,
+//     shipped blocks-*.json and the vector backbone. Nothing is re-implemented,
 //     so these numbers cannot drift from the app's.
 //  2. The intro still fetches nothing on load. The data is fetched lazily the
 //     first time someone opens the game, so the rest of the deck stays instant
@@ -18,6 +18,8 @@ import type { AttackChain, Block, BlockState } from "../../engine/types";
 import {
   ADVERSARY_OC,
   BLOCK_FILES,
+  MODEL_FILES,
+  gameData,
   BUDGET_MILLIONS,
   SHORTLIST,
   YEAR,
@@ -68,9 +70,10 @@ export function BuildPostureGame({ onExit }: { onExit: () => void }) {
       if (!resp.ok) throw new Error(`${file}: HTTP ${resp.status}`);
       return resp.json();
     };
-    Promise.all([fetchJson("attack-chains.json"), ...BLOCK_FILES.map(fetchJson)])
-      .then(([chains, ...blockArrays]) => {
-        if (alive) setData({ blocks: (blockArrays as Block[][]).flat(), chains });
+    Promise.all([...MODEL_FILES.map(fetchJson), ...BLOCK_FILES.map(fetchJson)])
+      .then(([vectors, approaches, scenarios, ...blockArrays]) => {
+        if (alive)
+          setData(gameData((blockArrays as Block[][]).flat(), { vectors, approaches, scenarios }));
       })
       .catch((e: unknown) => {
         // An abort is us, not a failure — don't flash an error at a reader who

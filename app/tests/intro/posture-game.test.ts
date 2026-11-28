@@ -6,31 +6,35 @@
 //  2. Someone "simplifies" the scoring and the numbers stop agreeing with the
 //     app's own Security Posture card, which is the game's entire claim.
 //
-// So these tests load blocks-*.json and attack-chains.json off disk, exactly as
-// the browser fetches them, and drive `evaluatePosture` directly.
+// So these tests load blocks-*.json and the vector backbone off disk, exactly as
+// the browser fetches them, and drive `evaluatePosture` directly. (Phase 2: the
+// headline number is campaign success against the game's tier, and the SL is
+// the threat-relative level plus progress; the chain-shaped ranking is the
+// scenarios.)
 
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import type { AttackChain, Block } from "../../src/engine/types";
+import type { Block, ThreatModel } from "../../src/engine/types";
 import {
   ADVERSARY_OC,
   BLOCK_FILES,
   BUDGET_MILLIONS,
+  MODEL_FILES,
   SHORTLIST,
   SLIDERS,
   YEAR,
   costOf,
   evaluatePosture,
+  gameData,
 } from "../../src/intro/posture-game";
 import {
   applyBudgetConstraint,
   applyDependencyConstraint,
-  computeBreachProbabilities,
   computeCategoryScores,
+  counterRelevance,
   enablementFactor,
-  overallSlScore,
-  relevantBlockIds,
+  scorePosture,
 } from "../../src/engine";
 import { BLOCK_SHORT_LABELS } from "../../src/utils/geometry";
 
@@ -39,15 +43,17 @@ const read = (file: string) =>
   JSON.parse(fs.readFileSync(path.join(DATA, file), "utf-8"));
 
 const blocks: Block[] = BLOCK_FILES.flatMap((f) => read(f) as Block[]);
-const chains: AttackChain[] = read("attack-chains.json");
-const data = { blocks, chains };
+const [vectors, approaches, scenarios] = MODEL_FILES.map(read);
+const model: ThreatModel = { vectors, approaches, scenarios };
+const data = gameData(blocks, model);
+const chains = data.chains;
 const byId = new Map(blocks.map((b) => [b.id, b]));
 
 describe("the mini-game's shortlist", () => {
   it("names the files the app itself ships", () => {
     // The component fetches exactly these; a renamed data file would 404 in the
     // browser and show the game's error state instead of the game.
-    for (const file of BLOCK_FILES) {
+    for (const file of [...BLOCK_FILES, ...MODEL_FILES]) {
       expect(fs.existsSync(path.join(DATA, file)), `${file} missing`).toBe(true);
     }
     // Relational, not the current 47: adding a block to the catalogue is
@@ -169,16 +175,15 @@ describe("the mini-game's shortlist", () => {
   });
 
   it("can move the headline breach number, not just the score", () => {
-    // The breach percentage tracks the single worst chain. If nothing on the
-    // shortlist stopped that chain, the number would sit at 100% whatever the
-    // reader did, and the game would read as broken.
+    // The headline is campaign success against the game's tier. If nothing on
+    // the shortlist lowered it, the number would sit still whatever the reader
+    // did, and the game would read as broken.
+    const empty = evaluatePosture(data, []).breach;
+    const movers = SHORTLIST.filter((id) => evaluatePosture(data, [id]).breach < empty - 0.005);
+    expect(movers.length, "no single shortlist block moves the headline by half a point").toBeGreaterThan(0);
+    // ...and the scenario ranking has stoppers on the shortlist too.
     const stoppers = new Set(chains.flatMap((c) => c.stoppers ?? []));
     expect(SHORTLIST.some((id) => stoppers.has(id))).toBe(true);
-    const worst = evaluatePosture(data, []).ranked[0].chain;
-    expect(
-      SHORTLIST.filter((id) => worst.stoppers?.includes(id)).length,
-      `nothing on the shortlist stops ${worst.id}`
-    ).toBeGreaterThan(0);
   });
 });
 
@@ -291,11 +296,14 @@ describe("evaluatePosture", () => {
     }
   });
 
-  it("ranks chains most-likely-first and reports the worst as the headline", () => {
+  it("ranks scenarios most-likely-first and reports campaign success as the headline", () => {
     const r = evaluatePosture(data, ["PER-01", "PER-04"]);
     const ps = r.ranked.map((x) => x.p);
     expect([...ps].sort((a, b) => b - a)).toEqual(ps);
-    expect(r.breach).toBe(ps[0]);
+    // A scenario is one specific way in; the campaign is every way in, so it is
+    // at least as likely as any human scenario.
+    const human = r.ranked.filter((x) => x.chain.id !== "alignment-researcher").map((x) => x.p);
+    expect(r.breach).toBeGreaterThanOrEqual(Math.max(...human));
   });
 
   it("gives an over-budget block nothing — not even its real-world baseline", () => {
@@ -317,7 +325,7 @@ describe("evaluatePosture", () => {
     // The game's whole claim is that its numbers are the app's numbers. Recompute
     // one posture the long way, exactly as store/derived.ts does, and compare.
     // The pick that won't fit the budget keeps the budget cap in the comparison.
-    const chosen = ["PER-01", "PER-04", "PHY-03", "SC-05", "NET-01"];
+    const chosen = ["PER-01", "PER-04", "PHY-03", "SW-01", "NET-01"];
     const requested: Record<string, string> = {};
     for (const b of blocks) requested[b.id] = "not_started";
     for (const id of chosen) requested[id] = "deployed";
@@ -334,26 +342,23 @@ describe("evaluatePosture", () => {
     );
     expect(exceededIds.size).toBeGreaterThan(0);
     const { effectiveStates } = applyDependencyConstraint(blocks, budgeted);
-    const categories = computeCategoryScores(
+    const categories = computeCategoryScores(blocks, effectiveStates, YEAR, SLIDERS, counterRelevance(blocks));
+    // The threat-relative numbers come from the same pipeline the app runs,
+    // on the states computed above.
+    const direct = scorePosture({
       blocks,
-      effectiveStates,
-      YEAR,
-      SLIDERS,
-      relevantBlockIds(chains, blocks)
-    );
-    const breaches = computeBreachProbabilities(
-      chains,
-      blocks,
-      effectiveStates,
-      ADVERSARY_OC,
-      YEAR,
-      SLIDERS
-    );
+      model,
+      blockStates: effectiveStates,
+      year: YEAR,
+      sliders: { ...SLIDERS, budget_millions: 1e9 },
+      adversaryOc: ADVERSARY_OC,
+      modelServedExternally: true,
+    });
 
     const r = evaluatePosture(data, chosen);
-    expect(r.sl).toBe(overallSlScore(categories));
     expect(r.categories).toEqual(categories);
-    expect(r.breach).toBe(Math.max(...Object.values(breaches)));
+    expect(r.sl).toBe(direct.sl.value);
+    expect(r.breach).toBe(direct.campaign);
   });
 
   it("cannot be won: no shortlist posture reaches SL5 or holds the top chain at its floor", () => {
@@ -366,9 +371,10 @@ describe("evaluatePosture", () => {
     expect(everything.ranked[0].p).toBeGreaterThan(everything.ranked[0].floor);
   });
 
-  it("files chains with the Attacker view's own residual-floor test", () => {
+  it("files scenarios with the Attacker view's own residual-floor test", () => {
+    // The floor is the campaign's (applied once per campaign, never per path),
+    // so a scenario can sit below it; "held" is the same half-point test.
     for (const { p, floor, held } of evaluatePosture(data, [...SHORTLIST]).ranked) {
-      expect(p).toBeGreaterThanOrEqual(floor - 1e-12);
       expect(held).toBe(p <= floor + 0.005);
     }
   });

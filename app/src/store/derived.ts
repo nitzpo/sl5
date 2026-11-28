@@ -1,13 +1,7 @@
 import { useMemo } from "react";
 import { useSimulationStore } from "./simulation";
-import {
-  computeBreachProbabilities,
-  distillationProgress,
-  distillationDefenseReduction,
-  applyBudgetConstraint,
-  scorePosture,
-} from "../engine";
-import type { AttackChain, Block, BlockState, Sliders } from "../engine/types";
+import { applyBudgetConstraint, catalogueInForce, scorePosture } from "../engine";
+import type { Block, BlockState, Sliders, ThreatModel } from "../engine/types";
 import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
 import type { LayerId } from "../utils/ring-geometry";
 
@@ -28,28 +22,30 @@ export function useBudgetStatus(): {
   const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const budgetMillions = useSimulationStore((s) => s.sliders.budget_millions);
   const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
+  const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
 
   return useMemo(() => {
     const { exceededIds, spentMillions } = applyBudgetConstraint(
-      blocks,
+      catalogueInForce(blocks, futureCapabilities),
       blockStates,
       budgetMillions,
       { order: advanceOrder, riskTolerance }
     );
     return { spentMillions, budgetExceededIds: exceededIds, budgetMillions };
-  }, [blocks, blockStates, advanceOrder, budgetMillions, riskTolerance]);
+  }, [blocks, blockStates, advanceOrder, budgetMillions, riskTolerance, futureCapabilities]);
 }
 
 /** Everything `deriveSimulationResults` reads — the store's simulation inputs. */
 export interface SimulationSnapshot {
   blocks: Block[];
-  attackChains: AttackChain[];
+  threatModel: ThreatModel;
   blockStates: Record<string, BlockState>;
   advanceOrder: string[];
   year: number;
   sliders: Sliders;
   adversaryOc: number;
   modelServedExternally: boolean;
+  futureCapabilities: boolean;
 }
 
 /**
@@ -64,13 +60,14 @@ export interface SimulationSnapshot {
 export function deriveSimulationResults(snapshot: SimulationSnapshot) {
   const {
     blocks,
-    attackChains,
+    threatModel,
     blockStates,
     advanceOrder,
     year,
     sliders,
     adversaryOc,
     modelServedExternally,
+    futureCapabilities,
   } = snapshot;
 
   // Over-budget blocks fall back to their baseline and unmet prerequisites cap
@@ -78,56 +75,21 @@ export function deriveSimulationResults(snapshot: SimulationSnapshot) {
   // so a new block can only cap itself.
   const score = scorePosture({
     blocks,
-    chains: attackChains,
+    model: threatModel,
     blockStates,
     advanceOrder,
     year,
     sliders,
     adversaryOc,
     modelServedExternally,
+    futureCapabilities,
   });
-  const {
-    effectiveStates,
-    budgetExceededIds,
-    spentMillions,
-    dependencyUnmetIds,
-    dependencyUnmetRequires,
-    categoryScores,
-    overallSl: overall,
-    breachProbabilities,
-    residualFloors,
-    bestChain,
-  } = score;
+  const { effectiveStates } = score;
 
-  // Distillation defenses: AI-07 (outbound channel defense) and NET-04
-  // (bandwidth/rate limitation) each reduce the extraction rate.
-  const isOperational = (id: string) => {
-    const s = effectiveStates[id] ?? "not_started";
-    return s === "deployed" || s === "mature";
-  };
-  const defenseReduction = distillationDefenseReduction({
-    outboundDefense: isOperational("AI-07"),
-    rateLimiting: isOperational("NET-04"),
-  });
-
-  const extractionProgress = modelServedExternally
-    ? distillationProgress(year, 2026, defenseReduction, sliders.ai_timeline)
-    : 0;
-
-  // Breach probabilities for multiple OC levels (for score card)
+  // Compatibility for the Score card: campaign success against OC3–5, from the
+  // same tiers the SL is computed on.
   const breachByOc: Record<number, number> = {};
-  for (const oc of [3, 4, 5]) {
-    const probs = computeBreachProbabilities(
-      attackChains,
-      blocks,
-      effectiveStates,
-      oc,
-      year,
-      sliders,
-      modelServedExternally
-    );
-    breachByOc[oc] = Math.max(...Object.values(probs), 0);
-  }
+  for (const oc of [3, 4, 5]) breachByOc[oc] = score.tiers[oc - 1].p;
 
   // Defense layer status
   const layerIds = [
@@ -189,22 +151,16 @@ export function deriveSimulationResults(snapshot: SimulationSnapshot) {
   }
 
   return {
-    effectiveStates,
-    categoryScores,
-    overallSl: overall,
-    breachProbabilities,
-    residualFloors,
-    bestChain,
-    extractionProgress,
+    // The new API (threat-relative SL, tiers, approaches, meters, relevance).
+    ...score,
+    // Compatibility fields the pre-vector views read (Phase 2B moves them to
+    // the fields above): the cumulative distillation meter and OC3–5 campaign.
+    extractionProgress: score.capabilityLeakage.cumulative,
     breachByOc,
     defenseLayerStatus,
     activeLayers,
     blocksByLayer,
-    budgetExceededIds,
-    dependencyUnmetIds,
-    dependencyUnmetRequires,
-    spentMillions,
-    overBudget: budgetExceededIds.size > 0,
+    overBudget: score.budgetExceededIds.size > 0,
   };
 }
 
@@ -216,26 +172,28 @@ export function deriveSimulationResults(snapshot: SimulationSnapshot) {
  */
 export function useSimulationResults() {
   const blocks = useSimulationStore((s) => s.blocks);
-  const attackChains = useSimulationStore((s) => s.attackChains);
+  const threatModel = useSimulationStore((s) => s.threatModel);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const year = useSimulationStore((s) => s.year);
   const sliders = useSimulationStore((s) => s.sliders);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
+  const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
 
   return useMemo(
     () =>
       deriveSimulationResults({
         blocks,
-        attackChains,
+        threatModel,
         blockStates,
         advanceOrder,
         year,
         sliders,
         adversaryOc,
         modelServedExternally,
+        futureCapabilities,
       }),
-    [blocks, attackChains, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
+    [blocks, threatModel, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally, futureCapabilities]
   );
 }

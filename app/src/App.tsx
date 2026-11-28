@@ -47,6 +47,7 @@ function App() {
         "blocks-personnel.json",
         "blocks-supply-chain.json",
         "blocks-ai-specific.json",
+        "blocks-future.json",
       ];
 
       const fetchJson = async (file: string) => {
@@ -55,14 +56,16 @@ function App() {
         return resp.json();
       };
 
-      const [chains, worldState, ...blockArrays] = await Promise.all([
-        fetchJson("attack-chains.json"),
+      const [vectors, approaches, scenarios, worldState, ...blockArrays] = await Promise.all([
+        fetchJson("vectors.json"),
+        fetchJson("approaches.json"),
+        fetchJson("scenarios.json"),
         fetchJson("world-state.json"),
         ...blockFiles.map(fetchJson),
       ]);
       const blocks: Block[] = blockArrays.flat();
 
-      loadData(blocks, chains, worldState?.oc_definitions ?? []);
+      loadData(blocks, { vectors, approaches, scenarios }, worldState?.oc_definitions ?? []);
     }
     load().catch((err: unknown) => {
       setLoadError(err instanceof Error ? err.message : String(err));
@@ -108,6 +111,7 @@ function App() {
         adversaryOc: parsed.state.adversaryOc,
         sliders: parsed.state.sliders,
         modelServedExternally: parsed.state.modelServedExternally,
+        futureCapabilities: parsed.state.futureCapabilities ?? false,
         scenarioName: parsed.name ?? null,
         viewingShared: true,
       });

@@ -1,0 +1,607 @@
+[
+  {
+    "id": "FUT-01",
+    "name": "Verified Accelerator Hardware at Scale",
+    "category": "machine",
+    "summary_group": "future_capabilities",
+    "description": "Accelerators whose design, fabrication and assembly can be verified by the buyer: trusted-foundry production, split manufacturing, imaging-based comparison against a golden design and tamper-resistant packaging, at the volumes a frontier training cluster needs.",
+    "current_state": {
+      "summary": "Trusted-foundry programmes exist for low-volume defence parts; nothing comparable exists for leading-edge accelerators at cluster scale.",
+      "deployed_by": [],
+      "baseline_state": "researching"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 25,
+        "notes": "Leading-edge fabs are few and abroad; verification of a 100-billion-transistor die is unsolved.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 60,
+        "max": 120,
+        "notes": "A fab and verification programme measured in years."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 1500,
+          "max": 6000
+        },
+        "annual_ongoing_millions": {
+          "min": 100,
+          "max": 400
+        },
+        "notes": "Trusted fab capacity, verification tooling, packaging; illustrative."
+      },
+      "vendor_dependency": {
+        "value": 99,
+        "key_vendors": [
+          "leading_edge_foundries",
+          "accelerator_vendors"
+        ],
+        "notes": "Entirely vendor- and state-dependent."
+      },
+      "supply_scarcity": {
+        "value": 95,
+        "bottleneck": "Leading-edge fab capacity",
+        "notes": "Fixed by a handful of fabs."
+      },
+      "organizational_readiness": {
+        "value": 70,
+        "barriers": [
+          "vendor_cooperation",
+          "cost"
+        ],
+        "notes": "Labs cannot build this; they can only fund and buy it."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without verifiable hardware, a state that controls part of the fab or assembly chain can ship an implant no downstream inspection finds."
+    },
+    "dependencies": {
+      "requires": [
+        "HW-01"
+      ],
+      "enhances": [],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "supply_chain_integrity"
+      ],
+      "shared_dependencies": [
+        "accelerator_manufacturer_firmware"
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "Can a leading-edge die be verified against its design at all?",
+        "uncertainty_level": "fundamental",
+        "impact_if_resolved_negatively": "The supply-chain approach stays open at OC5."
+      }
+    ],
+    "real_world_parallels": [],
+    "future": true,
+    "future_note": "FUTURE CAPABILITY, authored assumption: this does not exist today at the scale described. It is counted only when the 'future capabilities' world toggle is on, and its cost, lead time and effect are illustrative R&D estimates, not measurements.",
+    "counters": [
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "strong",
+        "why": "Buyer-verifiable fabrication and assembly removes the implant-at-the-factory path for accelerators."
+      },
+      {
+        "vector_id": "V-PHYS-5",
+        "strength": "strong",
+        "why": "Tamper-resistant, verified packaging defeats the probing that ordinary chip tamper protection only detects."
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Covers the hardware half of an ML supply-chain compromise, not the software half."
+      },
+      {
+        "vector_id": "V-NET-2",
+        "strength": "partial",
+        "why": "Verified designs can be checked for deliberate emanation channels."
+      },
+      {
+        "vector_id": "V-X-2",
+        "strength": "partial",
+        "why": "Verified on-die memory protection makes hardware in hand harder to read."
+      }
+    ]
+  },
+  {
+    "id": "FUT-02",
+    "name": "Government-Cleared Workforce with State Counter-Intelligence",
+    "category": "personnel",
+    "summary_group": "future_capabilities",
+    "description": "Everyone with access to the weights holds a government clearance, and a state counter-intelligence service actively protects the programme: vetting, reinvestigation, monitoring of foreign approaches and offensive counter-intelligence against recruiters.",
+    "current_state": {
+      "summary": "Clearances exist for defence contractors; no AI lab's weight-access workforce is cleared, and no state counter-intelligence service has taken on a lab as a protected programme.",
+      "deployed_by": [],
+      "baseline_state": "researching"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 35,
+        "notes": "The machinery exists for defence programmes; applying it to a private lab is a policy decision.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 36,
+        "max": 72,
+        "notes": "Clearance backlogs and the legal basis for a protected private programme."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 200,
+          "max": 800
+        },
+        "annual_ongoing_millions": {
+          "min": 50,
+          "max": 150
+        },
+        "notes": "Cleared staffing premium, facilities for cleared work, liaison; illustrative."
+      },
+      "vendor_dependency": {
+        "value": 60,
+        "key_vendors": [
+          "government"
+        ],
+        "notes": "The state does the work."
+      },
+      "supply_scarcity": {
+        "value": 80,
+        "bottleneck": "Clearance throughput",
+        "notes": "Government backlogs measured in months to years."
+      },
+      "organizational_readiness": {
+        "value": 20,
+        "barriers": [
+          "researcher_nationality",
+          "culture"
+        ],
+        "notes": "Much of the research workforce could not be cleared."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.3,
+      "exploit_narrative": "Without state counter-intelligence, a lab faces a foreign intelligence service's recruiters with HR and an insider-risk team."
+    },
+    "dependencies": {
+      "requires": [
+        "PER-04"
+      ],
+      "enhances": [],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "personnel_trust"
+      ],
+      "shared_dependencies": [
+        "legal_framework"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [],
+    "future": true,
+    "future_note": "FUTURE CAPABILITY, authored assumption: this does not exist today at the scale described. It is counted only when the 'future capabilities' world toggle is on, and its cost, lead time and effect are illustrative R&D estimates, not measurements.",
+    "counters": [
+      {
+        "vector_id": "V-HUM-1",
+        "strength": "strong",
+        "why": "State counter-intelligence detects and disrupts recruitment that HR-grade vetting misses."
+      },
+      {
+        "vector_id": "V-HUM-5",
+        "strength": "strong",
+        "why": "Cleared, state-protected access cannot be approved around by the organisation alone."
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "strong",
+        "why": "Vendors with access must hold clearances too."
+      },
+      {
+        "vector_id": "V-HUM-2",
+        "strength": "partial",
+        "why": "Counter-intelligence support for coerced staff."
+      },
+      {
+        "vector_id": "V-HUM-3",
+        "strength": "partial",
+        "why": "Clearance investigation of new hires."
+      },
+      {
+        "vector_id": "V-HUM-4",
+        "strength": "partial",
+        "why": "State review of influence over the programme."
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "Fewer people hold standing access, and those who do are reinvestigated."
+      }
+    ]
+  },
+  {
+    "id": "FUT-03",
+    "name": "Formally Verified Weight-Access Stack",
+    "category": "machine",
+    "summary_group": "future_capabilities",
+    "description": "The software that stands between an attacker and the weights - separation kernel, key-release service, serving interface and the cross-domain guard on the air gap - is small enough to be, and is, formally verified end to end, with verified compilation and hardware models.",
+    "current_state": {
+      "summary": "Verified components exist (seL4, CompCert, verified cross-domain guards in defence); an end-to-end verified weight-access stack does not.",
+      "deployed_by": [],
+      "baseline_state": "researching"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 30,
+        "notes": "Each piece has been verified somewhere; the composition at this scale has not.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 48,
+        "max": 96,
+        "notes": "Proof engineering at a scale never attempted."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 300,
+          "max": 1500
+        },
+        "annual_ongoing_millions": {
+          "min": 30,
+          "max": 100
+        },
+        "notes": "Proof engineering and redesign; illustrative."
+      },
+      "vendor_dependency": {
+        "value": 40,
+        "key_vendors": [
+          "proof_engineering_firms"
+        ],
+        "notes": "A handful of teams."
+      },
+      "supply_scarcity": {
+        "value": 90,
+        "bottleneck": "Proof engineers",
+        "notes": "A few hundred worldwide."
+      },
+      "organizational_readiness": {
+        "value": 40,
+        "barriers": [
+          "design_constraints"
+        ],
+        "notes": "Requires freezing the access stack."
+      }
+    },
+    "defense_type": "hard_stop",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without verification, every access-control and guard component is one memory-safety bug away from a path the attacker did not have to earn."
+    },
+    "dependencies": {
+      "requires": [
+        "KEY-01",
+        "ACA-01"
+      ],
+      "enhances": [],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "access_control"
+      ],
+      "shared_dependencies": [
+        "formal_verification_toolchain"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [],
+    "future": true,
+    "future_note": "FUTURE CAPABILITY, authored assumption: this does not exist today at the scale described. It is counted only when the 'future capabilities' world toggle is on, and its cost, lead time and effect are illustrative R&D estimates, not measurements.",
+    "counters": [
+      {
+        "vector_id": "V-NET-1",
+        "strength": "strong",
+        "why": "A verified cross-domain guard is the residual counter for bridging the air gap."
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "strong",
+        "why": "A verified multi-party key-release policy means no one person holds standing access to read the weights."
+      },
+      {
+        "vector_id": "V-ACS-3",
+        "strength": "partial",
+        "why": "Verified code removes the access-control software bugs that assurance only reduces."
+      },
+      {
+        "vector_id": "V-ACS-1",
+        "strength": "partial",
+        "why": "Verified protocol implementations close implementation flaws, not design flaws."
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "The weight-access path no longer runs general-purpose ML stack code."
+      },
+      {
+        "vector_id": "V-BYP-1",
+        "strength": "partial",
+        "why": "Policy is part of the verified artefact, so misconfiguration is caught by proof."
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "No ambient privilege in the verified stack to escalate through."
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "The confinement boundary is verified rather than hardened."
+      }
+    ]
+  },
+  {
+    "id": "FUT-04",
+    "name": "Sovereign Protected Facility",
+    "category": "physical",
+    "summary_group": "future_capabilities",
+    "description": "The weights live in a government-protected site with a state guard force, airspace and perimeter protection, and the legal standing of a national-security facility, so that armed seizure and military takeover meet the state, not a contract guard company.",
+    "current_state": {
+      "summary": "National laboratories and some defence sites have this protection; no AI lab's weights do.",
+      "deployed_by": [],
+      "baseline_state": "researching"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 35,
+        "notes": "Proven for national labs; a policy decision to extend it.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 48,
+        "max": 96,
+        "notes": "Site selection, construction and the legal basis."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 2000,
+          "max": 8000
+        },
+        "annual_ongoing_millions": {
+          "min": 100,
+          "max": 400
+        },
+        "notes": "Site, construction, guard force; illustrative, partly state-funded."
+      },
+      "vendor_dependency": {
+        "value": 70,
+        "key_vendors": [
+          "government"
+        ],
+        "notes": "Only a state can provide the guard force and legal standing."
+      },
+      "supply_scarcity": {
+        "value": 80,
+        "bottleneck": "Secure sites with grid power at training scale",
+        "notes": "Few sites qualify."
+      },
+      "organizational_readiness": {
+        "value": 30,
+        "barriers": [
+          "sovereignty_politics",
+          "location"
+        ],
+        "notes": "Moves the lab's crown jewels onto state ground."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 0.0,
+      "exploit_narrative": "Without state protection, an adversary willing to use force meets a fence and a private guard contract."
+    },
+    "dependencies": {
+      "requires": [
+        "PHY-01"
+      ],
+      "enhances": [],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "physical_perimeter"
+      ],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [],
+    "future": true,
+    "future_note": "FUTURE CAPABILITY, authored assumption: this does not exist today at the scale described. It is counted only when the 'future capabilities' world toggle is on, and its cost, lead time and effect are illustrative R&D estimates, not measurements.",
+    "counters": [
+      {
+        "vector_id": "V-PHYS-7",
+        "strength": "strong",
+        "why": "Only a state can meet a military takeover; a sovereign site makes that the defender."
+      },
+      {
+        "vector_id": "V-PHYS-4",
+        "strength": "strong",
+        "why": "A state guard force and layered perimeter is the residual counter for evading access control."
+      },
+      {
+        "vector_id": "V-PHYS-6",
+        "strength": "strong",
+        "why": "Armed response measured in minutes, by a state force rather than a contract guard company."
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Fewer people ever reach the floor."
+      },
+      {
+        "vector_id": "V-NET-3",
+        "strength": "partial",
+        "why": "Links stay on protected ground."
+      },
+      {
+        "vector_id": "V-NET-1",
+        "strength": "partial",
+        "why": "Emanation and RF protection at state grade."
+      }
+    ]
+  },
+  {
+    "id": "FUT-05",
+    "name": "Trustworthy AI Monitors",
+    "category": "ai_specific",
+    "summary_group": "future_capabilities",
+    "description": "Monitoring of the lab's own models by systems whose trustworthiness is established, not assumed: interpretability-based checks of what a model is doing, and monitors verified not to collude, so that manipulation of operators, covert channels and self-distillation are caught as reliably as overt copying.",
+    "current_state": {
+      "summary": "Interpretability and AI-control research are active, but no monitor's trustworthiness can be established today.",
+      "deployed_by": [],
+      "baseline_state": "researching"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 20,
+        "notes": "Open research problem.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 36,
+        "max": 72,
+        "notes": "Depends on research breakthroughs; the range is a guess."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 200,
+          "max": 1000
+        },
+        "annual_ongoing_millions": {
+          "min": 50,
+          "max": 200
+        },
+        "notes": "Research programme and monitoring compute; illustrative."
+      },
+      "vendor_dependency": {
+        "value": 20,
+        "key_vendors": [
+          "internal",
+          "research_community"
+        ],
+        "notes": "Research-led."
+      },
+      "supply_scarcity": {
+        "value": 90,
+        "bottleneck": "Interpretability and control researchers",
+        "notes": "Very few."
+      },
+      "organizational_readiness": {
+        "value": 40,
+        "barriers": [
+          "research_uncertainty"
+        ],
+        "notes": "Nobody knows if it can be built."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without trustworthy monitors, the lab watches a capable model with tools that model may understand better than its operators do."
+    },
+    "dependencies": {
+      "requires": [
+        "AI-10"
+      ],
+      "enhances": [],
+      "enabled_by": []
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "monitoring_detection"
+      ],
+      "shared_dependencies": [
+        "assumes_review_model_not_colluding"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [],
+    "future": true,
+    "future_note": "FUTURE CAPABILITY, authored assumption: this does not exist today at the scale described. It is counted only when the 'future capabilities' world toggle is on, and its cost, lead time and effect are illustrative R&D estimates, not measurements.",
+    "counters": [
+      {
+        "vector_id": "V-SELF-7",
+        "strength": "strong",
+        "why": "Requests a model makes of staff are checked by a monitor that can be trusted not to share its goals."
+      },
+      {
+        "vector_id": "V-SELF-8",
+        "strength": "strong",
+        "why": "Self-distillation into permitted outputs is detected by what the model is doing, not by volume."
+      },
+      {
+        "vector_id": "V-SELF-4",
+        "strength": "strong",
+        "why": "Covert channels in outputs are visible to an interpretability-based check."
+      },
+      {
+        "vector_id": "V-SELF-5",
+        "strength": "strong",
+        "why": "Sabotage of code and evaluations is caught by monitors that do not collude."
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Adds a trusted check on staging of weight copies."
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "Adds a trusted check on credential and tool misuse."
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "partial",
+        "why": "Adds a trusted check on unsanctioned jobs."
+      },
+      {
+        "vector_id": "V-SELF-3",
+        "strength": "partial",
+        "why": "Adds a trusted check on escape attempts."
+      }
+    ]
+  }
+]

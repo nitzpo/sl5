@@ -7,8 +7,11 @@ import type {
   Sliders,
   AttackChain,
   OcDefinition,
+  ThreatModel,
 } from "../engine/types";
 import { baselineStates, isAtOrBelowBaseline } from "../engine/baseline";
+import { scenarioAsChain } from "../engine/catalogue";
+import { DEFAULT_AI_PROPENSITY, DEFAULT_SL_BAR } from "../engine/threat-sl";
 import { TIMELINE_REFERENCE } from "../utils/timeline";
 import {
   saveToLocalStorage,
@@ -25,6 +28,10 @@ import {
 interface SimulationStore {
   // Data (loaded once)
   blocks: Block[];
+  /** Vectors, approaches and scenarios: everything the engine scores. */
+  threatModel: ThreatModel;
+  /** COMPATIBILITY (Phase 2B removes): the scenarios in the old chain shape,
+   * for the views that still read chains. */
   attackChains: AttackChain[];
   ocDefinitions: OcDefinition[];
   dataLoaded: boolean;
@@ -39,13 +46,15 @@ interface SimulationStore {
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
+  /** World toggle: count the FUT-xx future-capability blocks (default off). */
+  futureCapabilities: boolean;
   selectedChainId: string | null;
   viewingShared: boolean;
   playbackActive: boolean;
   scenarioName: string | null;
 
   // Actions
-  loadData: (blocks: Block[], chains: AttackChain[], ocDefinitions?: OcDefinition[]) => void;
+  loadData: (blocks: Block[], model: ThreatModel, ocDefinitions?: OcDefinition[]) => void;
   setBlockState: (blockId: string, state: BlockState) => void;
   cycleBlockState: (blockId: string) => void;
   setYear: (year: number) => void;
@@ -53,6 +62,7 @@ interface SimulationStore {
   setAdversaryOc: (oc: number) => void;
   setSlider: (key: keyof Sliders, value: number) => void;
   setModelServed: (served: boolean) => void;
+  setFutureCapabilities: (on: boolean) => void;
   setPlaybackActive: (active: boolean) => void;
   setSelectedChain: (chainId: string | null) => void;
   copyShareUrl: () => void;
@@ -72,14 +82,18 @@ const STATE_CYCLE: BlockState[] = [
   "mature",
 ];
 
-const DEFAULT_SLIDERS: Sliders = {
+export const DEFAULT_SLIDERS: Sliders = {
   ai_timeline: 0.5,
   gov_cooperation: 0.2,
   vendor_cooperation: 0.3,
   budget_millions: 200,
   org_transformation: 0.3,
   risk_tolerance: 0.5,
+  sl_bar: DEFAULT_SL_BAR,
+  ai_propensity: DEFAULT_AI_PROPENSITY,
 };
+
+const EMPTY_MODEL: ThreatModel = { vectors: [], approaches: [], scenarios: [] };
 
 /** Keep the advancement order in sync with a single block-state change.
  *
@@ -123,6 +137,7 @@ const baselineStatesFor = baselineStates;
 
 export const useSimulationStore = create<SimulationStore>()(subscribeWithSelector((set, get) => ({
   blocks: [],
+  threatModel: EMPTY_MODEL,
   attackChains: [],
   ocDefinitions: [],
   dataLoaded: false,
@@ -133,16 +148,18 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   adversaryOc: 4,
   sliders: DEFAULT_SLIDERS,
   modelServedExternally: true,
+  futureCapabilities: false,
   selectedChainId: null,
   viewingShared: false,
   playbackActive: false,
   scenarioName: null,
 
-  loadData: (blocks, chains, ocDefinitions = []) => {
+  loadData: (blocks, model, ocDefinitions = []) => {
     if (get().dataLoaded) return;
 
     const baselineStates = baselineStatesFor(blocks);
-    set({ ocDefinitions });
+    const chains = model.scenarios.map(scenarioAsChain);
+    set({ ocDefinitions, threatModel: model });
 
     // Restore: URL hash takes priority (shared link), then localStorage
     const fromUrl = loadFromUrlHash();
@@ -158,6 +175,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
         adversaryOc: fromUrl.state.adversaryOc,
         sliders: fromUrl.state.sliders,
         modelServedExternally: fromUrl.state.modelServedExternally,
+        futureCapabilities: fromUrl.state.futureCapabilities ?? false,
         scenarioName: fromUrl.name ?? null,
         viewingShared: true,
         dataLoaded: true,
@@ -177,6 +195,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
         adversaryOc: fromStorage.adversaryOc,
         sliders: fromStorage.sliders,
         modelServedExternally: fromStorage.modelServedExternally,
+        futureCapabilities: fromStorage.futureCapabilities ?? false,
         dataLoaded: true,
       });
     } else {
@@ -230,6 +249,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 
   setModelServed: (served) => set({ modelServedExternally: served, scenarioName: null }),
+  setFutureCapabilities: (on) => set({ futureCapabilities: on, scenarioName: null }),
   setPlaybackActive: (active) => set({ playbackActive: active }),
   setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
 
@@ -246,6 +266,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       adversaryOc: s.adversaryOc,
       sliders: s.sliders,
       modelServedExternally: s.modelServedExternally,
+      futureCapabilities: s.futureCapabilities,
     };
     const url = stateToShareUrl(persisted, s.scenarioName ?? undefined);
     navigator.clipboard.writeText(url);
@@ -264,6 +285,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       adversaryOc: s.adversaryOc,
       sliders: s.sliders,
       modelServedExternally: s.modelServedExternally,
+      futureCapabilities: s.futureCapabilities,
     };
     saveToLocalStorage(persisted);
     if (s.scenarioName) {
@@ -286,6 +308,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
         adversaryOc: saved.adversaryOc,
         sliders: saved.sliders,
         modelServedExternally: saved.modelServedExternally,
+        futureCapabilities: saved.futureCapabilities ?? false,
         viewingShared: false,
       });
     } else {
@@ -304,6 +327,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       sliders: DEFAULT_SLIDERS,
       adversaryOc: 4,
       modelServedExternally: true,
+      futureCapabilities: false,
       scenarioName: null,
     });
   },
@@ -322,6 +346,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
         adversaryOc: s.adversaryOc,
         sliders: s.sliders,
         modelServedExternally: s.modelServedExternally,
+        futureCapabilities: s.futureCapabilities,
       },
     };
     const existing = scenarios.findIndex((sc) => sc.name === name);
@@ -346,6 +371,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       adversaryOc: scenario.state.adversaryOc,
       sliders: scenario.state.sliders,
       modelServedExternally: scenario.state.modelServedExternally,
+      futureCapabilities: scenario.state.futureCapabilities ?? false,
       scenarioName: scenario.name,
       viewingShared: false,
     });
@@ -368,6 +394,7 @@ useSimulationStore.subscribe(
     adversaryOc: s.adversaryOc,
     sliders: s.sliders,
     modelServedExternally: s.modelServedExternally,
+    futureCapabilities: s.futureCapabilities,
   }),
   (persisted) => {
     const { dataLoaded, viewingShared, playbackActive } = useSimulationStore.getState();

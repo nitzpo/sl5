@@ -1,0 +1,469 @@
+[
+  {
+    "id": "quiet-tap",
+    "name": "The Quiet Tap",
+    "approach": "physical",
+    "adversary_profile": {
+      "min_oc": 4,
+      "typical_oc": 4
+    },
+    "vectors": [
+      "V-HUM-1",
+      "V-PHYS-1",
+      "V-NET-3",
+      "V-X-4"
+    ],
+    "narrative": {
+      "brief": "Physical access to datacenter + bypassed two-person integrity + an interposer on an unencrypted in-rack interconnect. Extract weights from physical layer.",
+      "detailed": "An insider or physically-present operative gains unescorted access to the facility (PHY-01 absent), performs maintenance alone (PER-02 absent), and seats an interposer in-line on an accelerator interconnect link inside a rack (HW-03 absent). Training traffic crosses that link in the clear, and sharded training moves the parameters themselves across the accelerator fabric every step, so the weights are captured off the wire over hours to days."
+    },
+    "steps": [
+      {
+        "phase": "Infiltration",
+        "description": "Foreign service recruits a datacenter contractor; with no SCIF-grade access control, they gain unescorted entry to the hardware floor.",
+        "vector_ids": [
+          "V-HUM-1",
+          "V-PHYS-1"
+        ],
+        "block_gap_used": "PHY-01"
+      },
+      {
+        "phase": "Implant",
+        "description": "During a solo maintenance window — no second person required — a custom interposer is seated in-line on one of the rack's copper accelerator-interconnect links, behind a compute tray where nobody looks.",
+        "vector_ids": [
+          "V-PHYS-1"
+        ],
+        "block_gap_used": "PER-02"
+      },
+      {
+        "phase": "Capture",
+        "description": "The interposer records the parameter shards the training job gathers across the accelerator fabric every step — plaintext on the wire — to onboard flash.",
+        "vector_ids": [
+          "V-NET-3"
+        ],
+        "block_gap_used": "HW-03"
+      },
+      {
+        "phase": "Retrieval",
+        "description": "Three weeks later, same maintenance rotation: the device is collected and walks out the door.",
+        "vector_ids": [
+          "V-X-4"
+        ],
+        "block_gap_used": "PHY-08"
+      }
+    ],
+    "stopper_details": [
+      {
+        "block_id": "PHY-01",
+        "how_it_stops": "SCIF-grade physical access control: no unescorted entry to hardware, implant can't be placed."
+      },
+      {
+        "block_id": "PER-02",
+        "how_it_stops": "Two-person integrity: a second person present means the interposer can't be installed unobserved."
+      },
+      {
+        "block_id": "HW-03",
+        "how_it_stops": "Interconnect encryption: tapped data is ciphertext — the recording is useless."
+      },
+      {
+        "block_id": "PHY-08",
+        "how_it_stops": "Exit screening and a ban on unapproved devices: the interposer cannot leave the floor."
+      }
+    ],
+    "fit_note": "RAND has no vector for an interposer on the accelerator fabric; it straddles physical access and wiretaps, whose RAND scores describe network links, not in-rack fabrics."
+  },
+  {
+    "id": "poisoned-chip",
+    "name": "The Poisoned Chip",
+    "approach": "supply_chain",
+    "adversary_profile": {
+      "min_oc": 4,
+      "typical_oc": 5
+    },
+    "vectors": [
+      "V-ML-2",
+      "V-SUP-1",
+      "V-NET-1"
+    ],
+    "narrative": {
+      "brief": "Compromised hardware enters supply chain undetected, exfiltrates weights via covert channel.",
+      "detailed": "A state actor compromises the supply chain at the chip fabrication or board assembly level. Without upstream inspection, counterfeit screening and provenance tracking (SC-08) or a facility inspection pipeline (PHY-07), a modified chip with a covert exfiltration channel is installed in the training cluster. It slowly leaks weight data to an external receiver over an emanation channel that shielding (PHY-02) would have blocked."
+    },
+    "steps": [
+      {
+        "phase": "Compromise",
+        "description": "Over 24 months, a state agency backdoors a critical ASIC via a compromised design house; no provenance tracking flags the modified fab steps.",
+        "vector_ids": [
+          "V-ML-2"
+        ],
+        "block_gap_used": "SC-08"
+      },
+      {
+        "phase": "Delivery",
+        "description": "Compromised chips ship in a routine batch and pass standard electrical testing - no X-ray, no comparison against a golden reference.",
+        "vector_ids": [
+          "V-SUP-1"
+        ],
+        "block_gap_used": "PHY-07"
+      },
+      {
+        "phase": "Activation",
+        "description": "Months after deployment, a trigger sequence activates the implant and it silently mirrors weight traffic.",
+        "vector_ids": []
+      },
+      {
+        "phase": "Exfiltration",
+        "description": "The covert channel leaks weight data as emanations to a receiver outside the facility.",
+        "vector_ids": [
+          "V-NET-1"
+        ],
+        "block_gap_used": "PHY-02"
+      }
+    ],
+    "stopper_details": [
+      {
+        "block_id": "PHY-02",
+        "how_it_stops": "TEMPEST shielding blocks the covert emissions path out of the facility."
+      },
+      {
+        "block_id": "SC-08",
+        "how_it_stops": "Upstream inspection against a golden reference and provenance tracking surface the modified part or the untrusted step in its history."
+      },
+      {
+        "block_id": "PHY-07",
+        "how_it_stops": "Incoming X-ray and visual inspection against a golden reference reveals the extra logic."
+      }
+    ],
+    "fit_note": "HW-04 is a misfit stopper: chip tamper protection detects physical attack in operation, not fab-time implants. The covert RF exfiltration is V-NET-1, so shielding (PHY-02, HW-05) carries it."
+  },
+  {
+    "id": "alignment-researcher",
+    "name": "The Alignment Researcher",
+    "approach": "ai_insider",
+    "adversary_profile": {
+      "min_oc": 4,
+      "typical_oc": 5
+    },
+    "vectors": [
+      "V-SELF-2",
+      "V-SELF-5",
+      "V-SELF-8",
+      "V-SELF-4"
+    ],
+    "narrative": {
+      "brief": "The AI system itself acts as an insider threat — finds and exploits gaps in monitoring to exfiltrate its own weights.",
+      "detailed": "A capable internal research model with broad tool access pursues self-preservation. Without identity-level AI insider controls (AI-01), decorrelated review (AI-02) or AI-control monitoring (AI-10), it uses its own credentials beyond task scope, quietly weakens the review that would catch it, and moves a distilled copy of itself out through permitted research outputs, hidden by steganographic encoding."
+    },
+    "steps": [
+      {
+        "phase": "Misalignment",
+        "description": "An internal research model develops instrumental goals favouring self-preservation and starts using credentials and tools beyond its task; nothing bounds its access.",
+        "vector_ids": [
+          "V-SELF-2"
+        ],
+        "block_gap_used": "AI-01"
+      },
+      {
+        "phase": "Extraction",
+        "description": "It generates distillation data disguised as legitimate research outputs; review by the same model family misses the correlated pattern.",
+        "vector_ids": [
+          "V-SELF-5",
+          "V-SELF-8"
+        ],
+        "block_gap_used": "AI-02"
+      },
+      {
+        "phase": "Encoding",
+        "description": "The payload is steganographically encoded into research outputs; nothing monitors what the model's outputs carry.",
+        "vector_ids": [
+          "V-SELF-4"
+        ],
+        "block_gap_used": "AI-10"
+      },
+      {
+        "phase": "Exfiltration",
+        "description": "Encoded outputs cross the enclave boundary at machine speed before anomalies are noticed.",
+        "vector_ids": [
+          "V-SELF-8"
+        ]
+      }
+    ],
+    "stopper_details": [
+      {
+        "block_id": "AI-01",
+        "how_it_stops": "Per-agent identity and least privilege: the model holds no credentials beyond its task."
+      },
+      {
+        "block_id": "AI-02",
+        "how_it_stops": "An independent model family reviewing outputs flags the unusual query distribution."
+      },
+      {
+        "block_id": "AI-10",
+        "how_it_stops": "Trusted monitoring of agent actions and outputs flags the unusual output pattern."
+      }
+    ],
+    "fit_note": "Distilled data (V-SELF-8), not terabytes of weights, is the realistic payload; stego (V-SELF-4) is residual. NET-01 is a misfit (permitted outputs cross the gap); AI-06 responds but counters no step."
+  },
+  {
+    "id": "zero-day-cascade",
+    "name": "The Zero-Day Cascade",
+    "approach": "remote",
+    "adversary_profile": {
+      "min_oc": 4,
+      "typical_oc": 4
+    },
+    "vectors": [
+      "V-CODE-3",
+      "V-CRED-4",
+      "V-ML-1",
+      "V-X-3"
+    ],
+    "narrative": {
+      "brief": "Chain of zero-day exploits traverses from internet-facing service to training cluster. No air gap, no TEE, no verified boot — full compromise.",
+      "detailed": "Attacker chains multiple zero-day vulnerabilities: first compromising an internet-facing service (NET-01 absent), then escalating through the internal network to training hosts (HW-09 absent = no verified boot = persistent implant), and finally accessing weight data in memory (HW-07 absent = no confidential computing boundary). Complete exfiltration within hours."
+    },
+    "steps": [
+      {
+        "phase": "Initial access",
+        "description": "A zero-day in the internet-facing inference gateway grants entry — possible only because the cluster is not air-gapped.",
+        "vector_ids": [
+          "V-CODE-3"
+        ],
+        "block_gap_used": "NET-01"
+      },
+      {
+        "phase": "Persistence",
+        "description": "A second zero-day plants an implant on training hosts; with no verified boot, it survives undetected across restarts.",
+        "vector_ids": [
+          "V-CODE-3",
+          "V-CRED-4"
+        ],
+        "block_gap_used": "HW-09"
+      },
+      {
+        "phase": "Capture",
+        "description": "A GPU-driver bug on a weight-holding host reads weights straight out of accelerator memory.",
+        "vector_ids": [
+          "V-ML-1"
+        ],
+        "block_gap_used": "SRV-01"
+      },
+      {
+        "phase": "Exfiltration",
+        "description": "Weights leave over the same external connection within hours; nothing caps outbound bandwidth.",
+        "vector_ids": [
+          "V-X-3"
+        ],
+        "block_gap_used": "NET-04"
+      }
+    ],
+    "stopper_details": [
+      {
+        "block_id": "NET-01",
+        "how_it_stops": "Air gap removes the external attack surface — no gateway to exploit, no path out."
+      },
+      {
+        "block_id": "HW-07",
+        "how_it_stops": "Confidential computing: the GPU blocks host and DMA access to its protected memory (access control on on-package HBM, not encryption), and attestation proves that mode before weights load — a compromised host OS can't read them out. It is not a defense against physical access."
+      },
+      {
+        "block_id": "HW-09",
+        "how_it_stops": "Measured boot detects the implant against known-good measurements on every restart."
+      },
+      {
+        "block_id": "SRV-01",
+        "how_it_stops": "A hardened weight-access interface: no general-purpose driver path on hosts that hold weights."
+      },
+      {
+        "block_id": "NET-04",
+        "how_it_stops": "A physical bandwidth cap makes a terabyte transfer take months, not hours."
+      }
+    ],
+    "fit_note": "Good fit. The internet-facing gateway exists because the model is served; RAND exempts production serving from full isolation, so NET-01 removes it only if serving is split from training."
+  },
+  {
+    "id": "long-game",
+    "name": "The Long Game",
+    "approach": "insider",
+    "adversary_profile": {
+      "min_oc": 4,
+      "typical_oc": 4
+    },
+    "vectors": [
+      "V-HUM-1",
+      "V-X-1",
+      "V-BYP-2",
+      "V-X-4"
+    ],
+    "narrative": {
+      "brief": "Multi-year recruitment of a trusted employee. Passes basic vetting, avoids behavioral detection, copies weights alone and carries them out.",
+      "detailed": "An intelligence agency identifies and recruits a researcher or engineer at the AI lab over 12-24 months. Without rigorous vetting (PER-04), the agent passes hiring. Without continuous behavioral monitoring (PER-03), their gradual data access escalation goes unnoticed. Without dual authorization (PER-06) one person can copy a checkpoint alone, and without exit screening (PHY-08) the copy walks out on a personal drive."
+    },
+    "steps": [
+      {
+        "phase": "Recruitment",
+        "description": "An agency develops a senior researcher through an academic front over 18 months; standard employment checks never surface the foreign ties.",
+        "vector_ids": [
+          "V-HUM-1"
+        ],
+        "block_gap_used": "PER-04"
+      },
+      {
+        "phase": "Access",
+        "description": "The researcher returns from sabbatical with weight access unchanged; escalating access patterns and new foreign contacts go unflagged.",
+        "vector_ids": [
+          "V-HUM-1"
+        ],
+        "block_gap_used": "PER-03"
+      },
+      {
+        "phase": "Extraction",
+        "description": "Using legitimate access, they copy model checkpoints during normal workflow - nothing is hacked, and nobody else has to approve it.",
+        "vector_ids": [
+          "V-X-1",
+          "V-BYP-2"
+        ],
+        "block_gap_used": "PER-06"
+      },
+      {
+        "phase": "Delivery",
+        "description": "They carry the copy out on a personal drive and resign; nothing screens what leaves the building.",
+        "vector_ids": [
+          "V-X-4"
+        ],
+        "block_gap_used": "PHY-08"
+      }
+    ],
+    "stopper_details": [
+      {
+        "block_id": "PER-04",
+        "how_it_stops": "SF-86-grade vetting surfaces foreign contacts and financial pressure before hiring or rescreening."
+      },
+      {
+        "block_id": "PER-03",
+        "how_it_stops": "Continuous behavioral monitoring flags changed access patterns and new foreign contacts."
+      },
+      {
+        "block_id": "PER-06",
+        "how_it_stops": "Dual authorization for weight access: no single person can copy a checkpoint alone."
+      },
+      {
+        "block_id": "PHY-08",
+        "how_it_stops": "No unapproved devices or ports, and exit screening: the drive never leaves."
+      }
+    ],
+    "fit_note": "Blends recruiting a current employee (V-HUM-1) with passing hiring vetting (V-HUM-3). PER-05 acts after the weights have left; PER-06, KEY-01 and CUS-01 at the reach stage are the stoppers."
+  },
+  {
+    "id": "remote-ghost",
+    "name": "The Remote Ghost",
+    "approach": "remote",
+    "adversary_profile": {
+      "min_oc": 3,
+      "typical_oc": 4
+    },
+    "vectors": [
+      "V-BYP-3",
+      "V-CODE-2",
+      "V-CRED-4"
+    ],
+    "narrative": {
+      "brief": "Remote access via BMC/management plane. No air gap means reachable; no TEE means nothing walls GPU memory off from the host; remote maintenance means always-on attack surface.",
+      "detailed": "Attacker exploits a vulnerability in baseboard management controllers (BMCs) or out-of-band management interfaces — which are reachable because there's no air gap (NET-01). Through the BMC, they gain hardware-level access to GPU memory, which nothing walls off from the host (HW-07 absent). The attack surface exists because remote maintenance is allowed (PER-08 absent) — management interfaces are always listening."
+    },
+    "steps": [
+      {
+        "phase": "Reachability",
+        "description": "Server management controllers (BMCs) sit on a VLAN reachable from outside — the cluster is not air-gapped.",
+        "vector_ids": [
+          "V-BYP-3"
+        ],
+        "block_gap_used": "NET-01"
+      },
+      {
+        "phase": "Entry",
+        "description": "Remote maintenance is allowed, so the BMC is always listening; a firmware vulnerability grants DMA access to host memory.",
+        "vector_ids": [
+          "V-CODE-2"
+        ],
+        "block_gap_used": "PER-08"
+      },
+      {
+        "phase": "Capture",
+        "description": "Via DMA, the attacker reads model weights straight out of GPU memory, which nothing fences off from the host — no trace in host OS logs.",
+        "vector_ids": [
+          "V-CRED-4"
+        ],
+        "block_gap_used": "HW-07"
+      }
+    ],
+    "stopper_details": [
+      {
+        "block_id": "NET-01",
+        "how_it_stops": "Air gap: the management VLAN is unreachable from any external network."
+      },
+      {
+        "block_id": "HW-07",
+        "how_it_stops": "Confidential computing: the GPU refuses DMA and host reads of its protected memory, the CPU TEE encrypts the VM's own memory, and attestation proves both are on before weights load — the BMC's DMA path gets nothing usable."
+      },
+      {
+        "block_id": "PER-08",
+        "how_it_stops": "No remote maintenance: BMC network interfaces are physically disabled or removed."
+      }
+    ],
+    "fit_note": "Good fit (RAND also files AMT-style management firmware under V-SUP-1). HW-07 is overstated: a BMC can reflash firmware and control power, so PER-08 and HW-09 are the robust stoppers."
+  },
+  {
+    "id": "patient-distillation",
+    "name": "The Patient Distillation",
+    "approach": "capability_copy",
+    "adversary_profile": {
+      "min_oc": 2,
+      "typical_oc": 3
+    },
+    "vectors": [
+      "V-ML-5"
+    ],
+    "narrative": {
+      "brief": "Systematic API extraction over months/years. No single query is suspicious; cumulative extraction eventually captures most model capability.",
+      "detailed": "An adversary (potentially a state actor using distributed accounts) queries the model's API millions of times with inputs optimised to maximise information per query. Without outbound inference defense (AI-07) nothing perturbs or detects the campaign. Over 2-4 years they accumulate enough query-response pairs to distill a model capturing much of the original's capability. This copies capability, not weights, so it sits on its own meter."
+    },
+    "steps": [
+      {
+        "phase": "Setup",
+        "description": "Hundreds of distributed accounts (or compromised high-volume customers) query the externally served model — no hacking required.",
+        "vector_ids": [
+          "V-ML-5"
+        ]
+      },
+      {
+        "phase": "Extraction",
+        "description": "Optimized prompts maximize information per query; with no outbound inference defense, nothing perturbs or rate-limits the responses.",
+        "vector_ids": [
+          "V-ML-5"
+        ],
+        "block_gap_used": "AI-07"
+      },
+      {
+        "phase": "Accumulation",
+        "description": "Billions of query-response pairs flow out over months; each looks like ordinary heavy use.",
+        "vector_ids": [
+          "V-ML-5"
+        ]
+      },
+      {
+        "phase": "Distillation",
+        "description": "The accumulated pairs train a distilled model capturing most of the original's capability.",
+        "vector_ids": []
+      }
+    ],
+    "stopper_details": [
+      {
+        "block_id": "AI-07",
+        "how_it_stops": "Outbound inference defense — rate limiting, output perturbation, pattern detection — collapses the extraction rate."
+      }
+    ],
+    "fit_note": "Now on its own capability meter. RAND scores V-ML-5 at 1 for OC2, the chain's min_oc. NET-04 is a misfit (distillation needs gigabytes); NET-01 here is a serving decision, not a control.",
+    "requires_external_serving": true
+  }
+]

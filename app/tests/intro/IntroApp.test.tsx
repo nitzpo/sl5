@@ -298,7 +298,7 @@ describe("the demos respond", () => {
   it("deploying a later-step defense still lets the earlier steps succeed", () => {
     window.history.replaceState(null, "", "/sl5/intro/#attack-paths");
     render(<IntroApp />);
-    fireEvent.click(screen.getByText(`✗ PER-05 ${DEMO_BLOCKS["PER-05"].shortLabel}`));
+    fireEvent.click(screen.getByText(`✗ PHY-08 ${DEMO_BLOCKS["PHY-08"].shortLabel}`));
     expect(screen.getByText("■ Chain blocked")).toBeTruthy();
     expect(screen.getByText(LONG_GAME.steps[3].howItStops!)).toBeTruthy();
   });

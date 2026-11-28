@@ -8,8 +8,8 @@
 // prerequisites, then category scores and breach), and the price is the same
 // `blockCostBasis` the app's budget line charges.
 
-import { blockCostBasis, isHeldAtResidualFloor, scorePosture } from "../engine";
-import type { AttackChain, Block, BlockState, Category, Sliders } from "../engine/types";
+import { blockCostBasis, isHeldAtResidualFloor, scenarioAsChain, scorePosture } from "../engine";
+import type { AttackChain, Block, BlockState, Category, Sliders, ThreatModel } from "../engine/types";
 
 /** A deliberately tight year. The app's own default is $200M; $150M is enough
  * to buy several controls but nowhere near the whole shortlist, so the budget
@@ -20,20 +20,25 @@ export const YEAR = 2026;
 export const ADVERSARY_OC = 4;
 
 /** The ten blocks you choose from. Picked to make the trade-offs land, under
- * four constraints the tests enforce:
+ * constraints the tests enforce:
  *
  *  - All six categories and all three defense types, so no lesson is missing.
- *  - Costs $243.5M against a $150M budget, so the budget genuinely binds and
+ *  - Costs ~$266M against a $150M budget, so the budget genuinely binds and
  *    "the air gap, or eight cheap controls" is a real decision.
  *  - No block requires anything off this list, so every cap the reader hits is
- *    one they can actually fix. `PER-04` requires `PER-01`, which is here on
- *    purpose: buy vetting with no sensitivity framework underneath it and the
- *    real dependency rule caps it.
- *  - Between them they stop chains: `AI-07` and `NET-01` are stoppers on the
- *    chain that drives the headline number, so the breach percentage does move.
+ *    one they can actually fix. `PER-04` and `PER-06` require `PER-01`, which is
+ *    here on purpose: buy vetting with no sensitivity framework underneath it
+ *    and the real dependency rule caps it.
+ *  - Some single block moves the headline number (campaign success against
+ *    OC4): the air gap does, by closing remote entry and bulk egress.
  *  - At least one `completed_by` companion is buyable here, so the "your air gap
  *    is 55% of an air gap" lesson comes with a move the reader can make: `PER-08`
  *    is a NET-01 companion at $10M, taking it to 70% inside the budget.
+ *
+ * Phase 2 swapped two blocks merged out of the catalogue: PER-05 (folded into
+ * PER-03) became PER-06, and SC-05 (folded into SC-08, which requires PHY-07)
+ * became SW-01. The game's copy still describes the chain-era "worst route"
+ * headline; Phase 2B rewrites it for the campaign.
  *
  * `completed_by` companions are otherwise allowed off the list, unlike `requires`.
  * The two relations differ exactly here: an unmeetable `requires` is a cap the
@@ -53,10 +58,10 @@ export const SHORTLIST = [
   "PHY-03", // Mantraps — cheap probabilistic
   "PER-01", // Sensitivity levels framework — the prerequisite
   "PER-04", // SF-86-equivalent vetting — requires PER-01
-  "PER-05", // Post-employment restrictions — cheap probabilistic
+  "PER-06", // Dual authorization — cheap probabilistic, requires PER-01
   "PER-08", // No remote access — cheap hard stop
   "SC-04", // Sub-tier flow-down of security requirements — probabilistic
-  "SC-05", // Counterfeit detection — cheap probabilistic
+  "SW-01", // ML software supply-chain integrity — cheap hybrid
 ] as const;
 
 /** World sliders held at the app's own defaults. The game is about the budget
@@ -68,6 +73,8 @@ export const SLIDERS: Sliders = {
   budget_millions: BUDGET_MILLIONS,
   org_transformation: 0.5,
   risk_tolerance: 0.5,
+  sl_bar: 0.2,
+  ai_propensity: 0.5,
 };
 
 export const BLOCK_FILES = [
@@ -79,9 +86,18 @@ export const BLOCK_FILES = [
   "blocks-ai-specific.json",
 ] as const;
 
+export const MODEL_FILES = ["vectors.json", "approaches.json", "scenarios.json"] as const;
+
 export interface GameData {
   blocks: Block[];
+  model: ThreatModel;
+  /** The scenarios in the chain shape the game's ranking renders. */
   chains: AttackChain[];
+}
+
+/** Assemble the game's data from the shipped JSON. */
+export function gameData(blocks: Block[], model: ThreatModel): GameData {
+  return { blocks, model, chains: model.scenarios.map(scenarioAsChain) };
 }
 
 /** What the game charges for a block: the same planning cost the app's budget
@@ -94,10 +110,11 @@ export interface PostureResult {
   /** Overall SL score, 0–5. */
   sl: number;
   categories: Record<Category, number>;
-  /** Chance at least one chain works, i.e. the app's headline number. */
+  /** Campaign success against the game's adversary tier — the app's headline
+   * number: the chance at least one approach works. */
   breach: number;
-  /** Every chain, most likely first — the Attacker perspective's ordering.
-   * `floor` is the chain's residual floor, and `held` is the Attacker view's
+  /** Every scenario, most likely first — the Attacker perspective's ordering.
+   * `floor` is the campaign's residual floor, and `held` is the Attacker view's
    * own test: within half a point of it, as low as defense can push it. */
   ranked: { chain: AttackChain; p: number; floor: number; held: boolean }[];
   /** Total planned spend, and what the budget couldn't pay for. */
@@ -131,7 +148,7 @@ export function evaluatePosture(data: GameData, chosen: string[]): PostureResult
 
   const score = scorePosture({
     blocks: data.blocks,
-    chains: data.chains,
+    model: data.model,
     blockStates: requested,
     advanceOrder: chosen,
     year: YEAR,
@@ -155,9 +172,8 @@ export function evaluatePosture(data: GameData, chosen: string[]): PostureResult
   return {
     sl: score.overallSl,
     categories: score.categoryScores,
-    // The app's headline breach number is the worst live chain, which after the
-    // sort is the first one.
-    breach: ranked[0]?.p ?? 0,
+    // The app's headline number: campaign success at the game's tier.
+    breach: score.campaign,
     ranked,
     spentMillions: score.spentMillions,
     budgetExceeded: score.budgetExceededIds,

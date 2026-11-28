@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import type { AttackChain, Block } from "../../src/engine/types";
+import type { Block, Scenario } from "../../src/engine/types";
 import {
   CATALOG,
   DEMO_BLOCKS,
@@ -36,9 +36,7 @@ function loadBlocks(): Block[] {
 }
 
 const blocks = loadBlocks();
-const chains: AttackChain[] = JSON.parse(
-  fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8")
-);
+const scenarios: Scenario[] = JSON.parse(fs.readFileSync(path.join(DATA, "scenarios.json"), "utf-8"));
 const worldState = JSON.parse(fs.readFileSync(path.join(DATA, "world-state.json"), "utf-8"));
 
 describe("intro OC tiers match world-state.json", () => {
@@ -141,7 +139,7 @@ describe("intro demo blocks match blocks-*.json", () => {
     // The demo's whole point is showing closed / closing / on-the-horizon side
     // by side at one year. If the data's deploy times shift, that spread can
     // collapse and the slide silently stops teaching the distinction.
-    const shown = ["HW-07", "NET-01", "PER-05"];
+    const shown = ["HW-07", "NET-01", "CUS-01"];
     const blockStates = Object.fromEntries(shown.map((id) => [id, "not_started"]));
     const urgencies = computeDecisionWindows(
       shown.map((id) => blocks.find((b) => b.id === id)!),
@@ -163,8 +161,8 @@ describe("intro demo blocks match blocks-*.json", () => {
   });
 });
 
-describe("intro chain walkthrough matches attack-chains.json", () => {
-  const source = chains.find((c) => c.id === LONG_GAME.id)!;
+describe("intro chain walkthrough matches scenarios.json", () => {
+  const source = scenarios.find((c) => c.id === LONG_GAME.id)!;
 
   it("the chain still exists at the same OC tier", () => {
     expect(source, `chain ${LONG_GAME.id} no longer exists`).toBeDefined();
@@ -173,7 +171,7 @@ describe("intro chain walkthrough matches attack-chains.json", () => {
   });
 
   it("the steps, their gaps and their stopper text are unchanged", () => {
-    const sourceSteps = source.narrative.steps ?? [];
+    const sourceSteps = source.steps;
     expect(LONG_GAME.steps).toHaveLength(sourceSteps.length);
     LONG_GAME.steps.forEach((step, i) => {
       expect(step.phase).toBe(sourceSteps[i].phase);
@@ -196,10 +194,11 @@ describe("intro chain walkthrough matches attack-chains.json", () => {
 });
 
 describe("intro catalogue counts match the shipped data", () => {
-  it("block, category and chain counts", () => {
-    expect(CATALOG.blocks).toBe(blocks.length);
-    expect(CATALOG.categories).toBe(new Set(blocks.map((b) => b.category)).size);
-    expect(CATALOG.chains).toBe(chains.length);
+  it("block, category and scenario counts (today's catalogue, future blocks excluded)", () => {
+    const today = blocks.filter((b) => !b.future);
+    expect(CATALOG.blocks).toBe(today.length);
+    expect(CATALOG.categories).toBe(new Set(today.map((b) => b.category)).size);
+    expect(CATALOG.chains).toBe(scenarios.length);
   });
 });
 

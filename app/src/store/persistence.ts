@@ -1,4 +1,6 @@
 import type { BlockState, Perspective, Sliders } from "../engine/types";
+import { migrateBlockOrder, migrateBlockStates } from "../engine/catalogue";
+import { DEFAULT_AI_PROPENSITY, DEFAULT_SL_BAR } from "../engine/threat-sl";
 
 const STORAGE_KEY = "sl5-state";
 const SCENARIOS_KEY = "sl5-scenarios";
@@ -13,6 +15,27 @@ export interface PersistedState {
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
+  /** World toggle for the FUT-xx blocks. Absent in pre-Phase-2 saves (off). */
+  futureCapabilities?: boolean;
+}
+
+/**
+ * Bring a saved posture or share link from an older catalogue up to date:
+ * merged-away block ids (PER-05, SC-02, ...) map onto the blocks that
+ * absorbed them, sliders added since get their defaults, and the future toggle
+ * defaults off. Idempotent, so it is safe on every load path.
+ */
+export function migratePersistedState(state: PersistedState): PersistedState {
+  const sliders = { ...(state.sliders ?? {}) } as Partial<Sliders>;
+  if (typeof sliders.sl_bar !== "number") sliders.sl_bar = DEFAULT_SL_BAR;
+  if (typeof sliders.ai_propensity !== "number") sliders.ai_propensity = DEFAULT_AI_PROPENSITY;
+  return {
+    ...state,
+    blockStates: migrateBlockStates(state.blockStates ?? {}),
+    ...(state.advanceOrder ? { advanceOrder: migrateBlockOrder(state.advanceOrder) } : {}),
+    sliders: sliders as Sliders,
+    futureCapabilities: state.futureCapabilities ?? false,
+  };
 }
 
 export interface SavedScenario {
@@ -25,7 +48,7 @@ export function loadScenarios(): SavedScenario[] {
   try {
     const raw = localStorage.getItem(SCENARIOS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as SavedScenario[];
+    return (JSON.parse(raw) as SavedScenario[]).map((sc) => ({ ...sc, state: migratePersistedState(sc.state) }));
   } catch {
     return [];
   }
@@ -51,7 +74,7 @@ export function loadFromLocalStorage(): PersistedState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as PersistedState;
+    return migratePersistedState(JSON.parse(raw) as PersistedState);
   } catch {
     return null;
   }
@@ -86,9 +109,9 @@ export interface ParsedHashState {
 function parseHashPayload(json: string): ParsedHashState | null {
   const parsed = JSON.parse(json);
   if (parsed && typeof parsed === "object" && "s" in parsed) {
-    return { state: parsed.s as PersistedState, name: parsed.n };
+    return { state: migratePersistedState(parsed.s as PersistedState), name: parsed.n };
   }
-  return { state: parsed as PersistedState };
+  return { state: migratePersistedState(parsed as PersistedState) };
 }
 
 // Capture hash at module load time (before React StrictMode double-mounts)

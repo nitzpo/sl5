@@ -1,0 +1,58 @@
+name: Claude Code Review
+
+# Automated PR review via anthropics/claude-code-action on Amazon Bedrock,
+# running Anthropic's code-review plugin: multi-agent review that posts only
+# high-confidence findings as inline comments, and skips drafts, trivial
+# changes and PRs it already reviewed (later pushes cost only a quick check).
+#
+# Requires:
+#   secrets.AWS_BEARER_TOKEN_BEDROCK  Bedrock API key
+#   vars.AWS_REGION                   optional, default us-east-1
+#   vars.CLAUDE_REVIEW_MODEL          optional, Bedrock model/inference-profile id
+#   Claude GitHub App installed on the repo (action exchanges the OIDC token
+#   for an app token). The exchange refuses a workflow that differs from the
+#   default branch's copy, so on the PR adding/editing this file the action
+#   skips with a warning; it runs once merged.
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Fork PRs get no secrets, so skip them too.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          use_bedrock: "true"
+          # The test/probe classifier calls the direct API; without
+          # anthropic_api_key it only buffers comments to the end of the run
+          # (lost if cancelled). Post them as written instead.
+          classify_inline_comments: "false"
+          plugin_marketplaces: "https://github.com/anthropics/claude-plugins-official.git"
+          plugins: "code-review@claude-plugins-official"
+          prompt: "/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          claude_args: |
+            --model ${{ vars.CLAUDE_REVIEW_MODEL || 'us.anthropic.claude-opus-5-5' }}
+            --allowedTools "mcp__github_inline_comment__create_inline_comment"

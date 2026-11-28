@@ -1,16 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type {
-  Block,
-  BlockState,
-  Perspective,
-  Sliders,
-  AttackChain,
-  OcDefinition,
-  ThreatModel,
-} from "../engine/types";
+import type { Block, BlockState, Sliders, OcDefinition, ThreatModel } from "../engine/types";
 import { baselineStates, isAtOrBelowBaseline } from "../engine/baseline";
-import { scenarioAsChain } from "../engine/catalogue";
 import { DEFAULT_AI_PROPENSITY, DEFAULT_SL_BAR } from "../engine/threat-sl";
 import { TIMELINE_REFERENCE } from "../utils/timeline";
 import {
@@ -30,9 +21,6 @@ interface SimulationStore {
   blocks: Block[];
   /** Vectors, approaches and scenarios: everything the engine scores. */
   threatModel: ThreatModel;
-  /** COMPATIBILITY (Phase 2B removes): the scenarios in the old chain shape,
-   * for the views that still read chains. */
-  attackChains: AttackChain[];
   ocDefinitions: OcDefinition[];
   dataLoaded: boolean;
 
@@ -42,13 +30,11 @@ interface SimulationStore {
    * engine funds in this order so a newly-activated block can only cap itself. */
   advanceOrder: string[];
   year: number;
-  perspective: Perspective;
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
   /** World toggle: count the FUT-xx future-capability blocks (default off). */
   futureCapabilities: boolean;
-  selectedChainId: string | null;
   viewingShared: boolean;
   playbackActive: boolean;
   scenarioName: string | null;
@@ -56,16 +42,17 @@ interface SimulationStore {
   // Actions
   loadData: (blocks: Block[], model: ThreatModel, ocDefinitions?: OcDefinition[]) => void;
   setBlockState: (blockId: string, state: BlockState) => void;
-  cycleBlockState: (blockId: string) => void;
+  /** Step a block one state forward or back, stopping at mature and not started. */
+  stepBlockState: (blockId: string, direction: 1 | -1) => void;
   setYear: (year: number) => void;
-  setPerspective: (perspective: Perspective) => void;
   setAdversaryOc: (oc: number) => void;
   setSlider: (key: keyof Sliders, value: number) => void;
   setModelServed: (served: boolean) => void;
   setFutureCapabilities: (on: boolean) => void;
   setPlaybackActive: (active: boolean) => void;
-  setSelectedChain: (chainId: string | null) => void;
-  copyShareUrl: () => void;
+  /** Replace the posture and world with a saved or shared one. */
+  applyPersisted: (state: PersistedState, extra?: Partial<Pick<SimulationStore, "scenarioName" | "viewingShared">>) => void;
+  copyShareUrl: () => string;
   saveShared: () => void;
   restoreMine: () => void;
   resetToBaseline: () => void;
@@ -74,13 +61,7 @@ interface SimulationStore {
   deleteScenario: (index: number) => void;
 }
 
-const STATE_CYCLE: BlockState[] = [
-  "not_started",
-  "investing",
-  "implementing",
-  "deployed",
-  "mature",
-];
+export const STATE_CYCLE: BlockState[] = ["not_started", "investing", "implementing", "deployed", "mature"];
 
 export const DEFAULT_SLIDERS: Sliders = {
   ai_timeline: 0.5,
@@ -122,91 +103,78 @@ function orderWith(
 }
 
 /** Fallback for persisted states that predate advanceOrder. */
-function deriveOrder(blockStates: Record<string, BlockState>): string[] {
+export function deriveOrder(blockStates: Record<string, BlockState>): string[] {
   return Object.keys(blockStates).filter((id) => blockStates[id] !== "not_started");
 }
 
-/**
- * The starting posture. Previously this coerced anything outside `STATE_CYCLE`
- * to `not_started`, which threw away the researched baseline on more than half
- * the catalogue and opened every session on a bare field. See
- * `engine/baseline.ts` for why `partially_deployed` maps onto `implementing`
- * rather than becoming a state of its own.
- */
-const baselineStatesFor = baselineStates;
+type Snapshot = Pick<
+  SimulationStore,
+  "blockStates" | "advanceOrder" | "year" | "adversaryOc" | "sliders" | "modelServedExternally" | "futureCapabilities"
+>;
+
+/** What a save, a share link or a named posture records. Whole years: the
+ * store carries a monthly year so playback can move smoothly, but "2027" is
+ * what someone means when they share a posture — nobody means March. */
+function persistedOf(s: Snapshot): PersistedState {
+  return {
+    blockStates: s.blockStates,
+    advanceOrder: s.advanceOrder,
+    year: Math.round(s.year),
+    adversaryOc: s.adversaryOc,
+    sliders: s.sliders,
+    modelServedExternally: s.modelServedExternally,
+    futureCapabilities: s.futureCapabilities,
+  };
+}
+
+function snapshotFrom(state: PersistedState): Snapshot {
+  return {
+    blockStates: state.blockStates,
+    advanceOrder: state.advanceOrder ?? deriveOrder(state.blockStates),
+    year: state.year,
+    adversaryOc: state.adversaryOc,
+    sliders: state.sliders,
+    modelServedExternally: state.modelServedExternally,
+    futureCapabilities: state.futureCapabilities ?? false,
+  };
+}
 
 export const useSimulationStore = create<SimulationStore>()(subscribeWithSelector((set, get) => ({
   blocks: [],
   threatModel: EMPTY_MODEL,
-  attackChains: [],
   ocDefinitions: [],
   dataLoaded: false,
   blockStates: {},
   advanceOrder: [],
   year: TIMELINE_REFERENCE,
-  perspective: "ciso",
   adversaryOc: 4,
   sliders: DEFAULT_SLIDERS,
   modelServedExternally: true,
   futureCapabilities: false,
-  selectedChainId: null,
   viewingShared: false,
   playbackActive: false,
   scenarioName: null,
 
   loadData: (blocks, model, ocDefinitions = []) => {
     if (get().dataLoaded) return;
+    set({ ocDefinitions, threatModel: model, blocks });
 
-    const baselineStates = baselineStatesFor(blocks);
-    const chains = model.scenarios.map(scenarioAsChain);
-    set({ ocDefinitions, threatModel: model });
-
-    // Restore: URL hash takes priority (shared link), then localStorage
+    // Restore: URL hash takes priority (shared link), then localStorage.
     const fromUrl = loadFromUrlHash();
     if (fromUrl) {
       clearUrlHash();
-      set({
-        blocks,
-        attackChains: chains,
-        blockStates: fromUrl.state.blockStates,
-        advanceOrder: fromUrl.state.advanceOrder ?? deriveOrder(fromUrl.state.blockStates),
-        year: fromUrl.state.year,
-        perspective: fromUrl.state.perspective,
-        adversaryOc: fromUrl.state.adversaryOc,
-        sliders: fromUrl.state.sliders,
-        modelServedExternally: fromUrl.state.modelServedExternally,
-        futureCapabilities: fromUrl.state.futureCapabilities ?? false,
-        scenarioName: fromUrl.name ?? null,
-        viewingShared: true,
-        dataLoaded: true,
-      });
+      set({ ...snapshotFrom(fromUrl.state), scenarioName: fromUrl.name ?? null, viewingShared: true, dataLoaded: true });
       return;
     }
-
     const fromStorage = loadFromLocalStorage();
     if (fromStorage) {
-      set({
-        blocks,
-        attackChains: chains,
-        blockStates: fromStorage.blockStates,
-        advanceOrder: fromStorage.advanceOrder ?? deriveOrder(fromStorage.blockStates),
-        year: fromStorage.year,
-        perspective: fromStorage.perspective,
-        adversaryOc: fromStorage.adversaryOc,
-        sliders: fromStorage.sliders,
-        modelServedExternally: fromStorage.modelServedExternally,
-        futureCapabilities: fromStorage.futureCapabilities ?? false,
-        dataLoaded: true,
-      });
-    } else {
-      set({
-        blocks,
-        attackChains: chains,
-        blockStates: baselineStates,
-        advanceOrder: deriveOrder(baselineStates),
-        dataLoaded: true,
-      });
+      set({ ...snapshotFrom(fromStorage), dataLoaded: true });
+      return;
     }
+    // The starting posture: each block's researched baseline (see
+    // `engine/baseline.ts`), not a bare field.
+    const states = baselineStates(blocks);
+    set({ blockStates: states, advanceOrder: deriveOrder(states), dataLoaded: true });
   },
 
   setBlockState: (blockId, state) => {
@@ -223,70 +191,34 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     }));
   },
 
-  cycleBlockState: (blockId) => {
+  stepBlockState: (blockId, direction) => {
     const current = get().blockStates[blockId] ?? "not_started";
     const idx = STATE_CYCLE.indexOf(current);
-    const next = STATE_CYCLE[(idx + 1) % STATE_CYCLE.length];
-    set((s) => ({
-      blockStates: { ...s.blockStates, [blockId]: next },
-      advanceOrder: orderWith(
-        s.advanceOrder,
-        s.blocks.find((b) => b.id === blockId),
-        blockId,
-        current,
-        next
-      ),
-      scenarioName: null,
-    }));
+    // Clamped at both ends: a click on a mature block does nothing rather than
+    // wrapping it back to not started, which would read as an accident.
+    const next = STATE_CYCLE[Math.min(STATE_CYCLE.length - 1, Math.max(0, idx + direction))];
+    if (next !== current) get().setBlockState(blockId, next);
   },
 
   setYear: (year) => set({ year, scenarioName: null }),
-  setPerspective: (perspective) => set({ perspective }),
   setAdversaryOc: (oc) => set({ adversaryOc: oc, scenarioName: null }),
-
-  setSlider: (key, value) => {
-    set((s) => ({ sliders: { ...s.sliders, [key]: value }, scenarioName: null }));
-  },
-
+  setSlider: (key, value) => set((s) => ({ sliders: { ...s.sliders, [key]: value }, scenarioName: null })),
   setModelServed: (served) => set({ modelServedExternally: served, scenarioName: null }),
   setFutureCapabilities: (on) => set({ futureCapabilities: on, scenarioName: null }),
   setPlaybackActive: (active) => set({ playbackActive: active }),
-  setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
+
+  applyPersisted: (state, extra = {}) => set({ ...snapshotFrom(state), ...extra }),
 
   copyShareUrl: () => {
     const s = get();
-    const persisted: PersistedState = {
-      blockStates: s.blockStates,
-      advanceOrder: s.advanceOrder,
-      // Whole years in shared and saved payloads. The store carries a monthly
-      // year so playback can move smoothly, but "2027" is what someone means
-      // when they share a posture — nobody means March.
-      year: Math.round(s.year),
-      perspective: s.perspective,
-      adversaryOc: s.adversaryOc,
-      sliders: s.sliders,
-      modelServedExternally: s.modelServedExternally,
-      futureCapabilities: s.futureCapabilities,
-    };
-    const url = stateToShareUrl(persisted, s.scenarioName ?? undefined);
-    navigator.clipboard.writeText(url);
+    const url = stateToShareUrl(persistedOf(s), s.scenarioName ?? undefined);
+    navigator.clipboard?.writeText(url).catch(() => {});
+    return url;
   },
 
   saveShared: () => {
     const s = get();
-    const persisted: PersistedState = {
-      blockStates: s.blockStates,
-      advanceOrder: s.advanceOrder,
-      // Whole years, as in copyShareUrl and saveScenario. This one writes both
-      // localStorage and the named-scenario list, and it is clickable mid-story,
-      // so it is the writer most likely to catch a fractional year.
-      year: Math.round(s.year),
-      perspective: s.perspective,
-      adversaryOc: s.adversaryOc,
-      sliders: s.sliders,
-      modelServedExternally: s.modelServedExternally,
-      futureCapabilities: s.futureCapabilities,
-    };
+    const persisted = persistedOf(s);
     saveToLocalStorage(persisted);
     if (s.scenarioName) {
       const scenarios = loadScenarios();
@@ -297,84 +229,41 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 
   restoreMine: () => {
-    // Restore from localStorage (user's own saved state)
     const saved = loadFromLocalStorage();
-    if (saved) {
-      set({
-        blockStates: saved.blockStates,
-        advanceOrder: saved.advanceOrder ?? deriveOrder(saved.blockStates),
-        year: saved.year,
-        perspective: saved.perspective,
-        adversaryOc: saved.adversaryOc,
-        sliders: saved.sliders,
-        modelServedExternally: saved.modelServedExternally,
-        futureCapabilities: saved.futureCapabilities ?? false,
-        viewingShared: false,
-      });
-    } else {
-      get().resetToBaseline();
-    }
+    if (saved) set({ ...snapshotFrom(saved), viewingShared: false });
+    else get().resetToBaseline();
   },
 
   resetToBaseline: () => {
-    const { blocks } = get();
-    const baselineStates = baselineStatesFor(blocks);
+    const states = baselineStates(get().blocks);
     clearLocalStorage();
     set({
-      blockStates: baselineStates,
-      advanceOrder: deriveOrder(baselineStates),
+      blockStates: states,
+      advanceOrder: deriveOrder(states),
       year: TIMELINE_REFERENCE,
       sliders: DEFAULT_SLIDERS,
       adversaryOc: 4,
       modelServedExternally: true,
       futureCapabilities: false,
       scenarioName: null,
+      viewingShared: false,
     });
   },
 
   saveScenario: (name) => {
-    const s = get();
     const scenarios = loadScenarios();
-    const entry = {
-      name,
-      savedAt: Date.now(),
-      state: {
-        blockStates: s.blockStates,
-        advanceOrder: s.advanceOrder,
-        year: Math.round(s.year),
-        perspective: s.perspective,
-        adversaryOc: s.adversaryOc,
-        sliders: s.sliders,
-        modelServedExternally: s.modelServedExternally,
-        futureCapabilities: s.futureCapabilities,
-      },
-    };
+    const entry = { name, savedAt: Date.now(), state: persistedOf(get()) };
     const existing = scenarios.findIndex((sc) => sc.name === name);
-    if (existing >= 0) {
-      scenarios[existing] = entry;
-    } else {
-      scenarios.push(entry);
-    }
+    if (existing >= 0) scenarios[existing] = entry;
+    else scenarios.push(entry);
     saveScenarios(scenarios);
     set({ scenarioName: name });
   },
 
   loadScenario: (index) => {
-    const scenarios = loadScenarios();
-    const scenario = scenarios[index];
+    const scenario = loadScenarios()[index];
     if (!scenario) return;
-    set({
-      blockStates: scenario.state.blockStates,
-      advanceOrder: scenario.state.advanceOrder ?? deriveOrder(scenario.state.blockStates),
-      year: scenario.state.year,
-      perspective: scenario.state.perspective,
-      adversaryOc: scenario.state.adversaryOc,
-      sliders: scenario.state.sliders,
-      modelServedExternally: scenario.state.modelServedExternally,
-      futureCapabilities: scenario.state.futureCapabilities ?? false,
-      scenarioName: scenario.name,
-      viewingShared: false,
-    });
+    set({ ...snapshotFrom(scenario.state), scenarioName: scenario.name, viewingShared: false });
   },
 
   deleteScenario: (index) => {
@@ -386,21 +275,10 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
 
 // Auto-save to localStorage on state changes (skip when viewing shared or during playback)
 useSimulationStore.subscribe(
-  (s) => ({
-    blockStates: s.blockStates,
-    advanceOrder: s.advanceOrder,
-    year: s.year,
-    perspective: s.perspective,
-    adversaryOc: s.adversaryOc,
-    sliders: s.sliders,
-    modelServedExternally: s.modelServedExternally,
-    futureCapabilities: s.futureCapabilities,
-  }),
+  (s) => persistedOf(s),
   (persisted) => {
     const { dataLoaded, viewingShared, playbackActive } = useSimulationStore.getState();
-    if (dataLoaded && !viewingShared && !playbackActive) {
-      saveToLocalStorage(persisted);
-    }
+    if (dataLoaded && !viewingShared && !playbackActive) saveToLocalStorage(persisted);
   },
   { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
 );

@@ -9,7 +9,7 @@ import {
 import type { Block, BlockState } from "../engine/types";
 
 /**
- * The CISO view's "Priority investments", computed by running the real engine
+ * The rail's "Next defense to fund", computed by running the real engine
  * on each candidate move rather than by a heuristic.
  *
  * Each candidate is the current posture with one block advanced to `deployed`
@@ -39,7 +39,7 @@ export interface InvestmentCandidate {
   /** Upfront $M the move adds to the plan, at the budget's cost basis. Zero for
    * a block the program is already funding and only has to finish. */
   costMillions: number;
-  /** The same, per advanced block — so moves taken together count each block once. */
+  /** The same, per advanced block. */
   costs: { id: string; millions: number }[];
   /** Change in the threat-relative SL readout (level + progress). */
   slDelta: number;
@@ -170,7 +170,7 @@ export function recommendInvestments(
     const result = scorePosture({ ...input, blockStates: states, advanceOrder: candidateOrder });
 
     const pathReduction = baseObjective - objective(result, input.adversaryOc);
-    const slDelta = result.overallSl - baseline.overallSl;
+    const slDelta = result.sl.value - baseline.sl.value;
     const movesSomething = pathReduction > MIN_PATH_REDUCTION || slDelta > MIN_SL_DELTA;
 
     // A move the budget can't pay for is scored as nothing (the pipeline drops
@@ -222,14 +222,4 @@ export function recommendInvestments(
     unaffordableCount,
     remainingMillions,
   };
-}
-
-/** Upfront $M for a set of moves taken together, each block counted once — a
- * prerequisite shared by two bundles is only bought once. */
-export function combinedCostMillions(candidates: InvestmentCandidate[]): number {
-  const byBlock = new Map<string, number>();
-  for (const c of candidates) for (const { id, millions } of c.costs) byBlock.set(id, millions);
-  let total = 0;
-  for (const millions of byBlock.values()) total += millions;
-  return total;
 }

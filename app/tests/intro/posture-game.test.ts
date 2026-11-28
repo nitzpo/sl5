@@ -1,381 +1,186 @@
-// The introduction's mini-game is the only place in the intro that runs the real
-// engine over the real shipped data. Two things can quietly break it:
+// The budget mini-game runs the real engine over the real shipped data. These
+// tests load that data off disk and drive `evaluatePosture` directly, to pin
+// the two things that make it a game rather than a readout:
 //
-//  1. A block id on its shortlist gets renamed or repriced, and the game silently
-//     offers nine blocks, or one that eats the whole budget in a single click.
-//  2. Someone "simplifies" the scoring and the numbers stop agreeing with the
-//     app's own Security Posture card, which is the game's entire claim.
-//
-// So these tests load blocks-*.json and the vector backbone off disk, exactly as
-// the browser fetches them, and drive `evaluatePosture` directly. (Phase 2: the
-// headline number is campaign success against the game's tier, and the SL is
-// the threat-relative level plus progress; the chain-shaped ranking is the
-// scenarios.)
+//  1. Choices matter: from today's typical lab, the right picks within the
+//     budget reach the next level and push OC3 to contested; most picks don't.
+//  2. Its numbers are the instrument's: `scorePosture`, nothing re-implemented.
 
 import { describe, it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
-import type { Block, ThreatModel } from "../../src/engine/types";
+import type { BlockState } from "../../src/engine/types";
+import { baselineStateFor, baselineStates } from "../../src/engine/baseline";
+import { scorePosture } from "../../src/engine/posture";
 import {
-  ADVERSARY_OC,
-  BLOCK_FILES,
   BUDGET_MILLIONS,
-  MODEL_FILES,
+  SERVED,
   SHORTLIST,
   SLIDERS,
   YEAR,
   costOf,
   evaluatePosture,
-  gameData,
+  startsPartlyInPlace,
 } from "../../src/intro/posture-game";
-import {
-  applyBudgetConstraint,
-  applyDependencyConstraint,
-  computeCategoryScores,
-  counterRelevance,
-  enablementFactor,
-  scorePosture,
-} from "../../src/engine";
-import { BLOCK_SHORT_LABELS } from "../../src/utils/geometry";
+import { loadThreatDataFromDisk } from "./load-data";
 
-const DATA = path.join(__dirname, "../../public/data");
-const read = (file: string) =>
-  JSON.parse(fs.readFileSync(path.join(DATA, file), "utf-8"));
+const data = loadThreatDataFromDisk();
+const byId = new Map(data.blocks.map((b) => [b.id, b]));
+const list = [...SHORTLIST] as string[];
+const cost = (id: string) => costOf(byId.get(id)!);
 
-const blocks: Block[] = BLOCK_FILES.flatMap((f) => read(f) as Block[]);
-const [vectors, approaches, scenarios] = MODEL_FILES.map(read);
-const model: ThreatModel = { vectors, approaches, scenarios };
-const data = gameData(blocks, model);
-const chains = data.chains;
-const byId = new Map(blocks.map((b) => [b.id, b]));
+/** Every subset of the shortlist the budget can pay for, scored. */
+const affordable = (() => {
+  const out: { ids: string[]; level: number; value: number; oc3: string }[] = [];
+  for (let m = 0; m < 1 << list.length; m++) {
+    const ids = list.filter((_, i) => m & (1 << i));
+    if (ids.reduce((s, id) => s + cost(id), 0) > BUDGET_MILLIONS) continue;
+    const r = evaluatePosture(data, ids);
+    out.push({ ids, level: r.score.sl.level, value: r.score.sl.value, oc3: r.score.tiers[2].band });
+  }
+  return out;
+})();
 
-describe("the mini-game's shortlist", () => {
-  it("names the files the app itself ships", () => {
-    // The component fetches exactly these; a renamed data file would 404 in the
-    // browser and show the game's error state instead of the game.
-    for (const file of [...BLOCK_FILES, ...MODEL_FILES]) {
-      expect(fs.existsSync(path.join(DATA, file)), `${file} missing`).toBe(true);
-    }
-    // Relational, not the current 47: adding a block to the catalogue is
-    // routine and shouldn't fail the intro suite.
-    expect(blocks.length).toBeGreaterThan(SHORTLIST.length);
-  });
-
-  it("is ten real blocks with short labels for the hexes", () => {
-    expect(SHORTLIST.length).toBe(10);
-    expect(new Set(SHORTLIST).size).toBe(10);
-    for (const id of SHORTLIST) {
+describe("the shortlist", () => {
+  it("is ten real, present-day blocks", () => {
+    expect(new Set(list).size).toBe(10);
+    for (const id of list) {
       expect(byId.get(id), `${id} is not in the shipped data`).toBeTruthy();
-      expect(BLOCK_SHORT_LABELS[id], `${id} has no short label`).toBeTruthy();
+      expect(byId.get(id)!.future, `${id} is a future capability`).toBeFalsy();
     }
   });
 
-  it("spans all three defense types, so the erosion lesson is reachable", () => {
-    const types = new Set(SHORTLIST.map((id) => byId.get(id)!.defense_type));
-    expect(types).toContain("hard_stop");
-    expect(types).toContain("probabilistic");
-    expect(types).toContain("hybrid");
+  it("spans all three defense types", () => {
+    expect(new Set(list.map((id) => byId.get(id)!.defense_type))).toEqual(
+      new Set(["hard_stop", "probabilistic", "hybrid"])
+    );
   });
 
-  it("covers all six categories, so no lesson is unreachable", () => {
-    expect(new Set(SHORTLIST.map((id) => byId.get(id)!.category)).size).toBe(6);
-  });
-
-  it("costs more than the budget, but every block is individually affordable", () => {
-    // If everything fit, the budget would teach nothing; if a block couldn't fit
-    // even picked first, clicking it would be a dead end the reader can't undo
-    // their way out of.
-    const total = SHORTLIST.reduce((sum, id) => sum + costOf(byId.get(id)!), 0);
+  it("costs well over the budget, and every block fits on its own", () => {
+    const total = list.reduce((s, id) => s + cost(id), 0);
     expect(total).toBeGreaterThan(BUDGET_MILLIONS * 1.5);
-    for (const id of SHORTLIST) {
-      expect(costOf(byId.get(id)!), `${id} can't fit even on its own`).toBeLessThanOrEqual(
-        BUDGET_MILLIONS
-      );
-    }
-    // And the cheapest is small enough that a first click isn't a commitment.
-    expect(Math.min(...SHORTLIST.map((id) => costOf(byId.get(id)!)))).toBeLessThan(
-      BUDGET_MILLIONS / 4
-    );
+    for (const id of list) expect(cost(id), `${id} can't fit even alone`).toBeLessThanOrEqual(BUDGET_MILLIONS);
+    expect(Math.min(...list.map(cost))).toBeLessThan(BUDGET_MILLIONS / 4);
   });
 
-  it("includes a block whose prerequisite is also on the shortlist", () => {
-    // The dependency cap is one of the two lessons the game exists to make
-    // physical, so at least one pair has to be buyable in the wrong order.
-    const pairs = SHORTLIST.filter((id) =>
-      (byId.get(id)!.dependencies?.requires ?? []).some((r) =>
-        (SHORTLIST as readonly string[]).includes(r)
-      )
-    );
-    expect(pairs.length).toBeGreaterThan(0);
-  });
-
-  it("requires nothing that isn't on the shortlist", () => {
-    // Otherwise a reader hits a sky-dotted cap with no way to clear it, which
-    // reads as a broken game rather than as a dependency.
-    for (const id of SHORTLIST) {
+  it("requires nothing that isn't on the list, and has at least two prerequisite pairs", () => {
+    let pairs = 0;
+    for (const id of list) {
       for (const req of byId.get(id)!.dependencies?.requires ?? []) {
-        expect(
-          SHORTLIST as readonly string[],
-          `${id} requires ${req}, which the reader can't buy`
-        ).toContain(req);
+        expect(list, `${id} requires ${req}, which the reader can't buy`).toContain(req);
+        pairs++;
       }
     }
+    expect(pairs).toBeGreaterThanOrEqual(2);
   });
 
-  it("offers a `completed_by` companion the reader can afford to buy", () => {
-    // Unlike `requires`, a companion is allowed off the shortlist — an air gap
-    // that stays 55% of an air gap IS the lesson. But at least one completion has
-    // to be reachable, or the lesson is a dead end with no move attached.
-    const pairs = SHORTLIST.flatMap((id) =>
-      (byId.get(id)!.dependencies?.completed_by?.blocks ?? [])
-        .filter((c) => (SHORTLIST as readonly string[]).includes(c))
-        .map((c) => [id, c] as const)
-    );
-    expect(pairs.length, "no completion is buyable from the shortlist").toBeGreaterThan(0);
-    // And affordably: both halves together have to fit the year.
-    const affordable = pairs.some(
-      ([id, c]) => costOf(byId.get(id)!) + costOf(byId.get(c)!) <= BUDGET_MILLIONS
-    );
-    expect(affordable, "no block + companion pair fits the budget").toBe(true);
-  });
-
-  it("prices a structural block as the partial thing it is, and pays for finishing it", () => {
-    // The reason `completed_by` exists. NET-01 alone used to be the single best
-    // purchase at any budget, which taught that one structural buy is most of
-    // security — the opposite of the deck's argument.
-    const airGap = byId.get("NET-01")!;
-    const companion = airGap
-      .dependencies!.completed_by!.blocks.find((id) =>
-        (SHORTLIST as readonly string[]).includes(id)
-      )!;
-
-    const alone = evaluatePosture(data, ["NET-01"]);
-    expect(alone.budgetExceeded.size).toBe(0);
-    expect(alone.dependencyUnmet.size).toBe(0);
-    expect(enablementFactor(airGap, alone.effectiveStates)).toBeLessThan(1);
-
-    // Completing it is not a cap being lifted — it's the same block getting
-    // closer to what its name claims, and both numbers have to reward it.
-    const finished = evaluatePosture(data, ["NET-01", companion]);
-    expect(enablementFactor(airGap, finished.effectiveStates)).toBeGreaterThan(
-      enablementFactor(airGap, alone.effectiveStates)
-    );
-    expect(finished.breach).toBeLessThan(alone.breach);
-    expect(finished.sl).toBeGreaterThan(alone.sl);
-
-    // And the air gap is no longer the runaway best single click: some cheaper
-    // block on the shortlist now buys at least as much SL per dollar.
-    const perDollar = (id: string) =>
-      (evaluatePosture(data, [id]).sl - evaluatePosture(data, []).sl) / costOf(byId.get(id)!);
-    const airGapRate = perDollar("NET-01");
-    expect(
-      SHORTLIST.some((id) => id !== "NET-01" && perDollar(id) > airGapRate),
-      "the air gap is still the best score-per-dollar buy on the board"
-    ).toBe(true);
-  });
-
-  it("can move the headline breach number, not just the score", () => {
-    // The headline is campaign success against the game's tier. If nothing on
-    // the shortlist lowered it, the number would sit still whatever the reader
-    // did, and the game would read as broken.
-    const empty = evaluatePosture(data, []).breach;
-    const movers = SHORTLIST.filter((id) => evaluatePosture(data, [id]).breach < empty - 0.005);
-    expect(movers.length, "no single shortlist block moves the headline by half a point").toBeGreaterThan(0);
-    // ...and the scenario ranking has stoppers on the shortlist too.
-    const stoppers = new Set(chains.flatMap((c) => c.stoppers ?? []));
-    expect(SHORTLIST.some((id) => stoppers.has(id))).toBe(true);
+  it("includes defenses a typical lab already partly runs, and some it doesn't", () => {
+    const partly = list.filter((id) => startsPartlyInPlace(byId.get(id)!));
+    expect(partly.length).toBeGreaterThan(0);
+    expect(partly.length).toBeLessThan(list.length);
   });
 });
 
-describe("evaluatePosture", () => {
-  it("scores an empty posture as the floor with every chain live", () => {
-    const r = evaluatePosture(data, []);
-    expect(r.spentMillions).toBe(0);
-    expect(r.budgetExceeded.size).toBe(0);
-    expect(r.ranked.length).toBe(chains.length);
-    expect(r.breach).toBeGreaterThan(0.5);
-    expect(r.sl).toBeLessThan(2);
+describe("choices matter", () => {
+  const start = evaluatePosture(data, []);
+
+  it("starts where a typical lab is: at least OC1 held, and not every tier lost", () => {
+    expect(start.score.sl.level).toBeGreaterThanOrEqual(1);
+    expect(start.stops).not.toBe("nobody yet");
+    expect(start.score.tiers.some((t) => t.band === "contested")).toBe(true);
   });
 
+  it("the right picks within the budget reach the next level, and push OC3 to contested", () => {
+    const best = Math.max(...affordable.map((a) => a.level));
+    expect(best).toBeGreaterThan(start.score.sl.level);
+    expect(affordable.some((a) => a.oc3 !== "usually succeeds")).toBe(true);
+  });
+
+  it("most affordable picks don't, so it is a real decision", () => {
+    const better = affordable.filter((a) => a.level > start.score.sl.level).length;
+    expect(better).toBeGreaterThan(0);
+    expect(better / affordable.length).toBeLessThan(0.5);
+  });
+
+  it("the headline is never stuck: some single pick moves the bar toward the next level", () => {
+    const moves = list.filter((id) => evaluatePosture(data, [id]).score.sl.value > start.score.sl.value + 0.01);
+    expect(moves.length).toBeGreaterThan(2);
+  });
+
+  it("the air gap is the tempting big buy, but not the best use of the year", () => {
+    const withAirGap = affordable.filter((a) => a.ids.includes("NET-01"));
+    expect(cost("NET-01")).toBeGreaterThan(BUDGET_MILLIONS / 2);
+    expect(Math.max(...withAirGap.map((a) => a.value))).toBeLessThan(Math.max(...affordable.map((a) => a.value)));
+  });
+
+  it("names what still gets through, as a tier, an approach and a path", () => {
+    const next = start.stillGetsThrough!;
+    expect(next.tier).toBe(start.score.sl.level + 1);
+    expect(next.approach.length).toBeGreaterThan(0);
+    expect(next.path.length).toBeGreaterThan(0);
+    for (const step of next.path) expect(step).toMatch(/^(Get in|Reach the weights|Get them out): /);
+  });
+});
+
+describe("the rules are the instrument's", () => {
   it("never lets a defense make things worse", () => {
-    // The app's monotonicity guarantee, restated for the subset the game offers:
-    // adding a block can only lower breach and raise (or hold) the score.
     let prev = evaluatePosture(data, []);
     const picked: string[] = [];
-    for (const id of SHORTLIST) {
+    for (const id of [...list].sort((a, b) => cost(a) - cost(b))) {
+      if (picked.reduce((s, x) => s + cost(x), 0) + cost(id) > BUDGET_MILLIONS) continue;
       picked.push(id);
       const next = evaluatePosture(data, picked);
-      expect(next.breach, `breach rose after adding ${id}`).toBeLessThanOrEqual(
-        prev.breach + 1e-9
-      );
-      expect(next.sl, `SL fell after adding ${id}`).toBeGreaterThanOrEqual(prev.sl - 1e-9);
+      expect(next.score.sl.value, `SL fell after adding ${id}`).toBeGreaterThanOrEqual(prev.score.sl.value - 1e-9);
       prev = next;
     }
   });
 
-  it("caps the block the reader picked last, never an earlier commitment", () => {
-    // The lesson the game is built around: funding follows click order, so
-    // adding one more block can only ever cap that block.
-    // Spend down the individually-affordable blocks, priciest first, until one
-    // doesn't fit. That last one is the only block that may be capped.
-    const affordable = SHORTLIST.filter(
-      (id) => costOf(byId.get(id)!) <= BUDGET_MILLIONS
-    ).sort((a, b) => costOf(byId.get(b)!) - costOf(byId.get(a)!));
+  it("funds in pick order: only the pick that overruns is capped, and it stays at the lab's baseline", () => {
     const picks: string[] = [];
     let running = 0;
-    for (const id of affordable) {
+    for (const id of [...list].sort((a, b) => cost(b) - cost(a))) {
       picks.push(id);
-      running += costOf(byId.get(id)!);
+      running += cost(id);
       if (running > BUDGET_MILLIONS) break;
     }
-    expect(running, "the shortlist never overruns the budget").toBeGreaterThan(
-      BUDGET_MILLIONS
-    );
     const last = picks[picks.length - 1];
-
     const r = evaluatePosture(data, picks);
     expect([...r.budgetExceeded]).toEqual([last]);
-    // Unfunded means unbuilt: the game builds from nothing, so the block falls
-    // back to the game's baseline, not to a free `implementing` (which used to
-    // hand the reader 0.4 effectiveness for money they didn't have).
-    expect(r.effectiveStates[last]).toBe("not_started");
-    for (const id of picks.slice(0, -1)) {
-      expect(r.effectiveStates[id], `${id} was funded first and must keep it`).toBe(
-        "deployed"
-      );
-    }
-
-    // Move that block to the front and the cap moves off it — the cap follows
-    // click order, not cost.
-    const reordered = evaluatePosture(data, [last, ...picks.slice(0, -1)]);
-    expect(reordered.budgetExceeded.has(last)).toBe(false);
-    expect(reordered.budgetExceeded.size).toBe(1);
+    expect(r.effectiveStates[last]).toBe(baselineStateFor(byId.get(last)!));
+    // Move it to the front and the cap moves off it.
+    expect(evaluatePosture(data, [last, ...picks.slice(0, -1)]).budgetExceeded.has(last)).toBe(false);
   });
 
-  it("lets the whole budget go on one structural block", () => {
-    // The air gap is most of the year in a single click, and it has to land as
-    // genuinely deployed — that's the trade-off the reader is being shown.
-    const r = evaluatePosture(data, ["NET-01"]);
-    expect(costOf(byId.get("NET-01")!)).toBeGreaterThan(BUDGET_MILLIONS / 2);
-    expect(r.budgetExceeded.size).toBe(0);
-    expect(r.effectiveStates["NET-01"]).toBe("deployed");
-  });
-
-  it("caps a block whose prerequisite wasn't bought, and uncaps it when it is", () => {
-    const dependent = SHORTLIST.find((id) =>
-      (byId.get(id)!.dependencies?.requires ?? []).some((r) =>
-        (SHORTLIST as readonly string[]).includes(r)
-      )
-    )!;
-    const prereq = byId
-      .get(dependent)!
-      .dependencies!.requires!.find((r) => (SHORTLIST as readonly string[]).includes(r))!;
-
+  it("caps a pick whose prerequisite isn't running, and lifts the cap when it is", () => {
+    const dependent = list.find((id) => (byId.get(id)!.dependencies?.requires ?? []).length > 0)!;
+    const prereq = byId.get(dependent)!.dependencies.requires[0];
     const alone = evaluatePosture(data, [dependent]);
     expect(alone.dependencyUnmet.has(dependent)).toBe(true);
     expect(alone.dependencyUnmetRequires.get(dependent)).toContain(prereq);
-    expect(alone.effectiveStates[dependent]).toBe("implementing");
-
-    const together = evaluatePosture(data, [prereq, dependent]);
-    expect(together.dependencyUnmet.has(dependent)).toBe(false);
-    expect(together.effectiveStates[dependent]).toBe("deployed");
+    const both = evaluatePosture(data, [prereq, dependent]);
+    expect(both.dependencyUnmet.has(dependent)).toBe(false);
+    expect(both.effectiveStates[dependent]).toBe("deployed");
   });
 
-  it("scores unpicked blocks as not_started, not at their real-world baseline", () => {
-    // 27 blocks ship partially deployed. The game is "build from nothing", so a
-    // reader must not be handed a score they didn't earn.
-    const r = evaluatePosture(data, []);
-    const baselineActive = blocks.filter(
-      (b) => (b.current_state?.baseline_state ?? "not_started") !== "not_started"
-    );
-    expect(baselineActive.length).toBeGreaterThan(10);
-    for (const b of baselineActive) {
-      expect(r.effectiveStates[b.id], `${b.id} should start from nothing`).toBe(
-        "not_started"
-      );
-    }
-  });
-
-  it("ranks scenarios most-likely-first and reports campaign success as the headline", () => {
-    const r = evaluatePosture(data, ["PER-01", "PER-04"]);
-    const ps = r.ranked.map((x) => x.p);
-    expect([...ps].sort((a, b) => b - a)).toEqual(ps);
-    // A scenario is one specific way in; the campaign is every way in, so it is
-    // at least as likely as any human scenario.
-    const human = r.ranked.filter((x) => x.chain.id !== "alignment-researcher").map((x) => x.p);
-    expect(r.breach).toBeGreaterThanOrEqual(Math.max(...human));
-  });
-
-  it("gives an over-budget block nothing — not even its real-world baseline", () => {
-    // AI-07 ships partially deployed (baseline `implementing`). In the app an
-    // unfunded AI-07 falls back to that baseline; in the game, which builds from
-    // nothing, it must fall back to nothing, or an unaffordable click would still
-    // buy 40% of an outbound-channel defense. The air gap and the enclosures
-    // leave too little of the year for it.
-    expect(byId.get("AI-07")!.current_state.baseline_state).toBe("partially_deployed");
-    const before = evaluatePosture(data, ["NET-01", "HW-05"]);
-    const after = evaluatePosture(data, ["NET-01", "HW-05", "AI-07"]);
-    expect([...after.budgetExceeded]).toEqual(["AI-07"]);
-    expect(after.effectiveStates["AI-07"]).toBe("not_started");
-    expect(after.sl).toBe(before.sl);
-    expect(after.breach).toBe(before.breach);
-  });
-
-  it("agrees with the engine called directly — no re-implemented arithmetic", () => {
-    // The game's whole claim is that its numbers are the app's numbers. Recompute
-    // one posture the long way, exactly as store/derived.ts does, and compare.
-    // The pick that won't fit the budget keeps the budget cap in the comparison.
-    const chosen = ["PER-01", "PER-04", "PHY-03", "SW-01", "NET-01"];
-    const requested: Record<string, string> = {};
-    for (const b of blocks) requested[b.id] = "not_started";
-    for (const id of chosen) requested[id] = "deployed";
-
-    const { effectiveStates: budgeted, exceededIds } = applyBudgetConstraint(
-      blocks,
-      requested as never,
-      BUDGET_MILLIONS,
-      {
-        order: chosen,
-        riskTolerance: SLIDERS.risk_tolerance,
-        floorStates: Object.fromEntries(blocks.map((b) => [b.id, "not_started"])),
-      }
-    );
-    expect(exceededIds.size).toBeGreaterThan(0);
-    const { effectiveStates } = applyDependencyConstraint(blocks, budgeted);
-    const categories = computeCategoryScores(blocks, effectiveStates, YEAR, SLIDERS, counterRelevance(blocks));
-    // The threat-relative numbers come from the same pipeline the app runs,
-    // on the states computed above.
+  it("agrees with scorePosture called directly", () => {
+    const chosen = ["DET-01", "DEC-01", "IAM-01", "NET-01"];
+    const states: Record<string, BlockState> = baselineStates(data.blocks);
+    for (const id of chosen) states[id] = "deployed";
     const direct = scorePosture({
-      blocks,
-      model,
-      blockStates: effectiveStates,
+      blocks: data.blocks,
+      model: data.model,
+      blockStates: states,
+      advanceOrder: chosen,
       year: YEAR,
-      sliders: { ...SLIDERS, budget_millions: 1e9 },
-      adversaryOc: ADVERSARY_OC,
-      modelServedExternally: true,
+      sliders: SLIDERS,
+      adversaryOc: 4,
+      modelServedExternally: SERVED,
     });
-
     const r = evaluatePosture(data, chosen);
-    expect(r.categories).toEqual(categories);
-    expect(r.sl).toBe(direct.sl.value);
-    expect(r.breach).toBe(direct.campaign);
+    expect(r.score.sl).toEqual(direct.sl);
+    expect(r.score.tiers).toEqual(direct.tiers);
+    expect(r.spentMillions).toBe(direct.spentMillions);
   });
 
-  it("cannot be won: no shortlist posture reaches SL5 or holds the top chain at its floor", () => {
-    // The copy tells the reader this outright, so it had better be true. "Held"
-    // is the app's Attacker-view test (within half a point of the chain's
-    // residual floor) — a fixed 2% cut was unreachable for every live chain.
-    const everything = evaluatePosture(data, [...SHORTLIST]);
-    expect(everything.sl).toBeLessThan(5);
-    expect(everything.ranked[0].held).toBe(false);
-    expect(everything.ranked[0].p).toBeGreaterThan(everything.ranked[0].floor);
-  });
-
-  it("files scenarios with the Attacker view's own residual-floor test", () => {
-    // The floor is the campaign's (applied once per campaign, never per path),
-    // so a scenario can sit below it; "held" is the same half-point test.
-    for (const { p, floor, held } of evaluatePosture(data, [...SHORTLIST]).ranked) {
-      expect(held).toBe(p <= floor + 0.005);
-    }
+  it("cannot be won outright: nothing on the list reaches SL5", () => {
+    expect(Math.max(...affordable.map((a) => a.level))).toBeLessThan(5);
   });
 });

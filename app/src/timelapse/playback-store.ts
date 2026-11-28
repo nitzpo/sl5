@@ -79,15 +79,19 @@ export const usePlaybackStore = create<PlaybackStore>()(
         blockStates: sim.blockStates,
         advanceOrder: sim.advanceOrder,
         year: sim.year,
-        perspective: sim.perspective,
         adversaryOc: sim.adversaryOc,
         sliders: sim.sliders,
         modelServedExternally: sim.modelServedExternally,
+        futureCapabilities: sim.futureCapabilities,
       });
       const saved: PersistedState =
         currentState === "idle" ? snapshot() : get().savedUserState ?? snapshot();
 
       const startYear = script.startYear ?? TIMELINE_START;
+      // Mark playback first: the auto-save subscriber runs synchronously on
+      // the writes below, and must not record the story as the reader's own
+      // posture.
+      useSimulationStore.getState().setPlaybackActive(true);
 
       if (script.type === "scripted") {
         // Overrides layer on the saved USER baseline, never on the live sliders:
@@ -120,15 +124,11 @@ export const usePlaybackStore = create<PlaybackStore>()(
           blockStates: newBlockStates,
           advanceOrder: scriptOrder,
           sliders: newSliders,
-          // A chain pinned before playback would contradict the story's own
-          // verdict banner — the strip follows the live best chain instead.
-          selectedChainId: null,
         });
       } else {
-        useSimulationStore.setState({ year: startYear, selectedChainId: null });
+        useSimulationStore.setState({ year: startYear });
       }
 
-      useSimulationStore.getState().setPlaybackActive(true);
       set({
         state: "playing",
         activeScript: script,
@@ -143,21 +143,7 @@ export const usePlaybackStore = create<PlaybackStore>()(
 
     stop: () => {
       const { savedUserState } = get();
-      if (savedUserState) {
-        useSimulationStore.setState({
-          blockStates: savedUserState.blockStates,
-          advanceOrder:
-            savedUserState.advanceOrder ??
-            Object.keys(savedUserState.blockStates).filter(
-              (id) => savedUserState.blockStates[id] !== "not_started"
-            ),
-          year: savedUserState.year,
-          perspective: savedUserState.perspective,
-          adversaryOc: savedUserState.adversaryOc,
-          sliders: savedUserState.sliders,
-          modelServedExternally: savedUserState.modelServedExternally,
-        });
-      }
+      if (savedUserState) useSimulationStore.getState().applyPersisted(savedUserState);
       useSimulationStore.getState().setPlaybackActive(false);
       set({
         state: "idle",

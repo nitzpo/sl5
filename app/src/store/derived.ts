@@ -1,16 +1,14 @@
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { useSimulationStore } from "./simulation";
 import { applyBudgetConstraint, catalogueInForce, scorePosture } from "../engine";
+import type { PostureInput, PostureScore } from "../engine/posture";
 import type { Block, BlockState, Sliders, ThreatModel } from "../engine/types";
-import { LAYER_ORDER, resolveLayer } from "../utils/ring-geometry";
-import type { LayerId } from "../utils/ring-geometry";
+import { recommendInvestments, type InvestmentAnalysis } from "../utils/ciso-recommendations";
 
 /**
  * Just the money: planned spend and which blocks the budget can't pay for.
- *
- * Separate from `useSimulationResults` so a component that only needs the budget
- * line doesn't drag in category scores and three full breach sweeps. That matters
- * during time-lapse playback, where the year advances every frame.
+ * Separate from `useScore` so the playback transport, which renders every
+ * frame, doesn't pay for a full scoring pass.
  */
 export function useBudgetStatus(): {
   spentMillions: number;
@@ -35,7 +33,7 @@ export function useBudgetStatus(): {
   }, [blocks, blockStates, advanceOrder, budgetMillions, riskTolerance, futureCapabilities]);
 }
 
-/** Everything `deriveSimulationResults` reads — the store's simulation inputs. */
+/** Everything `scorePosture` reads from the store. */
 export interface SimulationSnapshot {
   blocks: Block[];
   threatModel: ThreatModel;
@@ -48,129 +46,33 @@ export interface SimulationSnapshot {
   futureCapabilities: boolean;
 }
 
-/**
- * All derived simulation results for one store snapshot. Pure, so the
- * consistency test can call it without React; `useSimulationResults` is a
- * memoized wrapper around it.
- *
- * The scores themselves come from `scorePosture` — the same pipeline the
- * timeline, the Policy and CISO analyses and the intro's mini-game run — so no
- * panel can show a different SL or breach for the same posture.
- */
-export function deriveSimulationResults(snapshot: SimulationSnapshot) {
-  const {
-    blocks,
-    threatModel,
-    blockStates,
-    advanceOrder,
-    year,
-    sliders,
-    adversaryOc,
-    modelServedExternally,
-    futureCapabilities,
-  } = snapshot;
-
-  // Over-budget blocks fall back to their baseline and unmet prerequisites cap
-  // at implementing, for every number below; funding follows advancement order
-  // so a new block can only cap itself.
-  const score = scorePosture({
-    blocks,
-    model: threatModel,
-    blockStates,
-    advanceOrder,
-    year,
-    sliders,
-    adversaryOc,
-    modelServedExternally,
-    futureCapabilities,
-  });
-  const { effectiveStates } = score;
-
-  // Compatibility for the Score card: campaign success against OC3–5, from the
-  // same tiers the SL is computed on.
-  const breachByOc: Record<number, number> = {};
-  for (const oc of [3, 4, 5]) breachByOc[oc] = score.tiers[oc - 1].p;
-
-  // Defense layer status
-  const layerIds = [
-    "physical_perimeter",
-    "network_boundary",
-    "host_security",
-    "accelerator_security",
-    "access_control",
-    "monitoring_detection",
-    "personnel_trust",
-    "supply_chain_integrity",
-  ];
-  const defenseLayerStatus: Record<string, { active: boolean; strength: number }> = {};
-  for (const layerId of layerIds) {
-    const contributing = blocks.filter((b) =>
-      (b.defense_in_depth?.layer_contributions ?? []).some(
-        (lc) => resolveLayer(lc) === layerId
-      )
-    );
-    const strength =
-      contributing.length > 0
-        ? contributing.reduce((sum, b) => {
-            const state = effectiveStates[b.id] ?? "not_started";
-            const stateVal =
-              state === "deployed" || state === "mature"
-                ? 1
-                : state === "implementing"
-                  ? 0.4
-                  : 0;
-            return sum + stateVal;
-          }, 0) / contributing.length
-        : 0;
-    defenseLayerStatus[layerId] = { active: strength > 0.3, strength };
-  }
-
-  const activeLayers = Object.values(defenseLayerStatus).filter(
-    (l) => l.active
-  ).length;
-
-  const blocksByLayer: Record<LayerId, Block[]> = {} as Record<LayerId, Block[]>;
-  for (const lid of LAYER_ORDER) {
-    blocksByLayer[lid] = [];
-  }
-  const assigned = new Set<string>();
-  for (const b of blocks) {
-    for (const raw of b.defense_in_depth?.layer_contributions ?? []) {
-      const resolved = resolveLayer(raw);
-      if (resolved && !assigned.has(b.id)) {
-        blocksByLayer[resolved].push(b);
-        assigned.add(b.id);
-        break;
-      }
-    }
-  }
-  for (const b of blocks) {
-    if (!assigned.has(b.id)) {
-      blocksByLayer["monitoring_detection"].push(b);
-    }
-  }
-
+export function postureInput(s: SimulationSnapshot): PostureInput {
   return {
-    // The new API (threat-relative SL, tiers, approaches, meters, relevance).
-    ...score,
-    // Compatibility fields the pre-vector views read (Phase 2B moves them to
-    // the fields above): the cumulative distillation meter and OC3–5 campaign.
-    extractionProgress: score.capabilityLeakage.cumulative,
-    breachByOc,
-    defenseLayerStatus,
-    activeLayers,
-    blocksByLayer,
-    overBudget: score.budgetExceededIds.size > 0,
+    blocks: s.blocks,
+    model: s.threatModel,
+    blockStates: s.blockStates,
+    advanceOrder: s.advanceOrder,
+    year: s.year,
+    sliders: s.sliders,
+    adversaryOc: s.adversaryOc,
+    modelServedExternally: s.modelServedExternally,
+    futureCapabilities: s.futureCapabilities,
   };
 }
 
 /**
- * Hook that computes all derived simulation results from current store state.
- * React components subscribe to this for live-updating scores. Memoized on the
- * simulation inputs, so UI-only store changes (selected chain, perspective)
- * don't re-run the engine.
+ * The score for one store snapshot. Every number on screen — the rail, the
+ * catalogue's path and badges, the approach lanes, the race strip at the
+ * store's year — reads this one `scorePosture` result, so no two panels can
+ * disagree about the same posture (`tests/engine/posture.test.ts`).
  */
-export function useSimulationResults() {
+export function deriveScore(snapshot: SimulationSnapshot): PostureScore {
+  return scorePosture(postureInput(snapshot));
+}
+
+/** The store's simulation inputs, memoised as one object. UI-only store
+ * changes (drawer, selection) don't produce a new one. */
+export function usePostureInput(): PostureInput {
   const blocks = useSimulationStore((s) => s.blocks);
   const threatModel = useSimulationStore((s) => s.threatModel);
   const blockStates = useSimulationStore((s) => s.blockStates);
@@ -180,10 +82,9 @@ export function useSimulationResults() {
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
   const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
-
   return useMemo(
     () =>
-      deriveSimulationResults({
+      postureInput({
         blocks,
         threatModel,
         blockStates,
@@ -196,4 +97,52 @@ export function useSimulationResults() {
       }),
     [blocks, threatModel, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally, futureCapabilities]
   );
+}
+
+/**
+ * `scorePosture`, memoised on the identity of its inputs. The rail, the
+ * catalogue, the path caption, the drawer and the click feedback all ask for
+ * the same posture's score; one entry is enough to make that one run.
+ */
+let lastScore: { key: unknown[]; score: PostureScore } | null = null;
+export function cachedScore(input: PostureInput): PostureScore {
+  const key = [
+    input.blocks,
+    input.model,
+    input.blockStates,
+    input.advanceOrder,
+    input.year,
+    input.sliders,
+    input.adversaryOc,
+    input.modelServedExternally,
+    input.futureCapabilities,
+  ];
+  if (lastScore && lastScore.key.every((k, i) => k === key[i])) return lastScore.score;
+  const score = scorePosture(input);
+  lastScore = { key, score };
+  return score;
+}
+
+/** The live score. `scorePosture` is ~2 ms, so it runs on every click. */
+export function useScore(): PostureScore {
+  const input = usePostureInput();
+  return useMemo(() => cachedScore(input), [input]);
+}
+
+/**
+ * The engine-ranked next moves. Each candidate is a full `scorePosture` run
+ * (~60 of them, ~80 ms together), so this reads a deferred copy of the inputs:
+ * the click repaints the catalogue and the verdict first, and the ranking
+ * follows a beat later. Skipped during playback, where the posture changes
+ * every frame.
+ */
+export function useRecommendations(limit = 3): { analysis: InvestmentAnalysis | null; stale: boolean } {
+  const input = usePostureInput();
+  const playbackActive = useSimulationStore((s) => s.playbackActive);
+  const deferred = useDeferredValue(input);
+  const analysis = useMemo(
+    () => (playbackActive || deferred.blocks.length === 0 ? null : recommendInvestments(deferred, { limit })),
+    [deferred, limit, playbackActive]
+  );
+  return { analysis, stale: deferred !== input };
 }

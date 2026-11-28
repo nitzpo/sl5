@@ -1,20 +1,14 @@
-// Content for the standalone introduction at /sl5/intro/.
+// Copy for the standalone introduction.
 //
-// The intro deliberately fetches nothing: inlining the small slice of copy it
-// needs (5 OC tiers, 5 SL levels, 6 blocks, one chain) keeps the page instant
-// with no loading state, instead of pulling ~230 KB of public/data/*.json for a
-// few dozen fields. `tests/intro/content.test.ts` reads the real JSON off disk
-// and asserts every value below still matches, so the two can't drift silently.
+// The first slides render with no requests: the small slice of reference data
+// they need (five attacker tiers, five levels, a few block names) is inlined
+// here. `tests/intro/content.test.ts` reads the shipped JSON off disk and
+// asserts every value below still matches, so the two can't drift silently.
+// Demos that run the engine fetch the real data instead (see data.ts).
 
-/** Every abbreviation and term-of-art the introduction uses, defined once.
- *
- * Two consumers: the inline `<Term>` affordance, which pops one of these open
- * where the word first appears, and the glossary list on the sources slide,
- * which shows all of them. Plain strings, not JSX, so both can render them and
- * a test can lint them. Keys are checked by `keyof typeof GLOSSARY`, so a
- * `<Term>` pointing at an entry that doesn't exist fails `tsc`, not a reader. */
+/** Every term of art the introduction uses, defined once: shown inline by
+ * `<Term>` and listed in full on the sources slide. */
 export interface GlossaryEntry {
-  /** How the term is written when it's the subject, e.g. "OC — Operational Capability". */
   label: string;
   definition: string;
 }
@@ -23,125 +17,116 @@ export const GLOSSARY = {
   weights: {
     label: "Weights",
     definition:
-      "The numbers a training run produces. The file is the model — load it and the capability runs, with no retraining and no reconstruction step.",
+      "The numbers a training run produces. The file is the model: load it and the capability runs, with nothing to rebuild.",
   },
   frontier: {
     label: "Frontier model",
     definition:
-      "One of the handful of most capable AI models in existence at a given moment — the ones whose weights are worth a nation-state's attention.",
+      "One of the handful of most capable AI models at a given moment, the ones whose weights are worth a state's attention.",
   },
   oc: {
     label: "OC — Operational Capability",
     definition:
-      "A five-tier scale for how capable an attacker is, measured in what they can spend: money, people and patience. OC1 is a lone hobbyist running public exploits; OC5 is a thousand people, a billion dollars and five years.",
+      "RAND's five tiers of attacker, from OC1 (a lone hobbyist running public exploits) to OC5 (a top-priority state operation with a thousand people, a billion dollars and years of patience). It describes the attacker, never your defenses.",
   },
   sl: {
     label: "SL — Security Level",
     definition:
-      "A five-tier scale for how much attack a defensive posture can survive. Each level is defined by the attacker tier it is meant to stop, and by the controls that stopping them requires — the upper tiers aren't more of the same, they bring in measures the lower tiers never ask for. SL5 is simply the level built to stop the top attacker tier.",
+      "RAND's five levels of defense. Level n is meant to stop attacker tier n, so here you are at level 3 when tiers 1, 2 and 3 usually fail against you this year. Level 5 also requires holding your own model as an insider.",
+  },
+  attackVector: {
+    label: "Attack vector",
+    definition:
+      "One technique an attacker can use, such as exploiting an unpatched server or bribing an employee. RAND lists 38, each rated for each attacker tier.",
+  },
+  stage: {
+    label: "Stage",
+    definition:
+      "Where an attack vector acts: getting in, reaching the weights, or getting them out. Every theft has to get through all three.",
+  },
+  approach: {
+    label: "Approach",
+    definition:
+      "A broad way of going about a theft: remote intrusion, a human insider, physical access, the supply chain, the served model, or the lab's own model.",
+  },
+  attackPath: {
+    label: "Attack path",
+    definition:
+      "One attack vector per stage, chained together. Within each approach the instrument finds the attacker's easiest path, and it moves when you strengthen a stage.",
+  },
+  scenario: {
+    label: "Scenario",
+    definition:
+      "A specific attack path told as a story, with a one-minute playback in the instrument. Scenarios illustrate; the security level is computed over every approach.",
+  },
+  bands: {
+    label: "Usually fails · contested · usually succeeds",
+    definition:
+      "How the instrument reports an attacker's chances, on purpose without precise numbers. Below the bar a tier usually fails against you and counts as stopped; well above it, it usually succeeds; between the two it is contested.",
   },
   hardStop: {
     label: "Hard stop",
     definition:
-      "A control that removes a route rather than watching it — an air gap, a one-way data diode, hardware memory isolation. Not unbreakable: an air gap is still crossed by a person carrying a drive. But it rests on physics rather than on someone noticing, so rising AI capability erodes it slowly instead of gutting it.",
+      "A defense that removes a step rather than watching it: an air gap, a one-way data diode, hardware memory isolation. Not unbreakable, but it rests on physics, so a stronger attacker erodes it only a little.",
   },
   probabilistic: {
-    label: "Probabilistic control",
+    label: "Probabilistic defense",
     definition:
-      "A control that lowers the odds instead of closing the door: monitoring, vetting, human review. Its value depends on someone noticing — which is exactly what a more capable adversary is better at defeating.",
+      "A defense that lowers the odds instead of closing the step: monitoring, vetting, review. Its value depends on someone noticing, which is exactly what a stronger attacker is better at defeating.",
+  },
+  hybrid: {
+    label: "Hybrid defense",
+    definition:
+      "Part hard stop, part probabilistic: a data diode enforces direction in hardware and inspects content in software. It erodes between the other two.",
   },
   airGap: {
     label: "Air gap",
     definition:
-      "A network with no physical connection to any other network. There is nothing for a remote attacker to route through — so getting data out requires a person or a device to carry it, which is a real route rather than no route. Stuxnet crossed one on a USB stick.",
+      "A network with no connection to any other. A remote attacker has nothing to reach through, so data has to be carried across by a person or a device. Stuxnet crossed one on a USB stick.",
   },
   zeroDay: {
     label: "Zero-day",
     definition:
-      "A vulnerability the vendor doesn't know about, so no patch exists. Expensive to find or buy, and normally hoarded until it's worth spending.",
-  },
-  exfiltration: {
-    label: "Exfiltration",
-    definition:
-      "Moving data out of a network it was supposed to stay inside — over a link, on a laptop, or in the pocket of someone who was allowed to be there.",
+      "A vulnerability the vendor doesn't know about, so no patch exists. Expensive to find or buy, and usually saved for a target worth it.",
   },
   insider: {
-    label: "Insider threat",
+    label: "Insider",
     definition:
-      "Someone with legitimate access who uses it against you, whether recruited, coerced, or simply leaving. Network security barely applies, because nothing is hacked.",
+      "Someone with legitimate access who uses it for an attacker, whether recruited, coerced, or placed years earlier. Network defenses barely apply, because nothing is hacked.",
   },
-  attackChain: {
-    label: "Attack chain",
+  ownModel: {
+    label: "Own model as insider",
     definition:
-      "One complete route to the weights, written as ordered steps. Each step names the defensive block whose absence lets it succeed, so blocking any single step ends the whole chain.",
+      "The lab's own AI model, running with credentials and tools on the lab's compute. If misaligned, it may try to reach its own weights and get them out. It starts already inside.",
   },
-  breachProbability: {
-    label: "Breach probability",
+  futureCapabilities: {
+    label: "Future capabilities",
     definition:
-      "The app's headline risk number: the chance that at least one modelled attack chain succeeds in the current year, given the posture you've built.",
-  },
-  residualRisk: {
-    label: "Residual risk",
-    definition:
-      "What's left after every control you can afford — the insider never caught, the zero-day nobody found. It's why no live chain in the app ever reaches zero.",
-  },
-  defenseInDepth: {
-    label: "Defense in depth",
-    definition:
-      "Stacking layers that fail independently, so beating one gets the attacker no closer to beating the next. In this app it discounts breach probability — each extra layer standing between an attacker and the weights makes a chain less likely to run end to end.",
-  },
-  ciso: {
-    label: "CISO",
-    definition:
-      "Chief Information Security Officer — the executive accountable for an organization's security. The role the app puts you in.",
-  },
-  redTeam: {
-    label: "Red-teaming",
-    definition:
-      "Paying skilled attackers to break your own defenses, so you find the gap before someone hostile does.",
+      "Five research-stage defenses that don't exist at scale yet, such as verified accelerator hardware and a government-cleared workforce. The instrument adds them only when you switch them on, and labels them as illustrative.",
   },
   tee: {
     label: "TEE — Trusted Execution Environment",
     definition:
-      "Hardware that walls data off while it is being computed on: the chip refuses the host OS, hypervisor and DMA access to protected memory, and attestation proves that configuration to whoever releases the data. Also called confidential computing. It stops a compromised machine's software, not someone with physical access — in 2025 a sub-$1,000 memory-bus interposer pulled the attestation keys out of CPU TEEs (TEE.fail).",
-  },
-  sf86: {
-    label: "SF-86",
-    definition:
-      "The US government's security-clearance questionnaire: foreign contacts, finances, travel, personal history. “SF-86-equivalent vetting” means a private lab running the same depth of check.",
+      "Hardware that walls data off while it is computed on, so a compromised operating system can't read it, and proves that configuration with attestation. It stops software on the machine, not someone with physical access.",
   },
   scif: {
     label: "SCIF",
     definition:
-      "A Sensitive Compartmented Information Facility — a room built to a published standard (ICD 705) so that nothing discussed or processed inside it leaks out.",
+      "A Sensitive Compartmented Information Facility: a room built to a published standard (ICD 705) so that nothing discussed or processed inside leaks out.",
   },
-  tempest: {
-    label: "TEMPEST",
+  nist: {
+    label: "NIST SP 800-53",
     definition:
-      "Standards for stopping equipment from leaking the data it handles through stray electromagnetic emissions: shielding, filtering, and physical separation.",
-  },
-  erosion: {
-    label: "AI erosion",
-    definition:
-      "The share of a probabilistic control that a more capable adversary has effectively taken back. In the app it's the red wash creeping down a hexagon as you move the year forward.",
-  },
-  block: {
-    label: "Block",
-    definition:
-      "One defensive building block — a single control you can invest in, drawn as a hexagon. The app ships 56 of them across 6 categories.",
-  },
-  decisionWindow: {
-    label: "Decision window",
-    definition:
-      "The last year you can start building a control and still have it operational by the target date. Once it closes, the option is gone however much budget appears later.",
+      "The US government's catalogue of security and privacy controls. Both the SL5 Standard and RAND's SL3 report are written as selections from it.",
   },
 } satisfies Record<string, GlossaryEntry>;
 
-/** OC tier — the defender's vocabulary for "how capable is the attacker".
- * Mirrors world-state.json `oc_definitions`. */
+/** OC tiers. Mirrors world-state.json `oc_definitions`. */
 export interface OcTier {
   level: number;
   name: string;
+  /** A plain, short name for tight labels. */
+  short: string;
   budgetMillions: number;
   teamSize: number;
   timeHorizonMonths: number;
@@ -154,6 +139,7 @@ export const OC_TIERS: OcTier[] = [
   {
     level: 1,
     name: "Hobbyist / Opportunistic",
+    short: "Hobbyist",
     budgetMillions: 0.001,
     teamSize: 1,
     timeHorizonMonths: 0.25,
@@ -164,43 +150,38 @@ export const OC_TIERS: OcTier[] = [
   {
     level: 2,
     name: "Professional Opportunistic",
+    short: "Professional",
     budgetMillions: 0.01,
     teamSize: 1,
     timeHorizonMonths: 1,
-    description:
-      "Single professional with broad security capabilities, personal infrastructure",
+    description: "Single professional with broad security capabilities, personal infrastructure",
     typicalActors: ["Professional hackers", "Low-priority criminal groups"],
     keyCapabilities: ["Custom exploits", "Targeted phishing", "Personal cyber infrastructure"],
   },
   {
     level: 3,
     name: "Criminal Syndicates / Insider Threats",
+    short: "Syndicate, insider",
     budgetMillions: 1,
     teamSize: 10,
     timeHorizonMonths: 6,
-    description:
-      "Well-resourced criminal groups, disgruntled employees, industrial espionage",
+    description: "Well-resourced criminal groups, disgruntled employees, industrial espionage",
     typicalActors: [
       "Criminal syndicates",
       "Disgruntled employees",
       "Corporate espionage",
       "Terrorist organizations",
     ],
-    keyCapabilities: [
-      "Zero-day purchase",
-      "Insider recruitment",
-      "Major attack infrastructure",
-      "Bribery",
-    ],
+    keyCapabilities: ["Zero-day purchase", "Insider recruitment", "Major attack infrastructure", "Bribery"],
   },
   {
     level: 4,
     name: "Leading Cyber-Capable Nation-States",
+    short: "Nation-state",
     budgetMillions: 10,
     teamSize: 100,
     timeHorizonMonths: 12,
-    description:
-      "Foreign intelligence agencies, state-sponsored groups executing 100+ operations annually",
+    description: "Foreign intelligence agencies, state-sponsored groups executing 100+ operations annually",
     typicalActors: ["State cyber units", "Intelligence agencies"],
     keyCapabilities: [
       "Multiple zero-days",
@@ -213,6 +194,7 @@ export const OC_TIERS: OcTier[] = [
   {
     level: 5,
     name: "Top-Priority State Operations",
+    short: "Top state operation",
     budgetMillions: 1000,
     teamSize: 1000,
     timeHorizonMonths: 60,
@@ -229,7 +211,7 @@ export const OC_TIERS: OcTier[] = [
   },
 ];
 
-/** Security Level — mirrors world-state.json `sl_definitions`. */
+/** Security levels. Mirrors world-state.json `sl_definitions`. */
 export interface SlLevel {
   level: number;
   name: string;
@@ -253,8 +235,7 @@ export const SL_LEVELS: SlLevel[] = [
     name: "Professional Best Practices",
     defendsAgainst: "OC2 — Professional Opportunistic",
     requiredIndependentLayers: 1,
-    description:
-      "Centralized weight storage, encrypted transit, FIDO keys, red-teaming, bug bounty",
+    description: "Centralized weight storage, encrypted transit, FIDO keys, red-teaming, bug bounty",
     achievable: true,
   },
   {
@@ -262,8 +243,7 @@ export const SL_LEVELS: SlLevel[] = [
     name: "Aggressive Attack Surface Reduction",
     defendsAgainst: "OC3 — Criminal Syndicates / Insiders",
     requiredIndependentLayers: 2,
-    description:
-      "Copy-resistant interfaces, multiparty auth, insider threat program, advanced red-teaming",
+    description: "Copy-resistant interfaces, multiparty auth, insider threat program, advanced red-teaming",
     achievable: true,
   },
   {
@@ -280,14 +260,12 @@ export const SL_LEVELS: SlLevel[] = [
     name: "Top-Priority State Operations Defense",
     defendsAgainst: "OC5 — Top-Priority State Operations",
     requiredIndependentLayers: 8,
-    description:
-      "Complete isolation, formal hardware verification, supervised access",
+    description: "Complete isolation, formal hardware verification, supervised access",
     achievable: false,
   },
 ];
 
-/** What the app's consequence copy says the theft buys the thief.
- * Mirrors world-state.json `stakes.exfiltration_consequences`. */
+/** world-state.json `stakes.exfiltration_consequences`. */
 export const EXFILTRATION_CONSEQUENCES = [
   "Safety guardrails removed — unrestricted dangerous capabilities released",
   "Fine-tuning for offensive cyber, biological/chemical weapon design, mass manipulation",
@@ -296,205 +274,168 @@ export const EXFILTRATION_CONSEQUENCES = [
   "Recursive improvement: stolen model used to accelerate stealing next model",
 ] as const;
 
+/** What building a frontier model costs, read off the "Years of R&D
+ * ($1-10B+)" consequence above. Drawn as a range on slide 1. */
+export const BUILD_COST_MILLIONS = { min: 1000, max: 10000 } as const;
+
 /** world-state.json `stakes.recursive_risk`. */
 export const RECURSIVE_RISK =
   "If automated AI R&D is compromised, an adversary gains recursive self-improvement capability outside any safety framework — potentially the highest-stakes scenario in the threat model.";
 
-/** The subset of blocks the demos render. `shortLabel` mirrors
- * BLOCK_SHORT_LABELS in utils/geometry.ts; the rest mirrors blocks-*.json. */
+/** How much AI lifts an attacker, by kind of attack vector: vectors.json's
+ * authored `ai_shift` on RAND's 38 vectors, grouped. `count` is how many
+ * vectors carry each value (asserted against the data). */
+export const AI_SHIFT_GROUPS = [
+  { shift: 1, label: "Code, credentials and the ML stack", count: 13 },
+  { shift: 0.75, label: "Cracking, exposed keys, stray copies", count: 3 },
+  { shift: 0.5, label: "Access systems, side channels, hardware supply", count: 7 },
+  { shift: 0.25, label: "People and places", count: 13 },
+  { shift: 0, label: "Military force; access the lab itself approves", count: 2 },
+] as const;
+
+/** The catalogue as shipped (today's blocks; future blocks counted apart). */
+export const CATALOG = {
+  blocks: 56,
+  categories: 6,
+  future: 5,
+  randVectors: 38,
+  ownModelVectors: 8,
+  structuralVectors: 4,
+  scenarios: 7,
+} as const;
+
+/** Blocks the catalogue slide draws, one of each type. Mirrors blocks-*.json. */
 export interface DemoBlock {
   id: string;
   name: string;
-  shortLabel: string;
-  category: string;
+  short: string;
   defenseType: "hard_stop" | "probabilistic" | "hybrid";
-  /** adversary_exploitation.ai_oc_shift — how much AI capability lifts the
-   * adversary against this control. Feeds the real `aiDegradation()`. */
-  aiOcShift: number;
-  /** dimensions.time_to_deploy_months — feeds the real
-   * `computeDecisionWindows()` on the timeline slide. */
   deployMonths: { min: number; max: number };
-  blurb: string;
 }
 
 export const DEMO_BLOCKS: Record<string, DemoBlock> = {
   "NET-01": {
     id: "NET-01",
     name: "Air-Gapped SL5 Network",
-    shortLabel: "Air Gap",
-    category: "network",
+    short: "Air gap",
     defenseType: "hard_stop",
-    aiOcShift: 0.5,
     deployMonths: { min: 12, max: 24 },
-    blurb:
-      "Zero external connections — no internet, no VPN, no cloud. A remote attacker has no route in, however capable they get.",
   },
   "PER-03": {
     id: "PER-03",
     name: "Continuous Behavioral Monitoring",
-    shortLabel: "Behav",
-    category: "personnel",
+    short: "Behavior monitoring",
     defenseType: "probabilistic",
-    aiOcShift: 1.0,
     deployMonths: { min: 9, max: 18 },
-    blurb:
-      "Watches for changed access patterns and new foreign contacts. It raises the odds of catching an insider — it never guarantees it.",
   },
   "NET-05": {
     id: "NET-05",
     name: "Cross-Domain Solutions / Data Diodes",
-    shortLabel: "Diodes",
-    category: "network",
+    short: "Data diodes",
     defenseType: "hybrid",
-    aiOcShift: 1.0,
     deployMonths: { min: 9, max: 18 },
-    blurb:
-      "Hardware-enforced one-way flow: a physical hard stop on direction, wrapped in probabilistic inspection of what passes.",
   },
-  "PER-04": {
-    id: "PER-04",
-    name: "Private SF-86 Equivalent Vetting",
-    shortLabel: "Vetting",
-    category: "personnel",
-    defenseType: "probabilistic",
-    aiOcShift: 1.0,
-    deployMonths: { min: 12, max: 24 },
-    blurb: "SF-86-grade background disclosure: foreign contacts, finances, history.",
-  },
-  "PER-06": {
-    id: "PER-06",
-    name: "Dual Authorization for Critical Operations",
-    shortLabel: "Dual Auth",
-    category: "personnel",
-    defenseType: "probabilistic",
-    aiOcShift: 0.5,
-    deployMonths: { min: 6, max: 15 },
-    blurb: "No single person can copy a checkpoint: every weight access needs a second, independent approval.",
-  },
-  "PHY-08": {
-    id: "PHY-08",
-    name: "No Unapproved Devices or Ports",
-    shortLabel: "No Ports",
-    category: "physical",
-    defenseType: "hybrid",
-    aiOcShift: 0.0,
-    deployMonths: { min: 6, max: 12 },
-    blurb: "No unapproved devices, media or ports in the red zone, and screening at every exit.",
-  },
-  "CUS-01": {
-    id: "CUS-01",
-    name: "Weight Custody",
-    shortLabel: "Custody",
-    category: "machine",
-    defenseType: "probabilistic",
-    aiOcShift: 1.0,
-    deployMonths: { min: 6, max: 12 },
-    blurb: "A register of every copy of the weights, and deletion of the ones nobody approved.",
-  },
-  "HW-07": {
-    id: "HW-07",
-    name: "Confidential Computing / TEE",
-    shortLabel: "TEE",
-    category: "machine",
-    defenseType: "hybrid",
-    aiOcShift: 1.0,
-    deployMonths: { min: 24, max: 48 },
-    blurb:
-      "The GPU walls its memory off from the host and DMA, and attestation proves it — a compromised OS can't read the weights. Physical access is another matter.",
+  "HW-04": {
+    id: "HW-04",
+    name: "Tamper Protection (Chip-Level)",
+    short: "Chip tamper protection",
+    defenseType: "hard_stop",
+    deployMonths: { min: 48, max: 72 },
   },
 };
 
-/** The chain slide walks The Long Game. Mirrors scenarios.json `long-game`. */
-export interface DemoChainStep {
-  phase: string;
-  description: string;
-  /** The block whose absence lets this step succeed. Undefined = no defense
-   * applies to the step as told. */
-  blockGapUsed?: string;
-  /** stopper_details.how_it_stops for `blockGapUsed`. */
-  howItStops?: string;
-}
-
-export const LONG_GAME = {
-  id: "long-game",
-  name: "The Long Game",
-  typicalOc: 4,
-  brief:
-    "Multi-year recruitment of a trusted employee. Passes basic vetting, avoids behavioral detection, copies weights alone and carries them out.",
-  steps: [
-    {
-      phase: "Recruitment",
-      description:
-        "An agency develops a senior researcher through an academic front over 18 months; standard employment checks never surface the foreign ties.",
-      blockGapUsed: "PER-04",
-      howItStops:
-        "SF-86-grade vetting surfaces foreign contacts and financial pressure before hiring or rescreening.",
-    },
-    {
-      phase: "Access",
-      description:
-        "The researcher returns from sabbatical with weight access unchanged; escalating access patterns and new foreign contacts go unflagged.",
-      blockGapUsed: "PER-03",
-      howItStops:
-        "Continuous behavioral monitoring flags changed access patterns and new foreign contacts.",
-    },
-    {
-      phase: "Extraction",
-      description:
-        "Using legitimate access, they copy model checkpoints during normal workflow - nothing is hacked, and nobody else has to approve it.",
-      blockGapUsed: "PER-06",
-      howItStops:
-        "Dual authorization for weight access: no single person can copy a checkpoint alone.",
-    },
-    {
-      phase: "Delivery",
-      description:
-        "They carry the copy out on a personal drive and resign; nothing screens what leaves the building.",
-      blockGapUsed: "PHY-08",
-      howItStops:
-        "No unapproved devices or ports, and exit screening: the drive never leaves.",
-    },
-  ] satisfies DemoChainStep[],
+/** The own model's steps, by stage (vectors.json V-SELF-*, on the own-model
+ * approach; sabotage is a separate meter and not listed). */
+export const OWN_MODEL_STEPS = {
+  reach: [
+    "Abuse of its own credentials or tooling",
+    "Sandbox escape via permitted egress",
+    "Unsanctioned workloads on lab compute",
+    "Manipulating its operators",
+  ],
+  exfil: [
+    "Self-exfiltration of its weights via permitted channels",
+    "Self-distilled data out via permitted channels",
+    "Covert and side channels",
+  ],
 } as const;
 
-/** Total blocks and chains in the shipped data — asserted by the drift test. */
-/** Today's catalogue (future-capability blocks excluded) and the scenarios. */
-export const CATALOG = { blocks: 56, categories: 6, chains: 7 } as const;
+/** The long-lead defenses the time slide races against the threat front,
+ * longest first, plus the air gap for contrast. Lead times come from the
+ * fetched data. */
+export const RACE_BLOCKS = ["HW-04", "HW-06", "PHY-01", "HW-01", "HW-07", "NET-01"] as const;
+
+/** What each source supplies to the instrument, for the sources figure. */
+export const SUPPLIES = [
+  { key: "tiers", label: "Attacker tiers" },
+  { key: "vectors", label: "Attack vectors" },
+  { key: "levels", label: "Security levels" },
+  { key: "defenses", label: "Defenses" },
+  { key: "pace", label: "AI pace" },
+] as const;
+
+export type SupplyKey = (typeof SUPPLIES)[number]["key"];
 
 export interface SourceLink {
   title: string;
+  short: string;
   href: string;
   year: string;
   gives: string;
+  /** Primary source for these; informs the rest it lists. */
+  primary: SupplyKey[];
+  informs: SupplyKey[];
 }
 
 export const SOURCES: SourceLink[] = [
   {
-    title: "RAND — Securing AI Model Weights",
+    title: "RAND — Securing AI Model Weights (RRA2849-1)",
+    short: "RAND 2024",
     href: "https://www.rand.org/pubs/research_reports/RRA2849-1.html",
     year: "2024",
     gives:
-      "The framework this whole tool is built on: five Security Levels mapped to five attacker capability tiers, ~38 attack vectors across 9 domains, and the assessment that SL5 is likely not achievable today without help from the national-security community.",
+      "The framework: five attacker tiers, five security levels, 38 attack vectors rated for each tier, and the finding that SL5 is not currently possible.",
+    primary: ["tiers", "vectors", "levels"],
+    informs: ["defenses"],
   },
   {
     title: "SL5 Standard for AI Security v0.1",
+    short: "SL5 Standard",
     href: "https://sl5.org/sl5-standard",
     year: "Jan 2026",
     gives:
-      "A concrete architecture, written as a NIST SP 800-53 overlay: an air-gapped SL5 network with further-isolated weight enclaves, dual inline encryptors from different suppliers (the “Rule of Two”), ICD 705 SCIF construction, and five personnel sensitivity tiers.",
+      "A concrete SL5 architecture as a NIST SP 800-53 overlay: an air-gapped network with isolated weight enclaves, dual inline encryptors, SCIF construction, personnel tiers.",
+    primary: ["defenses"],
+    informs: ["levels"],
   },
   {
     title: "SL5 Novel Recommendations",
+    short: "Novel Recommendations",
     href: "https://sl5.org/projects/sl5-novel-recommendations",
     year: "Nov 2025",
     gives:
-      "25 recommendations across supply chain, network, machine, physical and personnel — including treating a frontier AI agent as its own class of insider threat, eliminating remote access entirely, and continuous adversarial injection.",
+      "25 recommendations across supply chain, network, machine, physical and personnel, including treating a frontier AI agent as its own class of insider.",
+    primary: ["defenses"],
+    informs: ["vectors"],
+  },
+  {
+    title: "RAND — Achieving AI Model Weight Security Level 3 (RRA4704-1)",
+    short: "RAND SL3",
+    href: "https://www.rand.org/pubs/research_reports/RRA4704-1.html",
+    year: "Aug 2026",
+    gives:
+      "SL3 made concrete: 262 controls adapted from NIST SP 800-53, aimed at criminal groups and insiders, designed to roll out over six to twelve months.",
+    primary: [],
+    informs: ["levels", "defenses"],
   },
   {
     title: "AI 2027",
+    short: "AI 2027",
     href: "https://ai-2027.com",
     year: "2025",
     gives:
-      "The timeline argument: how the offense–defense balance shifts as capabilities climb. It cites a FAR.Labs AI Security Workshop poll (Nov 2024) in which 78% of participants expected a state actor to steal US frontier weights before 2030.",
+      "The timeline argument: how the balance between attack and defense shifts as AI capability climbs, and why weight security becomes urgent before 2030.",
+    primary: ["pace"],
+    informs: ["tiers"],
   },
 ];

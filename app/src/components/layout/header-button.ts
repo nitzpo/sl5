@@ -1,7 +1,4 @@
-/**
- * Shared header-button style: a bordered chip so header controls clearly read as
- * buttons. Lives in its own module (not Header.tsx) so exporting it alongside a
- * component doesn't disable React Fast Refresh for that component.
- */
-export const HEADER_BTN =
-  "flex items-center gap-1 text-xs text-gray-300 border border-gray-700 bg-gray-900 hover:bg-gray-800 hover:text-white hover:border-gray-600 px-2.5 py-1 rounded-md transition-colors";
+/** The header's text buttons: ink text, underline on hover or when open. Its
+ * own module so exporting it doesn't disable Fast Refresh for a component. */
+export const NAV_BTN =
+  "flex h-8 items-center px-1.5 text-[14px] whitespace-nowrap font-semibold text-ink underline-offset-4 hover:underline aria-expanded:underline";

@@ -1,512 +1,219 @@
-// The spin-off: a playable slice of the real app, opened from the constraints
-// slide and exited straight back to it. Everything the deck has explained
-// separately — blocks, states, a binding budget, dependencies, chains that
-// react, a score that moves — happens at once here, against the real engine.
-//
-// Two rules this file exists to respect:
-//
-//  1. Real engine, real data. All arithmetic is in `../posture-game`, which
-//     runs the same `scorePosture` pipeline `store/derived.ts` does, over the
-//     shipped blocks-*.json and the vector backbone. Nothing is re-implemented,
-//     so these numbers cannot drift from the app's.
-//  2. The intro still fetches nothing on load. The data is fetched lazily the
-//     first time someone opens the game, so the rest of the deck stays instant
-//     for the readers who never touch it.
+// The budget mini-game: a playable slice of the instrument on the budget
+// slide. The reader starts from today's typical lab, has one year and a fixed
+// budget, picks defenses, and reads which attacker tiers they now usually stop.
+// All arithmetic is in `../posture-game`, which runs `scorePosture`.
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { AttackChain, Block, BlockState } from "../../engine/types";
+import { useMemo, useState } from "react";
+import type { Block } from "../../engine/types";
+import { OC_TIERS } from "../content";
+import { useThreatData, type ThreatData } from "../data";
+import { bandChips } from "../engine-views";
+import { money } from "../format";
+import { STATE_LABEL, TYPE_LABEL } from "../labels";
 import {
-  ADVERSARY_OC,
-  BLOCK_FILES,
-  MODEL_FILES,
-  gameData,
   BUDGET_MILLIONS,
   SHORTLIST,
   YEAR,
   costOf,
   evaluatePosture,
-  type GameData,
+  startsPartlyInPlace,
+  type GameResult,
 } from "../posture-game";
-import { enablementFactor } from "../../engine";
-import { formatCost, formatProbability } from "../../utils/format";
-import { STATE_ICONS, STATE_LABELS, breachLevel, slLevel, LEVEL_TEXT } from "../../utils/colors";
-import { BLOCK_SHORT_LABELS, CATEGORY_LABELS } from "../../utils/geometry";
-import { DemoHex } from "./DemoHex";
-import type { DemoBlock } from "../content";
-import { Em } from "../slides/slide-parts";
+import { BlockGlyph, DataPending, Em, ProgressBar, SlMeter, TierLadder, type LadderRow } from "../slides/parts";
 
-/** DemoHex draws from the intro's own inlined `DemoBlock` shape, and the game
- * works with real `Block`s off the wire — so adapt rather than widen DemoHex and
- * make the teaching replica depend on the full data model. */
-function asDemoBlock(block: Block): DemoBlock {
-  return {
-    id: block.id,
-    name: block.name,
-    shortLabel: BLOCK_SHORT_LABELS[block.id] ?? block.id,
-    category: block.category,
-    defenseType: block.defense_type,
-    aiOcShift: 0,
-    deployMonths: block.dimensions.time_to_deploy_months,
-    blurb: "",
-  };
-}
+const bandsOf = (r: GameResult) => r.score.tiers.map((t) => t.band);
 
-export function BuildPostureGame({ onExit }: { onExit: () => void }) {
-  const [data, setData] = useState<GameData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  /** Chosen blocks in click order — which is also funding order, as in the app. */
-  const [chosen, setChosen] = useState<string[]>([]);
-  const [showChains, setShowChains] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    // Aborted on unmount, so leaving the detour mid-load doesn't leave seven
-    // requests running against a component nobody is looking at.
-    const controller = new AbortController();
-    const fetchJson = async (file: string) => {
-      const resp = await fetch(`${import.meta.env.BASE_URL}data/${file}`, {
-        signal: controller.signal,
-      });
-      if (!resp.ok) throw new Error(`${file}: HTTP ${resp.status}`);
-      return resp.json();
-    };
-    Promise.all([...MODEL_FILES.map(fetchJson), ...BLOCK_FILES.map(fetchJson)])
-      .then(([vectors, approaches, scenarios, ...blockArrays]) => {
-        if (alive)
-          setData(gameData((blockArrays as Block[][]).flat(), { vectors, approaches, scenarios }));
-      })
-      .catch((e: unknown) => {
-        // An abort is us, not a failure — don't flash an error at a reader who
-        // has already left.
-        if (alive) setError(e instanceof Error ? e.message : String(e));
-      });
-    return () => {
-      alive = false;
-      controller.abort();
-    };
-  }, []);
-
-  const shortlist = useMemo(() => {
-    if (!data) return [];
-    const byId = new Map(data.blocks.map((b) => [b.id, b]));
-    const found = SHORTLIST.map((id) => byId.get(id)).filter(
-      (b): b is Block => b !== undefined
-    );
-    // A renamed block id would otherwise hand the reader a nine-tile game that
-    // looks deliberate. `posture-game.test.ts` catches this against the shipped
-    // JSON; this catches it in a browser, where the data could be newer.
-    if (found.length !== SHORTLIST.length) {
-      const missing = SHORTLIST.filter((id) => !byId.has(id));
-      console.warn(
-        `BuildPostureGame: ${missing.join(", ")} missing from the block catalogue — ` +
-          `the mini-game is offering ${found.length} of ${SHORTLIST.length} blocks.`
-      );
-    }
-    return found;
-  }, [data]);
-
-  const result = useMemo(
-    () => (data ? evaluatePosture(data, chosen) : null),
-    [data, chosen]
-  );
-
-  const toggle = useCallback((id: string) => {
-    setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
-  }, []);
-
-  if (error) {
-    return (
-      <GameFrame onExit={onExit}>
-        <p className="text-sm leading-relaxed text-red-300">
-          Couldn't load the block data ({error}). Nothing else in the introduction needs
-          it — head back and carry on.
-        </p>
-      </GameFrame>
-    );
-  }
-
-  if (!data || !result) {
-    return (
-      <GameFrame onExit={onExit}>
-        <p className="text-sm text-gray-500">Loading the real block catalogue…</p>
-      </GameFrame>
-    );
-  }
-
-  const remaining = BUDGET_MILLIONS - result.spentMillions;
-  const spentPct = Math.min(100, (result.spentMillions / BUDGET_MILLIONS) * 100);
-
-  return (
-    <GameFrame onExit={onExit}>
-      <div className="space-y-4">
-        <p className="text-sm leading-relaxed text-gray-400">
-          You have <Em>{formatCost(BUDGET_MILLIONS)}</Em> for the year, ten candidate
-          blocks, and an OC{ADVERSARY_OC} adversary in {YEAR}. Click to deploy. Both
-          numbers below are computed by the app's own engine, so this is the real
-          exercise — just smaller.
-        </p>
-
-        {/* Budget meter. Funding follows click order, so what you pick first is
-            what gets paid for first. */}
-        <div>
-          <div className="flex items-baseline justify-between text-sm">
-            <span className="font-medium text-gray-300">Budget</span>
-            <span className="font-mono text-gray-400 tabular-nums">
-              <span className={remaining < 0 ? "text-pink-400" : "text-gray-200"}>
-                {formatCost(result.spentMillions)}
-              </span>{" "}
-              / {formatCost(BUDGET_MILLIONS)}
-            </span>
-          </div>
-          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-gray-800">
-            <div
-              className={`h-full rounded-full transition-all ${
-                remaining < 0 ? "bg-pink-500" : "bg-violet-500"
-              }`}
-              style={{ width: `${spentPct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* The shortlist. Each tile shows what the block actually counts as after
-            both caps — which is not always what was clicked, and that's the lesson. */}
-        <div className="grid gap-2 sm:grid-cols-2">
-          {shortlist.map((block) => {
-            const picked = chosen.includes(block.id);
-            const overBudget = result.budgetExceeded.has(block.id);
-            const unmet = result.dependencyUnmet.has(block.id);
-            const state: BlockState = picked
-              ? (result.effectiveStates[block.id] ?? "deployed")
-              : "not_started";
-            const missing = result.dependencyUnmetRequires.get(block.id) ?? [];
-            // The third way a tile can be worth less than it looks, and the only
-            // one that isn't a cap: the control is deployed and working, it just
-            // isn't the whole thing its name implies without its companions.
-            // Measured against the effective posture, so it's the same fraction
-            // the engine charged.
-            const enablement = enablementFactor(block, result.effectiveStates);
-            const incomplete = picked && enablement < 1;
-            return (
-              <button
-                key={block.id}
-                type="button"
-                onClick={() => toggle(block.id)}
-                aria-pressed={picked}
-                className={`flex items-center gap-2.5 rounded-lg border p-2 text-left transition-colors ${
-                  overBudget
-                    ? "border-pink-800/70 bg-pink-950/20"
-                    : unmet
-                      ? "border-sky-800/70 bg-sky-950/20"
-                      : picked
-                        ? "border-violet-700 bg-violet-950/30"
-                        : "border-gray-800 bg-gray-900 hover:border-gray-700"
-                }`}
-              >
-                <DemoHex
-                  block={asDemoBlock(block)}
-                  state={state}
-                  size={22}
-                  budgetExceeded={overBudget}
-                  dependencyUnmet={unmet}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-gray-200">
-                    {block.name}
-                  </span>
-                  <span className="block text-xs leading-relaxed text-gray-500">
-                    {formatCost(costOf(block))} ·{" "}
-                    {overBudget ? (
-                      <span className="text-pink-400">
-                        over budget — not built
-                      </span>
-                    ) : unmet ? (
-                      <span className="text-sky-400">needs {missing.join(", ")} first</span>
-                    ) : picked ? (
-                      <span className="text-violet-300">
-                        {STATE_ICONS[state]} {STATE_LABELS[state]}
-                      </span>
-                    ) : (
-                      block.defense_type.replace("_", " ")
-                    )}
-                  </span>
-                  {incomplete && !overBudget && !unmet && (
-                    <span className="block text-xs leading-relaxed text-amber-400">
-                      {Math.round(enablement * 100)}% of full — incomplete without{" "}
-                      {(block.dependencies.completed_by?.blocks ?? [])
-                        .filter((id) => {
-                          const s = result.effectiveStates[id];
-                          return s !== "deployed" && s !== "mature";
-                        })
-                        .join(", ")}
-                    </span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Security Posture, in miniature. Same two headline numbers, same
-            thresholds and colours as the app's ScoreCard. */}
-        <div className="grid grid-cols-2 gap-3 rounded-lg border border-gray-700 bg-gray-900 p-3.5">
-          <div>
-            <div className="text-xs text-gray-500">SL score</div>
-            <div className={`text-2xl font-bold ${LEVEL_TEXT[slLevel(result.sl)]}`}>
-              {/* Two decimals, not the app's one. Ten blocks out of 47 move the
-                  overall score in hundredths, and a readout frozen at "1.0"
-                  would read as broken rather than as slow progress. */}
-              {result.sl.toFixed(2)}
-            </div>
-            <div className="mt-0.5 text-xs text-gray-500">
-              weakest:{" "}
-              <span className="text-gray-400">
-                {CATEGORY_LABELS[result.weakestCategory]}
-              </span>
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Breach probability</div>
-            <div className={`text-2xl font-bold ${LEVEL_TEXT[breachLevel(result.breach)]}`}>
-              {formatProbability(result.breach)}
-            </div>
-            <div className="mt-0.5 truncate text-xs text-gray-500">
-              {result.ranked[0] ? `via ${result.ranked[0].chain.name}` : "—"}
-            </div>
-          </div>
-        </div>
-
-        <Coaching
-          chosen={chosen}
-          remaining={remaining}
-          overBudget={[...result.budgetExceeded]}
-          unmet={[...result.dependencyUnmet]}
-          incomplete={shortlist
-            .filter(
-              (b) => chosen.includes(b.id) && enablementFactor(b, result.effectiveStates) < 1
-            )
-            // Worst first, so the coaching names the one costing the reader most.
-            .sort(
-              (a, b) =>
-                enablementFactor(a, result.effectiveStates) -
-                enablementFactor(b, result.effectiveStates)
-            )}
-          effectiveStates={result.effectiveStates}
-          topChain={result.ranked[0]?.chain}
-        />
-
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowChains((s) => !s)}
-            aria-expanded={showChains}
-            className="text-sm font-medium text-violet-300 transition-colors hover:text-violet-200"
-          >
-            <span className="mr-1 inline-block">{showChains ? "▾" : "▸"}</span>
-            What does the attacker do about it?
-          </button>
-
-          {showChains && (
-            <div className="mt-2 space-y-1.5 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
-              <p className="mb-2 text-xs leading-relaxed text-gray-500">
-                All {result.ranked.length} chains, ranked exactly as the app's{" "}
-                <Em>Attacker</Em> perspective ranks them. A chain is only ever{" "}
-                <Em>held</Em> — within half a point of its residual floor, the lowest any
-                posture can push it — never at zero.
-              </p>
-              {result.ranked.map(({ chain, p, held }) => {
-                return (
-                  <div key={chain.id} className="flex items-baseline gap-2 text-sm">
-                    <span
-                      className={held ? "text-emerald-500" : "text-red-500"}
-                      title={held ? "Held at its residual floor" : "Viable"}
-                    >
-                      {held ? "■" : "✗"}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-gray-400">
-                      {chain.name}
-                    </span>
-                    <span className="font-mono text-gray-500 tabular-nums">
-                      {formatProbability(p)}
-                    </span>
-                  </div>
-                );
-              })}
-              <p className="mt-2.5 border-t border-gray-800 pt-2.5 text-sm leading-relaxed text-gray-500">
-                Nothing {formatCost(BUDGET_MILLIONS)} can buy drives the top chain to
-                zero, and no posture here reaches SL5. That's the honest outcome, not a
-                bug — and it's the same outcome at full scale, with 47 blocks, six world
-                sliders and seven years to spend across.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 border-t border-gray-800 pt-3.5">
-          <button
-            type="button"
-            onClick={onExit}
-            className="rounded-lg bg-violet-600 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-violet-500"
-          >
-            Back to the tour →
-          </button>
-          {chosen.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setChosen([])}
-              className="text-sm text-gray-500 transition-colors hover:text-gray-300"
-            >
-              Start over
-            </button>
-          )}
-        </div>
-      </div>
-    </GameFrame>
-  );
-}
-
-/** The line under the score that says what just happened and what to try next.
- * Ordered by which lesson is most urgent, so exactly one fires at a time. */
-function Coaching({
-  chosen,
-  remaining,
-  overBudget,
-  unmet,
-  incomplete,
-  effectiveStates,
-  topChain,
-}: {
-  chosen: string[];
-  remaining: number;
-  overBudget: string[];
-  unmet: string[];
-  /** Deployed picks missing `completed_by` companions, worst fraction first. */
-  incomplete: Block[];
-  effectiveStates: Record<string, BlockState>;
-  topChain?: AttackChain;
-}) {
+function Coaching({ data, chosen, result }: { data: ThreatData; chosen: string[]; result: GameResult }) {
+  const name = (id: string) => data.blocks.find((b) => b.id === id)?.name ?? id;
   if (chosen.length === 0) {
     return (
-      <p className="text-sm leading-relaxed text-gray-500">
-        Nothing deployed yet, so the score sits at its floor and every chain is wide open.
-        Start anywhere — the cheap controls are the tempting ones.
+      <p>
+        You start where a typical frontier lab is today. Pick defenses: the order you pick them is the order they are
+        funded.
       </p>
     );
   }
-  if (overBudget.length > 0) {
+  const over = [...result.budgetExceeded];
+  if (over.length > 0) {
     return (
-      <p className="text-sm leading-relaxed text-gray-400">
-        Out of money. The <span className="text-pink-300">pink dashed</span> blocks are the
-        ones the budget couldn't reach, so they aren't built at all — they count for
-        nothing, however firmly you clicked. Deselect something you picked{" "}
-        <Em>earlier</Em> to free the money up: funding follows click order, so a later
-        pick can only ever cap itself.
+      <p>
+        <Em>{name(over[0])}</Em> doesn't fit the budget, so it isn't built: it stays where your lab already was. Funding
+        follows your pick order, so drop an earlier pick to make room.
       </p>
     );
   }
+  const unmet = [...result.dependencyUnmet];
   if (unmet.length > 0) {
+    const needs = result.dependencyUnmetRequires.get(unmet[0]) ?? [];
     return (
-      <p className="text-sm leading-relaxed text-gray-400">
-        The <span className="text-sky-300">sky dotted</span> blocks are capped a different
-        way: a prerequisite of theirs isn't operational. Buy what they name and they come
-        up to full strength — this is the app's <Em>Requires</Em> relation, enforced.
+      <p>
+        <Em>{name(unmet[0])}</Em> needs {needs.map(name).join(" and ")} running first. Until then it counts as only
+        half-built.
       </p>
     );
   }
-  // Ranked above the worst-route lesson on purpose: this is the one that fires
-  // when a reader buys the air gap and expects to be done. The block works — it
-  // isn't capped — but a gap nobody can legitimately move data across is a gap
-  // people carry drives across, so it's priced as the partial thing it is.
-  //
-  // Only fires when a companion is buyable from the shortlist, so the lesson
-  // always comes with a move. Most companions are deliberately off the list (the
-  // air gap the budget affords is not the air gap the standard describes, and no
-  // ten-block year makes it one), and for those the tile's own "N% of full — needs
-  // …" line says it without spending the coaching slot on advice the reader can't
-  // take.
-  const missingCompanions = (block: Block) =>
-    (block.dependencies.completed_by?.blocks ?? []).filter((id) => {
-      const s = effectiveStates[id];
-      return s !== "deployed" && s !== "mature";
-    });
-  const finishable = incomplete.find((b) =>
-    missingCompanions(b).some((id) => (SHORTLIST as readonly string[]).includes(id))
-  );
-  if (finishable) {
-    const gaps = missingCompanions(finishable);
-    const here = gaps.filter((id) => (SHORTLIST as readonly string[]).includes(id));
-    return (
-      <p className="text-sm leading-relaxed text-gray-400">
-        <Em>{finishable.name}</Em> is deployed and nothing is capping it — but it counts for
-        only{" "}
-        <span className="text-amber-300">
-          {Math.round(enablementFactor(finishable, effectiveStates) * 100)}% of the control
-          its name implies
-        </span>
-        , because {gaps.join(" and ")} {gaps.length === 1 ? "isn't" : "aren't"} there.{" "}
-        {finishable.dependencies.completed_by?.why} {here.join(" and ")}{" "}
-        {here.length === 1 ? "is" : "are"} on this list — buy{" "}
-        {here.length === 1 ? "it" : "them"} and the number comes up.
-      </p>
-    );
-  }
-  // The trap the game exists to spring: the SL score is an average over the
-  // whole posture, but the headline breach number tracks only the single worst
-  // remaining route. So a posture can keep improving while the number barely
-  // moves, and closing one route just promotes the next one.
-  //
-  // Ask the chain directly rather than watching the number: this stays true when
-  // the arithmetic changes, and it avoids claiming the breach number is frozen
-  // in the moment it has just dropped — stopping the top chain promotes a
-  // different chain that is usually also untouched.
-  const onTopChain = chosen.some((id) => topChain?.stoppers?.includes(id));
-  if (topChain && !onTopChain) {
-    return (
-      <p className="text-sm leading-relaxed text-gray-400">
-        The breach number only ever tracks the <Em>worst remaining route</Em>, and right
-        now that's <Em>{topChain.name}</Em> — which nothing you've bought appears on. A
-        better posture on average is not the same as closing the route they're actually
-        taking. {formatCost(Math.max(0, remaining))} left.
-      </p>
-    );
-  }
+  const next = result.stillGetsThrough;
+  if (!next) return <p>Every tier usually fails against this posture.</p>;
   return (
-    <p className="text-sm leading-relaxed text-gray-400">
-      {formatCost(Math.max(0, remaining))} left, and you're on the right route now:
-      something you bought stands on <Em>{topChain?.name}</Em>, the worst one left. Note
-      which kind of control did it — cheap probabilistic ones buy the most score per
-      dollar today, and they're exactly the ones AI erosion takes back by 2030.
+    <p>
+      Next up: <Em>OC{next.tier}</Em> {next.band === "usually succeeds" ? "usually succeeds" : "is still contested"}. Its
+      easiest approach is {next.approach.toLowerCase()}: {next.path.join(" → ")}.
     </p>
   );
 }
 
-/** Chrome shared by every state, so the exit is reachable even if the fetch failed. */
-function GameFrame({
-  children,
-  onExit,
+function Tile({
+  block,
+  order,
+  result,
+  onToggle,
 }: {
-  children: ReactNode;
-  onExit: () => void;
+  block: Block;
+  order: number;
+  result: GameResult;
+  onToggle: () => void;
 }) {
+  const picked = order > 0;
+  const over = result.budgetExceeded.has(block.id);
+  const unmet = result.dependencyUnmet.has(block.id);
+  const state = result.effectiveStates[block.id] ?? "not_started";
+  const needs = result.dependencyUnmetRequires.get(block.id) ?? [];
+  let status: React.ReactNode;
+  if (over) status = <span className="font-semibold text-signal-ink">over budget · not built</span>;
+  else if (unmet) status = <span className="font-semibold text-ink">needs {needs.join(", ")} running first</span>;
+  else if (picked) status = <span className="text-ink">{STATE_LABEL[state].toLowerCase()}</span>;
+  else if (startsPartlyInPlace(block)) status = <span>partly in place</span>;
+  else status = <span>{TYPE_LABEL[block.defense_type].toLowerCase()}</span>;
+
   return (
-    <div className="rounded-xl border border-violet-800/50 bg-violet-950/10 p-4 sm:p-5">
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold tracking-wider text-violet-400 uppercase">
-            Try it · optional detour
-          </p>
-          <h3 className="mt-0.5 text-lg font-bold text-gray-100 sm:text-xl">
-            Build a posture on {formatCost(BUDGET_MILLIONS)}
-          </h3>
-        </div>
-        <button
-          type="button"
-          onClick={onExit}
-          className="shrink-0 rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-sm text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-800 hover:text-white"
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={picked}
+      className={`relative flex min-h-[64px] items-center gap-3 border px-3 py-2 text-left transition-colors ${
+        over ? "border-signal border-dashed" : picked ? "border-ink bg-tint" : "border-rule-2 hover:border-ink"
+      }`}
+    >
+      <BlockGlyph type={block.defense_type} state={state} w={10} h={34} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] leading-tight font-semibold text-ink">{block.name}</span>
+        <span className="mono mt-0.5 block text-[12px] text-ink-2">
+          {block.id} · {money(costOf(block))} · {status}
+        </span>
+      </span>
+      {picked && (
+        <span
+          className="mono flex h-[22px] min-w-[22px] items-center justify-center bg-ink px-1 text-[12px] font-semibold text-paper"
+          aria-label={`picked ${order}${order === 1 ? "st" : order === 2 ? "nd" : order === 3 ? "rd" : "th"}`}
         >
-          ← Back to the tour
-        </button>
+          {order}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function Game({ data }: { data: ThreatData }) {
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [chips, setChips] = useState<{ gen: number; moves: (string | null)[] }>({ gen: 0, moves: [] });
+  const result = useMemo(() => evaluatePosture(data, chosen), [data, chosen]);
+  const later = useMemo(() => evaluatePosture(data, chosen, 2028), [data, chosen]);
+  const shortlist = useMemo(
+    () => SHORTLIST.map((id) => data.blocks.find((b) => b.id === id)).filter((b): b is Block => b !== undefined),
+    [data]
+  );
+
+  const apply = (next: string[]) => {
+    setChips((c) => ({ gen: c.gen + 1, moves: bandChips(bandsOf(result), bandsOf(evaluatePosture(data, next))) }));
+    setChosen(next);
+  };
+  const toggle = (id: string) => apply(chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id]);
+
+  const requested = chosen.reduce((sum, id) => {
+    const b = shortlist.find((x) => x.id === id);
+    return sum + (b ? costOf(b) : 0);
+  }, 0);
+  const spent = result.spentMillions;
+  const rows: LadderRow[] = result.score.tiers.map((t, i) => ({
+    key: `oc${t.tier}`,
+    code: `OC${t.tier}`,
+    name: OC_TIERS[t.tier - 1].short,
+    band: t.band,
+    detail: t.detail,
+    chip: chips.moves[i] ?? undefined,
+    chipKey: chips.gen,
+  }));
+  const sl = result.score.sl;
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[1.25fr_1fr] lg:gap-12">
+      <div>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="cap">Budget for {YEAR}</p>
+          <p className="mono text-[14px] text-ink">
+            <span className="font-semibold">{money(spent)}</span> of {money(BUDGET_MILLIONS)} spent
+            {requested > spent + 0.5 && (
+              <span className="text-signal-ink"> · {money(requested - spent)} doesn't fit</span>
+            )}
+          </p>
+        </div>
+        <div className="relative mt-2 h-[10px] border border-ink" aria-hidden>
+          <span
+            className="absolute inset-y-0 left-0 bg-ink transition-[width]"
+            style={{ width: `${Math.min(100, (spent / BUDGET_MILLIONS) * 100)}%` }}
+          />
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2" role="group" aria-label="Defenses you can fund">
+          {shortlist.map((b) => (
+            <Tile
+              key={b.id}
+              block={b}
+              order={chosen.indexOf(b.id) + 1}
+              result={result}
+              onToggle={() => toggle(b.id)}
+            />
+          ))}
+        </div>
+        {/* On a phone the verdict sits below ten tiles; this keeps the headline
+            in view while picking. */}
+        <div className="sticky bottom-0 z-10 mt-3 flex items-center gap-3 border-t-2 border-ink bg-paper py-2 lg:hidden" aria-hidden>
+          <span className="display text-[28px] text-ink">SL{sl.level}</span>
+          {sl.level < 5 && <ProgressBar value={sl.progress} width={64} />}
+          <span className="text-[14px] font-semibold text-ink">stops {result.stops}</span>
+        </div>
+        {chosen.length > 0 && (
+          <button
+            type="button"
+            onClick={() => apply([])}
+            className="mt-3 min-h-[36px] border border-rule-2 px-3 text-[14px] text-ink hover:border-ink"
+          >
+            Start over
+          </button>
+        )}
       </div>
-      {children}
+
+      <div aria-live="polite">
+        <SlMeter level={sl.level} progress={sl.progress} marginal={sl.marginal} value={sl.value} />
+        <p className="mt-4 text-[20px] leading-snug font-semibold text-ink">
+          You usually stop {result.stops}.
+        </p>
+        <div className="mt-3">
+          <TierLadder rows={rows} label="Each attacker tier against your posture" />
+        </div>
+        <div className="mt-4 border-t border-ink pt-3 text-[14px] leading-[1.55] text-ink-2">
+          <Coaching data={data} chosen={chosen} result={result} />
+          <p className="mt-2">
+            By 2028, with nothing more added: <Em>SL{later.score.sl.level}</Em>
+            {later.score.sl.level < sl.level ? ", as AI lifts the attackers." : "."}
+          </p>
+        </div>
+      </div>
     </div>
   );
+}
+
+export function BuildPostureGame() {
+  const state = useThreatData();
+  if (state.status !== "ready") return <DataPending error={state.status === "error" ? state.error : undefined} />;
+  return <Game data={state.data} />;
 }

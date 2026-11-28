@@ -5,25 +5,18 @@ export function SharedBanner() {
   const scenarioName = useSimulationStore((s) => s.scenarioName);
   const saveShared = useSimulationStore((s) => s.saveShared);
   const restoreMine = useSimulationStore((s) => s.restoreMine);
-
   if (!viewingShared) return null;
-
   return (
-    <div className="flex items-center gap-3 px-4 py-1.5 bg-violet-950/80 border-b border-violet-800 text-xs">
-      <span className="text-violet-300">
-        {scenarioName ? `Viewing: ${scenarioName}` : "Viewing a shared scenario"}
+    <div className="flex items-center gap-4 border-b border-ink bg-tint px-6 py-1.5 text-[13px]" role="status">
+      <span>
+        <b>{scenarioName ? `Viewing “${scenarioName}”` : "Viewing a shared posture"}</b>
+        <span className="text-ink-2"> — your own posture is untouched.</span>
       </span>
-      <button
-        onClick={saveShared}
-        className="px-2 py-0.5 rounded bg-violet-700 text-violet-100 hover:bg-violet-600"
-      >
-        Save as mine
+      <button type="button" onClick={saveShared} className="border border-ink bg-ink px-2 py-0.5 font-semibold text-paper">
+        Keep this as mine
       </button>
-      <button
-        onClick={restoreMine}
-        className="px-2 py-0.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700"
-      >
-        Restore mine
+      <button type="button" onClick={restoreMine} className="font-semibold underline underline-offset-2">
+        Back to mine
       </button>
     </div>
   );

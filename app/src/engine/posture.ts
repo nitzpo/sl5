@@ -203,18 +203,6 @@ export interface PostureScore {
   /** Scenario (story) path success, by scenario id. */
   scenarios: Record<string, number>;
   blockRelevance: Record<string, BlockRelevance>;
-
-  // ---- Compatibility for the pre-vector UI (Phase 2B removes these) ----
-  /** = sl.value. */
-  overallSl: number;
-  /** = scenarios. */
-  breachProbabilities: Record<string, number>;
-  /** Per scenario: the campaign floor at the adversary OC (AI-insider floor for
-   * the AI scenario). */
-  residualFloors: Record<string, number>;
-  bestChain: { id: string; probability: number } | null;
-  /** = campaign. */
-  breach: number;
 }
 
 /**
@@ -223,15 +211,6 @@ export interface PostureScore {
  */
 export function targetSl(adversaryOc: number): number {
   return Math.min(5, Math.max(1, adversaryOc));
-}
-
-/** How close to its residual floor a number has to be to count as "held
- * there". Half a point: below the display's own resolution. */
-export const RESIDUAL_FLOOR_MARGIN = 0.005;
-
-/** True when defense has pushed this as low as defense can push it. */
-export function isHeldAtResidualFloor(probability: number, floor: number): boolean {
-  return probability <= floor + RESIDUAL_FLOOR_MARGIN;
 }
 
 // Relevance depends only on the catalogue, so cache it by identity.
@@ -439,20 +418,14 @@ export function scorePosture(input: PostureInput): PostureScore {
   const intEval = intApproach ? evaluateApproach(intApproach, evalAi, vectorsById) : { p: 0, path: [] };
   const intP = propensity * intEval.p;
 
-  // Scenarios (stories), and the compatibility view of them.
+  // Scenarios (stories): each told as one specific path.
   const scenarios: Record<string, number> = {};
-  const residualFloors: Record<string, number> = {};
   for (const s of model.scenarios) {
     const approach = model.approaches.find((a) => a.id === s.approach);
     const isAi = approach?.adversary === "ai";
     const live = !s.requires_external_serving || served;
     const p = live ? scenarioSuccess(s, isAi ? evalAi : evalAt) : 0;
     scenarios[s.id] = isAi ? propensity * p : p;
-    residualFloors[s.id] = !live ? 0 : isAi ? aiFloor : approach?.headline ? atTier.floor : 0;
-  }
-  let bestChain: PostureScore["bestChain"] = null;
-  for (const [id, probability] of Object.entries(scenarios)) {
-    if (!bestChain || probability > bestChain.probability) bestChain = { id, probability };
   }
 
   // Which approaches and vectors each block touches, at the current posture.
@@ -554,10 +527,5 @@ export function scorePosture(input: PostureInput): PostureScore {
     campaign,
     scenarios,
     blockRelevance,
-    overallSl: level.value,
-    breachProbabilities: scenarios,
-    residualFloors,
-    bestChain,
-    breach: campaign,
   };
 }

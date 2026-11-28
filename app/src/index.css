@@ -1,5 +1,68 @@
 @import "tailwindcss";
 
+/*
+ * "Swiss signal" tokens. Paper and ink, one signal red reserved for the
+ * adversary, and a dark palette built from the same roles. Every text pairing
+ * below is checked at ≥ 4.5:1 (ink-3 is never set on tint: 4.30:1). `--signal`
+ * is for large marks only (3.7:1 on paper); small red text uses `--signal-ink`.
+ *
+ * The introduction imports this file too, so the tokens are additive: nothing
+ * here restyles an element the intro relies on. The app opts in with the
+ * `font-archivo bg-paper text-ink` classes on its own root.
+ */
+:root {
+  --paper: #f4f3ee;
+  --ink: #111110;
+  --ink-2: #52514c;
+  --ink-3: #6b6a64;
+  --rule: #d5d4cd;
+  --rule-2: #bdbcb5;
+  --tint: #e6e5de;
+  --mid: #a9a8a1;
+  --signal: #eb3a1c;
+  --signal-ink: #b8260c;
+  --signal-wash: rgb(235 58 28 / 0.08);
+  /* Text set on an ink fill (a deployed tile). */
+  --on-ink: #f4f3ee;
+  --on-ink-2: #bdbcb5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #131312;
+    --ink: #eeede7;
+    --ink-2: #b4b3ab;
+    --ink-3: #9a9992;
+    --rule: #3a3935;
+    --rule-2: #55544f;
+    --tint: #262523;
+    --mid: #6a6964;
+    --signal: #e5573b;
+    --signal-ink: #f26a4b;
+    --signal-wash: rgb(229 87 59 / 0.12);
+    --on-ink: #131312;
+    --on-ink-2: #46453f;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-tint: var(--tint);
+  --color-mid: var(--mid);
+  --color-signal: var(--signal);
+  --color-signal-ink: var(--signal-ink);
+  --color-signal-wash: var(--signal-wash);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-2: var(--on-ink-2);
+  --font-archivo: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-plex: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
@@ -23,4 +86,127 @@ body {
 }
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+/* ---- The app (v2) ------------------------------------------------------ */
+
+.sl5 {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.sl5 :focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.sl5 ::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Small caps label: the Swiss section header. */
+.cap {
+  font-family: var(--font-plex);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* A range input drawn in ink, not the browser's accent colour. */
+.sl5-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 16px;
+  cursor: pointer;
+}
+.sl5-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--ink);
+}
+.sl5-range::-moz-range-track {
+  height: 2px;
+  background: var(--ink);
+}
+.sl5-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 16px;
+  margin-top: -7px;
+  background: var(--ink);
+  border: 2px solid var(--paper);
+  outline: 1px solid var(--ink);
+}
+.sl5-range::-moz-range-thumb {
+  width: 10px;
+  height: 14px;
+  background: var(--ink);
+  border: 2px solid var(--paper);
+  border-radius: 0;
+}
+.sl5-range:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Motion: a ripple from a clicked block to the verdict, and a short chip at
+ * the block when a click changes a tier. Nothing else moves. */
+@keyframes sl5-ripple {
+  from { opacity: 0.55; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.35); }
+}
+.sl5-ripple {
+  animation: sl5-ripple 600ms ease-out forwards;
+}
+@keyframes sl5-chip {
+  0% { opacity: 0; transform: translateY(2px); }
+  15% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+.sl5-chip {
+  animation: sl5-chip 1600ms ease-out forwards;
+}
+@keyframes sl5-pulse-rail {
+  from { background-color: var(--tint); }
+  to { background-color: transparent; }
+}
+.sl5-pulse {
+  animation: sl5-pulse-rail 700ms ease-out;
+}
+@keyframes sl5-year {
+  from { opacity: 0.25; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sl5-year {
+  animation: sl5-year 260ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sl5-ripple,
+  .sl5-chip,
+  .sl5-pulse,
+  .sl5-year,
+  .animate-fade-in {
+    animation: none !important;
+  }
+  .sl5 * {
+    transition: none !important;
+  }
+}
+
+/* Clusters: a focus ring on the hexagon, and the details affordance on hover. */
+.sl5-hex .sl5-more {
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.sl5-hex:hover .sl5-more,
+.sl5-hex:focus-visible .sl5-more {
+  opacity: 1;
+}
+.sl5-hex:focus-visible .sl5-focus {
+  stroke: var(--ink);
 }

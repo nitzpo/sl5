@@ -64,7 +64,19 @@ describe("advancement order (store)", () => {
     store.setBlockState(fresh.id, "investing");
     store.setBlockState(seeded.id, "deployed");
     const after = useSimulationStore.getState().advanceOrder;
-    store.cycleBlockState(seeded.id); // deployed → mature: already costing
+    store.stepBlockState(seeded.id, 1); // deployed → mature: already costing
     expect(useSimulationStore.getState().advanceOrder).toEqual(after);
+  });
+
+  it("steps clamp at both ends: a click never wraps a mature block back to nothing", () => {
+    const store = useSimulationStore.getState();
+    store.setBlockState(fresh.id, "mature");
+    store.stepBlockState(fresh.id, 1);
+    expect(useSimulationStore.getState().blockStates[fresh.id]).toBe("mature");
+    store.setBlockState(fresh.id, "not_started");
+    store.stepBlockState(fresh.id, -1);
+    expect(useSimulationStore.getState().blockStates[fresh.id]).toBe("not_started");
+    store.stepBlockState(fresh.id, 1);
+    expect(useSimulationStore.getState().blockStates[fresh.id]).toBe("investing");
   });
 });

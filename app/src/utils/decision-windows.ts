@@ -79,7 +79,7 @@ export function effectiveDeployMonths(
 /**
  * Blocks whose deployment window is closing: not started, and the latest
  * possible start year (deadline minus max deploy time) falls within the
- * horizon. Single source of truth for CisoView, TimelineTrack, and grid badges.
+ * horizon. Single source of truth for the catalogue's "start now" marks.
  */
 export function computeDecisionWindows(
   blocks: Block[],
@@ -110,5 +110,5 @@ export function computeDecisionWindows(
   return result.sort((a, b) => a.mustStartBy - b.mustStartBy);
 }
 
-// Badge styling for urgency lives in utils/colors.ts (URGENCY_BADGE):
-// hue stays threat-red; urgency is carried by weight (solid vs outline).
+// The catalogue marks overdue and urgent windows "start now" (a corner mark);
+// the Race view draws every long-lead block against the threat front.

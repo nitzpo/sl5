@@ -1,9 +1,12 @@
-import type { BlockState, Perspective, Sliders } from "../engine/types";
+import type { BlockState, Sliders } from "../engine/types";
 import { migrateBlockOrder, migrateBlockStates } from "../engine/catalogue";
 import { DEFAULT_AI_PROPENSITY, DEFAULT_SL_BAR } from "../engine/threat-sl";
 
-const STORAGE_KEY = "sl5-state";
-const SCENARIOS_KEY = "sl5-scenarios";
+// v2 shares its origin with the frozen v1 (/sl5/v1/), so it has its own keys
+// and never writes v1's unprefixed ones. Share links (#state=) are not keyed and
+// still open here; `migratePersistedState` brings old ids up to date.
+export const STORAGE_KEY = "sl5v2-state";
+export const SCENARIOS_KEY = "sl5v2-scenarios";
 
 export interface PersistedState {
   blockStates: Record<string, BlockState>;
@@ -11,7 +14,8 @@ export interface PersistedState {
    * Absent in old saves — derived from blockStates on load. */
   advanceOrder?: string[];
   year: number;
-  perspective: Perspective;
+  /** v1's analysis-panel choice. Old links still carry it; v2 ignores it. */
+  perspective?: string;
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;

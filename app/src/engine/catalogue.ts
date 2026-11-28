@@ -1,4 +1,4 @@
-import type { AttackChain, BlockState, Scenario } from "./types";
+import type { BlockState } from "./types";
 
 /**
  * Catalogue history: block ids that Phase 2 merged away, and where their state
@@ -44,32 +44,4 @@ export function migrateBlockOrder(order: string[]): string[] {
     for (const to of LEGACY_BLOCK_IDS[id] ?? [id]) if (!out.includes(to)) out.push(to);
   }
   return out;
-}
-
-/**
- * COMPATIBILITY (Phase 2A → 2B): a scenario in the chain shape the pre-vector
- * UI still reads. `blocks_exploited` is the gaps its steps name, `stoppers`
- * its stopper list. Nothing in the engine scores this shape; the numbers the
- * UI shows next to it come from `scorePosture().scenarios`.
- */
-export function scenarioAsChain(s: Scenario): AttackChain {
-  const gaps = s.steps.map((st) => st.block_gap_used).filter((x): x is string => !!x);
-  return {
-    id: s.id,
-    name: s.name,
-    adversary_profile: s.adversary_profile,
-    blocks_exploited: [...new Set(gaps)],
-    narrative: {
-      brief: s.narrative.brief,
-      detailed: s.narrative.detailed,
-      steps: s.steps.map((st) => ({
-        phase: st.phase,
-        description: st.description,
-        ...(st.block_gap_used ? { block_gap_used: st.block_gap_used } : {}),
-      })),
-    },
-    stoppers: s.stopper_details.map((d) => d.block_id),
-    stopper_details: s.stopper_details,
-    requires_external_serving: s.requires_external_serving,
-  };
 }

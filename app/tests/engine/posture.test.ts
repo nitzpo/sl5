@@ -1,15 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   counterRelevance,
-  isHeldAtResidualFloor,
   scorePosture,
   targetSl,
   threatRelevance,
   type PostureInput,
 } from "../../src/engine";
-import { deriveSimulationResults } from "../../src/store/derived";
-import { sampleAt, sampleRiskCurve, SAMPLE_YEARS } from "../../src/utils/risk-samples";
-import { policyLeverImpacts } from "../../src/utils/policy-levers";
+import { deriveScore } from "../../src/store/derived";
+import { RACE_YEARS, slOverYears } from "../../src/model/race";
 import { recommendInvestments } from "../../src/utils/ciso-recommendations";
 import { SCRIPTS } from "../../src/timelapse/scripts";
 import { computeScriptBlockStates } from "../../src/timelapse/compute-script-state";
@@ -57,48 +55,44 @@ describe("one source of truth for derived numbers", () => {
     expect(APP_SLIDERS).toEqual(DEFAULT_SLIDERS);
   });
 
-  it("the Score card, timeline, Policy view and CISO view agree exactly", () => {
-    // Before the shared pipeline these read 2.02 / 2.12 / 2.46 for Reactive 2030.
-    const card = deriveSimulationResults({
+  it("the rail, the race strip and the next-defense ranking agree exactly", () => {
+    // Before the shared pipeline the v1 panels read 2.02 / 2.12 / 2.46 for
+    // Reactive 2030. Every v2 readout goes through the same `scorePosture`.
+    const rail = deriveScore({
       ...input,
       threatModel: model,
       advanceOrder: input.advanceOrder!,
       futureCapabilities: false,
     });
-    const curve = sampleRiskCurve(input);
-    const idx = SAMPLE_YEARS.indexOf(2030);
+    const { year: _year, ...rest } = input;
+    void _year;
+    const strip = slOverYears(rest);
+    const idx = RACE_YEARS.indexOf(2030);
     expect(idx).toBeGreaterThanOrEqual(0);
-    const timeline = curve[idx];
-    const policy = policyLeverImpacts(input).current;
-    const ciso = recommendInvestments(input).baseline;
+    const ranked = recommendInvestments(input).baseline;
 
-    for (const [name, sl, breach, perChain] of [
-      ["score card", card.overallSl, card.campaign, card.breachProbabilities],
-      ["timeline", timeline.sl, timeline.threat, timeline.chainProbs],
-      ["timeline (read at the store year)", sampleAt(curve, 2030).sl, sampleAt(curve, 2030).threat, sampleAt(curve, 2030).chainProbs],
-      ["policy view", policy.overallSl, policy.breach, policy.breachProbabilities],
-      ["ciso view", ciso.overallSl, ciso.breach, ciso.breachProbabilities],
+    for (const [name, score] of [
+      ["rail", rail],
+      ["next-defense ranking", ranked],
     ] as const) {
-      expect(sl, `${name} SL`).toBe(reference.overallSl);
-      expect(breach, `${name} breach`).toBe(reference.breach);
-      expect(perChain, `${name} per-scenario success`).toEqual(reference.breachProbabilities);
+      expect(score.sl, `${name} SL`).toEqual(reference.sl);
+      expect(score.tiers, `${name} tiers`).toEqual(reference.tiers);
+      expect(score.approaches, `${name} approaches`).toEqual(reference.approaches);
+      expect(score.aiInsider, `${name} own model`).toEqual(reference.aiInsider);
+      expect(score.scenarios, `${name} scenarios`).toEqual(reference.scenarios);
     }
-    expect(card.categoryScores).toEqual(reference.categoryScores);
-    expect(card.effectiveStates).toEqual(reference.effectiveStates);
-    // The new API reaches the store unchanged.
-    expect(card.sl).toEqual(reference.sl);
-    expect(card.tiers).toEqual(reference.tiers);
-    expect(card.approaches).toEqual(reference.approaches);
-    expect(card.aiInsider).toEqual(reference.aiInsider);
-    expect(card.extractionProgress).toBe(reference.capabilityLeakage.cumulative);
-    expect(card.breachByOc[4]).toBe(reference.tiers[3].p);
+    expect(strip[idx].value, "race strip SL at 2030").toBe(reference.sl.value);
+    expect(strip[idx].level).toBe(reference.sl.level);
+    expect(rail.categoryScores).toEqual(reference.categoryScores);
+    expect(rail.effectiveStates).toEqual(reference.effectiveStates);
+    expect(rail.blockRelevance).toEqual(reference.blockRelevance);
   });
 
-  it("exposes the compatibility fields as views of the new numbers", () => {
-    expect(reference.overallSl).toBe(reference.sl.value);
-    expect(reference.breach).toBe(reference.campaign);
+  it("reports the campaign at the adversary tier, and no chain-era fields", () => {
     expect(reference.campaign).toBe(reference.tiers[3].p);
-    expect(reference.breachProbabilities).toEqual(reference.scenarios);
+    for (const gone of ["overallSl", "breachProbabilities", "residualFloors", "bestChain", "breach"]) {
+      expect(reference, gone).not.toHaveProperty(gone);
+    }
   });
 
   it("scores completeness over every block that counters something, weighting strong counters fully", () => {
@@ -110,12 +104,14 @@ describe("one source of truth for derived numbers", () => {
     expect(threatRelevance(blocks)).toBe(full);
   });
 
-  it("the timeline holds the posture fixed and moves only the clock", () => {
-    const curve = sampleRiskCurve(input);
-    for (const sample of curve.filter((_, i) => i % 6 === 0)) {
+  it("the race strip holds the posture fixed and moves only the clock", () => {
+    const { year: _year, ...rest } = input;
+    void _year;
+    const strip = slOverYears(rest);
+    for (const sample of strip.filter((_, i) => i % 3 === 0)) {
       const direct = scorePosture({ ...input, year: sample.year });
-      expect(sample.sl).toBe(direct.overallSl);
-      expect(sample.threat).toBe(direct.campaign);
+      expect(sample.value).toBe(direct.sl.value);
+      expect(sample.marginal).toBe(direct.sl.marginal);
     }
   });
 });
@@ -135,13 +131,9 @@ describe("residual floor", () => {
       expect(t.p).toBeGreaterThanOrEqual(t.floor);
       expect(t.floor).toBeCloseTo(0.03 * t.undefended, 12);
     }
-    // Every scenario carries the campaign floor it sits under (compatibility).
-    for (const s of model.scenarios) {
-      const isAi = model.approaches.find((a) => a.id === s.approach)!.adversary === "ai";
-      const live = !s.requires_external_serving;
-      if (!live) continue;
-      expect(score.residualFloors[s.id]).toBe(isAi ? score.aiInsider.floor : s.approach === "capability_copy" ? 0 : score.tiers[3].floor);
-    }
+    // A mature posture sits on the floor at the low tiers.
+    expect(score.tiers[0].p).toBe(score.tiers[0].floor);
+    expect(score.aiInsider.p).toBeGreaterThanOrEqual(score.aiInsider.floor);
   });
 
   it("is zero for a scenario held inert by its precondition", () => {
@@ -156,14 +148,6 @@ describe("residual floor", () => {
     });
     const api = model.scenarios.find((s) => s.requires_external_serving)!;
     expect(score.scenarios[api.id]).toBe(0);
-    expect(score.residualFloors[api.id]).toBe(0);
-    expect(isHeldAtResidualFloor(0, 0)).toBe(true);
-  });
-
-  it("files a number as held within half a point of its floor, and no further", () => {
-    expect(isHeldAtResidualFloor(0.026, 0.026)).toBe(true);
-    expect(isHeldAtResidualFloor(0.0309, 0.026)).toBe(true);
-    expect(isHeldAtResidualFloor(0.0311, 0.026)).toBe(false);
   });
 });
 

@@ -35,24 +35,26 @@ describe("the introduction is the primary call to action", () => {
     expect(interactive[0].textContent).toContain(INTRO_CTA);
   });
 
-  it("links to the intro page and is the only violet-filled action", () => {
+  it("links to the intro page and is the only ink-filled action", () => {
     render(<IntroOverlay onClose={() => {}} />);
     const cta = screen.getByText(INTRO_CTA).closest("a")!;
     expect(cta.getAttribute("href")).toBe(`${import.meta.env.BASE_URL}intro/`);
 
-    // The accent fill is the visual weight that makes it read as primary. The
-    // two secondary buttons must not share it.
-    const violet = Array.from(document.querySelectorAll("a, button")).filter((el) =>
-      /bg-violet-600|bg-purple-600/.test(el.className)
+    // The solid ink fill is the visual weight that makes it read as primary.
+    // The two secondary buttons are outlined and must not share it.
+    const filled = Array.from(document.querySelectorAll("a, button")).filter((el) =>
+      /(^|\s)bg-ink(\s|$)/.test(el.className)
     );
-    expect(violet).toHaveLength(1);
-    expect(violet[0].textContent).toContain(INTRO_CTA);
+    expect(filled).toHaveLength(1);
+    expect(filled[0].textContent).toContain(INTRO_CTA);
   });
 
-  it("marks the intro seen, so returning to the app isn't a loop", () => {
+  it("marks the intro seen under the v2 key, so returning to the app isn't a loop", () => {
     render(<IntroOverlay onClose={() => {}} />);
     fireEvent.click(screen.getByText(INTRO_CTA));
-    expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
+    expect(localStorage.getItem("sl5v2_intro_seen")).toBe("1");
+    // v1 shares the origin: never write its unprefixed key.
+    expect(localStorage.getItem("sl5_intro_seen")).toBeNull();
   });
 });
 
@@ -72,7 +74,7 @@ describe("the secondary exits still work", () => {
     // that the chosen story is actually playing when the app appears.
     expect(startScript).toHaveBeenCalledWith(scripted[0]);
     expect(onClose).toHaveBeenCalled();
-    expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
+    expect(localStorage.getItem("sl5v2_intro_seen")).toBe("1");
   });
 
   it("the intro CTA stays visible while the story chooser is open", () => {
@@ -86,6 +88,6 @@ describe("the secondary exits still work", () => {
     render(<IntroOverlay onClose={onClose} />);
     fireEvent.click(screen.getByText("Explore freely"));
     expect(onClose).toHaveBeenCalled();
-    expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
+    expect(localStorage.getItem("sl5v2_intro_seen")).toBe("1");
   });
 });

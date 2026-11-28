@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { resolveLayer } from "../../src/utils/ring-geometry";
 import { NO_DEADLINE_MONTHS } from "../../src/utils/decision-windows";
 import { LEGACY_BLOCK_IDS } from "../../src/engine/catalogue";
 import { STAGES } from "../../src/engine/types";
@@ -78,14 +77,6 @@ describe("block data integrity", () => {
       done.add(id);
     }
     for (const b of blocks) visit(b.id, []);
-  });
-
-  it("every layer contribution resolves to a canonical layer", () => {
-    for (const b of blocks) {
-      for (const raw of b.defense_in_depth?.layer_contributions ?? []) {
-        expect(resolveLayer(raw), `${b.id}: unresolvable layer "${raw}"`).not.toBeNull();
-      }
-    }
   });
 
   it("cost and deploy-time ranges are ordered and sane", () => {

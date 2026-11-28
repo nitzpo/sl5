@@ -1,16 +1,17 @@
 ---
 name: run-sl5-app
-description: Build, run, test, and drive the SL5 explorable web app. Use when asked to start or run the app or its dev server, take a screenshot of the map/UI, verify a change in the real browser, drive the intro page, run the engine directly, or run the lint/test/build checks.
+description: Build, run, test, and drive the SL5 explorable web app (v2). Use when asked to start or run the app or its dev server, take a screenshot of the catalogue/UI, verify a change in the real browser, drive the intro page, run the engine directly, or run the lint/test/build checks.
 ---
 
 Vite + React + TypeScript explorable, served under the **`/sl5/` base path**, plus a
 second entry point at `/sl5/intro/`. Two ways in, depending on what you touched:
 
-- **UI / pan-zoom / rendering change** → start the dev server, then drive real headless
+- **UI / layout / rendering change** → start the dev server, then drive real headless
   Chromium with **`.claude/skills/run-sl5-app/driver.mjs`** (this directory). It asserts
   invariants and writes screenshots.
 - **Engine change** (`src/engine/**` — pure functions over JSON) → skip the browser
-  entirely and use **`npx tsx`** direct invocation. Most engine PRs need only this.
+  entirely and run a TypeScript probe with **`node scripts/run-ts.mjs`** (Vite's own
+  module runner; `npx tsx` may be blocked). Most engine PRs need only this.
 
 All paths below are relative to `app/` (the unit). Node 20 / npm 10 verified.
 
@@ -28,9 +29,11 @@ need libatk / libatk-bridge / libcups, which the full `npx playwright install-de
 would drag in. Install those three and stop.
 
 Playwright is deliberately **not** a project dependency (a ~100MB browser download that
-every `npm install` and the Pages deploy would otherwise pay for). Install it once to a
-scratch dir and point the driver at it. **Versions are pinned** — these are the ones this
-skill was verified against, and an unpinned `npm i playwright` will drift:
+every `npm install` and the Pages deploy would otherwise pay for). Some containers already
+have one: `node -e "console.log(require.resolve('playwright'))"` (e.g. `/opt/node-tools`).
+Otherwise install it once to a scratch dir and point the driver at it. **Versions are
+pinned** — these are the ones this skill was verified against, and an unpinned
+`npm i playwright` will drift:
 
 ```bash
 mkdir -p /tmp/pw && cd /tmp/pw && npm init -y && npm i playwright@1.62.0
@@ -62,57 +65,56 @@ Flows — pass one, or `all`:
 
 | flow | what it asserts |
 |---|---|
-| `smoke` | app loads, all 47 block hexes render, no console errors |
-| `panzoom` | content centered on load; opening a panel **pans without rescaling** |
-| `gate` | below 768px the gate replaces the app (its `<svg>` never mounts), and tracks a live resize both ways |
-| `intro` | `/sl5/intro/` renders, `#hash` deep links resolve, readable at 390px |
-| `views` | Clusters / Grid / Rings each mount and lay out |
-| `all` | all of the above (24 checks) |
+| `smoke` | app loads past the first-run modal; every block of today's catalogue renders once (counted from `public/data`), no R&D block while the toggle is off; the rail states a level and band words; a path is drawn; **no `%` anywhere on screen** (text, titles, aria labels; quoted research prose excepted); **nothing under 12px**; no console errors |
+| `views` | Stage matrix, Clusters, Approaches and Race each mount and lay out (tile/hex/lane/bar counts); nothing under 12px on the race |
+| `interact` | click advances a block, right-click steps it back; Shift-click opens the block drawer, Escape closes it; the Parameters drawer has strictness, propensity, future toggle, serving, government; the future toggle shows the R&D blocks |
+| `story` | Scenarios ▾ → Proactive Program plays with the transport and a caption in the rail; the end shows a takeaway; Proactive reaches SL3 by 2030; stopping restores the reader's year |
+| `dark` | `prefers-color-scheme: dark` paints the dark paper |
+| `gate` | below 768px the gate replaces the app (no catalogue mounts), and tracks a live resize both ways |
+| `intro` | `/sl5/intro/` renders, `#the-oc-ladder` deep-links to its slide (title and position read from `src/intro/slides/index.ts`), readable at 390px |
+| `all` | all of the above (~37 checks, ~15s) |
 
-Flags: `--url=http://localhost:4173` (verified against `npm run preview`),
+Flags: `--url=http://localhost:4173` (works against `npm run preview` too),
 `--out=<dir>` (default `/tmp/sl5-shots`), `--headed`.
 
-Screenshots → `/tmp/sl5-shots/*.png`. Exit code is nonzero if any check fails.
-**Open the screenshot** — a blank frame passes no check but means the launch failed.
+Screenshots → `<out>/*.png`: `smoke`, `view-{matrix,clusters,approaches,race}`,
+`drawer`, `parameters`, `story-{playing,end}`, `dark-{matrix,clusters}`, `gate`,
+`intro{,-deeplink,-phone}`. Exit code is nonzero if any check fails. **Open the
+screenshots** — a blank frame passes no check but means the launch failed.
 
 ### Why the driver exists
 
-`tests/utils/pan-zoom.test.ts` covers only the exported pure `recenterOnResize`. The
-render path of `src/utils/use-viewbox-pan-zoom.ts` — the latched baseline, the
-`computeBaseFit` centering, the ref sync — has **no unit coverage** and is only
-observable in a browser with real layout. The `panzoom` flow is that coverage: it reads
-the `transform` attribute the hook actually emits and checks `scale` is unchanged while
-`tx` moves by exactly half the width change. If you touch that hook, run it.
+The unit tests render components in jsdom, which has no layout. The stage matrix
+measures its tiles to draw the attack-path overlay (`useGeometry` in
+`components/catalogue/StageMatrix.tsx`), the clusters SVG scales to fit, and the 12px
+floor depends on that scale — all only observable in a real browser. The `smoke` flow's
+`%` and 12px checks are the browser-side half of `tests/ui/catalogue.test.tsx`.
 
 ## Run: engine directly (no browser)
 
-`npx tsx` runs the TypeScript engine as-is. Two things are required: the **`.ts`
-extensions in the import paths**, and reading the JSON from `public/data` via `fs` (the
-engine takes blocks as an argument; it doesn't load them itself).
-
-Write the probe **inside `app/`** so the imports stay relative — no absolute paths, so it
-works in any clone. Run from `app/`:
+`node scripts/run-ts.mjs <file.ts>` runs a TypeScript file through Vite's module runner
+(it calls an exported `main` if there is one). Write the probe **inside `app/`** so the
+imports stay relative, read the JSON from `public/data` via `fs`, and delete it after:
 
 ```bash
-cat > engine-probe.ts <<'EOF'
+cat > probe.ts <<'EOF'
 import fs from "fs";
 import path from "path";
-import { computeCategoryScores, overallSlScore } from "./src/engine/scoring.ts";
-import { getAiCapability } from "./src/engine/ai-curve.ts";
+import { scorePosture } from "./src/engine/posture.ts";
+import { baselineStates } from "./src/engine/baseline.ts";
 import type { Block } from "./src/engine/types.ts";
 
-const dataDir = path.join(import.meta.dirname, "public/data");
-const blocks: Block[] = [];
-for (const f of fs.readdirSync(dataDir)) {
-  if (f.startsWith("blocks-") && f.endsWith(".json"))
-    blocks.push(...JSON.parse(fs.readFileSync(path.join(dataDir, f), "utf-8")));
-}
-console.log("blocks:", blocks.length);              // 47
-console.log("AI cap 2027:", getAiCapability(2027)); // 0.65
-const cats = computeCategoryScores(blocks, 2026, 0);
-console.log("overall SL:", overallSlScore(cats));   // 1 (empty posture)
+const dir = path.join(import.meta.dirname, "public/data");
+const read = (f: string) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8"));
+const blocks: Block[] = fs.readdirSync(dir).filter((f) => f.startsWith("blocks-")).flatMap(read);
+const model = { vectors: read("vectors.json"), approaches: read("approaches.json"), scenarios: read("scenarios.json") };
+const sliders = { ai_timeline: 0.5, gov_cooperation: 0.2, vendor_cooperation: 0.3, budget_millions: 200,
+  org_transformation: 0.3, risk_tolerance: 0.5, sl_bar: 0.2, ai_propensity: 0.5 };
+const s = scorePosture({ blocks, model, blockStates: baselineStates(blocks), year: 2026, sliders,
+  adversaryOc: 4, modelServedExternally: true });
+console.log("SL", s.sl.level, s.tiers.map((t) => t.band)); // SL 1, [usually fails, contested, ...]
 EOF
-npx tsx@4.23.1 engine-probe.ts && rm engine-probe.ts
+node scripts/run-ts.mjs probe.ts && rm probe.ts
 ```
 
 ## Run (human path)
@@ -126,58 +128,46 @@ npm run build && npm run preview   # → http://localhost:4173/sl5/ — producti
 URL — it just serves **404** on every path, which reads like a broken app rather than a
 missing build.
 
-Desktop-only by design; the app gates below 768px. Ctrl-C to stop.
+Desktop-only by design; the app gates below 768px. Ctrl-C to stop. The first-run modal
+remembers itself under `sl5v2_intro_seen`; saved state lives under `sl5v2-state` and
+`sl5v2-scenarios` (v1, frozen at `/sl5/v1/`, keeps the unprefixed keys).
 
 ## Checks
 
 ```bash
-npm run lint      # eslint — currently clean
-npm test          # vitest — 13 files, 214 tests pass
+npm run lint      # eslint — clean
+npm test          # vitest — 26 files, 364 tests
 npm run build     # tsc -b && vite build → dist/ (two pages)
 ```
 
-**Timing.** The full suite is ~30s wall, but only ~8s of that is test execution — the rest
-is jsdom environment setup and module transform. `vite.config.ts` already defaults to
-`environment: 'node'` and only the 3 component test files opt into jsdom via a
-`// @vitest-environment jsdom` docblock, so don't "optimize" that; it's already minimal.
-Working only on the engine? Scope it and skip jsdom entirely:
+**Timing.** The full suite is a few seconds of test execution plus jsdom setup.
+`vite.config.ts` defaults to `environment: 'node'`; only the component test files opt into
+jsdom via a `// @vitest-environment jsdom` docblock, so don't "optimize" that. Working only
+on the engine? Scope it:
 
 ```bash
-npx vitest run tests/engine tests/utils   # ~12s
+npx vitest run tests/engine tests/utils
 ```
-
-The browser driver adds **~8s** for all five flows (one browser, reused across flows).
-Single flows: `gate` ~2s, `panzoom` ~5s, `smoke` ~10s on a cold Vite start.
 
 ## Gotchas
 
 - **Always use the `/sl5/` path when polling for readiness.** `vite.config.ts` sets
-  `base: '/sl5/'`. Bare `/` **302s** to `/sl5/` (redirect middleware in the config), so
-  `curl -sf localhost:5173` *succeeds* without the app having rendered anything — a
-  readiness check against it can pass too early. Poll `localhost:5173/sl5/`, which is a
-  real 200. Anything outside the prefix that isn't an alias 404s. Same on preview (4173).
+  `base: '/sl5/'`. Bare `/` **302s** to `/sl5/`, so `curl -sf localhost:5173` *succeeds*
+  without the app having rendered anything. Poll `localhost:5173/sl5/`. Same on preview.
+- **Another dev server may own 5173** (a parallel session working on the intro, say).
+  Run your own with `npx vite --port 5199 --strictPort` and pass `--url=http://localhost:5199`.
 - **Set `PLAYWRIGHT_DIR`, not `NODE_PATH`.** Node ignores `NODE_PATH` for ESM `import`,
   so the driver resolves Playwright with `createRequire`. It tries `PLAYWRIGHT_DIR`, then
-  the skill dir, then `process.cwd()` — so a `NODE_PATH`-only invocation may still work
-  by accident via that last fallback. Don't rely on it; pass the env var.
-- **A first-run modal covers the canvas** and swallows clicks on the map. `driver.mjs`
-  dismisses it by matching a *list* of CTA labels, because that button's text changed in
-  recent commits (#17/#18). If clicks mysteriously do nothing, that matcher went stale.
-- **Don't assert on a "100%" zoom readout by selector.** It's the bottom-left control,
-  but the load-bearing value is the `scale(...)` in the transform group's attribute —
-  that's what the hook computes. Read the attribute, as the driver does.
-- **Emoji render as tofu boxes** in headless screenshots (the gate's 🖥️ becomes a hollow
-  rectangle) — no emoji font in this container. It's a screenshot artifact, not a bug;
-  the app renders it fine in a real browser. Don't "fix" it.
-- **Panel width changes are animated.** Read the transform *after* the transition, or
-  you'll catch an intermediate `tx`. The driver's `settled()` helper polls the transform
-  until two consecutive samples match — don't replace it with a fixed sleep, which is both
-  slower on a fast machine and flaky on a slow one.
-- **WSL → Windows Chrome over CDP is a dead end.** `chrome.exe --remote-debugging-port`
-  binds to Windows' own loopback and is unreachable from WSL (`curl` to both
-  `127.0.0.1` and the host IP times out). Use the Linux Playwright browser.
-- **`chromium-cli` is not installed here**, which is why this driver exists rather than
-  the inline-heredoc approach used for most web apps.
+  the skill dir, then `process.cwd()`.
+- **The first-run modal covers the app** on a fresh profile. The driver closes it with
+  "Explore freely" (Escape as a fallback). If clicks mysteriously do nothing, that label
+  changed.
+- **Editing files while a driver run is in flight** makes Vite full-reload the page
+  mid-flow. Let a run finish before saving.
+- **Emoji render as tofu boxes** in headless screenshots (no emoji font here). A
+  screenshot artifact, not a bug.
+- **WSL → Windows Chrome over CDP is a dead end.** Use the Linux Playwright browser.
+- **`chromium-cli` is not installed here**, which is why this driver exists.
 
 ## Troubleshooting
 
@@ -186,8 +176,8 @@ Single flows: `gate` ~2s, `panzoom` ~5s, `smoke` ~10s on a cold Vite start.
 - **`ERR_MODULE_NOT_FOUND: Cannot find package 'playwright'`** — pass
   `PLAYWRIGHT_DIR=/tmp/pw` (or wherever you installed it). Setting `NODE_PATH` will not
   help; see Gotchas.
-- **Driver hangs on `svg.touch-none`** — the viewport was below 768px, so the gate
-  rendered and the map never mounted. The driver uses 1600x1000 for app flows; only the
+- **Driver hangs on `[data-block-id]`** — the viewport was below 768px, so the gate
+  rendered and the app never mounted. The driver uses 1600x1000 for app flows; only the
   `gate` flow goes narrow.
-- **`unknown flow "..."`** (exit 2) — valid flows are `smoke`, `panzoom`, `gate`,
-  `intro`, `views`, `all`.
+- **`unknown flow "..."`** (exit 2) — valid flows are `smoke`, `views`, `interact`,
+  `story`, `dark`, `gate`, `intro`, `all`.

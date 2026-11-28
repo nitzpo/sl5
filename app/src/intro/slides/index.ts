@@ -1,51 +1,50 @@
 import type { ComponentType } from "react";
-import {
-  Cover,
-  WhatWeightsAre,
-  WhySteal,
-  WhyItGetsWorse,
-  OcLadderSlide,
-  SecurityLevels,
-  Sources,
-} from "./act1-problem";
-import {
-  Blocks,
-  Lifecycle,
-  Constraints,
-  AttackPath,
-  Timeline,
-  TheRest,
-} from "./act2-instrument";
+import { OcLadderSlide, OwnModel, SecurityLevels, Sources, Start, WhyItGetsWorse } from "./act1";
+import { AttackPaths, AttackVectors, Blocks, Budget, Ready, Stacking, Timeline, YourLevel } from "./act2";
 
 export interface Slide {
-  /** URL fragment for this slide — `/sl5/intro/#the-oc-ladder`. Must be unique. */
+  /** URL fragment for this slide — `/intro/#the-oc-ladder`. Must be unique. */
   slug: string;
-  /** Shown in the progress rail's tooltip and used as the document title. */
+  /** Shown in the progress rail and used as the document title. */
   title: string;
-  /** Which half of the introduction: the problem, or the instrument. */
+  /** Act I: what you're up against. Act II: how to use the instrument. */
   act: 1 | 2;
   Component: ComponentType;
+  /** Older slugs that should still land here (links shared from v1's intro). */
+  aliases?: string[];
 }
 
 // The running order lives here rather than in the act files, so those files
 // export components only and Vite's fast refresh keeps working on them.
 export const SLIDES: Slide[] = [
-  { slug: "start", title: "Start here", act: 1, Component: Cover },
-  { slug: "the-asset", title: "The weights are the model", act: 1, Component: WhatWeightsAre },
-  { slug: "why-steal-them", title: "Why a superpower wants them", act: 1, Component: WhySteal },
-  { slug: "why-it-gets-worse", title: "Why it gets harder", act: 1, Component: WhyItGetsWorse },
-  { slug: "the-oc-ladder", title: "How capable is the attacker?", act: 1, Component: OcLadderSlide },
-  { slug: "security-levels", title: "Five security levels", act: 1, Component: SecurityLevels },
-  { slug: "sources", title: "The source material", act: 1, Component: Sources },
-  { slug: "blocks", title: "Everything is a block", act: 2, Component: Blocks },
-  { slug: "lifecycle", title: "Building a capability", act: 2, Component: Lifecycle },
-  { slug: "constraints", title: "Budget and dependencies", act: 2, Component: Constraints },
-  { slug: "attack-paths", title: "Attack paths", act: 2, Component: AttackPath },
-  { slug: "timeline", title: "The timeline", act: 2, Component: Timeline },
-  { slug: "the-rest", title: "The rest of the controls", act: 2, Component: TheRest },
+  {
+    slug: "start",
+    title: "Why the weights are a target",
+    act: 1,
+    Component: Start,
+    aliases: ["the-asset", "why-steal-them"],
+  },
+  { slug: "why-it-gets-worse", title: "Why AI makes it worse", act: 1, Component: WhyItGetsWorse },
+  { slug: "the-oc-ladder", title: "Who might come", act: 1, Component: OcLadderSlide },
+  { slug: "security-levels", title: "What “secure” means here", act: 1, Component: SecurityLevels },
+  { slug: "own-model", title: "Your own model, as an insider", act: 1, Component: OwnModel },
+  { slug: "sources", title: "Where this comes from", act: 1, Component: Sources },
+  { slug: "blocks", title: "The catalogue of defenses", act: 2, Component: Blocks, aliases: ["lifecycle"] },
+  { slug: "attack-vectors", title: "Attack vectors and three stages", act: 2, Component: AttackVectors },
+  { slug: "attack-paths", title: "Approaches and the easiest attack path", act: 2, Component: AttackPaths },
+  { slug: "stacking", title: "Why weak defenses don't add up", act: 2, Component: Stacking },
+  { slug: "your-level", title: "Your security level", act: 2, Component: YourLevel },
+  { slug: "timeline", title: "Time: lead times against the threat front", act: 2, Component: Timeline },
+  { slug: "budget", title: "Budget", act: 2, Component: Budget, aliases: ["constraints"] },
+  { slug: "ready", title: "Ready: open the instrument", act: 2, Component: Ready, aliases: ["the-rest"] },
 ];
 
 export const ACT_LABELS: Record<1 | 2, string> = {
-  1: "The problem",
-  2: "The instrument",
+  1: "What you're up against",
+  2: "How to use the instrument",
 };
+
+/** The slide a slug (or an older alias) names, or -1. */
+export function slideIndex(slug: string): number {
+  return SLIDES.findIndex((s) => s.slug === slug || s.aliases?.includes(slug));
+}

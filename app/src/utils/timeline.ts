@@ -20,10 +20,6 @@ export const TIMELINE_YEARS: number[] = Array.from(
   (_, i) => TIMELINE_START + i
 );
 
-/** One month, in years. The engine already thinks in months
- * (`time_to_deploy_months`, `blockStateAtYear`), so this is time's natural grain. */
-export const MONTH = 1 / 12;
-
 export function clampYear(year: number): number {
   return Math.min(TIMELINE_END, Math.max(TIMELINE_START, year));
 }

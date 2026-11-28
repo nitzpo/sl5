@@ -6,11 +6,7 @@ import { describe, it, expect } from "vitest";
 import { baselineStates } from "../../src/engine/baseline";
 import { blockCostBasis } from "../../src/engine/budget";
 import { orderAfterActivating, scorePosture, type PostureInput } from "../../src/engine/posture";
-import {
-  combinedCostMillions,
-  NEXT_TIER_WEIGHT,
-  recommendInvestments,
-} from "../../src/utils/ciso-recommendations";
+import { NEXT_TIER_WEIGHT, recommendInvestments } from "../../src/utils/ciso-recommendations";
 import type { BlockState } from "../../src/engine/types";
 import { APP_SLIDERS, loadBlocks, loadModel } from "../load-data";
 
@@ -56,7 +52,7 @@ describe("CISO priority investments", () => {
         blockStates: states,
         advanceOrder: orderAfterActivating(input, c.blockIds),
       });
-      expect(c.slDelta, c.block.id).toBeCloseTo(after.overallSl - analysis.baseline.overallSl, 12);
+      expect(c.slDelta, c.block.id).toBeCloseTo(after.sl.value - analysis.baseline.sl.value, 12);
       expect(c.breachDelta, c.block.id).toBeCloseTo(after.campaign - analysis.baseline.campaign, 12);
       expect(c.pathReduction, c.block.id).toBeCloseTo(objective(analysis.baseline) - objective(after), 12);
       // Every recommended move lands: nothing capped by budget or prerequisite.
@@ -109,14 +105,6 @@ describe("CISO priority investments", () => {
     const c0 = analysis.candidates[0];
     const c1 = optimistic.candidates.find((c) => c.block.id === c0.block.id)!;
     expect(c1.costMillions).toBeLessThanOrEqual(c0.costMillions);
-  });
-
-  it("counts a shared prerequisite once when moves are taken together", () => {
-    const withShared = analysis.candidates.filter((c) => c.prerequisites.some((p) => p.id === "PER-01"));
-    if (withShared.length >= 2) {
-      const [a, b] = withShared;
-      expect(combinedCostMillions([a, b])).toBeLessThan(a.costMillions + b.costMillions);
-    }
   });
 
   it("never recommends a move the budget can't pay for, but says how many there are", () => {

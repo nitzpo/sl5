@@ -45,12 +45,10 @@ export {
   catalogueInForce,
   orderAfterActivating,
   threatRelevance,
-  isHeldAtResidualFloor,
-  RESIDUAL_FLOOR_MARGIN,
   targetSl,
 } from "./posture";
 export type { PostureInput, PostureScore, TierResult, ApproachResult, SlResult, BlockRelevance } from "./posture";
-export { LEGACY_BLOCK_IDS, migrateBlockStates, migrateBlockOrder, scenarioAsChain } from "./catalogue";
+export { LEGACY_BLOCK_IDS, migrateBlockStates, migrateBlockOrder } from "./catalogue";
 export {
   distillationProgress,
   distillationDefenseReduction,

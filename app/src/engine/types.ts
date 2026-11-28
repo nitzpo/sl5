@@ -15,8 +15,6 @@ export type BlockState =
   | "deployed"
   | "mature";
 
-export type Perspective = "ciso" | "attacker" | "policymaker" | "observer";
-
 export interface Block {
   id: string;
   name: string;
@@ -256,34 +254,6 @@ export interface OcDefinition {
   key_capabilities: string[];
 }
 
-/** COMPATIBILITY ONLY (Phase 2A → 2B). The chain-shaped view of a scenario
- * that the pre-vector UI still reads; built by `scenarioAsChain`. Nothing in
- * the engine scores it. */
-export interface AttackChainStep {
-  phase: string;
-  description: string;
-  block_gap_used?: string;
-}
-
-export interface AttackChain {
-  id: string;
-  name: string;
-  adversary_profile: {
-    min_oc: number;
-    typical_oc: number;
-  };
-  blocks_exploited: string[];
-  narrative: {
-    brief: string;
-    detailed: string;
-    steps?: AttackChainStep[];
-  };
-  stoppers: string[];
-  stopper_details?: Array<{ block_id: string; how_it_stops: string }>;
-  // API-extraction chains are inert unless the model is served externally.
-  requires_external_serving?: boolean;
-}
-
 export interface AiCapabilityCurve {
   default_curve: Array<{ year: number; capability: number }>;
   optimistic_multiplier: number;
@@ -366,24 +336,4 @@ export interface Sliders {
   /** The chance a misaligned model tries at all (0–1, default 0.5). Multiplies
    * the AI-insider approach and the integrity meter. */
   ai_propensity: number;
-}
-
-export interface SimulationState {
-  blocks: Block[];
-  blockStates: Record<string, BlockState>;
-  year: number;
-  perspective: Perspective;
-  adversaryOc: number;
-  sliders: Sliders;
-  modelServedExternally: boolean;
-  futureCapabilities: boolean;
-}
-
-export interface SimulationResults {
-  categoryScores: Record<Category, number>;
-  overallSl: number;
-  breachProbabilities: Record<string, number>;
-  bestChain: { id: string; probability: number } | null;
-  extractionProgress: number;
-  defenseLayerStatus: Record<string, { active: boolean; strength: number }>;
 }

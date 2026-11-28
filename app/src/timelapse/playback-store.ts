@@ -6,7 +6,7 @@ import type { TimeLapseScript, PlaybackSpeed, PlaybackState } from "./types";
 import { useSimulationStore } from "../store/simulation";
 import { computeScriptBlockStates } from "./compute-script-state";
 import { adjacentStop } from "./events";
-import { storyWorld } from "./story-world";
+import { STORY_SCORING_MODE, storyWorld } from "./story-world";
 import { TIMELINE_START, TIMELINE_END, quantizeYear } from "../utils/timeline";
 
 /** What a story replaces and `stop` puts back. Not just the posture: whether
@@ -94,6 +94,7 @@ export const usePlaybackStore = create<PlaybackStore>()(
           sliders: sim.sliders,
           modelServedExternally: sim.modelServedExternally,
           futureCapabilities: sim.futureCapabilities,
+          scoringMode: sim.scoringMode,
         },
         viewingShared: sim.viewingShared,
         scenarioName: sim.scenarioName,
@@ -140,6 +141,7 @@ export const usePlaybackStore = create<PlaybackStore>()(
           advanceOrder: scriptOrder,
           sliders: world.sliders,
           modelServedExternally: world.modelServedExternally,
+          scoringMode: STORY_SCORING_MODE,
         });
       } else {
         // The reader's own posture run forward — theirs as saved, not whatever
@@ -151,6 +153,7 @@ export const usePlaybackStore = create<PlaybackStore>()(
           sliders: mine.sliders,
           modelServedExternally: mine.modelServedExternally,
           futureCapabilities: mine.futureCapabilities ?? false,
+          scoringMode: STORY_SCORING_MODE,
         });
       }
 

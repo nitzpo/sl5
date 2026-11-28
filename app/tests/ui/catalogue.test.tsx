@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 //
 // Cheap component checks on the v2 main screen: the rail speaks in band words,
-// no percentage reaches the reader, the matrix shows every block in force, and
-// the R&D blocks stay hidden until the reader asks for them.
+// no percentage reaches the reader (in coverage scoring mode, only the shares of
+// controls built may), the matrix shows every block in force, and the R&D
+// blocks stay hidden until the reader asks for them.
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { render, cleanup, fireEvent, act } from "@testing-library/react";
@@ -41,7 +42,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   localStorage.clear();
-  useSimulationStore.setState({ dataLoaded: false, futureCapabilities: false, playbackActive: false, year: 2026 });
+  useSimulationStore.setState({ dataLoaded: false, futureCapabilities: false, playbackActive: false, year: 2026, scoringMode: "paths" });
   useSimulationStore.getState().loadData(blocks, model, loadWorldState().oc_definitions);
   useUiStore.setState({ detailId: null, paramsOpen: false, focusApproach: null, highlightIds: [], showAllApproaches: false });
 });
@@ -130,10 +131,13 @@ describe("next defense to fund", () => {
 
 /** All reader-facing text: content, plus hover and screen-reader attributes.
  * Research prose quoted from the data (`data-prose`, in the block drawer) is
- * allowed to cite measured figures; the model's own numbers never are. */
-function readerText(root: HTMLElement): string {
+ * allowed to cite measured figures; the model's own numbers never are. With
+ * `exemptCoverageShares`, the coverage-mode shares of controls built
+ * (`data-coverage-share`) are left out too: shares of controls, not
+ * probabilities, and the only percentages the UI may print. */
+function readerText(root: HTMLElement, { exemptCoverageShares = false } = {}): string {
   const clone = root.cloneNode(true) as HTMLElement;
-  clone.querySelectorAll("[data-prose]").forEach((el) => el.remove());
+  clone.querySelectorAll(exemptCoverageShares ? "[data-prose], [data-coverage-share]" : "[data-prose]").forEach((el) => el.remove());
   const attrs = Array.from(clone.querySelectorAll("*")).flatMap((el) =>
     ["title", "aria-label", "aria-valuetext"].map((a) => el.getAttribute(a) ?? "")
   );
@@ -157,9 +161,11 @@ describe("no percentages", () => {
     );
   }
 
-  it("appear nowhere in the main UI, its drawers or its hover text", () => {
+  it("appear nowhere in the main UI, its drawers or its hover text, in attack-path mode", () => {
+    expect(useSimulationStore.getState().scoringMode).toBe("paths");
     useUiStore.setState({ detailId: "NET-01" });
     const { container, rerender } = render(<Screen />);
+    expect(container.querySelector("[data-coverage-share]")).toBeNull();
     expect(readerText(container)).not.toMatch(/%/);
     // The parameters drawer replaces the block drawer.
     act(() => useUiStore.getState().setParamsOpen(true));
@@ -172,6 +178,22 @@ describe("no percentages", () => {
       rerender(<BlockDrawer />);
       expect(readerText(container), b.id).not.toMatch(/%/);
     }
+  });
+
+  it("in coverage mode, appear only in the shares of controls built", () => {
+    act(() => useSimulationStore.getState().setScoringMode("coverage"));
+    useUiStore.setState({ detailId: "NET-01" });
+    const { container, rerender, getByTestId } = render(<Screen />);
+    // The rail's coverage list and the matrix's category headers carry them...
+    expect(getByTestId("coverage-list").textContent).toMatch(/\d+% coverage/);
+    const shares = Array.from(container.querySelectorAll("[data-coverage-share]"));
+    expect(shares.length).toBeGreaterThan(1);
+    for (const el of shares) expect(el.textContent).toMatch(/% coverage/);
+    // ...and nothing else does: no tier, meter or tooltip turns into a percentage.
+    expect(readerText(container, { exemptCoverageShares: true })).not.toMatch(/%/);
+    act(() => useUiStore.getState().setParamsOpen(true));
+    rerender(<Screen />);
+    expect(readerText(container, { exemptCoverageShares: true })).not.toMatch(/%/);
   });
 });
 

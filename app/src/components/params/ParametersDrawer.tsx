@@ -6,6 +6,7 @@ import { useBudgetStatus } from "../../store/derived";
 import { useUiStore } from "../../store/ui";
 import { OC_LONG } from "../../model/names";
 import { BAR_PRESET_WORDS, money, presetFor, propensityWord, sliderWord, type BarPreset } from "../../model/words";
+import { SCORING_MODES, SCORING_MODE_WORDS, type ScoringMode } from "../../model/scoring-mode";
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -85,6 +86,53 @@ function Toggle({ label, hint, on, onChange, onText, offText }: { label: string;
   );
 }
 
+const MODE_NOTES: Record<ScoringMode, string> = {
+  paths:
+    "The level is the highest attacker tier your posture usually stops, along each attacker's easiest path. Control coverage stays on the rail as programme completeness.",
+  coverage:
+    "The level is 0.3 × your weakest category plus 0.7 × the average, as in v1. It ignores which attackers your controls stop, so a posture with an approach wide open can still score high.",
+};
+
+/** The scoring method: attack paths (default) or v1-style control coverage.
+ * Locked while a story plays, which is always told in attack-path terms. */
+function ScoringModeChoice() {
+  const mode = useSimulationStore((s) => s.scoringMode);
+  const setMode = useSimulationStore((s) => s.setScoringMode);
+  const playing = useSimulationStore((s) => s.playbackActive);
+  return (
+    <Group title="How to score your security level">
+      <div className="flex flex-col gap-[3px]" role="radiogroup" aria-label="How to score your security level">
+        {SCORING_MODES.map((m) => {
+          const on = mode === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              disabled={playing}
+              onClick={() => setMode(m)}
+              className={`border px-2.5 py-1.5 text-left disabled:cursor-not-allowed ${
+                on ? "border-ink bg-ink text-paper" : "border-rule-2 enabled:hover:border-ink"
+              } ${playing && !on ? "opacity-50" : ""}`}
+            >
+              <span className="block text-[14px] font-bold">{SCORING_MODE_WORDS[m].label}</span>
+              <span className={`block text-[12px] leading-snug ${on ? "text-on-ink-2" : "text-ink-2"}`}>
+                {SCORING_MODE_WORDS[m].hint}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="-mt-1 text-[12px] leading-snug text-ink-2">
+        {playing
+          ? "Stories are scored by attack paths, so their captions hold. Your choice comes back when the story stops."
+          : MODE_NOTES[mode]}
+      </p>
+    </Group>
+  );
+}
+
 export function ParametersDrawer() {
   const open = useUiStore((s) => s.paramsOpen);
   const setOpen = useUiStore((s) => s.setParamsOpen);
@@ -98,6 +146,7 @@ export function ParametersDrawer() {
   const setOc = useSimulationStore((s) => s.setAdversaryOc);
   const reset = useSimulationStore((s) => s.resetToBaseline);
   const playing = useSimulationStore((s) => s.playbackActive);
+  const mode = useSimulationStore((s) => s.scoringMode);
   const { spentMillions } = useBudgetStatus();
 
   useEffect(() => {
@@ -135,10 +184,13 @@ export function ParametersDrawer() {
       <div className="flex-1 overflow-y-auto px-6 pt-4 pb-8">
         {playing && <p className="mb-3 border border-ink p-2 text-[13px]">A story is playing in its own world. Changes here last only until it stops, when your own settings come back.</p>}
 
+        <ScoringModeChoice />
+
         <Group title="How strict is “stops”">
           <p className="-mt-1 text-[13px] leading-snug text-ink-2">
             A posture stops an attacker tier when fewer than this share of that attacker's campaigns succeed. Stricter
             never raises the level.
+            {mode === "coverage" && " Used by attack-path scoring only; control coverage ignores it."}
           </p>
           <div className="grid grid-cols-3 gap-[3px]" role="radiogroup" aria-label="How strict is stops">
             {(Object.keys(SL_BAR_PRESETS) as BarPreset[]).map((k) => (

@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import type { Category } from "../../engine/types";
 import { CATEGORY_NAMES, CATEGORY_ORDER, STAGE_LABELS, isOperational } from "../../model/names";
 import { MATRIX_COLUMNS, type MatrixColumn } from "../../model/catalogue-layout";
+import { coverageLevel, coverageShareText, type CategoryCoverage } from "../../model/scoring-mode";
 import { useSimulationStore } from "../../store/simulation";
 import { useUiStore } from "../../store/ui";
 import { BlockTile, type TileFlags } from "./BlockTile";
@@ -231,6 +232,8 @@ export function StageMatrix() {
   const highlightIds = useUiStore((s) => s.highlightIds);
   const lastChange = useUiStore((s) => s.lastChange);
   const blockStates = useSimulationStore((s) => s.blockStates);
+  const coverageMode = useSimulationStore((s) => s.scoringMode === "coverage");
+  const shares = coverageMode ? coverageLevel(model.score).categories : null;
   const ref = useRef<HTMLDivElement>(null);
   const geom = useGeometry(ref, model.blocks.map((b) => b.id).join(","));
 
@@ -258,7 +261,14 @@ export function StageMatrix() {
       <StageHeader model={model} />
       <div data-matrix-body>
         {CATEGORY_ORDER.map((cat) => (
-          <CategoryRow key={cat} cat={cat} model={model} flagsFor={flagsFor} actions={actions} />
+          <CategoryRow
+            key={cat}
+            cat={cat}
+            model={model}
+            flagsFor={flagsFor}
+            actions={actions}
+            coverage={shares?.find((c) => c.category === cat) ?? null}
+          />
         ))}
       </div>
       {geom && <PathLayer model={model} geom={geom} />}
@@ -277,11 +287,14 @@ function CategoryRow({
   model,
   flagsFor,
   actions,
+  coverage,
 }: {
   cat: Category;
   model: CatalogueModel;
   flagsFor: (id: string) => TileFlags;
   actions: ReturnType<typeof useBlockActions>;
+  /** The category's coverage share, shown only in coverage scoring mode. */
+  coverage: CategoryCoverage | null;
 }) {
   const cells = model.cells[cat];
   const all = MATRIX_COLUMNS.flatMap((c) => cells[c]);
@@ -296,6 +309,15 @@ function CategoryRow({
     <div className={`${GRID} border-b border-rule py-2.5`}>
       <div className="min-w-0 pr-1">
         <div className="text-[16px] leading-tight font-bold">{CATEGORY_NAMES[cat]}</div>
+        {coverage && (
+          <div
+            className={`mt-0.5 text-[12px] leading-snug font-bold ${coverage.weakest ? "text-signal-ink" : "text-ink"}`}
+            data-coverage-share
+            title={`Control coverage: ${CATEGORY_NAMES[cat]} scores ${coverage.score.toFixed(2)} on the 1–5 scale${coverage.weakest ? ", the weakest category" : ""}`}
+          >
+            {coverageShareText(coverage.share)}
+          </div>
+        )}
         <div className="mt-0.5 text-[12px] leading-snug text-ink-2">
           {today.length} blocks{rnd > 0 && <> · +{rnd} R&amp;D</>}
           <span className="block">{inPlace} deployed</span>

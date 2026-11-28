@@ -23,10 +23,18 @@ import type { Block, BlockState } from "../engine/types";
  * against today's adversary the one that also prepares for the next wins. It is
  * ranked per $M of the budget model's own cost (`blockCostBasis` at the
  * risk-tolerance slider) for the blocks the programme isn't already paying for.
+ *
+ * In the coverage scoring mode (`objective: "coverage"`, the v1-style level)
+ * the same candidate moves are ranked instead by how much they raise
+ * programme completeness per $M — the number that mode shows as the level.
  */
 
 /** Weight of the next tier's campaign reduction in the objective. */
 export const NEXT_TIER_WEIGHT = 0.25;
+
+/** What "next defense" optimises: the threat-relative campaign cut (attack
+ * paths, the default) or programme completeness (control coverage). */
+export type RecommendationObjective = "paths" | "coverage";
 
 export interface InvestmentCandidate {
   /** The block being recommended. */
@@ -51,6 +59,11 @@ export interface InvestmentCandidate {
   pathReduction: number;
   /** `pathReduction` per $M (cost floored at $1M). The ranking key. */
   reductionPerMillion: number;
+  /** Change in programme completeness (the coverage level, 1–5). ≥ 0. */
+  coverageGain: number;
+  /** `coverageGain` per $M (cost floored at $1M). The ranking key in the
+   * coverage objective. */
+  coverageGainPerMillion: number;
   /** Approaches this move narrows by at least 0.1pt, biggest drop first. */
   narrowed: { approach: { id: string; name: string }; drop: number }[];
   /** Truthful one-liner, e.g. "Narrows Human insider and 2 more approaches". */
@@ -73,6 +86,7 @@ const NARROWED_THRESHOLD = 0.001;
 /** Moves below both of these move no number the reader can see. */
 const MIN_PATH_REDUCTION = 1e-4;
 const MIN_SL_DELTA = 1e-3;
+const MIN_COVERAGE_GAIN = 1e-4;
 
 function isActive(block: Block, state: BlockState): boolean {
   return state !== "not_started" && !isAtOrBelowBaseline(block, state);
@@ -150,8 +164,9 @@ export function candidateUpfrontRange(c: Pick<InvestmentCandidate, "block" | "pr
 
 export function recommendInvestments(
   input: PostureInput,
-  opts: { limit?: number } = {}
+  opts: { limit?: number; objective?: RecommendationObjective } = {}
 ): InvestmentAnalysis {
+  const byCoverage = opts.objective === "coverage";
   const baseline = scorePosture(input);
   const byId = new Map(input.blocks.map((b) => [b.id, b]));
   const rt = input.sliders.risk_tolerance;
@@ -192,7 +207,10 @@ export function recommendInvestments(
 
     const pathReduction = baseObjective - objective(result, input.adversaryOc);
     const slDelta = result.sl.value - baseline.sl.value;
-    const movesSomething = pathReduction > MIN_PATH_REDUCTION || slDelta > MIN_SL_DELTA;
+    const coverageGain = result.programCompleteness - baseline.programCompleteness;
+    const movesSomething = byCoverage
+      ? coverageGain > MIN_COVERAGE_GAIN
+      : pathReduction > MIN_PATH_REDUCTION || slDelta > MIN_SL_DELTA;
 
     // A move the budget can't pay for is scored as nothing (the pipeline drops
     // unfunded blocks to their baseline), so it isn't a recommendation — but
@@ -225,16 +243,20 @@ export function recommendInvestments(
       breachDelta: result.campaign - baseline.campaign,
       pathReduction,
       reductionPerMillion: pathReduction / Math.max(costMillions, 1),
+      coverageGain,
+      coverageGainPerMillion: coverageGain / Math.max(costMillions, 1),
       narrowed,
       reason: reasonFor(narrowed, easiest?.id, slDelta),
     });
   }
 
   candidates.sort(
-    (a, b) =>
-      b.reductionPerMillion - a.reductionPerMillion ||
-      b.pathReduction - a.pathReduction ||
-      b.slDelta - a.slDelta
+    byCoverage
+      ? (a, b) => b.coverageGainPerMillion - a.coverageGainPerMillion || b.coverageGain - a.coverageGain
+      : (a, b) =>
+          b.reductionPerMillion - a.reductionPerMillion ||
+          b.pathReduction - a.pathReduction ||
+          b.slDelta - a.slDelta
   );
 
   return {

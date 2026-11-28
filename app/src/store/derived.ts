@@ -139,10 +139,17 @@ export function useScore(): PostureScore {
 export function useRecommendations(limit = 3): { analysis: InvestmentAnalysis | null; stale: boolean } {
   const input = usePostureInput();
   const playbackActive = useSimulationStore((s) => s.playbackActive);
+  // Coverage mode ranks by completeness gained per $M, paths mode by the
+  // campaign cut; switching re-ranks, so the mode is deferred with the inputs.
+  const mode = useSimulationStore((s) => s.scoringMode);
   const deferred = useDeferredValue(input);
+  const deferredMode = useDeferredValue(mode);
   const analysis = useMemo(
-    () => (playbackActive || deferred.blocks.length === 0 ? null : recommendInvestments(deferred, { limit })),
-    [deferred, limit, playbackActive]
+    () =>
+      playbackActive || deferred.blocks.length === 0
+        ? null
+        : recommendInvestments(deferred, { limit, objective: deferredMode }),
+    [deferred, deferredMode, limit, playbackActive]
   );
-  return { analysis, stale: deferred !== input };
+  return { analysis, stale: deferred !== input || deferredMode !== mode };
 }

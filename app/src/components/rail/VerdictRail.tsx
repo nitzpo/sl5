@@ -5,7 +5,7 @@ import { useSimulationStore } from "../../store/simulation";
 import { useRecommendations, useScore } from "../../store/derived";
 import { useUiStore } from "../../store/ui";
 import { BandCells, ProgressTicks, TypeBar } from "../marks/Marks";
-import { OC_NAMES, STAGE_SHORT, approachName, blockName, isOperational, vectorName } from "../../model/names";
+import { CATEGORY_NAMES, OC_NAMES, STAGE_SHORT, approachName, blockName, isOperational, vectorName } from "../../model/names";
 import {
   BAR_PRESET_WORDS,
   bandTitle,
@@ -16,6 +16,15 @@ import {
   presetFor,
   slTitle,
 } from "../../model/words";
+import {
+  SCORING_MODES,
+  SCORING_MODE_WORDS,
+  coverageLevel,
+  coverageShareText,
+  otherMode,
+  type CoverageLevel,
+  type ScoringMode,
+} from "../../model/scoring-mode";
 import { StoryCaption } from "../timelapse/StoryCaption";
 import { candidateUpfrontRange } from "../../utils/ciso-recommendations";
 
@@ -37,7 +46,74 @@ function heldText(level: number): string {
   return `holds OC1–OC${level}`;
 }
 
-function SlBlock({ score, adversaryOc }: { score: PostureScore; adversaryOc: number }) {
+/**
+ * The mode switch at the head of the rail, so the method behind the big number
+ * is never hidden. The same setting as the top of Parameters. A story pins
+ * attack paths (its captions state threat-relative outcomes), so it is locked
+ * while one plays.
+ */
+function ModeSwitch({ mode }: { mode: ScoringMode }) {
+  const setMode = useSimulationStore((s) => s.setScoringMode);
+  const playing = useSimulationStore((s) => s.playbackActive);
+  return (
+    <div className="flex items-center justify-between gap-3" data-testid="rail-mode">
+      <span className="cap">Scored by</span>
+      <div className="flex gap-[3px]" role="radiogroup" aria-label="Scoring method">
+        {SCORING_MODES.map((m) => {
+          const on = m === mode;
+          const words = SCORING_MODE_WORDS[m];
+          return (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              disabled={playing}
+              title={playing ? "Stories are scored by attack paths; your choice comes back when the story stops" : `${words.label}: ${words.hint}`}
+              onClick={() => setMode(m)}
+              className={`border px-1.5 py-[2px] text-[12px] leading-tight font-semibold disabled:cursor-not-allowed ${
+                on ? "border-ink bg-ink text-paper" : "border-rule-2 text-ink-2 enabled:hover:border-ink enabled:hover:text-ink"
+              } ${playing && !on ? "opacity-50" : ""}`}
+            >
+              {words.short}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** "Other method: SL2 by control coverage · higher". One line; the hover says
+ * why the two disagree, which is the point of showing it. */
+function OtherMethod({ mode, score, coverage }: { mode: ScoringMode; score: PostureScore; coverage: CoverageLevel }) {
+  const other = otherMode(mode);
+  const here = mode === "paths" ? score.sl.level : coverage.level;
+  const there = other === "paths" ? score.sl.level : coverage.level;
+  const relation = there > here ? "higher" : there < here ? "lower" : "the same";
+  const coverageHigher = coverage.level > score.sl.level;
+  const lim = score.sl.limitedBy;
+  const open = lim?.approach
+    ? `${lim.approach === "ai_insider" ? "your own model" : `OC${lim.tier}`} still gets ${lim.approach === "ai_insider" ? "out" : "in"} through ${approachName(lim.approach).toLowerCase()}`
+    : "an approach is still open";
+  const why =
+    coverage.level === score.sl.level
+      ? "The two methods agree on this posture."
+      : coverageHigher
+        ? `Control coverage counts how much of the catalogue is built and ignores which attackers it stops; it rates this posture higher because the controls are broad, but ${open}.`
+        : "Control coverage rates this posture lower: it has few controls overall, but the ones it has sit on the paths attackers use.";
+  return (
+    <p
+      className="mt-1 border-t border-rule pt-1 text-[12px] leading-snug text-ink-2"
+      data-testid="other-method"
+      title={`${why} Switch above to score by ${SCORING_MODE_WORDS[other].by}.`}
+    >
+      Other method: <b className="text-ink">SL{there}</b> by {SCORING_MODE_WORDS[other].by} · {relation}
+    </p>
+  );
+}
+
+function SlBlock({ score, adversaryOc, coverage }: { score: PostureScore; adversaryOc: number; coverage: CoverageLevel }) {
   const { sl } = score;
   const lastChange = useUiStore((s) => s.lastChange);
   const target = targetSl(adversaryOc);
@@ -84,7 +160,95 @@ function SlBlock({ score, adversaryOc }: { score: PostureScore; adversaryOc: num
           )}
         </div>
       </div>
+      <OtherMethod mode="paths" score={score} coverage={coverage} />
     </div>
+  );
+}
+
+function coverageSlTitle(value: number): string {
+  return `Security level ${value.toFixed(2)} by control coverage: 0.3 × the weakest category + 0.7 × the average, as in v1`;
+}
+
+/** The coverage-mode headline: v1's level, programme completeness, shown as a
+ * level plus progress like the other mode. */
+function CoverageSlBlock({ score, coverage }: { score: PostureScore; coverage: CoverageLevel }) {
+  const lastChange = useUiStore((s) => s.lastChange);
+  const { level, progress, value } = coverage;
+  return (
+    <div key={lastChange?.seq ?? 0} className={`-mx-2 px-2 pt-1 pb-3 ${lastChange ? "sl5-pulse" : ""}`}>
+      <div className="flex items-baseline justify-between">
+        <span className="cap">You are</span>
+        <span className="text-[12px] text-ink-2">by how much of the catalogue is built</span>
+      </div>
+      <div className="mt-1 flex items-end gap-4">
+        <div
+          className="flex items-baseline leading-none font-black tracking-tight"
+          title={coverageSlTitle(value)}
+          aria-label={`Security level ${level}, by control coverage`}
+          data-testid="sl-level"
+        >
+          <span className="text-[44px]" style={{ fontStretch: "95%" }}>
+            SL
+          </span>
+          <span className="text-[72px]" style={{ fontStretch: "95%" }}>
+            {level}
+          </span>
+        </div>
+        <div className="min-w-0 pb-2">
+          <div className="text-[16px] leading-tight font-bold">{completenessWord(value)} coverage</div>
+          {level < 5 ? (
+            <div className="mt-1.5 flex items-center gap-2" title={coverageSlTitle(value)}>
+              <ProgressTicks progress={progress} />
+              <span className="text-[12px] text-ink-2">toward SL{level + 1}</span>
+            </div>
+          ) : (
+            <div className="mt-1 text-[12px] text-ink-2">the whole catalogue in place</div>
+          )}
+          <div className="mt-1 text-[12px] text-ink-2">
+            {coverage.inPlace} of {coverage.total} controls in place
+          </div>
+        </div>
+      </div>
+      <OtherMethod mode="coverage" score={score} coverage={coverage} />
+    </div>
+  );
+}
+
+/** Coverage mode's breakdown: each category's share of controls built, and
+ * how many are in place. Percentages are allowed here, and only here: they
+ * are shares of controls, not probabilities. */
+function CoverageList({ coverage }: { coverage: CoverageLevel }) {
+  return (
+    <Section title="Coverage by category" aside="the v1 method">
+      <p className="-mt-0.5 mb-1 text-[12px] leading-snug text-ink-2">
+        Counts what you've built in each category. It ignores which attackers the controls stop.
+      </p>
+      <ol className="flex flex-col" data-testid="coverage-list" data-coverage-share>
+        {coverage.categories.map((c) => (
+          <li
+            key={c.category}
+            className="border-b border-rule py-1 last:border-b-0"
+            title={`${CATEGORY_NAMES[c.category]}: ${c.score.toFixed(2)} on the 1–5 scale, weighted by how built each control is; strong counters count fully, partial-only ones about a third.${
+              c.weakest ? " The weakest category, which the level weighs extra." : ""
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-[92px] shrink-0 truncate text-[13px] font-bold">{CATEGORY_NAMES[c.category]}</span>
+              <div className="h-[4px] min-w-0 flex-1 bg-tint">
+                <div className="h-full bg-ink" style={{ width: `${c.share * 100}%` }} />
+              </div>
+              <span className={`w-[118px] shrink-0 text-right text-[13px] font-bold ${c.weakest ? "text-signal-ink" : ""}`}>
+                {coverageShareText(c.share)}
+              </span>
+            </div>
+            <div className="pl-[100px] text-[12px] leading-snug text-ink-2">
+              {c.inPlace} of {c.total} in place
+              {c.weakest && <> · weakest, weighs extra</>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </Section>
   );
 }
 
@@ -220,7 +384,7 @@ function GetsThrough({ score }: { score: PostureScore }) {
   );
 }
 
-function NextDefense() {
+function NextDefense({ mode }: { mode: ScoringMode }) {
   const { analysis, stale } = useRecommendations(3);
   const highlightIds = useUiStore((s) => s.highlightIds);
   const setHighlight = useUiStore((s) => s.setHighlight);
@@ -235,12 +399,17 @@ function NextDefense() {
     );
   }
   return (
-    <Section title="Next defense to fund" aside={stale ? "updating…" : analysis ? "engine-ranked" : undefined}>
+    <Section
+      title="Next defense to fund"
+      aside={stale ? "updating…" : analysis ? (mode === "coverage" ? "most coverage per $M" : "engine-ranked") : undefined}
+    >
       {!analysis ? (
         <p className="text-[13px] text-ink-2">Ranking…</p>
       ) : analysis.candidates.length === 0 ? (
         <p className="text-[13px] text-ink-2">
-          Nothing affordable moves a tier. Raise the budget, or turn on future capabilities in Parameters.
+          {mode === "coverage"
+            ? "Nothing affordable adds coverage. Raise the budget in Parameters."
+            : "Nothing affordable moves a tier. Raise the budget, or turn on future capabilities in Parameters."}
         </p>
       ) : (
         <ol className={`flex flex-col ${stale ? "opacity-60" : ""}`} data-testid="next-defense">
@@ -269,7 +438,11 @@ function NextDefense() {
                     </span>
                     <span className="block text-[12px] leading-snug text-ink-2">
                       {upfront ? moneyRange(upfront.min, upfront.max) : "already funded"} · {leadTime(lead.min, lead.max)}
-                      {narrows && <> · narrows {approachName(narrows)}</>}
+                      {mode === "coverage" ? (
+                        <> · adds to {CATEGORY_NAMES[c.block.category]}</>
+                      ) : (
+                        narrows && <> · narrows {approachName(narrows)}</>
+                      )}
                       {c.prerequisites.length > 0 && <> · with {c.prerequisites.map((b) => b.id).join(", ")}</>}
                     </span>
                   </button>
@@ -291,23 +464,27 @@ function NextDefense() {
   );
 }
 
-function CompletenessAndBudget({ score }: { score: PostureScore }) {
+/** Programme completeness is the secondary line in paths mode. In coverage
+ * mode it is the level itself, so only the budget is left here. */
+function CompletenessAndBudget({ score, showCompleteness }: { score: PostureScore; showCompleteness: boolean }) {
   const budget = useSimulationStore((s) => s.sliders.budget_millions);
   const today = score.catalogue.filter((b) => !b.future);
   const inPlace = today.filter((b) => isOperational(score.effectiveStates[b.id])).length;
   const unfunded = score.budgetExceededIds.size;
   const share = Math.min(1, score.spentMillions / Math.max(1, budget));
   return (
-    <section className="grid grid-cols-[1fr_1.15fr] gap-5 border-t border-ink pt-2.5">
-      <div title="Programme completeness: how much of today's catalogue is in place, by category. Breadth, not whether any tier holds.">
-        <h2 className="cap">Program completeness</h2>
-        <div className="mt-2 h-[4px] bg-tint">
-          <div className="h-full bg-ink" style={{ width: `${((score.programCompleteness - 1) / 4) * 100}%` }} />
+    <section className={`grid gap-5 border-t border-ink pt-2.5 ${showCompleteness ? "grid-cols-[1fr_1.15fr]" : "grid-cols-1"}`}>
+      {showCompleteness && (
+        <div title="Programme completeness: how much of today's catalogue is in place, by category. Breadth, not whether any tier holds.">
+          <h2 className="cap">Program completeness</h2>
+          <div className="mt-2 h-[4px] bg-tint">
+            <div className="h-full bg-ink" style={{ width: `${((score.programCompleteness - 1) / 4) * 100}%` }} />
+          </div>
+          <div className="mt-1.5 text-[13px] text-ink-2">
+            <b className="text-ink">{completenessWord(score.programCompleteness)}</b> · {inPlace} of {today.length} in place
+          </div>
         </div>
-        <div className="mt-1.5 text-[13px] text-ink-2">
-          <b className="text-ink">{completenessWord(score.programCompleteness)}</b> · {inPlace} of {today.length} in place
-        </div>
-      </div>
+      )}
       <div>
         <h2 className="cap">Budget</h2>
         <div className="mt-0.5 flex items-baseline gap-1.5 whitespace-nowrap">
@@ -378,14 +555,26 @@ function Meters({ score }: { score: PostureScore }) {
 export function VerdictRail() {
   const score = useScore();
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
+  const mode = useSimulationStore((s) => s.scoringMode);
+  const coverage = coverageLevel(score);
   return (
-    <div className="flex flex-col gap-3 pt-3 pb-6" data-testid="verdict-rail">
+    <div className="flex flex-col gap-3 pt-3 pb-6" data-testid="verdict-rail" data-scoring-mode={mode}>
       <StoryCaption />
-      <SlBlock score={score} adversaryOc={adversaryOc} />
-      <TierLadder score={score} adversaryOc={adversaryOc} />
-      <GetsThrough score={score} />
-      <NextDefense />
-      <CompletenessAndBudget score={score} />
+      <ModeSwitch mode={mode} />
+      {mode === "coverage" ? (
+        <>
+          <CoverageSlBlock score={score} coverage={coverage} />
+          <CoverageList coverage={coverage} />
+        </>
+      ) : (
+        <>
+          <SlBlock score={score} adversaryOc={adversaryOc} coverage={coverage} />
+          <TierLadder score={score} adversaryOc={adversaryOc} />
+          <GetsThrough score={score} />
+        </>
+      )}
+      <NextDefense mode={mode} />
+      <CompletenessAndBudget score={score} showCompleteness={mode === "paths"} />
       <Meters score={score} />
     </div>
   );

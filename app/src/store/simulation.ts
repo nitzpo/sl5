@@ -4,6 +4,7 @@ import type { Block, BlockState, Sliders, OcDefinition, ThreatModel } from "../e
 import { baselineStates, isAtOrBelowBaseline } from "../engine/baseline";
 import { DEFAULT_AI_PROPENSITY, DEFAULT_SL_BAR } from "../engine/threat-sl";
 import { TIMELINE_REFERENCE } from "../utils/timeline";
+import { DEFAULT_SCORING_MODE, type ScoringMode } from "../model/scoring-mode";
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -38,6 +39,9 @@ interface SimulationStore {
   modelServedExternally: boolean;
   /** World toggle: count the FUT-xx future-capability blocks (default off). */
   futureCapabilities: boolean;
+  /** How the headline level is scored: attack paths (default) or v1-style
+   * control coverage. Saved and shared with the posture; a story pins paths. */
+  scoringMode: ScoringMode;
   viewingShared: boolean;
   playbackActive: boolean;
   scenarioName: string | null;
@@ -52,6 +56,7 @@ interface SimulationStore {
   setSlider: (key: keyof Sliders, value: number) => void;
   setModelServed: (served: boolean) => void;
   setFutureCapabilities: (on: boolean) => void;
+  setScoringMode: (mode: ScoringMode) => void;
   setPlaybackActive: (active: boolean) => void;
   /** Replace the posture and world with a saved or shared one. Low level: it
    * leaves a running story alone, so it is for the playback store's own
@@ -117,7 +122,14 @@ export function deriveOrder(blockStates: Record<string, BlockState>): string[] {
 
 type Snapshot = Pick<
   SimulationStore,
-  "blockStates" | "advanceOrder" | "year" | "adversaryOc" | "sliders" | "modelServedExternally" | "futureCapabilities"
+  | "blockStates"
+  | "advanceOrder"
+  | "year"
+  | "adversaryOc"
+  | "sliders"
+  | "modelServedExternally"
+  | "futureCapabilities"
+  | "scoringMode"
 >;
 
 /** What a save, a share link or a named posture records. Whole years: the
@@ -132,6 +144,7 @@ function persistedOf(s: Snapshot): PersistedState {
     sliders: s.sliders,
     modelServedExternally: s.modelServedExternally,
     futureCapabilities: s.futureCapabilities,
+    scoringMode: s.scoringMode,
   };
 }
 
@@ -151,6 +164,7 @@ function snapshotFrom(state: PersistedState, blocks: Block[]): Snapshot {
     sliders: state.sliders,
     modelServedExternally: state.modelServedExternally,
     futureCapabilities: state.futureCapabilities ?? false,
+    scoringMode: state.scoringMode ?? DEFAULT_SCORING_MODE,
   };
 }
 
@@ -177,6 +191,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   sliders: DEFAULT_SLIDERS,
   modelServedExternally: true,
   futureCapabilities: false,
+  scoringMode: DEFAULT_SCORING_MODE,
   viewingShared: false,
   playbackActive: false,
   scenarioName: null,
@@ -231,6 +246,9 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   setSlider: (key, value) => set((s) => ({ sliders: { ...s.sliders, [key]: value }, scenarioName: null })),
   setModelServed: (served) => set({ modelServedExternally: served, scenarioName: null }),
   setFutureCapabilities: (on) => set({ futureCapabilities: on, scenarioName: null }),
+  // Not a change to the posture, so a named posture keeps its name: the mode
+  // is the lens it is read through.
+  setScoringMode: (scoringMode) => set({ scoringMode }),
   setPlaybackActive: (active) => set({ playbackActive: active }),
 
   applyPersisted: (state, extra = {}) => set({ ...snapshotFrom(state, get().blocks), ...extra }),
@@ -271,6 +289,8 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     endStory();
     const states = baselineStates(get().blocks);
     clearLocalStorage();
+    // The scoring mode is the reader's lens, not part of the real-world
+    // posture, so a reset keeps it.
     set({
       blockStates: states,
       advanceOrder: deriveOrder(states),
@@ -282,6 +302,9 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       scenarioName: null,
       viewingShared: false,
     });
+    // A fresh start opens in the default mode, so a reader on another one
+    // keeps it by saving: the auto-save skips a reset that changed nothing else.
+    if (get().scoringMode !== DEFAULT_SCORING_MODE) saveToLocalStorage(persistedOf(get()));
   },
 
   saveScenario: (name) => {

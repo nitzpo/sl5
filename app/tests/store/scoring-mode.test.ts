@@ -40,7 +40,6 @@ beforeEach(() => {
     adversaryOc: 4,
     sliders: DEFAULT_SLIDERS,
     modelServedExternally: true,
-    futureCapabilities: false,
     scoringMode: "paths",
   });
   sim().loadData(blocks, model, []);

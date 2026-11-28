@@ -1,0 +1,2422 @@
+{
+ "_note": "The vector backbone the reference probe ran on (reviewed Nov 2026, before the Nov 2026 recalibration): vectors, approaches, and each block's defense type and counters. probe-fixture.test.ts runs the engine on this map so it pins the rules; the recalibration's map changes are listed in research/scoring-model.md (Part 12).",
+ "vectors": [
+  {
+   "id": "V-CODE-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 3,
+    "oc2": 4,
+    "oc3": 4,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-CODE-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 2,
+    "oc2": 2,
+    "oc3": 3,
+    "oc4": 4,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-CODE-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 2,
+    "oc3": 4,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-CODE-4",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 4,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-CRED-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 3,
+    "oc2": 4,
+    "oc3": 5,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-CRED-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 2,
+    "oc2": 2,
+    "oc3": 3,
+    "oc4": 3,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.75,
+   "headline": true
+  },
+  {
+   "id": "V-CRED-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 3,
+    "oc2": 3,
+    "oc3": 4,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.75,
+   "headline": true
+  },
+  {
+   "id": "V-CRED-4",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 2,
+    "oc2": 3,
+    "oc3": 5,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-ACS-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 3,
+    "oc5": 3
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 0.5,
+   "headline": true
+  },
+  {
+   "id": "V-ACS-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 2,
+    "oc5": 2
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-ACS-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 3,
+    "oc5": 4
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-ACS-4",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 2,
+    "oc5": 3
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 0.5,
+   "headline": true
+  },
+  {
+   "id": "V-BYP-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 2,
+    "oc2": 2,
+    "oc3": 3,
+    "oc4": 3,
+    "oc5": 3
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-BYP-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 2,
+    "oc2": 2,
+    "oc3": 3,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 0.75,
+   "headline": true
+  },
+  {
+   "id": "V-BYP-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 3,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.5,
+   "headline": true
+  },
+  {
+   "id": "V-ML-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 2,
+    "oc3": 4,
+    "oc4": 4,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-ML-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 2,
+    "oc3": 4,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-ML-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 2,
+    "oc2": 3,
+    "oc3": 4,
+    "oc4": 4,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-ML-4",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 2,
+    "oc5": 3
+   },
+   "stage": "entry",
+   "stages_skipped": [
+    "reach",
+    "exfil"
+   ],
+   "ai_shift": 0.5,
+   "headline": true
+  },
+  {
+   "id": "V-ML-5",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 2,
+    "oc5": 3
+   },
+   "stage": "entry",
+   "stages_skipped": [
+    "reach",
+    "exfil"
+   ],
+   "ai_shift": 1.0,
+   "headline": false,
+   "lane": "capability"
+  },
+  {
+   "id": "V-NET-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 2,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "assumes_defense": [
+    "NET-01"
+   ],
+   "ai_shift": 0.5,
+   "headline": true
+  },
+  {
+   "id": "V-NET-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 2,
+    "oc5": 3
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "ai_shift": 0.5,
+   "headline": true
+  },
+  {
+   "id": "V-NET-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 4,
+    "oc5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [
+    "exfil"
+   ],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-PHYS-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 3,
+    "oc4": 3,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-PHYS-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 2,
+    "oc2": 2,
+    "oc3": 4,
+    "oc4": 4,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-PHYS-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 3,
+    "oc4": 4,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-PHYS-4",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 3,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "assumes_defense": [
+    "PHY-03"
+   ],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-PHYS-5",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 2,
+    "oc5": 3
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "assumes_defense": [
+    "HW-04",
+    "KEY-01"
+   ],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-PHYS-6",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 2,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [
+    "exfil"
+   ],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-PHYS-7",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 1,
+    "oc5": 2
+   },
+   "stage": "entry",
+   "stages_skipped": [
+    "exfil"
+   ],
+   "needs_government": true,
+   "ai_shift": 0.0,
+   "headline": true
+  },
+  {
+   "id": "V-SUP-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 2,
+    "oc3": 4,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.5,
+   "headline": true
+  },
+  {
+   "id": "V-SUP-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 2,
+    "oc3": 4,
+    "oc4": 5,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 1.0,
+   "headline": true
+  },
+  {
+   "id": "V-SUP-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 3,
+    "oc5": 4
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-HUM-1",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 4,
+    "oc4": 4,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-HUM-2",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 4,
+    "oc4": 4,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-HUM-3",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 3,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-HUM-4",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 1,
+    "oc4": 3,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "ai_shift": 0.25,
+   "headline": true
+  },
+  {
+   "id": "V-HUM-5",
+   "source": "rand",
+   "rand_feasibility": {
+    "oc1": 1,
+    "oc2": 1,
+    "oc3": 2,
+    "oc4": 3,
+    "oc5": 5
+   },
+   "stage": "entry",
+   "stages_skipped": [],
+   "needs_government": true,
+   "ai_shift": 0.0,
+   "headline": true
+  },
+  {
+   "id": "V-SELF-1",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 1,
+    "ac2": 2,
+    "ac3": 4,
+    "ac4": 5,
+    "ac5": 5
+   },
+   "stage": "exfil",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-SELF-8",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 1,
+    "ac2": 1,
+    "ac3": 2,
+    "ac4": 3,
+    "ac5": 4
+   },
+   "stage": "exfil",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-SELF-2",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 2,
+    "ac2": 3,
+    "ac3": 4,
+    "ac4": 5,
+    "ac5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-SELF-3",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 1,
+    "ac2": 3,
+    "ac3": 4,
+    "ac4": 5,
+    "ac5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-SELF-4",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 1,
+    "ac2": 1,
+    "ac3": 2,
+    "ac4": 3,
+    "ac5": 4
+   },
+   "stage": "exfil",
+   "stages_skipped": [],
+   "assumes_defense": [
+    "NET-04",
+    "AI-07"
+   ],
+   "headline": true
+  },
+  {
+   "id": "V-SELF-5",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 1,
+    "ac2": 2,
+    "ac3": 3,
+    "ac4": 4,
+    "ac5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "headline": true,
+   "lane": "integrity"
+  },
+  {
+   "id": "V-SELF-6",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 2,
+    "ac2": 3,
+    "ac3": 4,
+    "ac4": 5,
+    "ac5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [
+    "exfil"
+   ],
+   "headline": true
+  },
+  {
+   "id": "V-SELF-7",
+   "source": "authored",
+   "rand_feasibility": null,
+   "ai_feasibility": {
+    "ac1": 2,
+    "ac2": 2,
+    "ac3": 3,
+    "ac4": 4,
+    "ac5": 5
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-X-1",
+   "source": "structural",
+   "rand_feasibility": null,
+   "structural_p": {
+    "oc1": 1.0,
+    "oc2": 1.0,
+    "oc3": 1.0,
+    "oc4": 1.0,
+    "oc5": 1.0
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-X-2",
+   "source": "structural",
+   "rand_feasibility": null,
+   "structural_p": {
+    "oc1": 1.0,
+    "oc2": 1.0,
+    "oc3": 1.0,
+    "oc4": 1.0,
+    "oc5": 1.0
+   },
+   "stage": "reach",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-X-3",
+   "source": "structural",
+   "rand_feasibility": null,
+   "structural_p": {
+    "oc1": 1.0,
+    "oc2": 1.0,
+    "oc3": 1.0,
+    "oc4": 1.0,
+    "oc5": 1.0
+   },
+   "stage": "exfil",
+   "stages_skipped": [],
+   "headline": true
+  },
+  {
+   "id": "V-X-4",
+   "source": "structural",
+   "rand_feasibility": null,
+   "structural_p": {
+    "oc1": 1.0,
+    "oc2": 1.0,
+    "oc3": 1.0,
+    "oc4": 1.0,
+    "oc5": 1.0
+   },
+   "stage": "exfil",
+   "stages_skipped": [],
+   "headline": true
+  }
+ ],
+ "approaches": [
+  {
+   "id": "remote",
+   "name": "Remote network intrusion",
+   "adversary": "human",
+   "headline": true,
+   "stages": {
+    "entry": [
+     "V-CODE-1",
+     "V-CODE-2",
+     "V-CODE-3",
+     "V-CODE-4",
+     "V-CRED-1",
+     "V-CRED-2",
+     "V-CRED-3",
+     "V-BYP-3",
+     "V-PHYS-2",
+     "V-PHYS-3",
+     "V-SUP-3",
+     "V-NET-1"
+    ],
+    "reach": [
+     "V-CRED-4",
+     "V-ACS-1",
+     "V-ACS-2",
+     "V-ACS-3",
+     "V-ACS-4",
+     "V-BYP-1",
+     "V-BYP-2",
+     "V-ML-1",
+     "V-NET-2"
+    ],
+    "exfil": [
+     "V-X-3",
+     "V-NET-1"
+    ]
+   },
+   "notes": "Classic foothold, escalate, exfiltrate. With NET-01 deployed, the code and credential vectors are countered but V-NET-1 (residual) joins entry and exfil, so the stage never falls below V-NET-1: the reviewer's floor falls out of the structure. Planted USB (V-PHYS-2) and off-site laptops (V-PHYS-3) are entry here because the operator then works remotely."
+  },
+  {
+   "id": "insider",
+   "name": "Human insider",
+   "adversary": "human",
+   "headline": true,
+   "stages": {
+    "entry": [
+     "V-HUM-1",
+     "V-HUM-2",
+     "V-HUM-3",
+     "V-HUM-4",
+     "V-HUM-5",
+     "V-SUP-3"
+    ],
+    "reach": [
+     "V-X-1",
+     "V-BYP-2",
+     "V-CRED-4",
+     "V-ACS-4"
+    ],
+    "exfil": [
+     "V-X-3",
+     "V-X-4"
+    ]
+   },
+   "notes": "Entry is getting a cooperating person (recruited, coerced, placed, or a vendor's staff). At an SL1 victim the insider's standing access (V-X-1) and carry-out (V-X-3/V-X-4) are certain, so insider carry-out is complete on its own until PER-06, KEY-01 or egress controls exist. Leadership-approved access (V-HUM-5) is an entry like any other: split custody and dual authorisation still apply."
+  },
+  {
+   "id": "physical",
+   "name": "Physical intrusion and seizure",
+   "adversary": "human",
+   "headline": true,
+   "stages": {
+    "entry": [
+     "V-PHYS-1",
+     "V-PHYS-4",
+     "V-PHYS-6",
+     "V-PHYS-7"
+    ],
+    "reach": [
+     "V-X-2",
+     "V-PHYS-5",
+     "V-NET-3",
+     "V-NET-2",
+     "V-BYP-2"
+    ],
+    "exfil": [
+     "V-X-4",
+     "V-X-3"
+    ]
+   },
+   "notes": "Someone gets to the hardware, reads or taps the weights, and carries them out. Armed break-in and military takeover (V-PHYS-6/7) skip exfil because they take the hardware, but still need a reach step to read it (KEY-01 strong). Wiretaps (V-NET-3) skip exfil."
+  },
+  {
+   "id": "supply_chain",
+   "name": "Supply chain",
+   "adversary": "human",
+   "headline": true,
+   "stages": {
+    "entry": [
+     "V-SUP-1",
+     "V-SUP-2",
+     "V-ML-2"
+    ],
+    "reach": [
+     "V-CRED-4",
+     "V-ML-1",
+     "V-BYP-1",
+     "V-BYP-2",
+     "V-ACS-2",
+     "V-ACS-3"
+    ],
+    "exfil": [
+     "V-X-3",
+     "V-NET-1"
+    ]
+   },
+   "notes": "A compromised product, package or component gives a foothold inside the trusted boundary, including behind an air gap. Kept staged: an implant still has to reach the weights and get them out (covert channels are V-NET-1)."
+  },
+  {
+   "id": "served",
+   "name": "Served model",
+   "adversary": "human",
+   "headline": true,
+   "requires_external_serving": true,
+   "stages": {
+    "entry": [
+     "V-ML-3",
+     "V-ML-1",
+     "V-ML-4"
+    ],
+    "reach": [
+     "V-CRED-4",
+     "V-ML-1",
+     "V-BYP-1"
+    ],
+    "exfil": [
+     "V-X-3"
+    ]
+   },
+   "notes": "Exists only if the model is served externally (world-state toggle). Prompt-triggered code execution or serving-stack bugs give a foothold on infrastructure that holds weights; model extraction (V-ML-4) is complete via the API. NET-01 does not apply: RAND exempts production serving."
+  },
+  {
+   "id": "ai_insider",
+   "name": "The lab's own model as insider",
+   "adversary": "ai",
+   "headline": true,
+   "stages": {
+    "entry": [],
+    "reach": [
+     "V-SELF-2",
+     "V-SELF-3",
+     "V-SELF-7",
+     "V-SELF-6"
+    ],
+    "exfil": [
+     "V-SELF-1",
+     "V-SELF-8",
+     "V-SELF-4"
+    ]
+   },
+   "notes": "No entry stage: the model is already inside. Scored on AC bands, not OC tiers; SL5 must hold it separately (user decision). Unsanctioned internal workloads (V-SELF-6) skip exfil. V-SELF-4 is residual: a candidate only once overt egress is capped or inspected (NET-04 / AI-07). Sabotage of oversight (V-SELF-5) is not here: it is an integrity harm, scored on its own meter outside SL."
+  },
+  {
+   "id": "capability_copy",
+   "name": "API distillation (capability copy)",
+   "adversary": "human",
+   "headline": false,
+   "requires_external_serving": true,
+   "stages": {
+    "entry": [
+     "V-ML-5"
+    ],
+    "reach": [],
+    "exfil": []
+   },
+   "notes": "Its own meter, outside the headline: distillation copies capability, not weights.",
+   "meter": "capability_leakage"
+  },
+  {
+   "id": "integrity",
+   "name": "Sabotage by the lab's own model",
+   "adversary": "ai",
+   "headline": false,
+   "meter": "integrity",
+   "stages": {
+    "entry": [],
+    "reach": [
+     "V-SELF-5"
+    ],
+    "exfil": []
+   },
+   "notes": "Its own meter, outside SL and breach: subverting oversight, sandbagging and tampering with results damage integrity rather than move weights."
+  }
+ ],
+ "blocks": {
+  "AI-01": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-5",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-7",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-02": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SELF-5",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-7",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-8",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-04": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "strong",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-8",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-05": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-06": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial",
+     "type_override": "probabilistic"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial",
+     "type_override": "probabilistic"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial",
+     "type_override": "probabilistic"
+    }
+   ]
+  },
+  "AI-07": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-ML-5",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-4",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-8",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-08": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-09": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ML-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-8",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-10": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-5",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-7",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-8",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-11": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial"
+    }
+   ]
+  },
+  "AI-12": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-SELF-5",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "HW-01": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "HW-02": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "HW-03": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-NET-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "HW-04": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-7",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "HW-05": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-NET-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial",
+     "type_override": "probabilistic"
+    },
+    {
+     "vector_id": "V-PHYS-2",
+     "strength": "partial",
+     "type_override": "probabilistic"
+    },
+    {
+     "vector_id": "V-SELF-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-NET-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-2",
+     "strength": "partial",
+     "type_override": "probabilistic"
+    }
+   ]
+  },
+  "HW-06": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-CODE-1",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-CODE-2",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-CODE-4",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-ML-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "HW-07": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-4",
+     "strength": "partial",
+     "type_override": "probabilistic"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "HW-09": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "KEY-01": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-BYP-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ACS-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-7",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-5",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-2",
+     "strength": "strong"
+    }
+   ]
+  },
+  "CUS-01": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-BYP-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "ACA-01": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-ACS-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ACS-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ACS-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "SRV-01": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-ML-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "NET-01": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-CODE-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CODE-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CODE-4",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-PHYS-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-SELF-8",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-X-3",
+     "strength": "strong"
+    }
+   ]
+  },
+  "NET-02": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-CODE-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-NET-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "NET-03": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-NET-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ACS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "NET-04": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-X-3",
+     "strength": "strong"
+    }
+   ]
+  },
+  "NET-05": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-NET-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-8",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "NET-06": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-NET-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "NET-07": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-NET-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ACS-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "IAM-01": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-CRED-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CRED-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CRED-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-BYP-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ACS-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "DET-01": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-NET-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "DEC-01": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-CRED-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "END-01": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-CODE-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CODE-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-CODE-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "CFG-01": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-BYP-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-BYP-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PER-01": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-HUM-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PER-02": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-PHYS-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PER-03": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-HUM-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PER-04": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-HUM-3",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-HUM-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PER-06": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-CRED-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-7",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-HUM-5",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-1",
+     "strength": "strong"
+    }
+   ]
+  },
+  "PER-08": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-BYP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CODE-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-CRED-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PER-09": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-HUM-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-HUM-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "GOV-01": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-HUM-4",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-HUM-5",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PHY-01": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-NET-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-NET-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-6",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PHY-02": {
+   "defense_type": "hard_stop",
+   "counters": [
+    {
+     "vector_id": "V-NET-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-SELF-4",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-NET-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PHY-03": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-X-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PHY-04": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-PHYS-6",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PHY-06": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-BYP-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-NET-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PHY-07": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-PHYS-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "PHY-08": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-PHYS-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-X-4",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-NET-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-NET-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SELF-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "SC-01": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    }
+   ]
+  },
+  "SC-03": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "SC-04": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-3",
+     "strength": "partial"
+    }
+   ]
+  },
+  "SC-07": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-SUP-2",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-ACS-2",
+     "strength": "strong",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial",
+     "type_override": "hybrid"
+    },
+    {
+     "vector_id": "V-ACS-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-3",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ACS-4",
+     "strength": "partial"
+    }
+   ]
+  },
+  "SW-01": {
+   "defense_type": "hybrid",
+   "counters": [
+    {
+     "vector_id": "V-SUP-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "strong"
+    },
+    {
+     "vector_id": "V-ML-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    }
+   ]
+  },
+  "SC-08": {
+   "defense_type": "probabilistic",
+   "counters": [
+    {
+     "vector_id": "V-SUP-1",
+     "strength": "partial"
+    },
+    {
+     "vector_id": "V-ML-2",
+     "strength": "partial"
+    }
+   ]
+  }
+ }
+}

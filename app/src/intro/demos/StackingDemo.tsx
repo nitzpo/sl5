@@ -6,15 +6,15 @@ import { countersOf, SLIDERS_FAVOURABLE, stackOnVector } from "../engine-views";
 import { BandMark, BlockGlyph, DataPending } from "../slides/parts";
 
 // Slide 10: diminishing returns on one attack vector. Recruiting an insider
-// (RAND's "bribes and cooperation") against an OC4 agency: every counter in
-// today's catalogue is partial; the one strong counter is a future capability.
+// (RAND's "bribes and cooperation") against an OC4 agency: one strong counter
+// (the continuous insider-threat programme) and several partial ones.
 // The numbers are the engine's stacking ladder (`evaluateVector`).
 
 const STACK_VECTOR = "V-HUM-1";
 const STACK_TIER = 4;
 const YEAR = 2026;
-/** The strong counter is a government-cleared workforce, which only makes
- * sense with the government on side: full cooperation for every counter. */
+/** Personnel controls lean on government vetting, so full cooperation for
+ * every counter. */
 const SLIDERS = SLIDERS_FAVOURABLE;
 
 /** The most a single counter can take off a vector: the strong rung. */
@@ -45,9 +45,9 @@ function SuccessBar({ p, base, bar }: { p: number; base: number; bar: number }) 
 }
 
 function Demo({ data }: { data: ThreatData }) {
-  // Today's partial counters first, then the strong one, which is R&D.
+  // The partial counters first, then the strong one.
   const counters = useMemo(
-    () => [...countersOf(data, STACK_VECTOR)].sort((a, b) => Number(!!a.block.future) - Number(!!b.block.future)),
+    () => [...countersOf(data, STACK_VECTOR)].sort((a, b) => Number(a.strength === "strong") - Number(b.strength === "strong")),
     [data]
   );
   const [on, setOn] = useState<string[]>([]);
@@ -116,7 +116,6 @@ function Demo({ data }: { data: ThreatData }) {
                     <span className="block text-[14px] leading-tight font-semibold text-ink">{c.block.name}</span>
                     <span className="mono block text-[12px] text-ink-2">
                       {c.block.id} · {c.strength}
-                      {c.block.future ? " · future capability (R&D)" : ""}
                     </span>
                   </span>
                   <span className="w-[96px] text-right">

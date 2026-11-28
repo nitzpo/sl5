@@ -6,7 +6,8 @@ import type { BlockState } from "./types";
  * maps them on load so those links open on the equivalent posture.
  *
  * AI-03 split across both halves of the inference-channel defence it was
- * absorbed into, so its state lifts both.
+ * absorbed into, so its state lifts both. A retired id with no successor (the
+ * FUT-xx blocks) is dropped.
  */
 export const LEGACY_BLOCK_IDS: Readonly<Record<string, readonly string[]>> = {
   "AI-03": ["AI-07", "AI-08"],
@@ -17,6 +18,15 @@ export const LEGACY_BLOCK_IDS: Readonly<Record<string, readonly string[]>> = {
   "SC-05": ["SC-08"],
   "SC-06": ["SC-08"],
   "PHY-05": ["PHY-08"],
+  // The five future-capability (R&D) blocks, retired in the Nov 2026
+  // recalibration: SL5 is now reached with today's catalogue, and what makes it
+  // unreachable today is the research-required controls' lead times. Old saves
+  // and links that named them drop them.
+  "FUT-01": [],
+  "FUT-02": [],
+  "FUT-03": [],
+  "FUT-04": [],
+  "FUT-05": [],
 };
 
 const STATE_ORDER: BlockState[] = ["not_started", "investing", "implementing", "deployed", "mature"];

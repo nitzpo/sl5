@@ -25,7 +25,7 @@ The tool is built around **two simultaneous races**:
 
 ### Ideas it tries to make tangible
 
-- **SL5 is extremely hard** — with today's catalogue it is out of reach, as RAND says it currently is.
+- **SL5 is extremely hard** — it takes every defense in the catalogue, and some of them still need research and take five years or more to land, so it is out of reach today, as RAND says it currently is.
 - **OC4 → OC5 is a qualitative jump**, not just a bigger budget.
 - **Strong AI shifts the OC scale** — on code, credential and ML-stack attacks, an attacker with strong AI does what the next tier up does today.
 - **Insider threat is a distinct, hard-to-mitigate class** — including the lab's own model acting as an insider.
@@ -36,7 +36,7 @@ The tool is built around **two simultaneous races**:
 - **The catalogue** is the main screen, in two views. The **stage matrix** lays the blocks out by attack stage (get in, reach the weights, get them out, detect and respond) and category; **clusters** groups them by category around the model weights. The easiest attack path is drawn through both, with break marks where a deployed block holds and badges on choke points. Click a block to advance it (not started → investing → implementing → deployed → mature), right-click to step it back, Shift-click for its detail drawer.
 - **The verdict rail** gives the security level as a level plus a progress bar toward the next, flagged *marginal* when it only just holds; a ladder of attacker tiers OC1–OC5 and the lab's own model, each in words (*usually fails*, *contested*, *usually succeeds*); what still gets through; the engine-ranked next defense to fund; programme completeness; the budget; and meters outside the SL. There are no percentages in the UI; the exact estimative word is on hover.
 - **Approaches** shows one lane per broad way in (remote intrusion, insider, physical, supply chain, the served model, the lab's own model) along the attacker's easiest path, with your defenses at each stage. **Race** sets long-lead defenses against the moment AI lifts the attacker to the next tier, and plots your SL over the years beside the four scripted stories.
-- **Parameters** holds the advanced settings: how strict "stops" is (strict, standard, lenient), the adversary, model serving, AI propensity, the **future capabilities** toggle for five R&D blocks, and the world sliders.
+- **Parameters** holds the advanced settings: how strict "stops" is (strict, standard, lenient), the adversary, model serving, AI propensity, and the world sliders.
 - **Scenarios** plays one-minute stories (Proactive Program, Reactive CISO, Budget-Constrained, Do Nothing, or your own posture run forward in time) with captions in the rail, and saves and reloads postures you name. **Share** copies a link to your posture.
 
 ### The introduction
@@ -48,7 +48,8 @@ target, why AI makes it worse, the OC1–OC5 ladder, what "secure" means here, t
 model as an insider, and the sources. Act II, *how to use the instrument*: the catalogue,
 attack vectors and the three stages, approaches and the easiest path, why weak defenses don't
 add up, your security level, lead times against the threat front, and a budget game where you
-spend $150M on one year of defenses and see which attackers you now stop. Every demo runs on
+spend $150M on a year of defenses in 2028, with today's posture slipping, and see which
+attackers you now stop. Every demo runs on
 `scorePosture`, the same pipeline as the app. It's a separate Vite entry point, every slide is
 linkable (`/sl5/v2/intro/#the-oc-ladder`), and slugs from v1's introduction still land on the
 nearest slide. Unlike the app, it reads fine on a phone.
@@ -76,8 +77,8 @@ each scored as a capability-gated breach probability and shown as a percentage.
 - **The security level is threat-relative**: SL-n means OC-n's campaigns usually fail. The
   old coverage score is kept as *programme completeness*.
 - **Results are in words**, not percentages, and the level comes with progress toward the next.
-- **The catalogue went from 47 to 56 blocks** (fifteen new defenses; overlapping ones merged),
-  plus five labelled R&D blocks behind a toggle, and the lab's own model is scored as an insider.
+- **The catalogue went from 47 to 56 blocks** (fifteen new defenses; overlapping ones merged);
+  seven are flagged as needing research, and the lab's own model is scored as an insider.
 - **A new interface**: the Swiss-style catalogue with its stage matrix and clusters views, the
   verdict rail, Approaches and Race views, the parameters drawer, and a 14-slide intro
   written for defenders.
@@ -103,8 +104,9 @@ every formula, constant and the calibration table, is in
   against a minimally defended lab, read as a probability (1 → 0.02, 2 → 0.3, 3 → 0.5,
   4 → 0.7, 5 → 0.9). Each sits at a **stage**: get in, reach the weights, get them out.
   Two kinds are ours, not RAND's, and labelled as assumptions: 8 vectors for **the
-  lab's own model as an insider**, scored per AI-capability band, and 4 **structural
-  placeholders** ("nothing stops this stage" at a minimal lab).
+  lab's own model as an insider**, scored per AI-capability band, and 5 **structural
+  placeholders** ("nothing stops this stage" at a minimal lab, including getting a
+  weight-scale volume out through the serving API).
 - **Approaches** (`approaches.json`) group the vectors into broad ways in — remote,
   insider, physical, supply chain, the served model, and the lab's own model. An
   **attack path** takes one vector per stage, and the engine finds the attacker's
@@ -117,12 +119,18 @@ every formula, constant and the calibration table, is in
   block's state (not started → mature), the cooperation sliders and its `completed_by`
   companions scale its effect, and counters **erode against stronger attackers**: hard
   stops in a narrow band (0.98 → 0.86 of their effect from OC1 to OC5), probabilistic
-  controls in a wide one (0.95 → 0.40), hybrids between.
+  controls in a wide one (0.95 → 0.40), hybrids between — read relative to the tier a
+  control was built for, so an SL5-grade programme holds up against OC5 better than an
+  SL2-grade one does.
 - **AI lifts the attacker, once.** Each vector carries an authored `ai_shift`: as AI
   capability grows (0 in 2024 → 1 in 2030 on the default curve), an OC-n attacker scores
   like OC-n plus up to one tier on code, credential and ML-stack vectors, and barely
   moves on physical and human ones. Feasibility and counter erosion are both read at
   that tier; defender-side erosion is not applied on top.
+- **Defenders get AI too, modestly.** Detection, monitoring, review and patching blocks
+  (eleven, flagged `defender_ai`) win back half of the attacker's AI uplift on the
+  vectors they counter, and half of AI's erosion of detection. It never exceeds the
+  uplift it offsets, so a later year is never safer than an earlier one.
 - **Detection and a floor.** Security operations and deception give a chance that a
   failed attempt is caught and the campaign stopped (about half when mature, eroded by
   AI). And no campaign reaches zero: a residual floor of 3% of what the same attacker
@@ -136,12 +144,13 @@ every formula, constant and the calibration table, is in
   level (how far that tier has come from certain success to the bar, on a log scale), a
   *marginal* flag, what limits it, and a word per tier — *usually fails*, *contested*,
   *usually succeeds* — rather than a percentage.
-- **SL5 is out of reach with today's catalogue**, as RAND says it currently is. A world
-  toggle adds five clearly labelled **future capabilities** (verified accelerator
-  hardware at scale, a government-cleared workforce with state counter-intelligence, a
-  formally verified weight-access stack, a sovereign protected facility, trustworthy AI
-  monitors). With all of them and a favourable world, SL5 is reachable for a few years,
-  marginally, before AI catches up.
+- **SL5 is reached with the catalogue — and out of reach today.** Every defense, mature,
+  holds OC5 and the lab's own model (only just in today's world, clearly with a
+  government partnership). But seven controls are flagged **research required**
+  (chip-level tamper protection, execution integrity verification, a hardened ML
+  serving interface, a verified access-control stack, decorrelated multi-model review,
+  AI-control protocols, training-data screening): without them SL5 is lost, and their
+  lead times mean a programme starting now lands them after 2030.
 - **Things no lab can do alone** — military takeover, access the organisation itself
   approves — are still scored, flagged, and relieved only by government cooperation.
 - **Outside the SL**: API distillation copies capability rather than weights, so it is a
@@ -161,14 +170,20 @@ every formula, constant and the calibration table, is in
   prerequisites) is scored through `scorePosture` and ranked by how much it cuts the
   adversary tier's campaign, plus a quarter of the cut at the tier above, per $M.
 - **You don't start from nothing.** The app opens on a researched starting posture from
-  each block's `baseline_state` — SL1 in 2026, slipping to SL0 by 2028 if nothing is added,
-  as AI lifts attackers past today's controls.
+  each block's `baseline_state`, crediting the controls frontier labs demonstrably run
+  (identity, patching, a SOC, configuration management) as deployed — SL2 in 2026,
+  contesting SL3, and slipping to SL1 by 2028 if nothing is added, as AI lifts attackers
+  past today's controls.
 
-The calibration is honest about what it cannot hold: with the model served, a ~$3B
-programme that starts in 2024 reaches SL3 by 2030, only just; the full catalogue never
-reaches SL5. The constants that are ours rather than RAND's — the own-model scores, the
-structural placeholders, the future blocks, the AI shifts, detection and the floor — are
-listed as [authored assumptions](research/scoring-model.md#authored-assumptions). The
+The calibration targets come from public evidence on where labs stand (RAND, Anthropic's
+ASL-3, Google DeepMind's framework, IFP and the SL5 Task Force; see
+[calibration targets and evidence](research/scoring-model.md#calibration-targets-and-evidence)).
+With the model served: a ~$1.9B reactive programme ends at about SL3 by 2030; a ~$4B
+programme that starts in 2024, research controls included, reaches SL4 in 2028 and SL5,
+only just, in 2030. The constants that are ours rather than RAND's — the own-model
+scores, the structural placeholders, the AI shifts, defender AI, design-tier erosion,
+detection and the floor — are listed as
+[authored assumptions](research/scoring-model.md#authored-assumptions). The
 reviewed calibration probe is reproduced by the engine as a test fixture, and the places
 where the engine departs from it are documented. JSON schemas live in
 [`research/schema/`](research/schema/). Most other documents in [`research/`](research/)
@@ -251,10 +266,10 @@ Canonical data the app loads is in `app/public/data/` — the single source of t
 
 | File | What |
 |---|---|
-| `vectors.json` | 50 attack vectors: RAND's 38, 8 for the lab's own model, 4 structural placeholders |
+| `vectors.json` | 51 attack vectors: RAND's 38, 8 for the lab's own model, 5 structural placeholders |
 | `approaches.json` | The six approaches and the two meters outside the SL, as vectors per stage |
 | `scenarios.json` | Seven scenarios, the former attack chains, as specific paths |
-| `blocks-*.json` | 56 building blocks in six categories, each with the vectors it counters; `blocks-future.json` holds the five R&D blocks |
+| `blocks-*.json` | 56 building blocks in six categories, each with the vectors it counters; seven carry `research_required` |
 | `world-state.json` | The timeline, the AI capability curve, and the OC and SL definitions |
 
 (An earlier Python prototype and its frozen data snapshot lived under `research/`; both were removed once `app/tests/engine/` covered the same scenarios against live data. See [`research/README.md`](research/README.md).)

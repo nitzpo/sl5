@@ -79,11 +79,11 @@ export function levelOf(value: number): { level: number; progress: number } {
 
 /**
  * The coverage-mode level and its per-category breakdown, from the engine's
- * own `programCompleteness` and `categoryScores`. Counts are over today's
- * catalogue (no R&D blocks), which is what completeness measures.
+ * own `programCompleteness` and `categoryScores`. Counts are over the
+ * catalogue, which is what completeness measures.
  */
 export function coverageLevel(score: PostureScore): CoverageLevel {
-  const today = score.catalogue.filter((b) => !b.future);
+  const today = score.catalogue;
   const lowest = Math.min(...CATEGORY_ORDER.map((c) => score.categoryScores[c]));
   const categories = CATEGORY_ORDER.map((category): CategoryCoverage => {
     const blocks = today.filter((b) => b.category === category);

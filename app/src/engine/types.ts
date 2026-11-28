@@ -125,10 +125,18 @@ export interface Block {
    * block that counters nothing moves no number, so the data-integrity test
    * forbids it. */
   counters: CounterLink[];
-  /** A future-capability (R&D) block: counted only when the world toggle
-   * `futureCapabilities` is on. Its numbers are illustrative, not measured. */
-  future?: boolean;
-  future_note?: string;
+  /** The control needs research before it can be built at the grade the SL5
+   * benchmark asks for: low technical feasibility and long, uncertain lead
+   * times. It is part of today's catalogue and counts like any block once
+   * built; what makes SL5 unreachable today is that these cannot be deployed
+   * yet. `research_note` says, in one line, what the research is. */
+  research_required?: boolean;
+  research_note?: string;
+  /** An AI-augmented defense (detection, monitoring, review, patching): it wins
+   * back a share of the attacker's AI uplift (`DEFENDER_AI_SHARE` in
+   * vector-model.ts). `defender_ai_note` says how. */
+  defender_ai?: boolean;
+  defender_ai_note?: string;
   /** Present when Phase 2 changed the declared defense type, with why. */
   reclassified?: { from: DefenseType; why: string };
 }
@@ -172,6 +180,8 @@ export interface AttackVector {
   /** Residual vector: RAND scored it as if these defenses exist, and none of
    * them counters it. */
   assumes_defense?: string[];
+  /** Why the residual assumes what it does, where that was revisited. */
+  residual_note?: string;
   /** Nothing a lab can do alone stops this; `gov_cooperation` relieves it. */
   needs_government?: boolean;
   needs_government_note?: string;

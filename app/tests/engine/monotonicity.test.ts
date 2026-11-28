@@ -22,7 +22,7 @@ const model = loadModel();
 const SLIDERS: Sliders = { ...APP_SLIDERS, budget_millions: 2000 };
 const STATES: BlockState[] = ["not_started", "investing", "implementing", "deployed", "mature"];
 
-const allState = (s: BlockState): Record<string, BlockState> => allAt(blocks, s, true);
+const allState = (s: BlockState): Record<string, BlockState> => allAt(blocks, s);
 
 // Deterministic LCG so property-test failures are reproducible
 function makeRng(seed: number) {
@@ -63,7 +63,6 @@ function randomInput(rng: () => number): Omit<PostureInput, "blockStates"> & { b
     },
     adversaryOc: 1 + Math.floor(rng() * 5),
     modelServedExternally: rng() < 0.5,
-    futureCapabilities: rng() < 0.5,
   };
 }
 

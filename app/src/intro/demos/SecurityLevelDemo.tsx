@@ -14,14 +14,15 @@ import {
 import { DataPending, Segmented, SlMeter, Switch, TierLadder, type LadderRow } from "../slides/parts";
 
 // Slide 11: the verdict the instrument shows, on the real engine. Two postures,
-// the strictness bar, the world outside the lab, and the future-capability
-// switch: enough to see that SL5 is out of reach with today's catalogue.
+// the strictness bar, the world outside the lab, and whether the
+// research-required defenses are built: enough to see that SL5 needs all of
+// them, and why it is out of reach today.
 
 interface DemoScene {
   posture: PostureKind;
   strictness: Strictness;
   world: World;
-  future: boolean;
+  research: boolean;
 }
 
 const bandsOf = (s: ReturnType<typeof scoreScene>) => [...s.tiers.map((t) => t.band), s.aiInsider.band];
@@ -31,7 +32,7 @@ function Demo({ data }: { data: ThreatData }) {
     posture: "every-defense",
     strictness: "standard",
     world: "as-today",
-    future: false,
+    research: true,
   });
   const [chips, setChips] = useState<{ gen: number; moves: (string | null)[] }>({ gen: 0, moves: [] });
   const score = useMemo(() => scoreScene(data, scene), [data, scene]);
@@ -43,11 +44,11 @@ function Demo({ data }: { data: ThreatData }) {
     setChips((c) => ({ gen: c.gen + 1, moves: bandChips(bandsOf(score), bandsOf(scoreScene(data, next))) }));
     setScene(next);
   };
-  const { posture, strictness, world, future } = scene;
+  const { posture, strictness, world, research } = scene;
   const setPosture = (v: PostureKind) => update({ posture: v });
   const setStrictness = (v: Strictness) => update({ strictness: v });
   const setWorld = (v: World) => update({ world: v });
-  const setFuture = (v: boolean) => update({ future: v });
+  const setResearch = (v: boolean) => update({ research: v });
 
   const rows: LadderRow[] = [
     ...score.tiers.map((t, i) => ({
@@ -113,7 +114,7 @@ function Demo({ data }: { data: ThreatData }) {
             ? "Model served through an API; little help from government or vendors."
             : "Model kept off the public API; full government, vendor and organisational cooperation."}
         </p>
-        <Switch label="Future capabilities" note="(R&D, illustrative)" checked={future} onChange={setFuture} />
+        <Switch label="Research-required defenses built" note="(not possible yet)" checked={research} onChange={setResearch} />
         <p className="text-[14px] text-ink-2">2026 · every number from the instrument's engine.</p>
       </div>
 

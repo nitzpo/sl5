@@ -479,10 +479,19 @@
       },
       {
         "vector_id": "V-X-2",
-        "strength": "partial",
-        "why": "Probing chips triggers detection or zeroisation"
+        "strength": "strong",
+        "why": "Chip-level tamper response zeroises keys and plaintext when the package is opened, probed or glitched: hardware in hand yields nothing readable.",
+        "note": "Strong since the Nov 2026 recalibration: this is what chip-level tamper protection is for; it is also why it needs research (no FIPS 140-3 Level 4 module exists)."
+      },
+      {
+        "vector_id": "V-PHYS-5",
+        "strength": "strong",
+        "why": "Chip-level tamper response at FIPS 140-3 Level 4 grade (detect and zeroise on probing, glitching or decapping) is beyond the hardware security RAND scored this vector against; it is the counter the vector needs.",
+        "note": "Strong since the Nov 2026 recalibration: V-PHYS-5 no longer lists HW-04 as assumed: RAND scored it against the tamper protection that exists, and no module is validated at the level HW-04 specifies."
       }
-    ]
+    ],
+    "research_required": true,
+    "research_note": "Scaling tamper response to accelerator-sized dies is an unsolved packaging and materials problem, and no module is yet validated at FIPS 140-3 Level 4."
   },
   {
     "id": "HW-05",
@@ -628,6 +637,11 @@
         "strength": "partial",
         "why": "Tamper evidence shows an opened rack",
         "type_override": "probabilistic"
+      },
+      {
+        "vector_id": "V-PHYS-5",
+        "strength": "partial",
+        "why": "Tamper-evident rack enclosures reveal the access hardware penetration needs."
       }
     ]
   },
@@ -651,9 +665,9 @@
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
-        "min": 36,
-        "max": 60,
-        "notes": "Requires both silicon features (hardware verification of workload signatures) and software ecosystem (signing all ML kernels/operators)."
+        "min": 48,
+        "max": 72,
+        "notes": "Requires both silicon features (hardware verification of workload signatures) and software ecosystem (signing all ML kernels/operators). Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
       },
       "cost": {
         "upfront_millions": {
@@ -782,20 +796,24 @@
       },
       {
         "vector_id": "V-ML-2",
-        "strength": "partial",
-        "why": "Tampered binaries fail signature unless compromised before signing"
+        "strength": "strong",
+        "why": "Only signed, verified code executes on the accelerators, so a poisoned ML dependency cannot run there unnoticed.",
+        "note": "Strong since the Nov 2026 recalibration: execution integrity across the composed stack (formerly HW-10) is the research half of this block."
       },
       {
         "vector_id": "V-SELF-6",
-        "strength": "partial",
-        "why": "Only signed workloads run; signed code with rogue configs still runs"
+        "strength": "strong",
+        "why": "Only signed, approved workloads execute on the accelerators: a model cannot launch compute jobs nobody sanctioned.",
+        "note": "Strong since the Nov 2026 recalibration: execution integrity is the hard counter to rogue internal deployments."
       },
       {
         "vector_id": "V-SELF-2",
         "strength": "partial",
         "why": "Composition checks stop agents chaining permitted kernels into a dump"
       }
-    ]
+    ],
+    "research_required": true,
+    "research_note": "Verifying every workload and operator that runs on an accelerator needs silicon features and verification mechanisms that do not exist yet."
   },
   {
     "id": "HW-07",
@@ -1190,8 +1208,9 @@
       },
       {
         "vector_id": "V-ACS-4",
-        "strength": "partial",
-        "why": "Protects the lab's own keys, not third-party roots (Comodo, DigiNotar)"
+        "strength": "strong",
+        "why": "Key material lives in HSM-backed KMS and is released only on attestation, so there is no secret to steal from a person or a host.",
+        "note": "Strong since the Nov 2026 recalibration: "
       },
       {
         "vector_id": "V-PHYS-1",
@@ -1256,8 +1275,9 @@
       },
       {
         "vector_id": "V-X-1",
-        "strength": "partial",
-        "why": "Plaintext weights exist only inside attested runtimes"
+        "strength": "strong",
+        "why": "Weight keys are released only to attested workloads, never to people: an insider with storage access holds ciphertext.",
+        "note": "Strong since the Nov 2026 recalibration: attestation-gated key release is the SL4-5 answer to standing human access."
       },
       {
         "vector_id": "V-X-2",
@@ -1414,9 +1434,9 @@
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
-        "min": 24,
-        "max": 48,
-        "notes": "Proof engineering is slow and the stack must stay small enough to verify."
+        "min": 36,
+        "max": 72,
+        "notes": "Proof engineering is slow and the stack must stay small enough to verify. Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
       },
       "cost": {
         "upfront_millions": {
@@ -1508,7 +1528,11 @@
         "strength": "partial",
         "why": "Independent verification can expose planted weaknesses in implementations"
       }
-    ]
+    ],
+    "research_required": true,
+    "research_note": "Formally verifying a whole weight-access stack, not just a kernel, is research-grade proof engineering.",
+    "defender_ai": true,
+    "defender_ai_note": "AI-assisted proof engineering and code review make a verified access stack cheaper to build and keep verified."
   },
   {
     "id": "SRV-01",
@@ -1528,9 +1552,9 @@
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
-        "min": 18,
-        "max": 36,
-        "notes": "Re-architecting serving and research access around a narrow interface."
+        "min": 36,
+        "max": 60,
+        "notes": "Re-architecting serving and research access around a narrow interface. Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
       },
       "cost": {
         "upfront_millions": {
@@ -1620,14 +1644,28 @@
       },
       {
         "vector_id": "V-X-1",
-        "strength": "partial",
-        "why": "Staff touch weights only through interfaces that prevent copying (RAND SL3)"
+        "strength": "strong",
+        "why": "Weights are reached only through the hardened interface; no person has a path to read or copy raw weights, so recruiting someone with access buys an interface, not the weights.",
+        "note": "Strong since the Nov 2026 recalibration: RAND SL4-5 permitted interfaces; Google DeepMind FSF v1 top level: weights generally not accessible to humans."
       },
       {
         "vector_id": "V-SELF-2",
         "strength": "partial",
         "why": "Agents reach weights only through a narrow interface"
+      },
+      {
+        "vector_id": "V-ML-4",
+        "strength": "strong",
+        "why": "A narrow serving interface returns sampled tokens only (no logits or logprobs, no logit bias), quantises what it returns and enforces per-tenant query budgets below the hardware: what each response leaks about the weights is bounded by design, which is what RAND says limits extraction.",
+        "note": "Strong since the Nov 2026 recalibration: RAND SL5 asks for an ML-specific HSM-like interface for production models; this is that block."
+      },
+      {
+        "vector_id": "V-X-5",
+        "strength": "partial",
+        "why": "Query budgets enforced in the serving interface cap the total a tenant can draw out."
       }
-    ]
+    ],
+    "research_required": true,
+    "research_note": "RAND: more R&D is needed to serve production models at SL5, starting with an ML-specific HSM-like interface."
   }
 ]

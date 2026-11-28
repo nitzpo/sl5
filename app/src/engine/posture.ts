@@ -68,8 +68,6 @@ export interface PostureInput {
    * SL itself is computed over every tier. */
   adversaryOc: number;
   modelServedExternally: boolean;
-  /** World toggle: count the FUT-xx future-capability blocks. Default off. */
-  futureCapabilities?: boolean;
   /** Model switches for tests and the reference-probe fixture. */
   options?: ModelOptions;
 }
@@ -155,7 +153,7 @@ export interface PostureScore {
   spentMillions: number;
   dependencyUnmetIds: Set<string>;
   dependencyUnmetRequires: Map<string, string[]>;
-  /** The blocks in force: future blocks only with `futureCapabilities`. */
+  /** The blocks in force: the whole catalogue. */
   catalogue: Block[];
 
   /** The old coverage SL, kept as a secondary readout (1–5). */
@@ -223,11 +221,6 @@ export function threatRelevance(blocks: Block[]): RelevanceWeights {
   return weights;
 }
 
-/** The blocks in force for a world: future blocks only when the toggle is on. */
-export function catalogueInForce(blocks: Block[], futureCapabilities = false): Block[] {
-  return futureCapabilities ? blocks : blocks.filter((b) => !b.future);
-}
-
 /**
  * The funding order after the program starts paying for `ids`, in that
  * sequence. Any of them not already costing money joins the END of the queue
@@ -249,15 +242,11 @@ export function orderAfterActivating(
 }
 
 /** The budget then the prerequisite cap, in that order — the states a posture
- * actually delivers. Future blocks outside a future world are not in the
- * catalogue, so they never spend money. */
+ * actually delivers. */
 export function effectivePosture(
-  input: Pick<
-    PostureInput,
-    "blocks" | "blockStates" | "advanceOrder" | "sliders" | "futureCapabilities"
-  >
+  input: Pick<PostureInput, "blocks" | "blockStates" | "advanceOrder" | "sliders">
 ) {
-  const catalogue = catalogueInForce(input.blocks, input.futureCapabilities);
+  const catalogue = input.blocks;
   const {
     effectiveStates: budgeted,
     exceededIds: budgetExceededIds,
@@ -326,10 +315,9 @@ export function scorePosture(input: PostureInput): PostureScore {
   const aiCap = aiCapabilityFor(input.year, sliders, opts);
   const adversaryOc = Math.min(5, Math.max(1, Math.round(input.adversaryOc)));
 
-  // Programme completeness: the old coverage score, today's catalogue only.
-  const completenessBlocks = input.blocks.filter((b) => !b.future);
+  // Programme completeness: the old coverage score.
   const categoryScores = computeCategoryScores(
-    completenessBlocks,
+    catalogue,
     effectiveStates,
     input.year,
     sliders,

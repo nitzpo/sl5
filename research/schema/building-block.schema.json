@@ -53,8 +53,8 @@
         },
         "baseline_state": {
           "type": "string",
-          "enum": ["not_started", "researching", "proven_not_deployed", "partially_deployed", "widely_deployed", "mature"],
-          "description": "Default starting state for a typical frontier AI lab in 2026"
+          "enum": ["not_started", "researching", "proven_not_deployed", "partially_deployed", "deployed"],
+          "description": "Default starting state for a typical frontier AI lab in 2026. `deployed` only where labs demonstrably run the control, with the evidence in `summary` (\"Counted as deployed at baseline...\")"
         }
       },
       "required": ["summary", "baseline_state"]
@@ -308,13 +308,21 @@
         "additionalProperties": false
       }
     },
-    "future": {
+    "research_required": {
       "type": "boolean",
-      "description": "A future-capability (R&D) block, id FUT-xx, counted only when the world toggle `future_capabilities` is on. Authored assumption; never a `requires` of a non-future block."
+      "description": "The control needs research before it can be built at the grade the SL5 benchmark asks for (low technical feasibility, long lead time). It is in the catalogue and counts once built. Replaced the FUT-xx future-capability blocks in the Nov 2026 recalibration."
     },
-    "future_note": {
+    "research_note": {
       "type": "string",
-      "description": "Required when `future` is true: what is assumed and why the numbers are illustrative"
+      "description": "Required when `research_required` is true: what the research is, in one line"
+    },
+    "defender_ai": {
+      "type": "boolean",
+      "description": "An AI-augmented defense (detection, monitoring, review, patching): wins back DEFENDER_AI_SHARE of the attacker's AI uplift on the vectors it counters"
+    },
+    "defender_ai_note": {
+      "type": "string",
+      "description": "Required when `defender_ai` is true: how AI improves this defense"
     },
     "reclassified": {
       "type": "object",
@@ -326,6 +334,8 @@
       "required": ["from", "why"]
     }
   },
-  "if": { "properties": { "future": { "const": true } }, "required": ["future"] },
-  "then": { "required": ["future_note"], "properties": { "id": { "pattern": "^FUT-[0-9]+$" } } }
+  "allOf": [
+    { "if": { "properties": { "research_required": { "const": true } }, "required": ["research_required"] }, "then": { "required": ["research_note"] } },
+    { "if": { "properties": { "defender_ai": { "const": true } }, "required": ["defender_ai"] }, "then": { "required": ["defender_ai_note"] } }
+  ]
 }

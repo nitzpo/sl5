@@ -44,7 +44,7 @@ describe("the shortlist", () => {
     expect(new Set(list).size).toBe(10);
     for (const id of list) {
       expect(byId.get(id), `${id} is not in the shipped data`).toBeTruthy();
-      expect(byId.get(id)!.future, `${id} is a future capability`).toBeFalsy();
+      expect(byId.get(id)!.research_required, `${id} needs research`).toBeFalsy();
     }
   });
 
@@ -105,10 +105,11 @@ describe("choices matter", () => {
     expect(moves.length).toBeGreaterThan(2);
   });
 
-  it("the air gap is the tempting big buy, but not the best use of the year", () => {
-    const withAirGap = affordable.filter((a) => a.ids.includes("NET-01"));
+  it("the air gap is the big buy: no year gets back to the next level without it, nor with it alone", () => {
     expect(cost("NET-01")).toBeGreaterThan(BUDGET_MILLIONS / 2);
-    expect(Math.max(...withAirGap.map((a) => a.value))).toBeLessThan(Math.max(...affordable.map((a) => a.value)));
+    const better = affordable.filter((a) => a.level > start.score.sl.level);
+    expect(better.every((a) => a.ids.includes("NET-01"))).toBe(true);
+    expect(evaluatePosture(data, ["NET-01"]).score.sl.level).toBe(start.score.sl.level);
   });
 
   it("names what still gets through, as a tier, an approach and a path", () => {

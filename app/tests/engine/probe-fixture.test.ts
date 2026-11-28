@@ -13,6 +13,15 @@
 //   - every block either absent or fully effective (`idealCounters`)
 //   - no government relief (gov_cooperation 0), AI propensity 1
 //
+// The probe ran on the reviewed vector map. The Nov 2026 recalibration changed
+// that map (new strong counters, the inference-API exfil stage V-X-5, V-ML-4 no
+// longer skipping exfil, V-PHYS-5 no longer assuming HW-04) and added two
+// app-only rules (erosion read relative to a control's design tier; defender
+// AI). So these tests run on `fixtures/approved-map.json`, the map as reviewed,
+// with both new rules switched off: they pin the engine's rules against the
+// probe, not today's data. Part 12 of research/scoring-model.md lists the map
+// changes.
+//
 // Three documented departures, all asserted below:
 //   1. The probe admitted a residual vector only once its assumed defense was
 //      deployed; the engine always admits it (the monotone reading). They agree
@@ -39,23 +48,37 @@ import {
   type VectorEval,
 } from "../../src/engine/vector-model";
 import type { BlockState, Sliders } from "../../src/engine/types";
+import approved from "./fixtures/approved-map.json";
+import type { Approach, AttackVector, Block, DefenseType } from "../../src/engine/types";
 import { allAt, APP_SLIDERS, loadBlocks, loadModel } from "../load-data";
 
-const blocks = loadBlocks();
-const model = loadModel();
+const shipped = loadModel();
+const approvedBlocks = approved.blocks as unknown as Record<string, Pick<Block, "defense_type" | "counters">>;
+/** Today's blocks with the counters (and defense types) the probe ran on. */
+const today: Block[] = loadBlocks()
+  .filter((b) => approvedBlocks[b.id])
+  .map((b) => ({ ...b, defense_type: approvedBlocks[b.id].defense_type as DefenseType, counters: approvedBlocks[b.id].counters }));
+const shippedVectors = new Map(shipped.vectors.map((v) => [v.id, v]));
+const model = {
+  vectors: (approved.vectors as unknown as AttackVector[]).map((v) => ({ ...shippedVectors.get(v.id)!, ...v })),
+  approaches: approved.approaches as unknown as Approach[],
+  scenarios: shipped.scenarios,
+};
 const PROBE_P = { 1: 0.05, 2: 0.3, 3: 0.5, 4: 0.7, 5: 0.9 };
 const SLIDERS: Sliders = { ...APP_SLIDERS, gov_cooperation: 0, budget_millions: 1e9, ai_propensity: 1 };
-const today = blocks.filter((b) => !b.future);
+/** The probe's conditions, plus the two rules added after it switched off. */
+const PROBE_OPTS: ModelOptions = {
+  scoreToP: PROBE_P,
+  aiCapability: 0,
+  detection: false,
+  residualFloor: false,
+  idealCounters: true,
+  designTierRelief: false,
+  defenderAi: false,
+};
 
 function probeRun(states: Record<string, BlockState>, served: boolean, erosion: boolean, aiCapability = 0) {
-  const options: ModelOptions = {
-    scoreToP: PROBE_P,
-    erosion,
-    aiCapability,
-    detection: false,
-    residualFloor: false,
-    idealCounters: true,
-  };
+  const options: ModelOptions = { ...PROBE_OPTS, erosion, aiCapability };
   return scorePosture({
     blocks: today,
     model,
@@ -150,7 +173,7 @@ describe("reference probe, reproduced by the engine", () => {
         sliders: SLIDERS,
         adversaryOc: tier,
         modelServedExternally: true,
-        options: { scoreToP: PROBE_P, aiCapability: 0, detection: false, residualFloor: false, idealCounters: true },
+        options: PROBE_OPTS,
       });
       for (const a of r.approaches.filter((x) => x.adversary === "human")) {
         expect(a.p, `${a.id} at OC${tier}`).toBeLessThanOrEqual(want.routes_served[a.id][tier - 1] + 1e-9);
@@ -175,7 +198,7 @@ describe("reference probe, reproduced by the engine", () => {
         sliders: SLIDERS,
         adversaryOc: tier,
         modelServedExternally: true,
-        options: { scoreToP: PROBE_P, aiCapability: 0, detection: false, residualFloor: false, idealCounters: true },
+        options: PROBE_OPTS,
       });
       for (const a of at.approaches.filter((x) => x.adversary === "human")) {
         if (a.id === "physical" && tier === 5) {
@@ -203,7 +226,7 @@ describe("reference probe, reproduced by the engine", () => {
           sliders: SLIDERS,
           adversaryOc: 1,
           modelServedExternally: served,
-          options: { scoreToP, aiCapability: 0, detection: false, residualFloor: false, idealCounters: true },
+          options: { ...PROBE_OPTS, scoreToP },
         });
         return [r.tiers[0].p, r.tiers[1].p];
       });

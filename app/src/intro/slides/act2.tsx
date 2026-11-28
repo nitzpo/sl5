@@ -43,11 +43,11 @@ export function Blocks() {
       <Notes
         items={[
           {
-            label: "Future capabilities",
+            label: "Research required",
             body: (
               <>
-                {CATALOG.future} research-stage defenses, such as verified accelerator hardware at scale, appear only
-                when you switch <Term term="futureCapabilities">future capabilities</Term> on. They are labelled R&amp;D.
+                {CATALOG.research} defenses, such as chip-level tamper protection and AI-control protocols, still need{" "}
+                <Term term="researchRequired">research</Term> to reach the grade SL5 asks for. They carry long lead times.
               </>
             ),
           },
@@ -180,8 +180,8 @@ export function Stacking() {
         label="One attack vector, with the counters you switch on"
         caption={
           <>
-            Against an OC4 agency in 2026, with full government cooperation. Every counter in today's catalogue is
-            partial; the strong one is a future capability.
+            Against an OC4 agency in 2026, with full government cooperation. One counter, the insider-threat
+            programme, is strong; the rest are partial.
           </>
         }
       >
@@ -213,7 +213,7 @@ export function YourLevel() {
           <>
             The instrument shows your security level as a level and a bar toward the next one, with a mark when you are
             only just holding it. Below that, each tier's band, and the tier and approach that stop you going higher.
-            Try the settings: SL5 is out of reach with today's catalogue.
+            Try the settings: SL5 needs every defense, the research-required ones included.
           </>
         }
       />
@@ -222,8 +222,8 @@ export function YourLevel() {
         label="The verdict, on the instrument's engine · change the settings"
         caption={
           <>
-            Future capabilities are research-stage defenses that do not exist at scale. With all of them, in a
-            favourable world, SL5 comes within reach in 2026, only just, and slips as AI lifts the attackers.
+            With every defense mature, SL5 holds: only just in today's world, comfortably in a favourable one.
+            Without the research-required defenses it does not, and they cannot be built yet.
           </>
         }
       >

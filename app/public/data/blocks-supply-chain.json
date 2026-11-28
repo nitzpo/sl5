@@ -223,7 +223,9 @@
         "strength": "partial",
         "why": "Screens external text that could carry injection payloads"
       }
-    ]
+    ],
+    "research_required": true,
+    "research_note": "Detecting adversarial content in training data against a sophisticated poisoner is unsolved; the SL5 Standard says breakthroughs are needed."
   },
   {
     "id": "SC-04",
@@ -486,13 +488,13 @@
     "summary_group": "supply_chain_integrity",
     "description": "Every package, container image, model artefact and build that enters the training or serving environment is hash-pinned, mirrored internally, built with signed provenance (SLSA Build L3, Sigstore-style signatures) and verified against an SBOM before it is admitted. Takes over the software-bill-of-materials role from the old component-provenance block.",
     "current_state": {
-      "summary": "Dependency pinning and internal package mirrors are common at frontier labs; signed provenance checked at admission is partial, and ML artefacts (checkpoints, datasets, pickled models, CUDA wheels) are rarely held to the same standard as application code. The December 2022 PyTorch torchtriton compromise and the 2024 xz-utils backdoor show both halves of the gap.",
+      "summary": "Dependency pinning and internal package mirrors are common at frontier labs; signed provenance checked at admission is partial, and ML artefacts (checkpoints, datasets, pickled models, CUDA wheels) are rarely held to the same standard as application code. The December 2022 PyTorch torchtriton compromise and the 2024 xz-utils backdoor show both halves of the gap. Counted as deployed at baseline (Nov 2026 recalibration): pinning and internal mirrors are common practice; signed provenance for ML artefacts is the missing half.",
       "deployed_by": [
         "google",
         "large_tech_platforms",
         "partial_frontier_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "deployed"
     },
     "dimensions": {
       "technical_feasibility": {
@@ -606,7 +608,9 @@
         "strength": "partial",
         "why": "Hardened CI covers the build-system part of services used"
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "Automated review of dependencies and build provenance catches malicious packages at machine speed."
   },
   {
     "id": "SC-08",
@@ -725,8 +729,9 @@
     "counters": [
       {
         "vector_id": "V-SUP-1",
-        "strength": "partial",
-        "why": "Upstream inspection, counterfeit testing and chain of custody together"
+        "strength": "strong",
+        "why": "Buying through tracked, authenticated channels with provenance checks is the standing counter to interdicted or counterfeit equipment.",
+        "note": "Strong since the Nov 2026 recalibration: SL5 Standard hardware provenance requirements."
       },
       {
         "vector_id": "V-ML-2",

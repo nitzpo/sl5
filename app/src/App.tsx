@@ -27,7 +27,6 @@ const BLOCK_FILES = [
   "blocks-personnel.json",
   "blocks-supply-chain.json",
   "blocks-ai-specific.json",
-  "blocks-future.json",
 ];
 
 /** A story beat can point at a block or a scenario; show it in the catalogue

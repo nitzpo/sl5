@@ -409,7 +409,7 @@ function NextDefense({ mode }: { mode: ScoringMode }) {
         <p className="text-[13px] text-ink-2">
           {mode === "coverage"
             ? "Nothing affordable adds coverage. Raise the budget in Parameters."
-            : "Nothing affordable moves a tier. Raise the budget, or turn on future capabilities in Parameters."}
+            : "Nothing affordable moves a tier. Raise the budget in Parameters."}
         </p>
       ) : (
         <ol className={`flex flex-col ${stale ? "opacity-60" : ""}`} data-testid="next-defense">
@@ -468,7 +468,7 @@ function NextDefense({ mode }: { mode: ScoringMode }) {
  * mode it is the level itself, so only the budget is left here. */
 function CompletenessAndBudget({ score, showCompleteness }: { score: PostureScore; showCompleteness: boolean }) {
   const budget = useSimulationStore((s) => s.sliders.budget_millions);
-  const today = score.catalogue.filter((b) => !b.future);
+  const today = score.catalogue;
   const inPlace = today.filter((b) => isOperational(score.effectiveStates[b.id])).length;
   const unfunded = score.budgetExceededIds.size;
   const share = Math.min(1, score.spentMillions / Math.max(1, budget));

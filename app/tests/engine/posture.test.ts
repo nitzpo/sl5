@@ -62,7 +62,6 @@ describe("one source of truth for derived numbers", () => {
       ...input,
       threatModel: model,
       advanceOrder: input.advanceOrder!,
-      futureCapabilities: false,
     });
     const { year: _year, ...rest } = input;
     void _year;
@@ -98,7 +97,7 @@ describe("one source of truth for derived numbers", () => {
   it("scores completeness over every block that counters something, weighting strong counters fully", () => {
     const full = threatRelevance(blocks);
     expect(full).toEqual(counterRelevance(blocks));
-    expect(full.size).toBe(blocks.filter((b) => !b.future).length);
+    expect(full.size).toBe(blocks.length);
     expect([...full.values()].some((w) => w < 1)).toBe(true);
     // Memoized on identity, so the hot path doesn't rebuild it.
     expect(threatRelevance(blocks)).toBe(full);

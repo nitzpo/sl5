@@ -4,8 +4,9 @@ import type { Block, BlockState } from "./types";
  * Where labs actually start, as opposed to a bare field.
  *
  * Every block carries a researched `current_state.baseline_state`, but three of
- * its four values are not members of `BlockState` and so cannot be advancement
- * states. This maps them onto the cycle the app can actually represent.
+ * its five values (`partially_deployed`, `proven_not_deployed`, `researching`)
+ * are not members of `BlockState` and so cannot be advancement states. This
+ * maps them onto the cycle the app can actually represent.
  *
  * `partially_deployed` becomes `implementing` rather than getting a state of its
  * own. `implementing` is already the engine's universal "real but unfinished"
@@ -17,6 +18,15 @@ import type { Block, BlockState } from "./types";
  * raw data implies, which errs toward modelling labs as weaker than the research
  * says — the safe direction for a tool about how hard this is.
  *
+ * `deployed` is for the few controls frontier labs demonstrably run as standard
+ * practice, on public evidence cited in each block's `current_state`: patching
+ * and endpoint control, phishing-resistant identity, configuration management,
+ * a security operations function, pinned and mirrored dependencies, datacenter
+ * vestibules and production prompt classifiers (Nov 2026 recalibration; before
+ * it no block was `deployed` at baseline and the starting posture undercounted
+ * what labs run). `mature` is never a baseline: nobody has these red-teamed and
+ * continuously improved against OC4–5 tradecraft.
+ *
  * The two "not a lab posture" values collapse to `not_started`:
  * `proven_not_deployed` means the technology is real and fielded elsewhere
  * (government, military) but no lab runs it, and `researching` means it is an
@@ -27,6 +37,7 @@ const BASELINE_TO_STATE: Record<string, BlockState> = {
   researching: "not_started",
   proven_not_deployed: "not_started",
   partially_deployed: "implementing",
+  deployed: "deployed",
 };
 
 /**

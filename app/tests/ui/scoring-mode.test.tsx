@@ -38,7 +38,7 @@ beforeAll(() => {
 beforeEach(() => {
   localStorage.clear();
   usePlaybackStore.getState().stop();
-  useSimulationStore.setState({ dataLoaded: false, futureCapabilities: false, playbackActive: false, year: 2026, scoringMode: "paths" });
+  useSimulationStore.setState({ dataLoaded: false, playbackActive: false, year: 2026, scoringMode: "paths" });
   useSimulationStore.getState().loadData(blocks, model, loadWorldState().oc_definitions);
   useUiStore.setState({ detailId: null, paramsOpen: false, focusApproach: null, highlightIds: [], showAllApproaches: false });
 });
@@ -64,7 +64,7 @@ function postures(): PostureInput[] {
   });
   let seed = 7;
   const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const random = () => Object.fromEntries(blocks.filter((b) => !b.future).map((b) => [b.id, STATES[Math.floor(rand() * STATES.length)]]));
+  const random = () => Object.fromEntries(blocks.map((b) => [b.id, STATES[Math.floor(rand() * STATES.length)]]));
   return [
     base(baselineStates(blocks)),
     base({}),
@@ -100,9 +100,9 @@ describe("the coverage-mode level", () => {
     const score = deriveScore(useSimulationStore.getState());
     const cov = coverageLevel(score);
     expect(cov.categories.map((c) => c.category)).toEqual([...CATEGORY_ORDER]);
-    expect(cov.total).toBe(blocks.filter((b) => !b.future).length);
+    expect(cov.total).toBe(blocks.length);
     for (const c of cov.categories) {
-      expect(c.total).toBe(blocks.filter((b) => !b.future && b.category === c.category).length);
+      expect(c.total).toBe(blocks.filter((b) => b.category === c.category).length);
       expect(c.share).toBeCloseTo((c.score - 1) / 4, 12);
     }
     expect(cov.categories.filter((c) => c.weakest).length).toBeGreaterThanOrEqual(1);

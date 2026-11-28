@@ -66,8 +66,6 @@ export function ViewBar() {
   const setView = useUiStore((s) => s.setCatalogueView);
   const showAll = useUiStore((s) => s.showAllApproaches);
   const toggleAll = useUiStore((s) => s.toggleAllApproaches);
-  const futureOn = useSimulationStore((s) => s.futureCapabilities);
-  const setFuture = useSimulationStore((s) => s.setFutureCapabilities);
   return (
     <div className="flex flex-col gap-1.5 pb-2">
       <div className="flex items-center gap-6">
@@ -99,10 +97,6 @@ export function ViewBar() {
           <label className="flex cursor-pointer items-center gap-1.5 font-semibold whitespace-nowrap">
             <input type="checkbox" checked={showAll} onChange={toggleAll} className="h-4 w-4 accent-[var(--ink)]" />
             All approaches
-          </label>
-          <label className="flex cursor-pointer items-center gap-1.5 font-semibold whitespace-nowrap" title="Five R&D blocks that don't exist yet">
-            <input type="checkbox" checked={futureOn} onChange={(e) => setFuture(e.target.checked)} className="h-4 w-4 accent-[var(--ink)]" />
-            Future capabilities
           </label>
         </div>
       </div>

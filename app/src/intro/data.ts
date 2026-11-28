@@ -10,8 +10,7 @@ import type { Block, ThreatModel } from "../engine/types";
 
 export const MODEL_FILES = ["vectors.json", "approaches.json", "scenarios.json"] as const;
 
-/** Every block file, including the future-capability (R&D) blocks. The engine
- * keeps those out of the catalogue unless a demo switches them on. */
+/** Every block file. */
 export const BLOCK_FILES = [
   "blocks-network.json",
   "blocks-machine.json",
@@ -19,7 +18,6 @@ export const BLOCK_FILES = [
   "blocks-personnel.json",
   "blocks-supply-chain.json",
   "blocks-ai-specific.json",
-  "blocks-future.json",
 ] as const;
 
 export interface ThreatData {

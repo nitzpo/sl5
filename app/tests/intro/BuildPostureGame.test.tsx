@@ -77,7 +77,7 @@ describe("playing it", () => {
     expect(headline()).toBe("You usually stop OC1.");
     expect(screen.getByLabelText(/^Security level 1/)).toBeTruthy();
     let chipSeen = false;
-    for (const id of ["DET-01", "DEC-01", "IAM-01", "END-01", "PER-01", "PER-06"]) {
+    for (const id of ["NET-01", "PER-01", "PER-02", "PER-09"]) {
       const before = headline();
       fireEvent.click(tile(id));
       // The tier that just moved says so, at the moment it moves.
@@ -87,36 +87,36 @@ describe("playing it", () => {
     expect(screen.getByLabelText(/^Security level 2/)).toBeTruthy();
     expect(chipSeen).toBe(true);
     // Picks are numbered in funding order.
-    expect(tile("DET-01").textContent).toMatch(/1$/);
+    expect(tile("NET-01").textContent).toMatch(/1$/);
   });
 
   it("names what still gets through, in words", async () => {
     await openGame();
-    expect(screen.getByText(/You start where a typical frontier lab is today/)).toBeTruthy();
+    expect(screen.getByText(/You start where a typical frontier lab is today, two years on/)).toBeTruthy();
     fireEvent.click(tile("PHY-03"));
     expect(screen.getByText(/^Next up:/).textContent).toMatch(/OC2 .* easiest approach is .*: Get in: /);
   });
 
   it("shows the budget cap on the pick that overruns, and points at pick order", async () => {
     await openGame();
-    for (const id of ["NET-01", "DET-01", "IAM-01"]) fireEvent.click(tile(id));
+    for (const id of ["NET-01", "HW-05", "PER-01"]) fireEvent.click(tile(id));
     expect(screen.getAllByText(/over budget · not built/)).toHaveLength(1);
-    expect(tile("IAM-01").textContent).toMatch(/over budget/);
+    expect(tile("PER-01").textContent).toMatch(/over budget/);
     expect(screen.getByText(/doesn't fit the budget/)).toBeTruthy();
     expect(screen.getByText(/Funding follows your pick order/)).toBeTruthy();
   });
 
   it("shows a prerequisite cap, and clears it when the prerequisite is funded", async () => {
     await openGame();
-    fireEvent.click(tile("DEC-01"));
-    expect(screen.getByText(/needs DET-01 running first/)).toBeTruthy();
-    fireEvent.click(tile("DET-01"));
-    expect(screen.queryByText(/needs DET-01 running first/)).toBeNull();
+    fireEvent.click(tile("PER-06"));
+    expect(screen.getByText(/needs PER-01 running first/)).toBeTruthy();
+    fireEvent.click(tile("PER-01"));
+    expect(screen.queryByText(/needs PER-01 running first/)).toBeNull();
   });
 
-  it("looks ahead to 2028, and starts over without leaving the slide", async () => {
+  it("looks ahead to 2030, and starts over without leaving the slide", async () => {
     await openGame();
-    expect(screen.getByText(/By 2028, with nothing more added/)).toBeTruthy();
+    expect(screen.getByText(/By 2030, with nothing more added/)).toBeTruthy();
     fireEvent.click(tile("PHY-03"));
     fireEvent.click(screen.getByText("Start over"));
     for (const id of SHORTLIST) expect(tile(id).getAttribute("aria-pressed")).toBe("false");

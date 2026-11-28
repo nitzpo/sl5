@@ -1,6 +1,6 @@
 // The introduction's demos ask the engine questions through engine-views.ts.
 // These run those helpers on the shipped data and pin the claims the slides
-// make in prose: SL5 needs future capabilities and a favourable world; weak
+// make in prose: SL5 needs every defense, the research-required ones included; weak
 // counters don't add up to a strong one; the threat front moves with the AI
 // pace; doing nothing is a decline.
 
@@ -70,20 +70,17 @@ describe("the security level demo", () => {
   const worlds: World[] = ["as-today", "favourable"];
   const bars = Object.keys(SL_BAR_PRESETS) as Strictness[];
 
-  it("starts today's typical lab at SL1 in 2026, as the instrument does", () => {
-    expect(scoreScene(data, { posture: "typical-lab" }).sl.level).toBe(1);
+  it("starts today's typical lab at SL2 in 2026, as the instrument does", () => {
+    expect(scoreScene(data, { posture: "typical-lab" }).sl.level).toBe(2);
   });
 
-  it("never reaches SL5 with today's catalogue, in any world or at any bar", () => {
-    for (const world of worlds)
-      for (const strictness of bars)
-        expect(scoreScene(data, { posture: "every-defense", world, strictness }).sl.level).toBeLessThan(5);
+  it("reaches SL5 with every defense, in either world, at the standard bar", () => {
+    for (const world of worlds) expect(scoreScene(data, { posture: "every-defense", world }).sl.level).toBe(5);
+    expect(bars.length).toBe(3);
   });
 
-  it("reaches SL5 with future capabilities in a favourable world", () => {
-    expect(scoreScene(data, { posture: "every-defense", world: "favourable", future: true }).sl.level).toBe(5);
-    // ...and not with future capabilities alone.
-    expect(scoreScene(data, { posture: "every-defense", world: "as-today", future: true }).sl.level).toBeLessThan(5);
+  it("...but not in today's world without the research-required defenses, which can't be built yet", () => {
+    expect(scoreScene(data, { posture: "every-defense", world: "as-today", research: false }).sl.level).toBeLessThan(5);
   });
 
   it("a stricter bar never raises the level", () => {
@@ -99,25 +96,25 @@ describe("the security level demo", () => {
     expect(at(2030)).toBeLessThan(at(2026));
   });
 
-  it("the own model is held by every defense in 2026 and contested by 2030", () => {
-    const own = (year: number) => scoreScene(data, { posture: "every-defense", year }).aiInsider.band;
-    expect(own(2026)).toBe("usually fails");
-    expect(own(2030)).not.toBe("usually fails");
+  it("the own model is held by every defense through 2030, with less margin as it climbs", () => {
+    const own = (year: number) => scoreScene(data, { posture: "every-defense", year }).aiInsider;
+    expect(own(2026).band).toBe("usually fails");
+    expect(own(2030).band).toBe("usually fails");
+    expect(own(2030).p).toBeGreaterThan(own(2026).p);
   });
 });
 
 describe("the stacking demo", () => {
   const VECTOR = "V-HUM-1";
   const counters = countersOf(data, VECTOR);
-  const partials = counters.filter((c) => c.strength === "partial" && !c.block.future).map((c) => c.block.id);
+  const partials = counters.filter((c) => c.strength === "partial").map((c) => c.block.id);
   const strong = counters.filter((c) => c.strength === "strong").map((c) => c.block.id);
   // As the slide draws it: an OC4 agency in 2026, full cooperation.
   const stack = (ids: string[]) => stackOnVector(data, VECTOR, 4, ids, 2026, SLIDERS_FAVOURABLE);
 
-  it("has several partial counters today and a strong one only among future capabilities", () => {
+  it("has several partial counters and one strong one, all in today's catalogue", () => {
     expect(partials.length).toBeGreaterThanOrEqual(4);
-    expect(strong.length).toBeGreaterThan(0);
-    for (const id of strong) expect(data.blocks.find((b) => b.id === id)!.future).toBe(true);
+    expect(strong.length).toBe(1);
   });
 
   it("each extra partial helps less, and past the ladder adds nothing", () => {
@@ -138,11 +135,11 @@ describe("the stacking demo", () => {
     expect(applied.filter((a) => a.rung === null).length).toBeGreaterThan(0);
   });
 
-  it("all of today's partials do less than the one strong counter, and leave it usually succeeding", () => {
+  it("all the partials do less than the one strong counter, and leave it getting through", () => {
     const allPartials = stack(partials);
     const strongAlone = stack(strong);
     expect(strongAlone.withCounters.p).toBeLessThan(allPartials.withCounters.p);
-    expect(allPartials.band).toBe("usually succeeds");
+    expect(allPartials.band).not.toBe("usually fails");
     expect(strongAlone.band).not.toBe("usually succeeds");
   });
 });

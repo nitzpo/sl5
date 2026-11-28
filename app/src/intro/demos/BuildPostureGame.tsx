@@ -28,8 +28,8 @@ function Coaching({ data, chosen, result }: { data: ThreatData; chosen: string[]
   if (chosen.length === 0) {
     return (
       <p>
-        You start where a typical frontier lab is today. Pick defenses: the order you pick them is the order they are
-        funded.
+        You start where a typical frontier lab is today, two years on: by {YEAR} AI has lifted the attackers past it.
+        Pick defenses: the order you pick them is the order they are funded.
       </p>
     );
   }
@@ -117,7 +117,7 @@ function Game({ data }: { data: ThreatData }) {
   const [chosen, setChosen] = useState<string[]>([]);
   const [chips, setChips] = useState<{ gen: number; moves: (string | null)[] }>({ gen: 0, moves: [] });
   const result = useMemo(() => evaluatePosture(data, chosen), [data, chosen]);
-  const later = useMemo(() => evaluatePosture(data, chosen, 2028), [data, chosen]);
+  const later = useMemo(() => evaluatePosture(data, chosen, 2030), [data, chosen]);
   const shortlist = useMemo(
     () => SHORTLIST.map((id) => data.blocks.find((b) => b.id === id)).filter((b): b is Block => b !== undefined),
     [data]
@@ -203,7 +203,7 @@ function Game({ data }: { data: ThreatData }) {
         <div className="mt-4 border-t border-ink pt-3 text-[14px] leading-[1.55] text-ink-2">
           <Coaching data={data} chosen={chosen} result={result} />
           <p className="mt-2">
-            By 2028, with nothing more added: <Em>SL{later.score.sl.level}</Em>
+            By 2030, with nothing more added: <Em>SL{later.score.sl.level}</Em>
             {later.score.sl.level < sl.level ? ", as AI lifts the attackers." : "."}
           </p>
         </div>

@@ -63,7 +63,6 @@ beforeEach(() => {
     adversaryOc: 4,
     sliders: DEFAULT_SLIDERS,
     modelServedExternally: true,
-    futureCapabilities: false,
   });
   sim().loadData(blocks, model, []);
 });

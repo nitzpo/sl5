@@ -187,7 +187,7 @@ export function recommendInvestments(
   let unaffordableCount = 0;
 
   for (const block of input.blocks) {
-    // Future blocks outside a future world are not on the menu.
+    // Only blocks in the scored catalogue are on the menu.
     if (!catalogue.has(block.id)) continue;
     const raw = input.blockStates[block.id] ?? "not_started";
     if (OPERATIONAL.has(raw)) continue;

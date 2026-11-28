@@ -67,11 +67,6 @@ export const BLOCK_NAMES: Readonly<Record<string, string>> = {
   "AI-10": "AI-control|protocols",
   "AI-11": "No self|weight access",
   "AI-12": "Training|attestation",
-  "FUT-01": "Verified|accelerators",
-  "FUT-02": "Cleared|workforce",
-  "FUT-03": "Verified|weight stack",
-  "FUT-04": "Sovereign|facility",
-  "FUT-05": "Trustworthy|AI monitors",
 };
 
 /** The block's plain name on one line. Falls back to the data's name. */
@@ -139,6 +134,7 @@ export const VECTOR_NAMES: Readonly<Record<string, string>> = {
   "V-X-2": "Reading weights off hardware",
   "V-X-3": "Bulk network egress",
   "V-X-4": "Carrying media out",
+  "V-X-5": "Bulk output via the API",
 };
 
 export function vectorName(id: string, fallback?: string): string {

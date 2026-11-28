@@ -102,7 +102,6 @@ export function BlockDrawer() {
   const blocks = useSimulationStore((s) => s.blocks);
   const vectors = useSimulationStore((s) => s.threatModel.vectors);
   const blockStates = useSimulationStore((s) => s.blockStates);
-  const futureOn = useSimulationStore((s) => s.futureCapabilities);
   const score = useScore();
   const closeRef = useRef<HTMLButtonElement>(null);
   const byId = useMemo(() => new Map(blocks.map((b) => [b.id, b])), [blocks]);
@@ -127,7 +126,6 @@ export function BlockDrawer() {
   const lead = block.dimensions.time_to_deploy_months;
   const comp = block.dependencies.completed_by;
   const requires = block.dependencies.requires;
-  const inactiveFuture = block.future && !futureOn;
   const byStage = new Map<Stage, typeof block.counters>();
   for (const c of block.counters) {
     const st = vById.get(c.vector_id)?.stage ?? "entry";
@@ -171,10 +169,9 @@ export function BlockDrawer() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pt-3 pb-8">
-        {block.future && (
+        {block.research_required && (
           <div className="mb-3 border-2 border-ink p-2.5 text-[13px] leading-snug">
-            <b>R&amp;D — a future capability.</b> <span data-prose>{block.future_note}</span>
-            {inactiveFuture && <div className="mt-1 text-ink-2">Counted only when “Future capabilities” is on (Parameters).</div>}
+            <b>Research required.</b> <span data-prose>{block.research_note}</span>
           </div>
         )}
 

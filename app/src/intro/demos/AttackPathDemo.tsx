@@ -67,7 +67,7 @@ function Demo({ data }: { data: ThreatData }) {
       <ol className="mt-4 grid gap-6 md:grid-cols-3 md:gap-0" aria-label="Attack path, stage by stage">
         {STAGES.map((stage: Stage, i) => {
           const step = byStage.get(stage);
-          const counters = step ? countersOf(data, step.vectorId, false).slice(0, 3) : [];
+          const counters = step ? countersOf(data, step.vectorId).slice(0, 3) : [];
           return (
             <li key={stage} className={`md:pr-5 ${i > 0 ? "md:pl-5" : ""}`}>
               <div className={`border-t-[5px] pt-2 ${step ? "border-signal" : "border-dashed border-rule-2"}`}>

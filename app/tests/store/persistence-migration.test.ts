@@ -75,17 +75,27 @@ describe("saved-state migration of merged block ids", () => {
     expect(migratePersistedState(once)).toEqual(once);
   });
 
-  it("fills sliders added since the save, and defaults the future toggle off", () => {
+  it("fills sliders added since the save", () => {
     const m = migratePersistedState(oldSave({}));
     expect(m.sliders.sl_bar).toBe(0.2);
     expect(m.sliders.ai_propensity).toBe(0.5);
-    expect(m.futureCapabilities).toBe(false);
     // ...without touching a value the save did have.
     expect(m.sliders.gov_cooperation).toBe(0.2);
-    const kept = migratePersistedState({ ...oldSave({}), sliders: { ...OLD_SLIDERS, sl_bar: 0.1, ai_propensity: 0.9 }, futureCapabilities: true });
+    const kept = migratePersistedState({ ...oldSave({}), sliders: { ...OLD_SLIDERS, sl_bar: 0.1, ai_propensity: 0.9 } });
     expect(kept.sliders.sl_bar).toBe(0.1);
     expect(kept.sliders.ai_propensity).toBe(0.9);
-    expect(kept.futureCapabilities).toBe(true);
+  });
+
+  it("drops the retired future toggle and the FUT-xx blocks it counted", () => {
+    // Saves and links from before the Nov 2026 recalibration may carry both.
+    const m = migratePersistedState({
+      ...oldSave({ "FUT-01": "mature", "FUT-05": "deployed", "NET-01": "deployed" }, ["FUT-01", "NET-01", "FUT-05"]),
+      futureCapabilities: true,
+    });
+    expect("futureCapabilities" in m).toBe(false);
+    expect(m.blockStates).toEqual({ "NET-01": "deployed" });
+    expect(m.advanceOrder).toEqual(["NET-01"]);
+    expect(migratePersistedState(m)).toEqual(m);
   });
 
   it("leaves every migrated id pointing at a real block", () => {

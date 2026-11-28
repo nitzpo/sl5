@@ -7,7 +7,7 @@ export const DATA = path.join(__dirname, "../public/data");
 
 const read = (file: string) => JSON.parse(fs.readFileSync(path.join(DATA, file), "utf-8"));
 
-/** Every block file, future blocks included (the engine filters them). */
+/** Every block file. */
 export function loadBlocks(): Block[] {
   const blocks: Block[] = [];
   for (const file of fs.readdirSync(DATA).sort()) {
@@ -49,7 +49,7 @@ export const FAVOURABLE_SLIDERS: Sliders = {
   budget_millions: 1e6,
 };
 
-/** Every block (optionally including future ones) at one state. */
-export function allAt(blocks: Block[], state: BlockState, includeFuture = false): Record<string, BlockState> {
-  return Object.fromEntries(blocks.filter((b) => includeFuture || !b.future).map((b) => [b.id, state]));
+/** Every block at one state. */
+export function allAt(blocks: Block[], state: BlockState): Record<string, BlockState> {
+  return Object.fromEntries(blocks.map((b) => [b.id, state]));
 }

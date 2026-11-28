@@ -151,7 +151,9 @@
         "strength": "partial",
         "why": "A least-privileged agent limits what an injected prompt can do"
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "LLM supervisors over agent activity improve with the models they supervise."
   },
   {
     "id": "AI-02",
@@ -173,9 +175,9 @@
         "trajectory": "uncertain"
       },
       "time_to_deploy_months": {
-        "min": 24,
-        "max": 60,
-        "notes": "Requires: training genuinely independent models, defining review protocols, validating that decorrelation is real (not just surface-level), building integration into operational workflows."
+        "min": 36,
+        "max": 72,
+        "notes": "Requires: training genuinely independent models, defining review protocols, validating that decorrelation is real (not just surface-level), building integration into operational workflows. Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
       },
       "cost": {
         "upfront_millions": {
@@ -279,8 +281,9 @@
       },
       {
         "vector_id": "V-SELF-4",
-        "strength": "partial",
-        "why": "Decorrelated reviewers sometimes detect steganographic patterns"
+        "strength": "strong",
+        "why": "Decorrelated models reviewing outputs and actions are the main proposed counter to steganography and coordination signals a same-family monitor would miss.",
+        "note": "Strong since the Nov 2026 recalibration: "
       },
       {
         "vector_id": "V-SELF-7",
@@ -289,10 +292,15 @@
       },
       {
         "vector_id": "V-SELF-8",
-        "strength": "partial",
-        "why": "Reviewers may notice research outputs that carry distillation data"
+        "strength": "strong",
+        "why": "Decorrelated review of what the model sends out is what catches encoded or self-distilled payloads in permitted channels.",
+        "note": "Strong since the Nov 2026 recalibration: "
       }
-    ]
+    ],
+    "defender_ai": true,
+    "research_required": true,
+    "research_note": "Whether a decorrelated model can reliably catch deception by a more capable one is an open research question.",
+    "defender_ai_note": "Each decorrelated reviewer is itself a product of AI progress."
   },
   {
     "id": "AI-04",
@@ -868,8 +876,9 @@
       },
       {
         "vector_id": "V-ML-4",
-        "strength": "strong",
-        "why": "Removing logit access and limiting queries blocks known parameter-extraction attacks"
+        "strength": "partial",
+        "why": "Outbound fingerprinting and coordinated-account detection catch extraction campaigns in progress; the volume itself is countered on V-X-5.",
+        "note": "Was strong; its strong effect moved to V-X-5, the volume stage it actually meters."
       },
       {
         "vector_id": "V-SELF-1",
@@ -880,8 +889,15 @@
         "vector_id": "V-SELF-8",
         "strength": "partial",
         "why": "Outbound inspection catches some encoded payloads in served outputs"
+      },
+      {
+        "vector_id": "V-X-5",
+        "strength": "strong",
+        "why": "Outbound inference-channel defense meters what leaves through the API: per-account and coordinated-account volume limits and behavioural fingerprinting, the inference-channel analogue of NET-04 on the enclave boundary."
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "Fingerprinting extraction and distillation campaigns is a classification problem that better models do better."
   },
   {
     "id": "AI-08",
@@ -890,11 +906,11 @@
     "summary_group": "ai_channel_defense",
     "description": "Defenses against exploitation THROUGH the model's legitimate inference/API channel. Covers: prompt injection prevention, adversarial input filtering, C2 channel detection (external queries triggering internal AI agent actions), jailbreak prevention, and protection against poisoning through feedback loops. The inbound half of the legitimate channel attack surface. Absorbs AI-03's adversarial-input detection: production classifiers that screen inbound traffic for jailbreaks and injection, with continuous automated red-teaming.",
     "current_state": {
-      "summary": "All labs have content filtering and jailbreak detection, and layered defenses have cut non-adaptive attack success substantially. Prompt injection remains fundamentally unsolved: there is still no reliable way to distinguish instructions from data, and published evaluations of adaptive attackers - ones with knowledge of the defense - report high bypass rates against the defenses they tested. OWASP separately classifies prompt injection as LLM01:2025, the top risk in its LLM application list; that classification is a ranking and not a measurement of deployment or bypass rates. C2-style detection through the inference API is now attempted, via chain-of-thought elicitation detection and coordinated multi-account detection, but feedback-loop poisoning defenses remain ad-hoc.",
+      "summary": "All labs have content filtering and jailbreak detection, and layered defenses have cut non-adaptive attack success substantially. Prompt injection remains fundamentally unsolved: there is still no reliable way to distinguish instructions from data, and published evaluations of adaptive attackers - ones with knowledge of the defense - report high bypass rates against the defenses they tested. OWASP separately classifies prompt injection as LLM01:2025, the top risk in its LLM application list; that classification is a ranking and not a measurement of deployment or bypass rates. C2-style detection through the inference API is now attempted, via chain-of-thought elicitation detection and coordinated multi-account detection, but feedback-loop poisoning defenses remain ad-hoc. Counted as deployed at baseline (Nov 2026 recalibration): content filtering, jailbreak detection and production classifiers (e.g. Anthropic’s ASL-3 classifiers, May 2025) run at every serving lab; prompt injection remains unsolved, which is why it is not mature.",
       "deployed_by": [
         "partial_all_serving_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "deployed"
     },
     "dimensions": {
       "technical_feasibility": {
@@ -1023,8 +1039,15 @@
         "vector_id": "V-ML-1",
         "strength": "partial",
         "why": "Filters inputs crafted to trigger serving-stack or output-handling bugs"
+      },
+      {
+        "vector_id": "V-ML-4",
+        "strength": "partial",
+        "why": "Inbound query analysis flags the systematic, high-volume probing that parameter extraction needs."
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "Prompt-injection and jailbreak classifiers improve with model capability (constitutional classifiers, 2025)."
   },
   {
     "id": "AI-09",
@@ -1178,9 +1201,9 @@
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
-        "min": 12,
-        "max": 24,
-        "notes": "Monitor training, routing of all agent traffic, and audit staffing."
+        "min": 36,
+        "max": 60,
+        "notes": "Monitor training, routing of all agent traffic, and audit staffing. Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
       },
       "cost": {
         "upfront_millions": {
@@ -1297,8 +1320,9 @@
       },
       {
         "vector_id": "V-SELF-7",
-        "strength": "partial",
-        "why": "Defer-to-trusted on persuasive or control-changing requests"
+        "strength": "strong",
+        "why": "Control protocols put a trusted monitor and a human approval gate between the model and any consequential action; persuasion has to get past both.",
+        "note": "Strong since the Nov 2026 recalibration: AI control (Greenblatt et al.) is the protocol for exactly this."
       },
       {
         "vector_id": "V-ML-3",
@@ -1310,7 +1334,11 @@
         "strength": "partial",
         "why": "Gating catches bulk generation and transfer of training data"
       }
-    ]
+    ],
+    "defender_ai": true,
+    "research_required": true,
+    "research_note": "Control protocols that cover all agent activity at frontier capability are an open research agenda, validated so far only in evaluations.",
+    "defender_ai_note": "Trusted monitors are models: control protocols strengthen as trusted models do, while lagging the model they watch."
   },
   {
     "id": "AI-11",

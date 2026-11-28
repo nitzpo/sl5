@@ -137,13 +137,20 @@
       },
       {
         "vector_id": "V-PHYS-6",
-        "strength": "partial",
-        "why": "Hardened construction delays forced entry"
+        "strength": "strong",
+        "why": "SCIF-grade construction delays a forced entry long enough for the response force (PHY-04) to arrive.",
+        "note": "Strong since the Nov 2026 recalibration: forced-entry delay is a construction property."
       },
       {
         "vector_id": "V-X-4",
         "strength": "partial",
         "why": "Controlled exits from the protected space"
+      },
+      {
+        "vector_id": "V-PHYS-4",
+        "strength": "strong",
+        "why": "ICD 705 construction puts mechanical barriers that no badge reader or camera controls (GSA-approved vault doors and locks, forced-entry-rated walls) between the electronic access systems and the hardware: spoofing or disabling the electronics opens nothing.",
+        "note": "Strong since the Nov 2026 recalibration: covert-entry resistance that does not depend on the digital systems this vector attacks."
       }
     ]
   },
@@ -484,8 +491,14 @@
       },
       {
         "vector_id": "V-PHYS-4",
+        "strength": "strong",
+        "why": "ICD 705 intrusion detection is independent of the badge and camera systems an attacker spoofs, with a 5-15 minute response: evading access control still sets off the sensors.",
+        "note": "Strong since the Nov 2026 recalibration: this is what ICD 705 IDS exists to catch."
+      },
+      {
+        "vector_id": "V-PHYS-5",
         "strength": "partial",
-        "why": "Layered sensors with human response survive single-system compromise"
+        "why": "Probing or decapping hardware takes time on target; intrusion detection and a 5-15 minute response deny it."
       }
     ]
   },
@@ -603,6 +616,11 @@
         "vector_id": "V-NET-1",
         "strength": "partial",
         "why": "Black Zones have no network path to SL5 data"
+      },
+      {
+        "vector_id": "V-PHYS-4",
+        "strength": "partial",
+        "why": "Red and black zones are separate, independently controlled boundaries: defeating one zone's electronic controls leaves the next."
       }
     ]
   },

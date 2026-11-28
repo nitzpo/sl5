@@ -252,8 +252,14 @@
       },
       {
         "vector_id": "V-X-4",
+        "strength": "strong",
+        "why": "Two-person integrity means nobody is ever alone with media or hardware, and exits are paired: carrying weights out needs two colluding people.",
+        "note": "Strong since the Nov 2026 recalibration: TPI is the standing counter to carry-out in nuclear and vault practice."
+      },
+      {
+        "vector_id": "V-PHYS-4",
         "strength": "partial",
-        "why": "A second person present makes carrying media out harder"
+        "why": "Under two-person integrity nobody works alone inside the red zone, so an intruder who spoofed the badge system is still out of place."
       }
     ]
   },
@@ -368,8 +374,9 @@
     "counters": [
       {
         "vector_id": "V-HUM-1",
-        "strength": "partial",
-        "why": "Detection only; the structural counter is PER-06 at the reach stage"
+        "strength": "strong",
+        "why": "A continuous insider-threat programme (financial and behavioural indicators, access anomalies) is the standing counter to an employee who has been paid.",
+        "note": "Strong since the Nov 2026 recalibration: RAND SL4 advanced insider-threat programme."
       },
       {
         "vector_id": "V-HUM-2",
@@ -406,7 +413,9 @@
         "strength": "partial",
         "why": "Departure-window monitoring catches pre-resignation copying"
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "Behavioural analytics is already ML; better models flag anomalous access and staging sooner."
   },
   {
     "id": "PER-04",
@@ -666,8 +675,9 @@
       },
       {
         "vector_id": "V-HUM-5",
-        "strength": "partial",
-        "why": "No single executive can order a weight release"
+        "strength": "strong",
+        "why": "Releasing weights needs more than one authoriser, under a defined sensitivity tier, so leadership approval alone does not hand them over; only compulsion from outside overrules that, which is the needs-government part.",
+        "note": "Strong since the Nov 2026 recalibration: "
       },
       {
         "vector_id": "V-X-1",
@@ -781,8 +791,9 @@
       },
       {
         "vector_id": "V-SUP-3",
-        "strength": "partial",
-        "why": "Removes remote vendor access; on-site contractors and cloud staff remain"
+        "strength": "strong",
+        "why": "With no remote access and no out-of-facility maintenance, a vendor has no channel into the systems that hold the weights.",
+        "note": "Strong since the Nov 2026 recalibration: removing vendor remote access is exactly this block."
       },
       {
         "vector_id": "V-CODE-1",

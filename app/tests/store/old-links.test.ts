@@ -13,6 +13,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import { baselineStates } from "../../src/engine/baseline";
+import { migrateBlockStates } from "../../src/engine/catalogue";
 import { scorePosture } from "../../src/engine/posture";
 import type { PersistedState } from "../../src/store/persistence";
 import { loadBlocks, loadModel } from "../load-data";
@@ -21,6 +22,11 @@ const blocks = loadBlocks();
 const model = loadModel();
 const V1_LINK: PersistedState = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures/v1-default-link.json"), "utf-8"));
 const BASELINE = baselineStates(blocks);
+/** What the link should open as: the baseline, with the link's own states on
+ * top. The Nov 2026 recalibration moved two v1 blocks' baselines (AI-08 to
+ * deployed, NET-04 to implementing); the v1 link names both at v1's baseline,
+ * and a state a link sets is kept. */
+const LINKED = { ...BASELINE, ...migrateBlockStates(V1_LINK.blockStates) };
 
 /** Blocks v2 opens partly in place that v1's link never mentions. */
 const added = Object.keys(BASELINE).filter((id) => BASELINE[id] !== "not_started" && !(id in V1_LINK.blockStates));
@@ -31,8 +37,8 @@ async function freshScore() {
   return scorePosture({
     blocks,
     model,
-    blockStates: BASELINE,
-    advanceOrder: deriveOrder(BASELINE),
+    blockStates: LINKED,
+    advanceOrder: deriveOrder(LINKED),
     year: 2026,
     sliders: DEFAULT_SLIDERS,
     adversaryOc: 4,
@@ -52,7 +58,7 @@ async function freshApp() {
 async function expectBaselineLoad(app: Awaited<ReturnType<typeof freshApp>>) {
   const s = app.useSimulationStore.getState();
   for (const id of added) expect(s.blockStates[id], id).toBe(BASELINE[id]);
-  expect(s.blockStates).toEqual(BASELINE);
+  expect(s.blockStates).toEqual(LINKED);
   const score = app.deriveScore(s);
   const fresh = await freshScore();
   expect(score.sl.level).toBe(fresh.sl.level);

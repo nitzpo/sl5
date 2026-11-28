@@ -42,14 +42,11 @@ export type RelevanceWeights = Map<string, number>;
 /**
  * Relevance from the vector map: every block counters at least one vector
  * (the data-integrity test enforces it), so every block is relevant; strong
- * counters weigh 1, partial-only blocks `SUPPORTING_WEIGHT`. Future-capability
- * blocks are left out — completeness measures today's programme against
- * today's catalogue, whatever the world toggle says.
+ * counters weigh 1, partial-only blocks `SUPPORTING_WEIGHT`.
  */
 export function counterRelevance(blocks: Block[]): RelevanceWeights {
   const weights: RelevanceWeights = new Map();
   for (const b of blocks) {
-    if (b.future) continue;
     const counters = b.counters ?? [];
     if (counters.length === 0) continue;
     weights.set(b.id, counters.some((c) => c.strength === "strong") ? 1 : SUPPORTING_WEIGHT);

@@ -20,7 +20,9 @@ export interface PersistedState {
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
-  /** World toggle for the FUT-xx blocks. Absent in pre-Phase-2 saves (off). */
+  /** The retired future-capabilities toggle (FUT-xx blocks, removed in the
+   * Nov 2026 recalibration). Saves and links made before then may carry it;
+   * it is dropped on load. */
   futureCapabilities?: boolean;
   /** How the headline level is scored. Absent in saves and links made before
    * the setting existed, which open in attack-path mode. */
@@ -30,8 +32,9 @@ export interface PersistedState {
 /**
  * Bring a saved posture or share link from an older catalogue up to date:
  * merged-away block ids (PER-05, SC-02, ...) map onto the blocks that
- * absorbed them, sliders added since get their defaults, the future toggle
- * defaults off, and the scoring mode defaults to attack paths. Idempotent, so it is safe on every load path. Blocks added
+ * absorbed them, the retired FUT-xx blocks and future toggle are dropped,
+ * sliders added since get their defaults, and the scoring mode defaults to
+ * attack paths. Idempotent, so it is safe on every load path. Blocks added
  * since are filled in at their baseline when the store applies the state
  * (`snapshotFrom` in simulation.ts), which is where the catalogue is known.
  */
@@ -39,12 +42,13 @@ export function migratePersistedState(state: PersistedState): PersistedState {
   const sliders = { ...(state.sliders ?? {}) } as Partial<Sliders>;
   if (typeof sliders.sl_bar !== "number") sliders.sl_bar = DEFAULT_SL_BAR;
   if (typeof sliders.ai_propensity !== "number") sliders.ai_propensity = DEFAULT_AI_PROPENSITY;
+  const { futureCapabilities: _retired, ...rest } = state;
+  void _retired;
   return {
-    ...state,
+    ...rest,
     blockStates: migrateBlockStates(state.blockStates ?? {}),
     ...(state.advanceOrder ? { advanceOrder: migrateBlockOrder(state.advanceOrder) } : {}),
     sliders: sliders as Sliders,
-    futureCapabilities: state.futureCapabilities ?? false,
     scoringMode: isScoringMode(state.scoringMode) ? state.scoringMode : DEFAULT_SCORING_MODE,
   };
 }

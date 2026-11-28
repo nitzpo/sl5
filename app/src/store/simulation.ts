@@ -37,8 +37,6 @@ interface SimulationStore {
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
-  /** World toggle: count the FUT-xx future-capability blocks (default off). */
-  futureCapabilities: boolean;
   /** How the headline level is scored: attack paths (default) or v1-style
    * control coverage. Saved and shared with the posture; a story pins paths. */
   scoringMode: ScoringMode;
@@ -55,7 +53,6 @@ interface SimulationStore {
   setAdversaryOc: (oc: number) => void;
   setSlider: (key: keyof Sliders, value: number) => void;
   setModelServed: (served: boolean) => void;
-  setFutureCapabilities: (on: boolean) => void;
   setScoringMode: (mode: ScoringMode) => void;
   setPlaybackActive: (active: boolean) => void;
   /** Replace the posture and world with a saved or shared one. Low level: it
@@ -128,7 +125,6 @@ type Snapshot = Pick<
   | "adversaryOc"
   | "sliders"
   | "modelServedExternally"
-  | "futureCapabilities"
   | "scoringMode"
 >;
 
@@ -143,7 +139,6 @@ function persistedOf(s: Snapshot): PersistedState {
     adversaryOc: s.adversaryOc,
     sliders: s.sliders,
     modelServedExternally: s.modelServedExternally,
-    futureCapabilities: s.futureCapabilities,
     scoringMode: s.scoringMode,
   };
 }
@@ -163,7 +158,6 @@ function snapshotFrom(state: PersistedState, blocks: Block[]): Snapshot {
     adversaryOc: state.adversaryOc,
     sliders: state.sliders,
     modelServedExternally: state.modelServedExternally,
-    futureCapabilities: state.futureCapabilities ?? false,
     scoringMode: state.scoringMode ?? DEFAULT_SCORING_MODE,
   };
 }
@@ -190,7 +184,6 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   adversaryOc: 4,
   sliders: DEFAULT_SLIDERS,
   modelServedExternally: true,
-  futureCapabilities: false,
   scoringMode: DEFAULT_SCORING_MODE,
   viewingShared: false,
   playbackActive: false,
@@ -245,7 +238,6 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   setAdversaryOc: (oc) => set({ adversaryOc: oc, scenarioName: null }),
   setSlider: (key, value) => set((s) => ({ sliders: { ...s.sliders, [key]: value }, scenarioName: null })),
   setModelServed: (served) => set({ modelServedExternally: served, scenarioName: null }),
-  setFutureCapabilities: (on) => set({ futureCapabilities: on, scenarioName: null }),
   // Not a change to the posture, so a named posture keeps its name: the mode
   // is the lens it is read through.
   setScoringMode: (scoringMode) => set({ scoringMode }),
@@ -298,7 +290,6 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
       sliders: DEFAULT_SLIDERS,
       adversaryOc: 4,
       modelServedExternally: true,
-      futureCapabilities: false,
       scenarioName: null,
       viewingShared: false,
     });

@@ -40,8 +40,9 @@ const APP: Sliders = {
 const NEUTRAL: Sliders = { ...APP, gov_cooperation: 0.5, vendor_cooperation: 0.5, org_transformation: 0.5, budget_millions: 2000 };
 const FAVOURABLE: Sliders = { ...APP, gov_cooperation: 1, vendor_cooperation: 1, org_transformation: 1, budget_millions: 1e6 };
 
-const all = (state: BlockState, future = false): Record<string, BlockState> =>
-  Object.fromEntries(blocks.filter((b) => future || !b.future).map((b) => [b.id, state]));
+const all = (state: BlockState): Record<string, BlockState> => Object.fromEntries(blocks.map((b) => [b.id, state]));
+/** The research-required controls (`research_required`), the ones SL5 waits on. */
+const RESEARCH = blocks.filter((b) => b.research_required).map((b) => b.id);
 
 interface Row {
   label: string;
@@ -97,7 +98,7 @@ const rows: Row[] = [
     })
   ),
   {
-    label: "Full catalogue (future off)",
+    label: "Full catalogue",
     run: (year, served, world) =>
       scorePosture({
         blocks,
@@ -110,17 +111,16 @@ const rows: Row[] = [
       }),
   },
   {
-    label: "Full catalogue + future",
+    label: "Full catalogue, research controls not built",
     run: (year, served, world) =>
       scorePosture({
         blocks,
         model,
-        blockStates: all("mature", true),
+        blockStates: { ...all("mature"), ...Object.fromEntries(RESEARCH.map((id) => [id, "not_started" as BlockState])) },
         year,
         sliders: world === "app" ? { ...APP, budget_millions: 1e6 } : FAVOURABLE,
         adversaryOc: 4,
         modelServedExternally: served,
-        futureCapabilities: true,
       }),
   },
 ];

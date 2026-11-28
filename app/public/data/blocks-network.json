@@ -522,11 +522,12 @@
     "summary_group": "bandwidth_control",
     "description": "Hardware-enforced cap on total data throughput leaving the Weight Enclave. Calibrated so that model weights (e.g., 3.4TB) cannot be exfiltrated within any acceptable time window, even if all software controls are bypassed. The hard physics backstop.",
     "current_state": {
-      "summary": "The hardware-enforced physical cap this block specifies is not deployed at any AI lab. A software analogue is: Anthropic's ASL-3 protections include preliminary egress bandwidth controls that 'restrict the flow of data out of secure computing environments where AI model weights reside', reasoning explicitly from weight size. Those are network rate limits enforced in software, and the July 2026 Hugging Face incident showed an agent cycling through DNS rewrites, bundled binaries and a CORS relay to work around throttling - which is the difference the hardware version is meant to close. Physical bandwidth caps enforced at hardware level remain rare outside classified environments.",
+      "summary": "The hardware-enforced physical cap this block specifies is not deployed at any AI lab. A software analogue is: Anthropic's ASL-3 protections include preliminary egress bandwidth controls that 'restrict the flow of data out of secure computing environments where AI model weights reside', reasoning explicitly from weight size. Those are network rate limits enforced in software, and the July 2026 Hugging Face incident showed an agent cycling through DNS rewrites, bundled binaries and a CORS relay to work around throttling - which is the difference the hardware version is meant to close. Physical bandwidth caps enforced at hardware level remain rare outside classified environments. Counted as partially deployed from 2025 (Nov 2026 recalibration): the software egress limits in Anthropic’s ASL-3 protections are the partial version of this block; the hardware cap is not deployed anywhere.",
       "deployed_by": [
         "some_classified_environments"
       ],
-      "baseline_state": "not_started"
+      "baseline_state": "partially_deployed",
+      "baseline_since": 2025
     },
     "dimensions": {
       "technical_feasibility": {
@@ -750,8 +751,9 @@
     "counters": [
       {
         "vector_id": "V-NET-1",
-        "strength": "partial",
-        "why": "One-way transfers replace hand-carried media; inbound malware and induced links remain"
+        "strength": "strong",
+        "why": "The only sanctioned crossing is a one-way, content-inspected diode: nothing can be pushed out across it, and what comes in is filtered.",
+        "note": "Strong since the Nov 2026 recalibration: cross-domain solutions are the standard control for the crossing RAND scores."
       },
       {
         "vector_id": "V-SELF-1",
@@ -780,8 +782,9 @@
       },
       {
         "vector_id": "V-X-3",
-        "strength": "partial",
-        "why": "One-way flows; outbound passes only through monitored cross-domain transfer"
+        "strength": "strong",
+        "why": "A one-way diode on the enclave boundary passes data inward only, and the cross-domain guard inspects anything allowed out: bulk weights have no outbound path through it.",
+        "note": "Strong since the Nov 2026 recalibration: blocking bulk egress is what data diodes are for."
       }
     ]
   },
@@ -1004,13 +1007,13 @@
     "summary_group": "identity_access",
     "description": "FIDO2/WebAuthn hardware authenticators for every human login with no SMS or OTP fallback; privileged access management with just-in-time, time-boxed elevation and no standing admin rights; identity proofing for help-desk and account-recovery requests; and short-lived workload identity (SPIFFE-style) instead of long-lived service credentials. Rescoped in Phase 2 to include help-desk recovery and workload identity.",
     "current_state": {
-      "summary": "Hardware security keys are standard for staff at Google (since 2017) and widely adopted at frontier labs, and privileged-access tooling exists. Help-desk recovery and long-lived service tokens remain the common gaps: Uber (2022), MGM (2023) and the 2024 Snowflake customer breaches all went through them.",
+      "summary": "Hardware security keys are standard for staff at Google (since 2017) and widely adopted at frontier labs, and privileged-access tooling exists. Help-desk recovery and long-lived service tokens remain the common gaps: Uber (2022), MGM (2023) and the 2024 Snowflake customer breaches all went through them. Counted as deployed at baseline (Nov 2026 recalibration): hardware keys and SSO are standard staff practice at frontier labs; the recovery and service-token gaps are why it is not mature.",
       "deployed_by": [
         "google",
         "cloudflare",
         "partial_frontier_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "deployed"
     },
     "dimensions": {
       "technical_feasibility": {
@@ -1160,11 +1163,11 @@
     "summary_group": "detection_response",
     "description": "24/7 security operations with weight-aware detection (checkpoint access, unusual egress, privilege changes, implant indicators), threat hunting against state-actor tradecraft, and an incident-response team that can contain within hours. In the model it acts twice: as a partial counter on the vectors it can see, and as the chance that a failed attempt is caught and the whole campaign stopped.",
     "current_state": {
-      "summary": "Every frontier lab runs a security operations function and incident response. Weight-specific detection content, hunting against OC4-5 tradecraft and rapid containment are uneven: Microsoft found the 2023 Storm-0558 and 2024 Midnight Blizzard intrusions weeks to months after they began.",
+      "summary": "Every frontier lab runs a security operations function and incident response. Weight-specific detection content, hunting against OC4-5 tradecraft and rapid containment are uneven: Microsoft found the 2023 Storm-0558 and 2024 Midnight Blizzard intrusions weeks to months after they began. Counted as deployed at baseline (Nov 2026 recalibration): a security operations function with incident response is universal at frontier labs; weight-specific detection against OC4-5 tradecraft is what maturity adds.",
       "deployed_by": [
         "all_frontier_labs_partial"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "deployed"
     },
     "dimensions": {
       "technical_feasibility": {
@@ -1308,8 +1311,15 @@
         "vector_id": "V-X-3",
         "strength": "partial",
         "why": "Egress telemetry flags bulk transfers"
+      },
+      {
+        "vector_id": "V-X-5",
+        "strength": "partial",
+        "why": "Security operations watch for the sustained, anomalous query volume weight-scale extraction needs."
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "AI-assisted triage, hunting and response (Google Sec-Gemini, Microsoft Security Copilot) scale the SOC with the same progress that helps attackers."
   },
   {
     "id": "DEC-01",
@@ -1437,7 +1447,9 @@
         "strength": "partial",
         "why": "Canary weights flag a transfer in progress"
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "Generated decoys and automated canary analysis keep pace with automated reconnaissance."
   },
   {
     "id": "END-01",
@@ -1446,11 +1458,11 @@
     "summary_group": "host_hardening",
     "description": "An inventory of every endpoint and server, patch deadlines measured in days for internet-facing and critical systems, removal of end-of-life software, endpoint detection on every host, and attack-surface reduction (RAND SL2-SL3 software update management, SL4 limiting the attack surface).",
     "current_state": {
-      "summary": "Universal practice in some form, and uneven everywhere: RAND scores exploitation of already-patched vulnerabilities at 3-5 for every tier because the practice lags (Equifax 2017; state-actor exploitation of unpatched Ivanti appliances in 2024).",
+      "summary": "Universal practice in some form, and uneven everywhere: RAND scores exploitation of already-patched vulnerabilities at 3-5 for every tier because the practice lags (Equifax 2017; state-actor exploitation of unpatched Ivanti appliances in 2024). Counted as deployed at baseline (Nov 2026 recalibration): every frontier lab patches and runs endpoint protection, and Anthropic’s ASL-3 standard (May 2025) adds binary allowlisting; the lag is why it is not mature.",
       "deployed_by": [
         "all_frontier_labs_partial"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "deployed"
     },
     "dimensions": {
       "technical_feasibility": {
@@ -1557,8 +1569,15 @@
         "vector_id": "V-PHYS-3",
         "strength": "partial",
         "why": "Managed, encrypted, EDR-equipped endpoints resist off-site tampering"
+      },
+      {
+        "vector_id": "V-PHYS-2",
+        "strength": "partial",
+        "why": "Endpoint control (device control, binary allowlisting) keeps a planted device from running anything."
       }
-    ]
+    ],
+    "defender_ai": true,
+    "defender_ai_note": "AI vulnerability discovery and patch generation (Big Sleep 2024, DARPA AIxCC 2025) shorten the window a defender leaves open."
   },
   {
     "id": "CFG-01",
@@ -1567,11 +1586,11 @@
     "summary_group": "host_hardening",
     "description": "Infrastructure as code with security policy enforced in code, gold images, continuous drift detection against the approved baseline, and integrity checks of security-relevant configuration (RAND SL3). Takes over the configuration-drift role rescoped out of AI-05.",
     "current_state": {
-      "summary": "Infrastructure as code and CIS-benchmark hardening are common; continuous verification against a gold image and policy-as-code gates on security configuration are partial.",
+      "summary": "Infrastructure as code and CIS-benchmark hardening are common; continuous verification against a gold image and policy-as-code gates on security configuration are partial. Counted as deployed at baseline (Nov 2026 recalibration): infrastructure as code and benchmark hardening are common practice; continuous gold-image verification is what maturity adds.",
       "deployed_by": [
         "partial_frontier_labs"
       ],
-      "baseline_state": "partially_deployed"
+      "baseline_state": "deployed"
     },
     "dimensions": {
       "technical_feasibility": {

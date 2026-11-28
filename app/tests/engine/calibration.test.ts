@@ -25,8 +25,14 @@ function score(over: Partial<PostureInput>) {
 }
 
 const FULL = allAt(blocks, "mature");
-const FULL_FUTURE = allAt(blocks, "mature", true);
+const RESEARCH = blocks.filter((b) => b.research_required).map((b) => b.id);
+const without = (ids: string[]) => ({ ...FULL, ...Object.fromEntries(ids.map((id) => [id, "not_started" as const])) });
+const UNBOUND = { ...APP_SLIDERS, budget_millions: 1e6 };
 
+// Targets from the Nov 2026 recalibration (research/scoring-model.md,
+// "Calibration targets and evidence"): a typical frontier lab in 2026 is SL2,
+// contesting SL3; the full catalogue, matured, is SL5; what keeps SL5 out of
+// reach today is the research-required controls, not the arithmetic.
 describe("calibration targets", () => {
   it("undefended: holds OC1 (SL1) but not OC2, with no AI and no serving", () => {
     // RAND: SL1 'likely thwarts' OC1. With a RAND 1 read as 0.02 the undefended
@@ -42,65 +48,82 @@ describe("calibration targets", () => {
     expect(score({ year: 2026, modelServedExternally: false }).sl.level).toBe(0);
   });
 
-  it("today's 2026 baseline posture sits at SL1–2", () => {
+  it("today's 2026 baseline is SL2, contesting SL3", () => {
     for (const served of [true, false]) {
       const r = score({ blockStates: baselineStates(blocks), year: 2026, modelServedExternally: served, sliders: APP_SLIDERS });
-      expect(r.sl.level, `served=${served}`).toBeGreaterThanOrEqual(1);
-      expect(r.sl.level, `served=${served}`).toBeLessThanOrEqual(2);
+      expect(r.sl.level, `served=${served}`).toBe(2);
+      // OC3 gets through, but not overwhelmingly: around the contested line,
+      // mostly through an insider (the case ASL-3 scopes out).
+      expect(r.tiers[2].p, `served=${served}`).toBeGreaterThan(0.35);
+      expect(r.tiers[2].p, `served=${served}`).toBeLessThan(0.65);
+      expect(r.tiers[2].easiestApproach).toBe("insider");
     }
   });
 
-  it("the full catalogue, future off, reaches SL3–4 in 2026", () => {
-    for (const served of [true, false]) {
-      for (const sliders of [{ ...APP_SLIDERS, budget_millions: 1e6 }, FAVOURABLE_SLIDERS]) {
-        const r = score({ blockStates: FULL, sliders, modelServedExternally: served });
-        expect(r.sl.level, `served=${served}`).toBeGreaterThanOrEqual(3);
-        expect(r.sl.level, `served=${served}`).toBeLessThanOrEqual(4);
-      }
+  it("held fixed, the baseline decays moderately: SL1 or better through 2030", () => {
+    const at = (year: number) => score({ blockStates: baselineStates(blocks), year, sliders: APP_SLIDERS }).sl;
+    expect(at(2030).value).toBeLessThan(at(2026).value);
+    expect(at(2030).level).toBeGreaterThanOrEqual(1);
+  });
+
+  it("the full catalogue, matured, reaches SL5 in 2026 and still in 2030 (default world, served, standard bar)", () => {
+    // Today's catalogue only: there are no future-capability blocks to add.
+    expect(blocks.some((b) => b.id.startsWith("FUT-"))).toBe(false);
+    for (const year of [2026, 2028, 2030]) {
+      const r = score({ blockStates: FULL, year, sliders: UNBOUND });
+      expect(r.sl.level, `${year}: SL ${r.sl.value.toFixed(2)}`).toBe(5);
+      expect(r.aiInsider.held, `${year}`).toBe(true);
     }
   });
 
-  it("the full catalogue, future off, never reaches SL5", () => {
-    for (const year of [2024, 2026, 2028, 2030]) {
+  it("...in every world: not served, and with full cooperation, where it is no longer marginal", () => {
+    for (const year of [2026, 2030]) {
       for (const served of [true, false]) {
-        for (const sliders of [{ ...APP_SLIDERS, budget_millions: 1e6 }, FAVOURABLE_SLIDERS]) {
-          expect(score({ blockStates: FULL_FUTURE, sliders, year, modelServedExternally: served }).sl.level).toBeLessThan(5);
+        for (const sliders of [UNBOUND, FAVOURABLE_SLIDERS]) {
+          expect(score({ blockStates: FULL, year, sliders, modelServedExternally: served }).sl.level).toBe(5);
         }
       }
+      expect(score({ blockStates: FULL, year, sliders: FAVOURABLE_SLIDERS, modelServedExternally: false }).sl.marginal).toBe(false);
     }
   });
 
-  it("with the future blocks, in a favourable world (not served, full partnership), SL5 is reachable", () => {
-    const r = score({ blockStates: FULL_FUTURE, futureCapabilities: true, sliders: FAVOURABLE_SLIDERS, modelServedExternally: false });
-    expect(r.sl.level).toBe(5);
-    expect(r.aiInsider.held).toBe(true);
-  });
-
-  it("...but not trivially: it needs all of it, and it does not last", () => {
-    const fav = { blockStates: FULL_FUTURE, futureCapabilities: true, sliders: FAVOURABLE_SLIDERS, modelServedExternally: false };
-    // Serving the model breaks it.
-    expect(score({ ...fav, modelServedExternally: true }).sl.level).toBeLessThan(5);
-    // So does leaving out any one of the future blocks aimed at human attackers.
-    for (const id of ["FUT-01", "FUT-02", "FUT-03", "FUT-04"]) {
-      const r = score({ ...fav, blockStates: { ...FULL_FUTURE, [id]: "not_started" } });
-      expect(r.sl.level, `without ${id}`).toBeLessThan(5);
+  it("SL5 waits on research: without the research-required controls it is out of reach (default world, served)", () => {
+    expect(RESEARCH.length).toBeGreaterThanOrEqual(5);
+    for (const year of [2024, 2026, 2028, 2030]) {
+      const r = score({ blockStates: without(RESEARCH), year, sliders: UNBOUND });
+      expect(r.sl.level, `${year}`).toBeLessThan(5);
     }
-    // Trustworthy AI monitors are what keep the lab's own model held as it
-    // climbs capability bands.
-    const late = { ...fav, year: 2030 };
-    expect(score(late).aiInsider.held).toBe(true);
-    expect(score({ ...late, blockStates: { ...FULL_FUTURE, "FUT-05": "not_started" } }).aiInsider.held).toBe(false);
-    // It is marginal (OC5 within a quarter of the bar), and AI lifting the
-    // attackers takes it back to SL4 by 2030.
-    expect(score(fav).sl.marginal).toBe(true);
-    expect(score(late).sl.level).toBe(4);
+    // By 2030 the gap is a whole level: OC4 gets through too.
+    expect(score({ blockStates: without(RESEARCH), year: 2030, sliders: UNBOUND }).sl.level).toBeLessThanOrEqual(4);
+    // The served model is the clearest case: no hardened serving interface, no SL5.
+    expect(score({ blockStates: without(["SRV-01"]), year: 2026, sliders: UNBOUND }).sl.level).toBeLessThan(5);
+    // And the lab's own model: without the AI-control research (AI-02, AI-10) it
+    // climbs to the bar by 2030.
+    const own = (states: typeof FULL) => score({ blockStates: states, year: 2030, sliders: UNBOUND }).aiInsider.p;
+    expect(own(without(["AI-02", "AI-10"]))).toBeGreaterThan(own(FULL) + 0.02);
+    expect(own(without(["AI-02", "AI-10"]))).toBeGreaterThan(0.9 * APP_SLIDERS.sl_bar);
   });
 
   it("the AI insider is reported below SL5 but only required for it", () => {
-    const r = score({ blockStates: FULL, year: 2030 });
+    const r = score({ blockStates: baselineStates(blocks), year: 2030, sliders: APP_SLIDERS });
     expect(r.aiInsider.held).toBe(false);
     expect(r.sl.level).toBeGreaterThan(0);
     expect(r.sl.level).toBeLessThan(5);
+  });
+
+  it("defender AI is modest: it slows the decay of a fixed posture, and does nothing before AI arrives", () => {
+    const at = (year: number, defenderAi: boolean) =>
+      score({ blockStates: baselineStates(blocks), year, sliders: APP_SLIDERS, options: { defenderAi } });
+    expect(at(2024, true).tiers.map((t) => t.p)).toEqual(at(2024, false).tiers.map((t) => t.p));
+    const on = at(2030, true);
+    const off = at(2030, false);
+    expect(on.sl.value).toBeGreaterThanOrEqual(off.sl.value);
+    for (let i = 0; i < 5; i++) {
+      expect(on.tiers[i].p).toBeLessThanOrEqual(off.tiers[i].p + 1e-12);
+      // Modest: it never takes more than a quarter off any tier's campaign.
+      expect(on.tiers[i].p).toBeGreaterThan(0.75 * off.tiers[i].p);
+    }
+    expect(on.detection.q).toBeGreaterThan(off.detection.q);
   });
 });
 

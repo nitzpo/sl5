@@ -104,9 +104,9 @@ describe("block data integrity", () => {
 });
 
 describe("vector backbone integrity", () => {
-  it("has the 38 RAND vectors, 8 authored AI-insider vectors and 4 structural placeholders", () => {
+  it("has the 38 RAND vectors, 8 authored AI-insider vectors and 5 structural placeholders", () => {
     const by = (src: string) => model.vectors.filter((v) => v.source === src).length;
-    expect([by("rand"), by("authored"), by("structural")]).toEqual([38, 8, 4]);
+    expect([by("rand"), by("authored"), by("structural")]).toEqual([38, 8, 5]);
     expect(new Set(model.vectors.map((v) => v.id)).size).toBe(model.vectors.length);
   });
 
@@ -199,17 +199,49 @@ describe("counter data integrity", () => {
     }
   });
 
-  it("future blocks are flagged, labelled, and never a prerequisite of today's catalogue", () => {
-    const future = blocks.filter((b) => b.future);
-    expect(future.length).toBeGreaterThanOrEqual(3);
-    expect(future.length).toBeLessThanOrEqual(5);
-    for (const b of future) {
-      expect(b.id.startsWith("FUT-"), b.id).toBe(true);
-      expect((b.future_note ?? "").length, `${b.id} future_note`).toBeGreaterThan(40);
+  it("has no future-capability (FUT) blocks: they were retired for research-required controls", () => {
+    expect(blocks.some((b) => b.id.startsWith("FUT-"))).toBe(false);
+    for (const b of blocks) expect("future" in b, `${b.id} still carries a future flag`).toBe(false);
+    for (let n = 1; n <= 5; n++) expect(LEGACY_BLOCK_IDS[`FUT-0${n}`], `FUT-0${n} migration`).toEqual([]);
+  });
+
+  it("flags the research-heavy controls as research-required, each with a note and a long lead time", () => {
+    const research = blocks.filter((b) => b.research_required);
+    expect(research.map((b) => b.id).sort()).toEqual(["ACA-01", "AI-02", "AI-10", "HW-04", "HW-06", "SC-03", "SRV-01"]);
+    for (const b of research) {
+      expect((b.research_note ?? "").length, `${b.id} research_note`).toBeGreaterThan(40);
+      // Low technical feasibility, and a lead time that lands after 2029 if started in 2024–2026.
+      expect(b.dimensions.technical_feasibility.value, b.id).toBeLessThanOrEqual(78);
+      expect(b.dimensions.time_to_deploy_months.max, `${b.id} lead time`).toBeGreaterThanOrEqual(60);
     }
-    const futureIds = new Set(future.map((b) => b.id));
-    for (const b of blocks.filter((x) => !x.future)) {
-      for (const r of b.dependencies.requires) expect(futureIds.has(r), `${b.id} requires future ${r}`).toBe(false);
+    // Nothing else is flagged without a note.
+    for (const b of blocks.filter((x) => !x.research_required)) expect(b.research_note, b.id).toBeUndefined();
+  });
+
+  it("flags only detection, monitoring, review and patching blocks as AI-augmented, each with a note", () => {
+    const flagged = blocks.filter((b) => b.defender_ai);
+    expect(flagged.length).toBeGreaterThanOrEqual(6);
+    expect(flagged.length).toBeLessThanOrEqual(12);
+    for (const b of flagged) {
+      expect(b.defense_type, `${b.id} is a hard stop`).not.toBe("hard_stop");
+      expect((b.defender_ai_note ?? "").length, `${b.id} defender_ai_note`).toBeGreaterThan(30);
+    }
+    for (const id of ["DET-01", "PER-03", "END-01", "SW-01", "AI-02", "AI-10"]) {
+      expect(blocks.find((b) => b.id === id)!.defender_ai, id).toBe(true);
+    }
+  });
+
+  it("baseline states are evidence-based: a deployed baseline says why in its current_state", () => {
+    const deployed = blocks.filter((b) => b.current_state.baseline_state === "deployed");
+    expect(deployed.length).toBeGreaterThanOrEqual(5);
+    for (const b of deployed) {
+      expect(b.current_state.summary, b.id).toMatch(/Counted as deployed at baseline/);
+      expect(b.research_required, `${b.id} cannot be both`).toBeFalsy();
+    }
+    for (const b of blocks) {
+      expect(["not_started", "researching", "proven_not_deployed", "partially_deployed", "deployed"], b.id).toContain(
+        b.current_state.baseline_state
+      );
     }
   });
 });

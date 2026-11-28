@@ -52,9 +52,9 @@ export function compareIds(a: string, b: string): number {
 }
 
 /** A fixed order inside every cell, so tiles never move when the posture
- * changes: today's blocks by id, future (R&D) blocks last. */
+ * changes: by id. */
 export function cellOrder(a: Block, b: Block): number {
-  return Number(!!a.future) - Number(!!b.future) || compareIds(a.id, b.id);
+  return compareIds(a.id, b.id);
 }
 
 export type MatrixCells = Record<Category, Record<MatrixColumn, Block[]>>;
@@ -110,7 +110,7 @@ export function stageCoverage(
 ): StageCoverage[] {
   const out: StageCoverage[] = [];
   const counts = (col: MatrixColumn) => {
-    const ids = CATEGORY_ORDER.flatMap((c) => cells[c][col]).filter((b) => !b.future || score.catalogue.includes(b));
+    const ids = CATEGORY_ORDER.flatMap((c) => cells[c][col]).filter((b) => score.catalogue.includes(b));
     return { total: ids.length, inPlace: ids.filter((b) => isOperational(effectiveStates[b.id])).length };
   };
   for (const stage of STAGES) {

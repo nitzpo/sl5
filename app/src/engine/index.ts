@@ -20,7 +20,10 @@ export {
   DETECTION_AI_EROSION,
   RESIDUAL_FLOOR_SHARE,
   GOVERNMENT_RELIEF,
+  DESIGN_TIER_RELIEF,
+  DEFENDER_AI_SHARE,
   acBand,
+  erosionTier,
   baseFeasibility,
   campaignSuccess,
   effectiveTier,
@@ -42,7 +45,6 @@ export { applyDependencyConstraint } from "./dependencies";
 export {
   scorePosture,
   effectivePosture,
-  catalogueInForce,
   orderAfterActivating,
   threatRelevance,
   targetSl,

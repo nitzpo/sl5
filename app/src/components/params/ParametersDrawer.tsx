@@ -140,8 +140,6 @@ export function ParametersDrawer() {
   const setSlider = useSimulationStore((s) => s.setSlider);
   const served = useSimulationStore((s) => s.modelServedExternally);
   const setServed = useSimulationStore((s) => s.setModelServed);
-  const futureOn = useSimulationStore((s) => s.futureCapabilities);
-  const setFuture = useSimulationStore((s) => s.setFutureCapabilities);
   const oc = useSimulationStore((s) => s.adversaryOc);
   const setOc = useSimulationStore((s) => s.setAdversaryOc);
   const reset = useSimulationStore((s) => s.resetToBaseline);
@@ -245,14 +243,6 @@ export function ParametersDrawer() {
             high="Always tries"
             word={propensityWord(sliders.ai_propensity)}
             onChange={set("ai_propensity")}
-          />
-          <Toggle
-            label="Future capabilities (R&D)"
-            hint="Five blocks that don't exist yet. SL5 is out of reach without them."
-            on={futureOn}
-            onChange={setFuture}
-            onText="Shown"
-            offText="Hidden"
           />
         </Group>
 

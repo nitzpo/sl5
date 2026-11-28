@@ -172,11 +172,8 @@ describe("CISO priority investments", () => {
     }
   });
 
-  it("never offers a future-capability block outside a future world", () => {
-    expect(analysis.candidates.some((c) => c.block.future)).toBe(false);
-    const future = recommendInvestments(
-      appDefault({ futureCapabilities: true, sliders: { ...input.sliders, budget_millions: 20_000 } })
-    );
-    expect(future.candidates.some((c) => c.block.future)).toBe(true);
+  it("offers research-required blocks like any other: they are in today's catalogue", () => {
+    const rich = recommendInvestments(appDefault({ sliders: { ...input.sliders, budget_millions: 20_000 } }));
+    expect(rich.candidates.some((c) => c.block.research_required)).toBe(true);
   });
 });

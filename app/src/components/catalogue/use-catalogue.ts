@@ -27,7 +27,7 @@ export interface DrawnPath {
 
 export interface CatalogueModel {
   score: PostureScore;
-  /** The blocks on show: future ones only with the toggle on. */
+  /** The blocks on show: the whole catalogue. */
   blocks: Block[];
   cells: ReturnType<typeof matrixCells>;
   columnOf: (b: Block) => MatrixColumn;
@@ -44,7 +44,6 @@ export function useCatalogueModel(): CatalogueModel {
   const score = useScore();
   const allBlocks = useSimulationStore((s) => s.blocks);
   const vectors = useSimulationStore((s) => s.threatModel.vectors);
-  const futureOn = useSimulationStore((s) => s.futureCapabilities);
   const blockStates = useSimulationStore((s) => s.blockStates);
   const year = useSimulationStore((s) => s.year);
   const showAll = useUiStore((s) => s.showAllApproaches);
@@ -54,9 +53,9 @@ export function useCatalogueModel(): CatalogueModel {
     const vectorsById = new Map(vectors.map((v) => [v.id, v]));
     const columns = new Map(allBlocks.map((b) => [b.id, blockColumn(b, vectorsById)]));
     const columnOf = (b: Block) => columns.get(b.id) ?? "entry";
-    const blocks = allBlocks.filter((b) => futureOn || !b.future);
+    const blocks = allBlocks;
     return { blocks, columnOf, cells: matrixCells(blocks, vectorsById) };
-  }, [allBlocks, vectors, futureOn]);
+  }, [allBlocks, vectors]);
 
   const derived = useMemo(() => {
     const { cells, columnOf } = layout;

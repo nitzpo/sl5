@@ -39,17 +39,13 @@ function TileFace({ block, flags, inverted }: { block: Block; flags: TileFlags; 
           {flags.choke}
         </span>
       )}
-      {block.future ? (
-        <span className={`shrink-0 font-plex text-[12px] leading-none ${inverted ? "text-on-ink-2" : "text-ink-2"}`}>R&amp;D</span>
-      ) : (
-        <span
-          className={`hidden shrink-0 font-plex text-[12px] leading-none @min-[210px]:inline ${
-            inverted ? "text-on-ink-2" : "text-ink-3"
-          }`}
-        >
-          {block.id}
-        </span>
-      )}
+      <span
+        className={`hidden shrink-0 font-plex text-[12px] leading-none @min-[210px]:inline ${
+          inverted ? "text-on-ink-2" : "text-ink-3"
+        }`}
+      >
+        {block.id}
+      </span>
     </span>
   );
 }
@@ -72,7 +68,7 @@ export const BlockTile = memo(function BlockTile({
   const handlers = blockHandlers(block.id, actions);
   const name = blockName(block.id, block.name);
   const label =
-    `${name}, ${block.id}${block.future ? ", future capability (R&D)" : ""}. ` +
+    `${name}, ${block.id}${block.research_required ? ", research required" : ""}. ` +
     `${TYPE_WORDS[block.defense_type]}, ${STATE_WORDS[flags.state].toLowerCase()}` +
     (flags.constrained === "unfunded" ? ", not funded" : flags.constrained === "capped" ? ", waiting on a prerequisite" : "") +
     (flags.onPath ? ", on an easiest attack path" : "") +

@@ -62,11 +62,12 @@ export type Strictness = keyof typeof SL_BAR_PRESETS;
 
 /** "Today's typical lab" is the instrument's researched starting posture
  * (each block's `baseline_state`); "every defense" is the whole catalogue at
- * mature, future capabilities included only when switched on. */
-export function postureStates(blocks: Block[], kind: PostureKind, future = false): Record<string, BlockState> {
+ * mature, with the research-required defenses left out when `research` is off
+ * (they cannot be built at that grade today). */
+export function postureStates(blocks: Block[], kind: PostureKind, research = true): Record<string, BlockState> {
   if (kind === "typical-lab") return baselineStates(blocks);
   const states: Record<string, BlockState> = {};
-  for (const b of blocks) states[b.id] = !b.future || future ? "mature" : "not_started";
+  for (const b of blocks) states[b.id] = !b.research_required || research ? "mature" : "not_started";
   return states;
 }
 
@@ -74,7 +75,8 @@ export interface Scene {
   posture: PostureKind;
   world?: World;
   strictness?: Strictness;
-  future?: boolean;
+  /** With every defense: count the research-required ones (default true). */
+  research?: boolean;
   year?: number;
   adversaryOc?: number;
   /** Blocks brought to mature on top of the posture. */
@@ -88,7 +90,7 @@ export interface Scene {
 /** Score a scene with `scorePosture`, the app's one pipeline. */
 export function scoreScene(data: ThreatData, scene: Scene): PostureScore {
   const world = scene.world ?? "as-today";
-  const states = postureStates(data.blocks, scene.posture, scene.future);
+  const states = postureStates(data.blocks, scene.posture, scene.research ?? true);
   for (const id of scene.extra ?? []) states[id] = "mature";
   const sliders: Sliders = {
     ...WORLD_SLIDERS[world],
@@ -103,7 +105,6 @@ export function scoreScene(data: ThreatData, scene: Scene): PostureScore {
     sliders,
     adversaryOc: scene.adversaryOc ?? 4,
     modelServedExternally: scene.served ?? SERVED[world],
-    futureCapabilities: scene.future ?? false,
   });
 }
 
@@ -236,9 +237,8 @@ export function stackOnVector(
 }
 
 /** The blocks that counter a vector, strong first, then by id. */
-export function countersOf(data: ThreatData, vectorId: string, includeFuture = true) {
+export function countersOf(data: ThreatData, vectorId: string) {
   return data.blocks
-    .filter((b) => includeFuture || !b.future)
     .flatMap((b) =>
       (b.counters ?? [])
         .filter((c) => c.vector_id === vectorId)

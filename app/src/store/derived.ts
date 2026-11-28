@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo } from "react";
 import { useSimulationStore } from "./simulation";
-import { applyBudgetConstraint, catalogueInForce, scorePosture } from "../engine";
+import { applyBudgetConstraint, scorePosture } from "../engine";
 import type { PostureInput, PostureScore } from "../engine/posture";
 import type { Block, BlockState, Sliders, ThreatModel } from "../engine/types";
 import { recommendInvestments, type InvestmentAnalysis } from "../utils/ciso-recommendations";
@@ -20,17 +20,16 @@ export function useBudgetStatus(): {
   const advanceOrder = useSimulationStore((s) => s.advanceOrder);
   const budgetMillions = useSimulationStore((s) => s.sliders.budget_millions);
   const riskTolerance = useSimulationStore((s) => s.sliders.risk_tolerance);
-  const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
 
   return useMemo(() => {
     const { exceededIds, spentMillions } = applyBudgetConstraint(
-      catalogueInForce(blocks, futureCapabilities),
+      blocks,
       blockStates,
       budgetMillions,
       { order: advanceOrder, riskTolerance }
     );
     return { spentMillions, budgetExceededIds: exceededIds, budgetMillions };
-  }, [blocks, blockStates, advanceOrder, budgetMillions, riskTolerance, futureCapabilities]);
+  }, [blocks, blockStates, advanceOrder, budgetMillions, riskTolerance]);
 }
 
 /** Everything `scorePosture` reads from the store. */
@@ -43,7 +42,6 @@ export interface SimulationSnapshot {
   sliders: Sliders;
   adversaryOc: number;
   modelServedExternally: boolean;
-  futureCapabilities: boolean;
 }
 
 export function postureInput(s: SimulationSnapshot): PostureInput {
@@ -56,7 +54,6 @@ export function postureInput(s: SimulationSnapshot): PostureInput {
     sliders: s.sliders,
     adversaryOc: s.adversaryOc,
     modelServedExternally: s.modelServedExternally,
-    futureCapabilities: s.futureCapabilities,
   };
 }
 
@@ -81,7 +78,6 @@ export function usePostureInput(): PostureInput {
   const sliders = useSimulationStore((s) => s.sliders);
   const adversaryOc = useSimulationStore((s) => s.adversaryOc);
   const modelServedExternally = useSimulationStore((s) => s.modelServedExternally);
-  const futureCapabilities = useSimulationStore((s) => s.futureCapabilities);
   return useMemo(
     () =>
       postureInput({
@@ -93,9 +89,8 @@ export function usePostureInput(): PostureInput {
         sliders,
         adversaryOc,
         modelServedExternally,
-        futureCapabilities,
       }),
-    [blocks, threatModel, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally, futureCapabilities]
+    [blocks, threatModel, blockStates, advanceOrder, year, sliders, adversaryOc, modelServedExternally]
   );
 }
 
@@ -115,7 +110,6 @@ export function cachedScore(input: PostureInput): PostureScore {
     input.sliders,
     input.adversaryOc,
     input.modelServedExternally,
-    input.futureCapabilities,
   ];
   if (lastScore && lastScore.key.every((k, i) => k === key[i])) return lastScore.score;
   const score = scorePosture(input);

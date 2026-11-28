@@ -99,10 +99,10 @@ export const GLOSSARY = {
     definition:
       "The lab's own AI model, running with credentials and tools on the lab's compute. If misaligned, it may try to reach its own weights and get them out. It starts already inside.",
   },
-  futureCapabilities: {
-    label: "Future capabilities",
+  researchRequired: {
+    label: "Research required",
     definition:
-      "Five research-stage defenses that don't exist at scale yet, such as verified accelerator hardware and a government-cleared workforce. The instrument adds them only when you switch them on, and labels them as illustrative.",
+      "Defenses the SL5 benchmark needs that cannot yet be built at that grade, such as chip-level tamper protection, an ML-specific serving interface and AI-control protocols. They are in the catalogue and count once built; their lead times are why SL5 is out of reach today.",
   },
   tee: {
     label: "TEE — Trusted Execution Environment",
@@ -293,14 +293,14 @@ export const AI_SHIFT_GROUPS = [
   { shift: 0, label: "Military force; access the lab itself approves", count: 2 },
 ] as const;
 
-/** The catalogue as shipped (today's blocks; future blocks counted apart). */
+/** The catalogue as shipped. `research` counts the research-required blocks. */
 export const CATALOG = {
   blocks: 56,
   categories: 6,
-  future: 5,
+  research: 7,
   randVectors: 38,
   ownModelVectors: 8,
-  structuralVectors: 4,
+  structuralVectors: 5,
   scenarios: 7,
 } as const;
 

@@ -87,11 +87,10 @@ describe("stakes copy matches world-state.json", () => {
 });
 
 describe("catalogue figures match the data", () => {
-  it("counts blocks, categories, future capabilities, vectors and scenarios", () => {
-    const today = blocks.filter((b) => !b.future);
-    expect(CATALOG.blocks).toBe(today.length);
-    expect(CATALOG.categories).toBe(new Set(today.map((b) => b.category)).size);
-    expect(CATALOG.future).toBe(blocks.filter((b) => b.future).length);
+  it("counts blocks, categories, research-required blocks, vectors and scenarios", () => {
+    expect(CATALOG.blocks).toBe(blocks.length);
+    expect(CATALOG.categories).toBe(new Set(blocks.map((b) => b.category)).size);
+    expect(CATALOG.research).toBe(blocks.filter((b) => b.research_required).length);
     expect(CATALOG.randVectors).toBe(vectors.filter((v) => v.source === "rand").length);
     expect(CATALOG.ownModelVectors).toBe(vectors.filter((v) => v.source === "authored").length);
     expect(CATALOG.structuralVectors).toBe(vectors.filter((v) => v.source === "structural").length);
@@ -127,11 +126,8 @@ describe("catalogue figures match the data", () => {
     expect([...OWN_MODEL_STEPS.exfil].sort()).toEqual(names("exfil"));
   });
 
-  it("races real, present-day long-lead blocks", () => {
-    for (const id of RACE_BLOCKS) {
-      expect(byId.get(id), `${id} missing`).toBeDefined();
-      expect(byId.get(id)!.future).toBeFalsy();
-    }
+  it("races real long-lead blocks from the catalogue", () => {
+    for (const id of RACE_BLOCKS) expect(byId.get(id), `${id} missing`).toBeDefined();
   });
 });
 

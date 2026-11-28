@@ -27,6 +27,10 @@ import { getAiCapability } from "./ai-curve";
  *                  with a chance q that a failed attempt is caught and stops it
  *   final        = max(campaign, residual floor)          — floor once per campaign
  *
+ * A counter's erosion is read relative to the tier the control was built for
+ * (`DESIGN_TIER_RELIEF`), and AI-augmented defenses win back part of the
+ * attacker's AI uplift (`DEFENDER_AI_SHARE`).
+ *
  * Everything here is a pure function of (threat model, catalogue, effective
  * block states, year, sliders). See research/scoring-model.md for the
  * constants' rationale and the calibration they produce.
@@ -63,6 +67,26 @@ export const RESIDUAL_FLOOR_SHARE = 0.03;
 /** At full government cooperation, a `needs_government` vector is halved. */
 export const GOVERNMENT_RELIEF = 0.5;
 
+/** Erosion is read relative to what a control was built for: a control first
+ * required at SL-d (`sl_requirement.first_required`) reads its erosion band
+ * this many tiers lower per level above SL1, i.e. at
+ * max(1, tier − DESIGN_TIER_RELIEF·(d − 1)). RAND specifies SL-n's measures to
+ * thwart OC-n, so an SL5-grade insider programme holds up against OC5 better
+ * than an SL2-grade background check does. 0.75 is the reading that lets the
+ * mature catalogue — RAND's SL5 benchmark plus the SL5 Standard — hold OC5 in
+ * the app's default world, as RAND defines SL5 to; it still leaves SL5-grade
+ * monitoring losing about a fifth of its effect against OC5, and commodity
+ * controls losing about half. See research/scoring-model.md, Part 3. */
+export const DESIGN_TIER_RELIEF = 0.75;
+
+/** Defender AI: an AI-augmented defense (a block flagged `defender_ai`:
+ * detection, monitoring, review, patching) wins back this share of the
+ * attacker's AI uplift on the vectors it counters, and the same share of the
+ * AI erosion of detection q. It is bounded by the attacker's uplift, so it can
+ * never make a later year safer than an earlier one, and never acts where
+ * attacker AI does not. */
+export const DEFENDER_AI_SHARE = 0.5;
+
 // --------------------------------------------------------------------------
 // Options (the defaults are the app's model; tests reproduce the probe with them)
 // --------------------------------------------------------------------------
@@ -78,6 +102,10 @@ export interface ModelOptions {
   detection?: boolean;
   /** Residual floor (default true). */
   residualFloor?: boolean;
+  /** Read erosion relative to each control's design tier (default true). */
+  designTierRelief?: boolean;
+  /** Defender AI on `defender_ai` blocks (default true). */
+  defenderAi?: boolean;
   /** Treat every operational counter as fully effective (state 1.0, no slider
    * penalties, no enablement discount) — the reference probe's "all mature". */
   idealCounters?: boolean;
@@ -94,6 +122,11 @@ export interface CounterInForce {
   /** Block effectiveness 0–1: state × slider multipliers × enablement, with NO
    * defender-side AI erosion (AI enters through the attacker's tier instead). */
   effectiveness: number;
+  /** The SL that first requires this control (`sl_requirement.first_required`):
+   * the tier it was built to hold. Absent: 1 (no relief). */
+  designTier?: number;
+  /** The block is AI-augmented (`defender_ai`). */
+  defenderAi?: boolean;
 }
 
 /** Vector id → the counters the deployed posture puts on it. */
@@ -126,6 +159,8 @@ export function buildCounterIndex(
         strength: c.strength,
         type: c.type_override ?? block.defense_type,
         effectiveness,
+        designTier: block.sl_requirement?.first_required ?? 1,
+        defenderAi: !!block.defender_ai,
       });
       index.set(c.vector_id, list);
     }
@@ -136,6 +171,28 @@ export function buildCounterIndex(
 // --------------------------------------------------------------------------
 // Counter stacking
 // --------------------------------------------------------------------------
+
+/**
+ * The tier a counter's erosion band is read at.
+ *
+ *   max(1, tier − DESIGN_TIER_RELIEF·(design − 1))   relative to what it was built for
+ *     − DEFENDER_AI_SHARE·aiUplift                   AI-augmented defenses only
+ *
+ * `tier` is the attacker's effective tier on the vector and `aiUplift` the part
+ * of it AI added (see `evaluateVector`). Non-decreasing in the attacker's tier
+ * and in the year: the defender-AI term never exceeds the uplift it offsets.
+ * `counterRetention` clamps the result to the band.
+ */
+export function erosionTier(
+  c: Pick<CounterInForce, "designTier" | "defenderAi">,
+  tier: number,
+  aiUplift = 0,
+  opts: Pick<ModelOptions, "designTierRelief" | "defenderAi"> = {}
+): number {
+  const relief = opts.designTierRelief === false ? 0 : DESIGN_TIER_RELIEF * Math.max(0, (c.designTier ?? 1) - 1);
+  const won = opts.defenderAi !== false && c.defenderAi ? DEFENDER_AI_SHARE * Math.max(0, aiUplift) : 0;
+  return Math.max(1, tier - relief) - won;
+}
 
 export interface AppliedCounter {
   blockId: string;
@@ -173,9 +230,12 @@ export interface AppliedCounter {
 export function stackCounters(
   counters: CounterInForce[],
   tier: number,
-  erosion = true
+  erosion = true,
+  aiUplift = 0,
+  opts: Pick<ModelOptions, "designTierRelief" | "defenderAi"> = {}
 ): { multiplier: number; applied: AppliedCounter[] } {
-  const reach = (c: CounterInForce) => (erosion ? counterRetention(c.type, tier) : 1) * c.effectiveness;
+  const reach = (c: CounterInForce) =>
+    (erosion ? counterRetention(c.type, erosionTier(c, tier, aiUplift, opts)) : 1) * c.effectiveness;
   const byReach = (a: CounterInForce, b: CounterInForce) =>
     reach(b) - reach(a) || a.blockId.localeCompare(b.blockId);
 
@@ -273,10 +333,25 @@ export interface EvalContext {
   opts: ModelOptions;
 }
 
+/** The part of a vector's effective tier that AI added: for a human attacker
+ * the lift above its OC (after the cap at 5); for the lab's own model, whose
+ * capability is its AC band, the band's AI share (AC − 1)/4 — at most one tier,
+ * as for a human attacker. Defender AI offsets a share of this. */
+export function aiUpliftOf(vector: AttackVector, tier: number, effective: number): number {
+  if (vector.source === "authored") return Math.max(0, effective - 1) / 4;
+  return Math.max(0, effective - Math.min(5, Math.max(1, tier)));
+}
+
 export function evaluateVector(ctx: EvalContext, vector: AttackVector, tier: number): VectorEval {
   const t = effectiveTier(vector, tier, ctx.aiCap);
   const baseP = baseFeasibility(vector, t, ctx.opts.scoreToP);
-  const { multiplier, applied } = stackCounters(ctx.counters.get(vector.id) ?? [], t, ctx.opts.erosion ?? true);
+  const { multiplier, applied } = stackCounters(
+    ctx.counters.get(vector.id) ?? [],
+    t,
+    ctx.opts.erosion ?? true,
+    aiUpliftOf(vector, tier, t),
+    ctx.opts
+  );
   const governmentRelief = vector.needs_government ? 1 - GOVERNMENT_RELIEF * ctx.sliders.gov_cooperation : 1;
   return {
     vectorId: vector.id,
@@ -388,7 +463,9 @@ export function campaignSuccess(ps: number[], q = 0): number {
   return Math.min(1, Math.max(0, total));
 }
 
-/** q from the detection blocks' effectiveness, eroded by AI. */
+/** q from the detection blocks' effectiveness, eroded by AI-assisted evasion;
+ * an AI-augmented detection block (`defender_ai`) wins back
+ * `DEFENDER_AI_SHARE` of that erosion. */
 export function detectionQ(
   blocks: Block[],
   states: Record<string, BlockState | string>,
@@ -408,9 +485,10 @@ export function detectionQ(
         ? 1
         : 0
       : blockEffectiveness(block, state, year, sliders, { aiErosion: false, blockStates: states });
-    q += weight * e;
+    const won = opts.defenderAi !== false && block.defender_ai ? DEFENDER_AI_SHARE : 0;
+    q += weight * e * (1 - DETECTION_AI_EROSION * (1 - won) * aiCap);
   }
-  return q * (1 - DETECTION_AI_EROSION * aiCap);
+  return q;
 }
 
 // --------------------------------------------------------------------------

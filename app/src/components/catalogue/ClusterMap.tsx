@@ -71,7 +71,7 @@ function HexBlock({
   const lines = blockLines(block.id, block.name);
   const handlers = blockHandlers(block.id, actions);
   const label =
-    `${blockName(block.id, block.name)}, ${block.id}${block.future ? ", future capability (R&D)" : ""}. ` +
+    `${blockName(block.id, block.name)}, ${block.id}${block.research_required ? ", research required" : ""}. ` +
     `${TYPE_WORDS[block.defense_type]}, ${STATE_WORDS[state].toLowerCase()}` +
     (onPath ? ", on an easiest attack path" : "") +
     (choke ? `, on ${choke} approaches' paths` : "") +
@@ -85,7 +85,7 @@ function HexBlock({
       <FitText
         x={x}
         y={y + 25}
-        text={block.future ? "R&D" : block.id}
+        text={block.id}
         max={52}
         size={13}
         mono
@@ -272,7 +272,7 @@ export function ClusterMap() {
         </text>
         {layout.clusters.map((c) => {
           const members = model.blocks.filter((b) => b.category === c.category);
-          const today = members.filter((b) => !b.future);
+          const today = members;
           const inPlace = today.filter((b) => isOperational(model.score.effectiveStates[b.id])).length;
           return (
             <g key={c.category}>
@@ -280,7 +280,6 @@ export function ClusterMap() {
                 {CATEGORY_NAMES[c.category]}
                 <tspan dx={10} fontSize={13} fontWeight={400} fill="var(--ink-2)">
                   {today.length} blocks · {inPlace} deployed
-                  {members.length > today.length ? ` · +${members.length - today.length} R&D` : ""}
                 </tspan>
               </text>
             </g>

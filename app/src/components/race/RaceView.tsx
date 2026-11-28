@@ -27,7 +27,6 @@ const RACE_INPUTS = [
   "sliders",
   "adversaryOc",
   "modelServedExternally",
-  "futureCapabilities",
 ] as const;
 
 /**
@@ -41,10 +40,10 @@ const RACE_INPUTS = [
 function useRaceData() {
   const input = usePostureInput();
   const deferred = useDeferredValue(input);
-  const { blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally, futureCapabilities } = deferred;
+  const { blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally } = deferred;
   const mine = useMemo(
-    () => slOverYears({ blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally, futureCapabilities }),
-    [blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally, futureCapabilities]
+    () => slOverYears({ blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally }),
+    [blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally]
   );
   const stories = useMemo(
     () =>
@@ -66,7 +65,6 @@ function useRaceData() {
               blocks,
               model,
               adversaryOc,
-              futureCapabilities,
               year,
               sliders: storySliders,
               modelServedExternally,
@@ -76,7 +74,7 @@ function useRaceData() {
           })),
         };
       }),
-    [blocks, model, sliders, adversaryOc, modelServedExternally, futureCapabilities]
+    [blocks, model, sliders, adversaryOc, modelServedExternally]
   );
   // Behind only if a field the lines read is: a year change alone is not.
   const stale = RACE_INPUTS.some((k) => deferred[k] !== input[k]);
@@ -125,7 +123,6 @@ export function RaceView() {
   const oc = useSimulationStore((s) => s.adversaryOc);
   const aiTimeline = useSimulationStore((s) => s.sliders.ai_timeline);
   const vectors = useSimulationStore((s) => s.threatModel.vectors);
-  const futureOn = useSimulationStore((s) => s.futureCapabilities);
   const { mine, stories, stale } = useRaceData();
 
   const front = useMemo(() => threatFrontYear(aiTimeline, maxAiShift(vectors)), [aiTimeline, vectors]);
@@ -134,7 +131,7 @@ export function RaceView() {
   const x = (y: number) => LABEL_W + ((y - axis0) / (AXIS_END - axis0)) * (W - LABEL_W - 120);
 
   const longLead = blocks
-    .filter((b) => (futureOn || !b.future) && !isOperational(states[b.id] as BlockState))
+    .filter((b) => !isOperational(states[b.id] as BlockState))
     .filter((b) => (states[b.id] ?? "not_started") !== "implementing")
     .filter((b) => b.dimensions.time_to_deploy_months.max >= LONG_LEAD_MONTHS)
     .sort((a, b) => b.dimensions.time_to_deploy_months.max - a.dimensions.time_to_deploy_months.max)

@@ -39,7 +39,7 @@ describe("the matrix column rule", () => {
     expect(primaryStage(blocks.find((b) => b.id === "NET-01")!, vById)).toBe("entry"); // 5 strong at entry
     expect(primaryStage(blocks.find((b) => b.id === "NET-04")!, vById)).toBe("exfil"); // bandwidth cap
     expect(primaryStage(blocks.find((b) => b.id === "KEY-01")!, vById)).toBe("reach"); // weight keys
-    // NET-05 (data diodes) has 3 partials at entry and 3 at exfil: the later stage.
+    // NET-05 (data diodes) is strong once at entry (air-gap crossings) and once at exfil (bulk egress): the later stage.
     expect(primaryStage(blocks.find((b) => b.id === "NET-05")!, vById)).toBe("exfil");
   });
 

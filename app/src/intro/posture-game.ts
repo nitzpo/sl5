@@ -23,7 +23,11 @@ import { APPROACH_LABEL, STAGE_LABEL, shortVectorName, stopsInWords } from "./en
  * order of picks and the choice between one big structural buy and several
  * cheap ones both matter. */
 export const BUDGET_MILLIONS = 150;
-export const YEAR = 2026;
+/** 2028: today's typical lab, two years on, with nothing added. Since the Nov
+ * 2026 recalibration today's lab holds SL2 in 2026, and no $150M year buys
+ * SL3 from there; by 2028 AI has lifted the attackers and it has slipped to
+ * SL1, so the year's choice is whether you get back to SL2. */
+export const YEAR = 2028;
 /** Kept off the public API in this exercise: serving the model adds an
  * approach of its own, which the reader meets in the instrument. */
 export const SERVED = false;
@@ -32,25 +36,26 @@ export const SERVED = false;
  * The ten defenses on offer. Chosen, against the shipped data, so that
  * choices matter (all asserted by `tests/intro/posture-game.test.ts`):
  *
- *  - Starting from today's typical lab (SL1: OC1 usually fails, OC2 contested),
- *    the right picks within the budget reach SL2 and push OC3 to contested;
- *    most picks don't. The headline moves in words, not near "usually
- *    succeeds" for everything.
+ *  - Starting from today's typical lab in 2028 (SL1: OC1 usually fails, OC2
+ *    contested), the right picks within the budget get back to SL2 and push
+ *    OC3 to contested; most picks don't. The headline moves in words, not
+ *    near "usually succeeds" for everything.
  *  - The list costs well over the budget, and every block fits on its own.
- *  - Two prerequisite pairs are on the list (DEC-01 needs DET-01 running;
- *    PER-06 and PER-02 need PER-01), so a pick in the wrong order is capped,
- *    and the fix is on the board.
- *  - The air gap is the tempting big buy: $100M of the year's $150M for one
- *    hard stop that helps, but less than spending the same money across
- *    approaches.
- *  - Five of them start partly in place at a typical lab, so the reader sees
- *    the state fill as well as the shape.
+ *  - Four prerequisite pairs are on the list (PER-06, PER-02, PER-03 and
+ *    PER-09 need PER-01), so a pick in the wrong order is capped, and the fix
+ *    is on the board.
+ *  - The air gap is the big buy: $100M of the year's $150M. No year gets back
+ *    to SL2 without it, but it does not get there alone: one structural
+ *    purchase is not most of security.
+ *  - Three of them start partly in place at a typical lab, so the reader sees
+ *    the state fill as well as the shape. (Identity, patching and a SOC, the
+ *    old list's quick wins, are now counted as deployed at baseline.)
  */
 export const SHORTLIST = [
-  "DET-01", // Security operations and incident response — probabilistic
-  "DEC-01", // Deception and attribution — needs DET-01 running
-  "IAM-01", // Phishing-resistant identity — hybrid
-  "END-01", // Patch and endpoint management — hybrid
+  "PER-03", // Continuous behavioural monitoring — needs PER-01
+  "PER-09", // Coercion and duress protection — needs PER-01
+  "HW-05", // Tamper-evident enclosures — hybrid
+  "AI-11", // No self-weight access — hard stop
   "NET-01", // Air gap — hard stop, the big buy
   "PER-01", // Sensitivity levels framework — the prerequisite
   "PER-06", // Dual authorization — needs PER-01

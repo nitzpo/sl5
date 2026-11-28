@@ -93,7 +93,6 @@ export const usePlaybackStore = create<PlaybackStore>()(
           adversaryOc: sim.adversaryOc,
           sliders: sim.sliders,
           modelServedExternally: sim.modelServedExternally,
-          futureCapabilities: sim.futureCapabilities,
           scoringMode: sim.scoringMode,
         },
         viewingShared: sim.viewingShared,
@@ -152,7 +151,6 @@ export const usePlaybackStore = create<PlaybackStore>()(
           advanceOrder: mine.advanceOrder ?? [],
           sliders: mine.sliders,
           modelServedExternally: mine.modelServedExternally,
-          futureCapabilities: mine.futureCapabilities ?? false,
           scoringMode: STORY_SCORING_MODE,
         });
       }

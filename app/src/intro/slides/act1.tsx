@@ -209,7 +209,7 @@ export function SecurityLevels() {
           },
           {
             label: "SL5 is out of reach today",
-            body: "RAND: achieving SL5 is currently not possible. The instrument agrees: no posture from today's catalogue reaches it.",
+            body: "RAND: achieving SL5 is currently not possible. The instrument agrees, for a reason: the whole catalogue, built and matured, reaches it, but some of its defenses still need research and take five years or more to land.",
           },
         ]}
       />
@@ -279,7 +279,7 @@ export function Sources() {
         items={[
           {
             label: "What's ours, not theirs",
-            body: `The ratings for your own model's ${CATALOG.ownModelVectors} steps, ${CATALOG.structuralVectors} “nothing stops this stage” placeholders, the ${CATALOG.future} future capabilities, how much AI lifts each attack vector, detection, and a small residual chance no posture removes.`,
+            body: `The ratings for your own model's ${CATALOG.ownModelVectors} steps, ${CATALOG.structuralVectors} “nothing stops this stage” placeholders, how much AI lifts each attack vector, detection, and a small residual chance no posture removes.`,
           },
           {
             label: "What this is not",

@@ -36,7 +36,7 @@ interface Geometry {
 
 /** Measure tile and column boxes relative to the container. Tiles never move
  * when the posture changes (fixed order, fixed size), so this re-runs only on
- * resize, font load and the future toggle. */
+ * resize and font load. */
 function useGeometry(ref: RefObject<HTMLDivElement | null>, key: string): Geometry | null {
   const [geom, setGeom] = useState<Geometry | null>(null);
   useLayoutEffect(() => {
@@ -298,13 +298,12 @@ function CategoryRow({
 }) {
   const cells = model.cells[cat];
   const all = MATRIX_COLUMNS.flatMap((c) => cells[c]);
-  const today = all.filter((b) => !b.future);
+  const today = all;
   const inPlace = today.filter((b) => isOperational(model.score.effectiveStates[b.id])).length;
   const underWay = today.filter((b) => {
     const st = model.score.effectiveStates[b.id] ?? "not_started";
     return st === "investing" || st === "implementing";
   }).length;
-  const rnd = all.length - today.length;
   return (
     <div className={`${GRID} border-b border-rule py-2.5`}>
       <div className="min-w-0 pr-1">
@@ -319,7 +318,7 @@ function CategoryRow({
           </div>
         )}
         <div className="mt-0.5 text-[12px] leading-snug text-ink-2">
-          {today.length} blocks{rnd > 0 && <> · +{rnd} R&amp;D</>}
+          {today.length} blocks
           <span className="block">{inPlace} deployed</span>
           <span className="block">{underWay} under way</span>
         </div>

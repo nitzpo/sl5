@@ -2,8 +2,8 @@
 //
 // Cheap component checks on the v2 main screen: the rail speaks in band words,
 // no percentage reaches the reader (in coverage scoring mode, only the shares of
-// controls built may), the matrix shows every block in force, and the R&D
-// blocks stay hidden until the reader asks for them.
+// controls built may), the matrix shows every block, and a research-required
+// block says so.
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { render, cleanup, fireEvent, act } from "@testing-library/react";
@@ -28,8 +28,7 @@ import { loadBlocks, loadModel, loadWorldState } from "../load-data";
 
 const blocks = loadBlocks();
 const model = loadModel();
-const today = blocks.filter((b) => !b.future).map((b) => b.id).sort();
-const future = blocks.filter((b) => b.future).map((b) => b.id).sort();
+const today = blocks.map((b) => b.id).sort();
 
 beforeAll(() => {
   // jsdom has no layout: the matrix measures tiles for its path overlay.
@@ -42,7 +41,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   localStorage.clear();
-  useSimulationStore.setState({ dataLoaded: false, futureCapabilities: false, playbackActive: false, year: 2026, scoringMode: "paths" });
+  useSimulationStore.setState({ dataLoaded: false, playbackActive: false, year: 2026, scoringMode: "paths" });
   useSimulationStore.getState().loadData(blocks, model, loadWorldState().oc_definitions);
   useUiStore.setState({ detailId: null, paramsOpen: false, focusApproach: null, highlightIds: [], showAllApproaches: false });
 });
@@ -59,13 +58,12 @@ describe("the stage matrix", () => {
     expect(shownIds(container)).toEqual(today);
   });
 
-  it("hides the future (R&D) blocks until the toggle is on", () => {
-    const { container, rerender } = render(<StageMatrix />);
-    for (const id of future) expect(container.querySelector(`[data-block-id="${id}"]`)).toBeNull();
-    act(() => useSimulationStore.getState().setFutureCapabilities(true));
-    rerender(<StageMatrix />);
-    expect(shownIds(container)).toEqual([...today, ...future].sort());
-    expect(container.textContent).toContain("R&D");
+  it("names a research-required block as such to assistive tech, and nothing else", () => {
+    const { container } = render(<StageMatrix />);
+    for (const b of blocks) {
+      const label = container.querySelector(`[data-block-id="${b.id}"] button`)!.getAttribute("aria-label") ?? "";
+      expect(label.includes("research required"), b.id).toBe(!!b.research_required);
+    }
   });
 
   it("clicking a tile advances its block, right-click steps it back", () => {
@@ -81,12 +79,9 @@ describe("the stage matrix", () => {
 });
 
 describe("the clusters", () => {
-  it("render the same blocks, and the R&D ones only with the toggle", () => {
-    const { container, rerender } = render(<ClusterMap />);
+  it("render the same blocks", () => {
+    const { container } = render(<ClusterMap />);
     expect(shownIds(container)).toEqual(today);
-    act(() => useSimulationStore.getState().setFutureCapabilities(true));
-    rerender(<ClusterMap />);
-    expect(shownIds(container)).toEqual([...today, ...future].sort());
   });
 });
 
@@ -171,8 +166,7 @@ describe("no percentages", () => {
     act(() => useUiStore.getState().setParamsOpen(true));
     rerender(<Screen />);
     expect(readerText(container)).not.toMatch(/%/);
-    // Every block's drawer, R&D blocks included.
-    act(() => useSimulationStore.getState().setFutureCapabilities(true));
+    // Every block's drawer, research-required blocks included.
     for (const b of blocks) {
       act(() => useUiStore.getState().openDetail(b.id));
       rerender(<BlockDrawer />);

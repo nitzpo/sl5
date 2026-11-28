@@ -7,7 +7,11 @@ import {
   baseFeasibility,
   buildCounterIndex,
   campaignSuccess,
+  DEFENDER_AI_SHARE,
+  DESIGN_TIER_RELIEF,
+  detectionQ,
   effectiveTier,
+  erosionTier,
   stackCounters,
   type CounterInForce,
 } from "../../src/engine/vector-model";
@@ -172,6 +176,67 @@ describe("campaign", () => {
   });
 });
 
+describe("erosion relative to a control's design tier", () => {
+  it("reads the band DESIGN_TIER_RELIEF tiers lower per SL above 1 the control is first required at", () => {
+    expect(erosionTier({ designTier: 1 }, 5)).toBe(5);
+    expect(erosionTier({ designTier: 5 }, 5)).toBeCloseTo(5 - 4 * DESIGN_TIER_RELIEF, 12);
+    expect(erosionTier({ designTier: 3 }, 2)).toBe(Math.max(1, 2 - 2 * DESIGN_TIER_RELIEF));
+    // Never below tier 1, and off in the probe's conditions.
+    expect(erosionTier({ designTier: 5 }, 1)).toBe(1);
+    expect(erosionTier({ designTier: 5 }, 5, 0, { designTierRelief: false })).toBe(5);
+  });
+
+  it("an SL5-grade control erodes less against OC5 than an SL2-grade one of the same type", () => {
+    const sl5 = { ...counter("strong", "probabilistic"), designTier: 5 };
+    const sl2 = { ...counter("strong", "probabilistic"), designTier: 2 };
+    expect(stackCounters([sl5], 5).multiplier).toBeLessThan(stackCounters([sl2], 5).multiplier);
+    // Erosion still bites: even the SL5-grade probabilistic counter is short of its un-eroded 0.3.
+    expect(stackCounters([sl5], 5).multiplier).toBeGreaterThan(0.3);
+    // ...and a hard stop still out-lasts a probabilistic control built to the same grade.
+    const hard = { ...counter("strong", "hard_stop"), designTier: 5 };
+    expect(stackCounters([hard], 5).multiplier).toBeLessThan(stackCounters([sl5], 5).multiplier);
+  });
+});
+
+describe("defender AI", () => {
+  it("wins back DEFENDER_AI_SHARE of the attacker's uplift, on flagged blocks only", () => {
+    expect(erosionTier({ designTier: 1, defenderAi: true }, 4, 1)).toBeCloseTo(4 - DEFENDER_AI_SHARE, 12);
+    expect(erosionTier({ designTier: 1, defenderAi: false }, 4, 1)).toBe(4);
+    expect(erosionTier({ designTier: 1, defenderAi: true }, 4, 1, { defenderAi: false })).toBe(4);
+    // Bounded by the uplift: with no attacker AI it does nothing.
+    expect(erosionTier({ designTier: 1, defenderAi: true }, 4, 0)).toBe(4);
+  });
+
+  it("never makes a later year safer: the erosion tier still rises with the attacker's AI", () => {
+    const c = { designTier: 3, defenderAi: true };
+    let last = -Infinity;
+    for (let ai = 0; ai <= 1.0001; ai += 0.05) {
+      // OC3 on a 1.0-shift vector: effective tier 3 + ai, uplift ai.
+      const t = erosionTier(c, 3 + ai, ai);
+      expect(t).toBeGreaterThanOrEqual(last - 1e-12);
+      last = t;
+    }
+  });
+
+  it("only detection, monitoring, review and patching blocks carry it", () => {
+    const flagged = blocks.filter((b) => b.defender_ai).map((b) => b.id);
+    expect(flagged).toEqual(expect.arrayContaining(["DET-01", "DEC-01", "PER-03", "END-01", "SW-01", "AI-10"]));
+    const index = buildCounterIndex(blocks, allAt(blocks, "mature"), 2030, NEUTRAL_SLIDERS);
+    for (const list of index.values()) {
+      for (const c of list) expect(c.defenderAi, c.blockId).toBe(flagged.includes(c.blockId));
+    }
+  });
+
+  it("halves the AI erosion of detection q for AI-augmented detection", () => {
+    const states = allAt(blocks, "mature");
+    const q = (aiCap: number, defenderAi = true) => detectionQ(blocks, states, 2030, NEUTRAL_SLIDERS, aiCap, { defenderAi });
+    expect(q(0)).toBeCloseTo(q(0, false), 12);
+    expect(q(1)).toBeGreaterThan(q(1, false));
+    expect(q(1, false)).toBeCloseTo(q(0) * 0.6, 9);
+    expect(q(1)).toBeCloseTo(q(0) * (1 - 0.4 * (1 - DEFENDER_AI_SHARE)), 9);
+  });
+});
+
 describe("world toggles", () => {
   it("serving switches the served approach and the capability meter on and off", () => {
     const on = score({ modelServedExternally: true });
@@ -182,18 +247,6 @@ describe("world toggles", () => {
     expect(off.capabilityLeakage.cumulative).toBe(0);
     expect(on.capabilityLeakage.p).toBeGreaterThan(0);
     for (let n = 0; n < 5; n++) expect(off.tiers[n].p).toBeLessThanOrEqual(on.tiers[n].p);
-  });
-
-  it("future blocks count only with the future toggle on", () => {
-    const states = { ...allAt(blocks, "mature", true) };
-    const off = score({ blockStates: states, futureCapabilities: false, modelServedExternally: false });
-    const on = score({ blockStates: states, futureCapabilities: true, modelServedExternally: false });
-    expect(off.catalogue.some((b) => b.future)).toBe(false);
-    expect(on.catalogue.some((b) => b.future)).toBe(true);
-    expect(on.tiers[4].p).toBeLessThan(off.tiers[4].p);
-    // Clicked future blocks cost nothing while the toggle is off.
-    const cheap = score({ blockStates: { ...NONE, "FUT-04": "mature" }, sliders: { ...NEUTRAL_SLIDERS, budget_millions: 1 } });
-    expect(cheap.budgetExceededIds.has("FUT-04")).toBe(false);
   });
 
   it("government cooperation relieves the vectors no lab can counter alone", () => {

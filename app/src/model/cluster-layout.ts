@@ -67,8 +67,10 @@ export function clusterLayout(blocks: Block[]): ClusterLayout {
       const row = Math.floor(i / cols);
       const col = i % cols;
       const inRow = Math.min(cols, members.length - row * cols);
-      // A partial last row is centred under the full ones.
-      const pad = ((cols - inRow) * COL_STEP) / 2;
+      // A partial last row is centred under the full ones, by whole steps so
+      // it keeps the honeycomb's alternating offset (a half step would put it
+      // straight under the row above: 11 AI blocks did).
+      const pad = Math.floor((cols - inRow) / 2) * COL_STEP;
       const offset = row % 2 === 1 ? COL_STEP / 2 : 0;
       pos.set(b.id, {
         x: x0 + COL_STEP / 2 + col * COL_STEP + offset + pad,

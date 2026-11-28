@@ -240,24 +240,22 @@ describe("the demos respond", () => {
     const partials = toggles.filter((b) => / · partial/.test(b.textContent!));
     const strong = toggles.find((b) => / · strong/.test(b.textContent!))!;
     for (const b of partials) fireEvent.click(b);
-    expect(screen.getByRole("status").textContent).toMatch(/partial counters: still usually succeeds/);
+    expect(screen.getByRole("status").textContent).toMatch(/partial counters: still (usually succeeds|contested)/);
     expect(screen.getAllByText("adds nothing").length).toBeGreaterThan(0);
     for (const b of partials) fireEvent.click(b);
     fireEvent.click(strong);
     expect(screen.getByRole("status").textContent).toMatch(/One strong counter alone: (contested|usually fails)/);
   });
 
-  it("the level demo reaches SL5 only with future capabilities in a favourable world", async () => {
+  it("the level demo reaches SL5 with every defense, and not without the research-required ones", async () => {
     open("your-level");
     await settled();
     const level = () => screen.getByLabelText(/^Security level \d/).textContent;
-    expect(level()).not.toBe("SL5");
-    fireEvent.click(screen.getByRole("button", { name: "Favourable" }));
-    expect(level()).not.toBe("SL5");
-    fireEvent.click(screen.getByRole("switch", { name: /Future capabilities/ }));
     expect(level()).toBe("SL5");
+    fireEvent.click(screen.getByRole("switch", { name: /Research-required defenses built/ }));
+    expect(level()).not.toBe("SL5");
     fireEvent.click(screen.getByRole("button", { name: "Today's typical lab" }));
-    expect(level()).toBe("SL1");
+    expect(level()).toBe("SL2");
     expect(screen.getByText("What still gets through")).toBeTruthy();
   });
 

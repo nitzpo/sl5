@@ -86,7 +86,7 @@ score and components subscribe. To change what the model says, start in `src/eng
 | `vectors.json` | Attack vectors: RAND's, the lab's own model's, and structural placeholders |
 | `approaches.json` | The approaches and the meters outside the SL, as vectors per stage |
 | `scenarios.json` | Scenarios (the former attack chains) as specific paths |
-| `blocks-*.json` | The building blocks by category, each with the vectors it counters; `blocks-future.json` holds the R&D blocks |
+| `blocks-*.json` | The building blocks by category, each with the vectors it counters; `research_required` marks the controls that still need research |
 | `world-state.json` | Timeline, AI capability curve, OC and SL definitions |
 
 Schemas are in [`../research/schema/`](../research/schema/).

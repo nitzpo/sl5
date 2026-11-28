@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 // (The threat-relative SL has its own tests: breach / calibration /
 // monotonicity.) Rewritten in Phase 2 where the meaning changed: relevance now
 // comes from the vector map, and the calibration pins are over today's
-// 56-block catalogue (future blocks excluded).
+// 56-block catalogue.
 import {
   blockEffectiveness,
   categoryScore,
@@ -18,9 +18,9 @@ import { getAiCapability } from "../../src/engine/ai-curve";
 import type { Block } from "../../src/engine/types";
 import { loadBlocks as loadAll } from "../load-data";
 
-/** Today's catalogue: completeness never counts future-capability blocks. */
+/** The catalogue (the Nov 2026 recalibration retired the future blocks). */
 function loadBlocks(): Block[] {
-  return loadAll().filter((b) => !b.future);
+  return loadAll();
 }
 
 describe("State Effectiveness", () => {
@@ -185,7 +185,7 @@ describe("Category and Overall Scores", () => {
   // 2.14 → 2.12) because the catalogue changed under them: 47 → 56 blocks, six
   // merges and five reclassifications to hybrid. The ceiling held to 0.01.
 
-  it("Scenario 1: Baseline 2026 (~1.85)", () => {
+  it("Scenario 1: Baseline 2026 (~1.94)", () => {
     // Feeds `baseline_state` straight into the engine, so it exercises the raw
     // data path and scores `partially_deployed` at the 0.6 shim — NOT what the
     // app shows, which maps that state onto the advancement cycle. Moved 1.75 →
@@ -193,14 +193,17 @@ describe("Category and Overall Scores", () => {
     // from "no lab has done this" to `partially_deployed` against published lab
     // disclosures, then back to 1.82 when NET-04 returned to `not_started`: the
     // deployed egress controls are software rate limits, not the hardware-
-    // enforced physical cap that block actually specifies.
+    // enforced physical cap that block actually specifies. 1.85 → 1.94 in the
+    // Nov 2026 recalibration: seven controls labs demonstrably run are now
+    // `deployed` at baseline, and NET-04 is `partially_deployed` from 2025 (the
+    // ASL-3 software egress limits are the partial version of the block).
     const baselineStates: Record<string, string> = {};
     for (const b of blocks) {
       baselineStates[b.id] = b.current_state.baseline_state;
     }
     const catScores = computeCategoryScores(blocks, baselineStates, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(1.85, 1);
+    expect(overall).toBeCloseTo(1.94, 1);
   });
 
   it("Scenario 2: All implementing 2026 (~2.30)", () => {
@@ -266,10 +269,6 @@ describe("Threat relevance weighting", () => {
     }
     expect([...weights.values()].filter((w) => w === 1).length).toBeGreaterThan(0);
     expect([...weights.values()].filter((w) => w === SUPPORTING_WEIGHT).length).toBeGreaterThan(0);
-  });
-
-  it("leaves future-capability blocks out of completeness", () => {
-    expect([...counterRelevance(loadAll()).keys()].some((id) => id.startsWith("FUT-"))).toBe(false);
   });
 
   it("lets a strong counter move a category score more than a partial-only one", () => {

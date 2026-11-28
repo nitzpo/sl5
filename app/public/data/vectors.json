@@ -437,11 +437,10 @@
     "appendix_a_ref": 3662,
     "stage": "entry",
     "stages_skipped": [
-      "reach",
-      "exfil"
+      "reach"
     ],
     "headline": true,
-    "stage_note": "Complete via the API: weights or parameters come out in the responses.",
+    "stage_note": "Extraction works through the API, so there is nothing to reach; but a weight-scale amount of information still has to come out through the responses (V-X-5), and that volume is what an outbound inference defense meters.",
     "transcription_note": "One of nine vectors scored 1 at OC1-OC3 and >1 above. RAND's text (L1609) says eight; an independent check against the rand.org PDF confirms nine, so RAND's 'eight' is a slip in its prose (likely omitting military takeover). Scores stand as transcribed.",
     "ai_shift": 0.5,
     "ai_shift_basis": "RAND flags it as rapidly changing, but what bounds extraction is how much each response leaks (logits, logprobs), which cleverness does not change; half a tier."
@@ -668,12 +667,12 @@
     "stages_skipped": [],
     "headline": true,
     "assumes_defense": [
-      "HW-04",
       "KEY-01"
     ],
     "transcription_note": "One of nine vectors scored 1 at OC1-OC3 and >1 above. RAND's text (L1609) says eight; an independent check against the rand.org PDF confirms nine, so RAND's 'eight' is a slip in its prose (likely omitting military takeover). Scores stand as transcribed.",
     "ai_shift": 0.25,
-    "ai_shift_basis": "Hardware probing is lab work; modest help with analysis."
+    "ai_shift_basis": "Hardware probing is lab work; modest help with analysis.",
+    "residual_note": "RAND scored hardware penetration against the tamper protection that exists today (commercial HSMs, secure elements). KEY-01 is assumed; HW-04 as specified (FIPS 140-3 Level 4 at chip scale, not yet validated anywhere) goes beyond it and counters the vector."
   },
   {
     "id": "V-PHYS-6",
@@ -1230,6 +1229,28 @@
     "assumption": true,
     "assumption_note": "STRUCTURAL, not RAND: stands for 'nothing stops this stage' at an SL1-grade victim (p = 1.0 at every tier), so stage controls have something to act on. RAND scores entry/reach steps; Box 5.1 treats getting the weights out of an SL1 victim as given.",
     "description": "Weights leave on a drive, phone or implant carried out of the building.",
+    "source_ref": null,
+    "stage": "exfil",
+    "stages_skipped": [],
+    "headline": true
+  },
+  {
+    "id": "V-X-5",
+    "category": "structural",
+    "category_name": "Structural stage (not a RAND vector)",
+    "name": "Weight-scale output through the inference API",
+    "source": "structural",
+    "rand_feasibility": null,
+    "structural_p": {
+      "oc1": 1.0,
+      "oc2": 1.0,
+      "oc3": 1.0,
+      "oc4": 1.0,
+      "oc5": 1.0
+    },
+    "assumption": true,
+    "assumption_note": "STRUCTURAL, not RAND: stands for 'nothing meters what leaves through the API' at an SL1-grade victim (p = 1.0 at every tier). RAND notes that the sheer number of weights makes extracting all of them, especially without being caught, an operational challenge; this is that stage.",
+    "description": "Enough query responses leave through the serving API to reconstruct the weights; nothing limits per-account or coordinated volume at SL1.",
     "source_ref": null,
     "stage": "exfil",
     "stages_skipped": [],

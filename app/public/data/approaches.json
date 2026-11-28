@@ -134,10 +134,11 @@
         "V-BYP-1"
       ],
       "exfil": [
-        "V-X-3"
+        "V-X-3",
+        "V-X-5"
       ]
     },
-    "notes": "Exists only if the model is served externally (world-state toggle). Prompt-triggered code execution or serving-stack bugs give a foothold on infrastructure that holds weights; model extraction (V-ML-4) is complete via the API. NET-01 does not apply: RAND exempts production serving."
+    "notes": "Exists only if the model is served externally (world-state toggle). Prompt-triggered code execution or serving-stack bugs give a foothold on infrastructure that holds weights; model extraction (V-ML-4) needs nothing but the API, but a weight-scale volume of responses still has to leave through it (V-X-5, metered by AI-07). NET-01 does not apply: RAND exempts production serving."
   },
   {
     "id": "ai_insider",

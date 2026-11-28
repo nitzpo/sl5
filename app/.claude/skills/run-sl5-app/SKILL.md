@@ -70,7 +70,7 @@ Flows — pass one, or `all`:
 | `smoke` | app loads past the first-run modal; every block of the catalogue renders once (counted from `public/data`: 56 today); the rail states a level and band words; a path is drawn; **no `%` anywhere on screen** (text, titles, aria labels; quoted research prose excepted); **nothing under 12px**; no console errors |
 | `views` | Stage matrix, Clusters, Approaches and Race each mount and lay out (tile/hex/lane/bar counts); nothing under 12px on the race |
 | `interact` | click advances a block, right-click steps it back; Shift-click opens the block drawer, Escape closes it; the Parameters drawer has the scoring method, strictness, propensity, serving, government; switching the scoring method to control coverage and back flips the rail |
-| `story` | Scenarios ▾ → Proactive Program plays with the transport and a caption in the rail; the end shows a takeaway; Proactive reaches SL5 by 2030; stopping restores the reader's year |
+| `story` | Scenarios ▾ → Proactive Program plays with the transport and a caption in the rail; the end shows a takeaway; Proactive ends at SL4 in 2030 and the Crash Program reaches SL5; stopping restores the reader's year |
 | `dark` | `prefers-color-scheme: dark` paints the dark paper |
 | `gate` | below 768px the gate replaces the app (no catalogue mounts), and tracks a live resize both ways |
 | `intro` | `/sl5/intro/` renders, `#the-oc-ladder` deep-links to its slide (title and position read from `src/intro/slides/index.ts`), readable at 390px |
@@ -150,7 +150,7 @@ pin `paths` while they play.
 
 ```bash
 npm run lint      # eslint — clean
-npm test          # vitest — 31 files, 419 tests
+npm test          # vitest — 31 files, 427 tests
 npm run build     # tsc -b && vite build → dist/ (two pages)
 ```
 

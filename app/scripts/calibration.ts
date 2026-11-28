@@ -49,7 +49,7 @@ interface Row {
   run: (year: number, served: boolean, world: "app" | "favourable") => PostureScore;
 }
 
-const STORIES = ["do-nothing", "budget-constrained", "reactive-ciso", "proactive-program"];
+const STORIES = ["do-nothing", "budget-constrained", "reactive-ciso", "proactive-program", "crash-program"];
 
 const rows: Row[] = [
   {

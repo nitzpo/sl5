@@ -311,6 +311,7 @@ Full record with images: [`visual-directions.md`](visual-directions.md).
 | Scoring mode | `22af6de` | The scoring-method setting (D25) |
 | Research docs | `504535e` | This folder (D26) |
 | Recalibration | `bbc2c18` | SL5 reachable with the catalogue, research-required flags, evidence-based baseline, defender AI (D23, D24) |
+| Proactive split | see git log | Realistic Proactive ends at SL4; the old schedule becomes the Crash Program (D27) |
 
 The independent code review of `ffde5b6..8e0037f` found two medium bugs, both fixed with tests:
 1. a story played over a shared link could overwrite the reader's saved posture;
@@ -389,7 +390,7 @@ It found nothing serious in the engine: about 10,800 random property trials with
 
 These came out of D23 and D24, and are waiting for the user:
 
-1. **SL5 is only marginal in the default world.** The mature catalogue holds OC5 at 0.17–0.19 against the 0.20 bar. A strict bar loses it, and a government partnership makes it clear. `DESIGN_TIER_RELIEF` = 0.75 is the reading that holds OC5 through 2030 (at 0.5 it is lost from 2028). At 1.0 an SL5-grade control would not erode against OC5 at all, and OC5 would be 0.15–0.16, which gives more margin. Keep 0.75, or move to 1.0?
+1. **SL5 is only marginal in the default world.** The mature catalogue holds OC5 at 0.17–0.19 against the 0.20 bar. A strict bar loses it, and a government partnership makes it clear. `DESIGN_TIER_RELIEF` = 0.75 is the reading that holds OC5 through 2030 (at 0.5 it is lost from 2028). At 1.0 an SL5-grade control would not erode against OC5 at all, and OC5 would be 0.15–0.16, which gives more margin. Keep 0.75, or move to 1.0? *Withdrawn in D27: more margin would push the wrong way.*
 2. **The 31 vector-map changes are pending the user's review.** The original map went to the user before any engine code (D14, D15). These changes were made by the agent during the recalibration. Each carries a `why` and a `note` in the data, and they are listed in `scoring-model.md` Part 12.
 3. **The intro's budget game moved from 2026 to 2028.** Today's baseline is now SL2, and no $150M year buys SL3 from there. So the game starts in 2028, after the lab has slipped to SL1, and asks whether you can get back to SL2. The alternative is to keep 2026 with a different goal or budget.
 4. **Reactive ends at 2.97**, just short of the "≈ SL3" target: OC3 succeeds 0.21 of the time in 2030 against the 0.20 bar. The README calls it "about SL3". Accept that, or tune the story over the line?
@@ -415,3 +416,28 @@ These came out of D23 and D24, and are waiting for the user:
 
 - **User:** "did you document inside the repo your research? (like we had in v1) I want agents coming in later to be able to pick it up and/or understand your thinking".
 - **Chosen:** this folder, `research/v2/`. It holds distilled documents, the reviewed draft data, the scripts that built it, selected probes, and compressed mockup images. Third-party full texts are cited, not copied.
+
+### D27. Proactive ends at SL4; SL5 by 2030 takes a Crash Program
+
+- **User:** "What does it mean that SL5 is only marginal in that world? … it sounds too optimistic to me that SL5 will be achieved with the proactive program by 2030. Maybe in the super proactive, non-realistic program … even if we are proactive, we won't reach SL5 by 2030. Maybe we reach SL4. … Are you sure you didn't just push it too much to the other side?"
+- **"Marginal"** means the tier holds, but campaign success sits within 25% of the bar (0.15–0.20 on the standard bar). The mature catalogue's OC5 was 0.17–0.19 in the default world: about 1 in 6 campaigns get through against a 1-in-5 bar. A strict bar or one more year of AI would tip it back to SL4.
+- **Diagnosis:** yes, D24 overshot, in the story rather than the engine.
+  - The old "Proactive Program" started all 49 programmes in 2024, research controls included, with government cooperation at 0.7. That is a crash programme.
+  - D24's claim that it reached SL5 "only because the research started in 2024" was wrong. With its research moved to 2026 it still reached SL5 in 2029 (OC5 0.19–0.20), because research controls matter less once government cooperation is 0.5 or more.
+  - The engine meets its targets: the full catalogue is SL5 only when **mature**, SL4.8–4.9 when merely deployed, and SL3.8 without the SL5 build.
+- **Evidence for the user's intuition:** the SL5 Task Force's goal is nation-state-level security (SL4) by 2028/29, with SL5 something to *be able to activate* later. IFP: "years away" against capable nation-states. RAND: SL5 "currently not possible" and needs the national-security community.
+- **Chosen (stories only; no engine constants changed):**
+  - **Crash Program** (new, "proactive plus"): the old schedule. Everything from 2024, government cooperation 0.9, org transformation 0.9. SL3 2026.5, SL4 2028, SL5 from 2029, only just. The same plan started in 2026 is SL4 in 2030 (asserted).
+  - **Proactive Program** (rewritten, realistic): the same 49 programmes and $4B, sequenced:
+    - the SL3–SL4 programme in 2024–25;
+    - research-gated controls from 2026.5;
+    - the facility and the rest of the SL5 build from 2027;
+    - government cooperation 0.5.
+    
+    SL3 2027.5, SL4 2028.5, SL4 in 2030 with OC5 contested (0.27, physical). SL5 would arrive around 2032.
+- **Not adopted:**
+  - A longer maturity time (half the build time instead of 12 months) moved no story by more than 0.02.
+  - Raising `DESIGN_TIER_RELIEF` to 1.0 (open question 1 above) is withdrawn.
+- **Tests:** `scripts.test.ts` asserts both stories. The monotone-curve tests now apply to the Crash Program, the schedule they were staged for. Proactive must never give back a level, and on its 2029–30 plateau it may drift up by less than a point per half-year. The browser driver checks Proactive ends at SL4 and Crash at SL5.
+- **Status:** active.
+

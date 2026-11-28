@@ -435,9 +435,14 @@ called the work research-grade, so a programme that starts them in 2026 lands th
 gave them the strong counters the SL5 benchmark expects of them (Part 12), which is what
 makes them load-bearing: **without them, the mature catalogue stops at SL4.8 in 2026 and
 SL3.9 in 2030** (default world, served), and SL5 is lost without SRV-01 alone (the
-served model) and, by 2030, without HW-04. Proactive reaches SL5 in 2030 only because
-it starts all of them in 2024. That — research and lead time, not the arithmetic — is
-why SL5 is out of reach today, as RAND says it currently is.
+served model) and, by 2030, without HW-04. Only the Crash Program story reaches SL5 by
+2030, because it starts all of them in 2024 with a government partnership; the
+realistic Proactive Program starts them in 2026.5–2027 and ends 2030 at SL4. That —
+research and lead time, not the arithmetic — is why SL5 is out of reach today, as RAND
+says it currently is. (Caveat: in a story's world, with government cooperation at 0.5
+or above, the research controls matter less than in the default world; what holds
+Proactive at SL4 in 2030 is mostly the SCIF-grade facility and the SL5 build still
+being under construction. See "Follow-up: Proactive split" below.)
 
 One nuance the numbers show and RAND's text supports: with the model **not served**
 and **full government cooperation**, the mature catalogue holds OC5 even without the
@@ -530,7 +535,7 @@ default world (model served, the app's sliders, the standard bar) unless stated.
 | Held fixed, it **declines by about a level by 2030, not below SL1** | AI lifts attackers (authored shifts), defender AI wins back part | low–moderate |
 | The **full catalogue, matured, is SL5** in 2026 and still in 2030 (marginal allowed), with no invented blocks | the catalogue is RAND's SL5 benchmark plus the SL5 Standard; RAND defines the benchmark as what thwarts OC5 | moderate on direction; the margin is authored |
 | **Without the research-required controls, not SL5** (default world); SL5 is out of reach *today* because they can't be built yet | RAND: R&D needed for production serving; SL5 Standard and IFP list open research | moderate |
-| Stories: **Do Nothing declines; Budget-Constrained between; Reactive ≈ SL3; Proactive SL4, SL5 by 2030 only if its research started in 2024** | user targets; RAND's SL3 report; lead times | ordering high, levels moderate |
+| Stories: **Do Nothing declines; Budget-Constrained between; Reactive ≈ SL3; Proactive (realistic) SL4 by 2030, not SL5; only a Crash Program (everything from 2024, government help) reaches SL5 by 2030** | user targets (revised 28 Nov: "even if we are proactive, we won't reach SL5 by 2030"); RAND's SL3 report; the SL5 Task Force's nation-state-security goal for 2028/29; lead times | ordering high, levels moderate |
 
 ### Diagnosis before the recalibration
 
@@ -565,7 +570,7 @@ counters were weak, and were fixed through counters, not by changing p).
 4. **The served approach** (Part 1): extraction no longer skips the exit stage; V-X-5 is its exit, metered by AI-07 (strong) and SRV-01.
 5. **31 vector-map changes** (Part 12): strong counters from controls the SL5 benchmark relies on, mostly the research-required ones.
 6. **FUT blocks and the toggle retired; seven controls flagged `research_required`**, with longer lead times (Part 7).
-7. **Stories rescheduled**: Proactive starts the research controls in 2024 ($4.0B); Reactive buys AI-07/AI-08 after the Feb 2026 distillation disclosure ($1.95B).
+7. **Stories rescheduled**: Proactive starts the research controls in 2024 ($4.0B); Reactive buys AI-07/AI-08 after the Feb 2026 distillation disclosure ($1.95B). *(Superseded the same day: that all-at-once schedule is now the Crash Program, and Proactive was rewritten as a realistic plan; see "Follow-up: Proactive split".)*
 
 ### Before → after (SL value, served, default world)
 
@@ -580,6 +585,38 @@ counters were weak, and were fixed through counters, not by changing p).
 | Full catalogue, research controls not built | — | — | **3.94** |
 
 m = marginal. "Before" for the full catalogue is with the future toggle off.
+
+### Follow-up: Proactive split (28 Nov 2026)
+
+The user challenged the result above: "even if we are proactive, we won't reach SL5 by
+2030. Maybe we reach SL4. Only [a] proactive plus [might]." Checking showed the
+recalibration had overshot **in the story, not the engine**:
+
+- The "Proactive Program" above started all 49 programmes in 2024, including the
+  research-gated controls (before the SL5 Standard existed), with government
+  cooperation at 0.7. That is a crash programme, not a realistic proactive lab.
+- The claim that it reached SL5 "only because the research started in 2024" was
+  wrong: with its research moved to 2026 it still reached SL5 in 2029 (OC5 0.19–0.20),
+  because at government cooperation 0.5–0.7 the research controls matter less than
+  in the default world (0.2).
+- The engine itself still meets its targets: the mature catalogue is SL5, the
+  catalogue merely deployed (not yet matured) is SL4.8–4.9, and without the SL5 build
+  (facility, TEMPEST, data diodes, protected cabling, research controls) it is SL3.8.
+
+Fix (stories only, no engine constants changed):
+- **Crash Program** (new) = the old schedule, "proactive plus": everything from 2024,
+  government cooperation 0.9, organisational transformation 0.9. SL5 from 2029, only
+  just. The same plan started in 2026 is SL4 in 2030 (asserted).
+- **Proactive Program** (rewritten) = the same 49 programmes and $4B, sequenced as a
+  realistic lab would: the SL3–SL4 programme in 2024–25, research-gated controls from
+  2026.5 (after the SL5 Standard and RAND's SL3 report), the SCIF-grade facility and
+  the rest of the SL5 build from 2027, government cooperation 0.5. SL3 in 2027.5, SL4
+  in 2028.5, SL4 in 2030 with OC5 contested (0.27, physical); SL5 around 2032 if the
+  model is run past the timeline.
+- Considered and not adopted: a longer maturity time (half the build time instead of
+  12 months) moved no story by more than 0.02; raising `DESIGN_TIER_RELIEF` to 1.0
+  (proposed earlier for more SL5 margin) would push the wrong way and is withdrawn.
+
 
 ## Part 11 — Calibration
 
@@ -610,9 +647,12 @@ lower there; their captions are checked against that).
 | Reactive CISO | 2026 | **0.06** | **0.16** | 0.59 | 0.64 | 0.80 | 0.20 (AC2.4) | 2 + 0.32 (marginal) | OC3 insider |
 |  | 2028 | **0.06** | 0.27 | 0.47 | 0.57 | 0.70 | 0.32 (AC4.3) | 1 + 0.81 | OC2 served |
 |  | 2030 | **0.04** | **0.15** | 0.21 | 0.37 | 0.55 | 0.23 (AC5.0) | 2 + 0.97 | OC3 served |
-| Proactive Program | 2026 | **0.03** | **0.10** | 0.26 | 0.35 | 0.54 | **0.18** (AC2.4) | 2 + 0.83 | OC3 remote |
-|  | 2028 | **0.02** | **0.06** | **0.10** | **0.18** | 0.31 | 0.25 (AC4.3) | 4 + 0.73 (marginal) | OC5 physical |
-|  | 2030 | **0.02** | **0.03** | **0.04** | **0.09** | **0.15** | **0.15** (AC5.0) | 5 + 1.00 (marginal) | — |
+| Proactive Program | 2026 | **0.03** | **0.12** | 0.32 | 0.42 | 0.62 | **0.19** (AC2.4) | 2 + 0.71 | OC3 served |
+|  | 2028 | **0.02** | **0.08** | **0.13** | 0.21 | 0.34 | **0.17** (AC4.3) | 3 + 0.97 | OC4 served |
+|  | 2030 | **0.02** | **0.07** | **0.09** | **0.17** | 0.27 | **0.15** (AC5.0) | 4 + 0.81 (marginal) | OC5 physical |
+| Crash Program | 2026 | **0.03** | **0.10** | 0.25 | 0.34 | 0.52 | **0.18** (AC2.4) | 2 + 0.86 | OC3 remote |
+|  | 2028 | **0.02** | **0.06** | **0.09** | **0.17** | 0.29 | 0.24 (AC4.3) | 4 + 0.77 (marginal) | OC5 physical |
+|  | 2030 | **0.02** | **0.03** | **0.03** | **0.08** | **0.13** | **0.15** (AC5.0) | 5 + 1.00 | — |
 | Full catalogue | 2026 | **0.01** | **0.02** | **0.05** | **0.08** | **0.17** | **0.07** (AC2.4) | 5 + 1.00 (marginal) | — |
 |  | 2028 | **0.02** | **0.03** | **0.06** | **0.10** | **0.18** | **0.14** (AC4.3) | 5 + 1.00 (marginal) | — |
 |  | 2030 | **0.02** | **0.04** | **0.06** | **0.11** | **0.19** | **0.16** (AC5.0) | 5 + 1.00 (marginal) | — |
@@ -639,9 +679,12 @@ lower there; their captions are checked against that).
 | Reactive CISO | 2026 | **0.05** | **0.14** | 0.58 | 0.63 | 0.79 | 0.20 (AC2.4) | 2 + 0.34 | OC3 insider |
 |  | 2028 | **0.04** | 0.21 | 0.44 | 0.55 | 0.69 | 0.32 (AC4.3) | 1 + 0.96 | OC2 remote |
 |  | 2030 | **0.03** | **0.10** | **0.19** | 0.34 | 0.54 | 0.23 (AC5.0) | 3 + 0.66 (marginal) | OC4 physical |
-| Proactive Program | 2026 | **0.02** | **0.08** | 0.25 | 0.34 | 0.53 | **0.18** (AC2.4) | 2 + 0.86 | OC3 remote |
-|  | 2028 | **0.01** | **0.04** | **0.08** | **0.15** | 0.27 | 0.25 (AC4.3) | 4 + 0.80 | OC5 physical |
-|  | 2030 | **0.01** | **0.03** | **0.04** | **0.08** | **0.13** | **0.15** (AC5.0) | 5 + 1.00 (marginal) | — |
+| Proactive Program | 2026 | **0.03** | **0.09** | 0.29 | 0.39 | 0.59 | **0.19** (AC2.4) | 2 + 0.76 | OC3 remote |
+|  | 2028 | **0.01** | **0.05** | **0.12** | **0.19** | 0.33 | **0.17** (AC4.3) | 4 + 0.69 (marginal) | OC5 physical |
+|  | 2030 | **0.01** | **0.05** | **0.08** | **0.15** | 0.25 | **0.15** (AC5.0) | 4 + 0.86 | OC5 physical |
+| Crash Program | 2026 | **0.02** | **0.08** | 0.24 | 0.33 | 0.51 | **0.18** (AC2.4) | 2 + 0.89 | OC3 remote |
+|  | 2028 | **0.01** | **0.03** | **0.06** | **0.13** | 0.25 | 0.24 (AC4.3) | 4 + 0.87 | OC5 physical |
+|  | 2030 | **0.01** | **0.03** | **0.03** | **0.06** | **0.11** | **0.15** (AC5.0) | 5 + 1.00 | — |
 | Full catalogue | 2026 | **0.01** | **0.02** | **0.05** | **0.08** | **0.16** | **0.07** (AC2.4) | 5 + 1.00 (marginal) | — |
 |  | 2028 | **0.01** | **0.03** | **0.05** | **0.10** | **0.17** | **0.14** (AC4.3) | 5 + 1.00 (marginal) | — |
 |  | 2030 | **0.01** | **0.03** | **0.06** | **0.10** | **0.17** | **0.16** (AC5.0) | 5 + 1.00 (marginal) | — |
@@ -668,9 +711,12 @@ lower there; their captions are checked against that).
 | Reactive CISO | 2026 | **0.05** | **0.13** | 0.56 | 0.61 | 0.77 | **0.20** (AC2.4) | 2 + 0.36 | OC3 insider |
 |  | 2028 | **0.04** | 0.20 | 0.43 | 0.53 | 0.67 | 0.31 (AC4.3) | 1 + 0.98 | OC2 remote |
 |  | 2030 | **0.02** | **0.09** | **0.17** | 0.33 | 0.52 | 0.23 (AC5.0) | 3 + 0.69 (marginal) | OC4 physical |
-| Proactive Program | 2026 | **0.02** | **0.08** | 0.25 | 0.34 | 0.53 | **0.18** (AC2.4) | 2 + 0.86 | OC3 remote |
-|  | 2028 | **0.01** | **0.04** | **0.08** | **0.15** | 0.27 | 0.25 (AC4.3) | 4 + 0.80 | OC5 physical |
-|  | 2030 | **0.01** | **0.03** | **0.04** | **0.08** | **0.13** | **0.15** (AC5.0) | 5 + 1.00 (marginal) | — |
+| Proactive Program | 2026 | **0.03** | **0.09** | 0.29 | 0.39 | 0.59 | **0.19** (AC2.4) | 2 + 0.76 | OC3 remote |
+|  | 2028 | **0.01** | **0.05** | **0.12** | **0.19** | 0.33 | **0.17** (AC4.3) | 4 + 0.69 (marginal) | OC5 physical |
+|  | 2030 | **0.01** | **0.05** | **0.08** | **0.15** | 0.25 | **0.15** (AC5.0) | 4 + 0.86 | OC5 physical |
+| Crash Program | 2026 | **0.02** | **0.08** | 0.24 | 0.33 | 0.51 | **0.18** (AC2.4) | 2 + 0.89 | OC3 remote |
+|  | 2028 | **0.01** | **0.03** | **0.06** | **0.13** | 0.25 | 0.24 (AC4.3) | 4 + 0.87 | OC5 physical |
+|  | 2030 | **0.01** | **0.03** | **0.03** | **0.06** | **0.11** | **0.15** (AC5.0) | 5 + 1.00 | — |
 | Full catalogue | 2026 | **0.01** | **0.02** | **0.03** | **0.03** | **0.07** | **0.06** (AC2.4) | 5 + 1.00 | — |
 |  | 2028 | **0.01** | **0.03** | **0.03** | **0.04** | **0.08** | **0.10** (AC4.3) | 5 + 1.00 | — |
 |  | 2030 | **0.01** | **0.03** | **0.03** | **0.04** | **0.08** | **0.11** (AC5.0) | 5 + 1.00 | — |
@@ -678,7 +724,7 @@ lower there; their captions are checked against that).
 |  | 2028 | **0.01** | **0.03** | **0.05** | **0.08** | **0.12** | **0.13** (AC4.3) | 5 + 1.00 | — |
 |  | 2030 | **0.01** | **0.04** | **0.05** | **0.08** | **0.12** | **0.18** (AC5.0) | 5 + 1.00 (marginal) | — |
 
-Stories at 2030 (SL value, served): Do Nothing 1.62 < Budget-Constrained 1.84 < Reactive CISO 2.98 < Proactive Program 5.00
+Stories at 2030 (SL value, served): Do Nothing 1.62 < Budget-Constrained 1.84 < Reactive CISO 2.98 < Proactive Program 4.82 < Crash Program 5.00
 
 ### Targets (asserted in `tests/engine/calibration.test.ts` and `scripts.test.ts`)
 
@@ -689,10 +735,11 @@ Stories at 2030 (SL value, served): Do Nothing 1.62 < Budget-Constrained 1.84 < 
 | Held fixed: declines, never below SL1 by 2030 | 2.31 → 1.60 (served) |
 | Full catalogue: SL5 in 2026, 2028, 2030, every world and serving setting; not marginal in a favourable world | SL5 everywhere; marginal in the default world (OC5 0.17–0.19), clear in a favourable one (0.07–0.08) |
 | Without the research-required controls: never SL5 (default world, served) | SL4.84 (2026) → SL3.94 (2030); without SRV-01 alone, no SL5 |
-| Stories at 2030: Do Nothing < Budget < Reactive < Proactive, real gaps | 1.62 < 1.84 < 2.98 < 5.00 |
+| Stories at 2030: Do Nothing < Budget < Reactive < Proactive < Crash, real gaps | 1.62 < 1.84 < 2.98 < 4.82 < 5.00 |
 | Do Nothing: SL2 in 2026, below by 2030, never below SL1 | 2.33 → 1.62 |
 | Reactive ≈ SL3 by 2030, and worse in 2028 than in 2026 | 2.98; 1.81 in 2028 |
-| Proactive: SL4+ by 2030 served and not; SL5 by 2030 only with its research controls started by 2024.5 | SL5 (marginal); without them < SL5; SL4.73 in 2028 |
+| Proactive: SL2 in 2026, SL3+ by 2028, SL4 (not SL5) in 2030 served and not; OC5 at least 1.2 × the bar | 2.71 → 3.97 (2028) → 4.82 marginal; OC5 0.27, physical |
+| Crash Program: SL5 by 2030 served and not, not in 2028; research started by 2024.5; without the research controls, or started two years later, not SL5 | SL5 from 2029; without research < SL5; started 2026: SL4 |
 | Defender AI modest: no effect before AI; never more than a quarter off any tier | asserted |
 | Monotone in blocks, tier and year; deterministic; no NaN | Property tests (`monotonicity.test.ts`) |
 
@@ -704,8 +751,9 @@ Stories at 2030 (SL value, served): Do Nothing 1.62 < Budget-Constrained 1.84 < 
    Held fixed, it slips to SL1 by 2028 as AI lifts the attackers, and stays there.
 3. **SL3 needs breadth, SL4 needs structure, SL5 needs research.** Reactive buys
    breadth late and ends one step short of SL3; Proactive's hardware root of trust and
-   weight keys take it to SL4 in 2028; SL5 arrives only as the research-required
-   controls land in 2029–30, because they started in 2024.
+   weight keys take it to SL4 in 2028.5, and it is still SL4 in 2030 with OC5 contested
+   (its facility and research controls land 2030–32). Only the Crash Program, which
+   started everything in 2024 with government help, reaches SL5 by 2030 (in 2029).
 4. **The mature catalogue holds OC5 — only just in today's world.** With low government
    and vendor cooperation the personnel and supply-chain controls run at 80%, and the
    insider, physical and served approaches each leave about 0.1; with a government
@@ -829,8 +877,9 @@ moved column in the stage matrix as a result (AI-02 and AI-07 to *get out*, HW-0
   words, and the level's decimal appears only in its tooltip.
 - **The budget game** (`tests/intro/posture-game.test.ts`) — Part 14.
 - **Stories** (`scripts.test.ts`) — affordable at their own budgets, nothing
-  unfunded, nothing stuck, Proactive's half-year curve never rises and its monthly
-  curve never loses ground over a year.
+  unfunded, nothing stuck, the Crash Program's half-year curve never rises and its
+  monthly curve never loses ground over a year; Proactive never gives back a level and
+  drifts up less than a point per half-year on its 2029–30 plateau.
 - **Migration** (`tests/store/persistence-migration.test.ts`) — old ids map onto their
   successors (the more advanced state wins; AI-03 lifts both AI-07 and AI-08), the
   retired FUT ids and future toggle are dropped, the funding order keeps first

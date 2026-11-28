@@ -326,8 +326,21 @@ async function story() {
   const caption = await page.locator('[data-testid="story-caption"]').innerText();
   check("the end shows a takeaway with the level", /SL\d/.test(caption) && /Replay/.test(caption), caption.split("\n").slice(1, 2).join(" "));
   const sl = await page.locator('[data-testid="sl-level"]').innerText();
-  check("Proactive Program reaches SL5 by 2030", sl.replace(/\s+/g, "") === "SL5", sl);
+  check("Proactive Program ends at SL4 in 2030 (SL5 takes the Crash Program)", sl.replace(/\s+/g, "") === "SL4", sl);
   await page.screenshot({ path: `${OUT}/story-end.png` });
+  // The Crash Program (everything from 2024, government help) is the one that
+  // reaches SL5 by 2030. Switching stories mid-playback must work too.
+  await page.getByRole("button", { name: /Scenarios/ }).click();
+  await page.getByRole("menuitem", { name: /Crash Program/ }).click();
+  await page.getByRole("button", { name: "Pause" }).click();
+  {
+    const t = page.locator('[data-testid="playback-bar"] [role="slider"]');
+    const b = await t.boundingBox();
+    await page.mouse.click(b.x + b.width - 1, b.y + b.height / 2);
+  }
+  await page.waitForTimeout(600);
+  const crashSl = await page.locator('[data-testid="sl-level"]').innerText();
+  check("Crash Program reaches SL5 by 2030", crashSl.replace(/\s+/g, "") === "SL5", crashSl);
   await page.getByRole("button", { name: /Stop the story/ }).click();
   await page.locator('[data-testid="playback-bar"]').waitFor({ state: "detached", timeout: 3000 });
   const yearAfter = await page.locator("header").getByLabel(/^Year \d/).first().innerText();

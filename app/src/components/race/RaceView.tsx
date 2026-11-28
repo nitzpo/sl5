@@ -30,8 +30,8 @@ const RACE_INPUTS = [
 ] as const;
 
 /**
- * The SL strip's lines. ~65 `scorePosture` runs (13 years × your posture and
- * four stories, ~80 ms), so they read a deferred copy of the inputs and are
+ * The SL strip's lines. ~78 `scorePosture` runs (13 years × your posture and
+ * five stories, ~100 ms), so they read a deferred copy of the inputs and are
  * memoised on the fields they use: never the year (every sample sets its own),
  * which is what changes on every playback frame and every scrub of the year
  * control. The story lines read your world but not your blocks, so a click

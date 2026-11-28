@@ -1,8 +1,10 @@
-// The four narrative stories, through the same pipeline playback runs.
+// The five narrative stories, through the same pipeline playback runs.
 // Rewritten in Phase 2: the ordering and the Proactive bands are now on the
 // threat-relative SL (level + progress) and campaign success, not on the old
 // worst-chain breach and coverage SL. Retargeted in the Nov 2026
-// recalibration (research/scoring-model.md, "Calibration targets and evidence").
+// recalibration (research/scoring-model.md, "Calibration targets and evidence"),
+// then split: the old all-at-once Proactive is now the Crash Program, and
+// Proactive is the realistic plan that ends at SL4 (research/v2/decisions.md D27).
 import { describe, it, expect } from "vitest";
 import { SCRIPTS } from "../../src/timelapse/scripts";
 import { computeScriptBlockStates } from "../../src/timelapse/compute-script-state";
@@ -109,24 +111,24 @@ describe("time-lapse scripts", () => {
     }
   });
 
-  it("keep the Proactive curve monotonically improving", () => {
-    // The story's whole claim is that starting early and staying inside the
-    // budget keeps paying off. A step where nothing completes is a step where AI
+  it("keep the Crash Program curve monotonically improving", () => {
+    // The story's whole claim is that starting everything early and staying
+    // inside the budget keeps paying off. A step where nothing completes is a step where AI
     // advances unopposed and campaign success ticks back UP. The schedule is
     // staged so every half-year step holds the line; this pins it, on campaign
     // success against OC4 with the model served (what playback shows).
     let prev = Infinity;
     for (let year = 2024; year <= 2030 + 1e-9; year += 0.5) {
-      const p = storyAt("proactive-program", year).campaign;
+      const p = storyAt("crash-program", year).campaign;
       expect(
         p,
-        `proactive rises at ${year.toFixed(1)}: ${(prev * 100).toFixed(1)}% → ${(p * 100).toFixed(1)}%`
+        `crash rises at ${year.toFixed(1)}: ${(prev * 100).toFixed(1)}% → ${(p * 100).toFixed(1)}%`
       ).toBeLessThanOrEqual(prev + 1e-9);
       prev = p;
     }
   });
 
-  it("keep the Proactive curve from sawtoothing at the resolution playback shows", () => {
+  it("keep the Crash Program curve from sawtoothing at the resolution playback shows", () => {
     // Playback advances the year monthly, so the space *between* completions
     // is visible. In that space AI advances against defenses that haven't
     // finished and success genuinely ticks up a little — that is the
@@ -137,7 +139,7 @@ describe("time-lapse scripts", () => {
     const series: { year: number; p: number }[] = [];
     for (let month = 2024 * 12; month <= 2030 * 12; month++) {
       const year = month / 12;
-      series.push({ year, p: storyAt("proactive-program", year).campaign });
+      series.push({ year, p: storyAt("crash-program", year).campaign });
     }
     for (let i = 1; i < series.length; i++) {
       const rise = series[i].p - series[i - 1].p;
@@ -155,7 +157,23 @@ describe("time-lapse scripts", () => {
     }
   });
 
-  it("rank Do Nothing ≤ Budget-Constrained ≤ Reactive ≤ Proactive at 2030 on SL plus progress", () => {
+  it("keep the Proactive curve from losing a level it has reached", () => {
+    // Proactive's last two years are a plateau: SL4 holds while the SL5 build is
+    // still under way, and AI erodes it a little (honest, not a scheduling gap).
+    // It must never give back a level, and the drift stays under a point per
+    // half-year.
+    let best = 0;
+    let prev = Infinity;
+    for (let year = 2024; year <= 2030 + 1e-9; year += 0.5) {
+      const s = storyAt("proactive-program", year);
+      expect(s.sl.level, `proactive drops a level at ${year.toFixed(1)}`).toBeGreaterThanOrEqual(best);
+      best = Math.max(best, s.sl.level);
+      expect(s.campaign - prev, `proactive drifts up at ${year.toFixed(1)}`).toBeLessThanOrEqual(0.01);
+      prev = s.campaign;
+    }
+  });
+
+  it("rank Do Nothing ≤ Budget-Constrained ≤ Reactive ≤ Proactive ≤ Crash at 2030 on SL plus progress", () => {
     // The calibration contract for the four narrative stories, on the
     // threat-relative SL (level + progress toward the next level), measured at
     // 2030 vs OC4 with the model served. Numbers drift as data and constants are
@@ -165,9 +183,11 @@ describe("time-lapse scripts", () => {
     const constrained = value("budget-constrained");
     const reactive = value("reactive-ciso");
     const proactive = value("proactive-program");
+    const crash = value("crash-program");
     expect(constrained).toBeGreaterThan(nothing);
     expect(reactive).toBeGreaterThan(constrained);
     expect(proactive).toBeGreaterThan(reactive);
+    expect(crash).toBeGreaterThan(proactive);
     // And the gaps are real, not ties.
     expect(proactive - nothing).toBeGreaterThan(2);
     expect(reactive - constrained).toBeGreaterThan(0.5);
@@ -193,36 +213,57 @@ describe("time-lapse scripts", () => {
     expect(storyAt("reactive-ciso", 2028).sl.value).toBeLessThan(storyAt("reactive-ciso", 2026).sl.value);
   });
 
-  it("land Proactive at SL4 or better by 2030, and SL5 only because its research controls started in 2024", () => {
-    // A $4B programme that starts every research-required control in 2024 lands
-    // them in 2029–2030, and reaches SL5 in 2030 (served: only just). Without
-    // those controls the same programme stops short of SL5; and in 2028, before
-    // they land, it is not SL5 either.
+  it("land Proactive at SL3 by 2028 and SL4 by 2030, not SL5", () => {
+    // The realistic plan: SL4 first, the SL5 build from 2026.5–2027. By 2030 the
+    // facility and the research-gated controls are still being built, so OC5 is
+    // still contested. User target (Nov 2026): "even if we are proactive, we
+    // won't reach SL5 by 2030. Maybe we reach SL4."
     const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
     expect(scriptSliders(script).budget_millions, "proactive must calibrate at its own budget").toBe(4000);
+    expect(storyAt("proactive-program", 2026).sl.level).toBe(2);
     for (const served of [true, false]) {
       const r = storyAt("proactive-program", 2030, served);
-      expect(r.sl.level, `served=${served}: SL ${r.sl.value.toFixed(2)}`).toBeGreaterThanOrEqual(4);
-      expect(storyAt("proactive-program", 2028, served).sl.level).toBeLessThan(5);
+      expect(r.sl.level, `served=${served}: SL ${r.sl.value.toFixed(2)}`).toBe(4);
+      expect(storyAt("proactive-program", 2028, served).sl.level).toBeGreaterThanOrEqual(3);
     }
-    expect(storyAt("proactive-program", 2030).sl.level).toBe(5);
+    // OC5 contested, not merely a whisker from the bar.
+    const r = storyAt("proactive-program", 2030);
+    expect(r.tiers[4].p).toBeGreaterThanOrEqual(r.sl.bar * 1.2);
+  });
+
+  it("land the Crash Program at SL5 by 2030, only just, and only because it all started in 2024", () => {
+    // "Proactive plus": every programme from 2024 with national-security help.
+    // It reaches SL5 in 2029–2030, served and not; in 2028, before the research
+    // controls land, it is not SL5. Without them, or started in 2026, it is not
+    // SL5 in 2030.
+    const script = SCRIPTS.find((s) => s.id === "crash-program")!;
+    expect(scriptSliders(script).budget_millions, "crash must calibrate at its own budget").toBe(4000);
+    for (const served of [true, false]) {
+      expect(storyAt("crash-program", 2030, served).sl.level, `served=${served}`).toBe(5);
+      expect(storyAt("crash-program", 2028, served).sl.level).toBeLessThan(5);
+    }
     const research = blocks.filter((b) => b.research_required).map((b) => b.id);
     for (const id of research) {
       const dep = script.deployments!.find((d) => d.blockId === id);
       if (dep) expect(dep.startYear, `${id} starts late`).toBeLessThanOrEqual(2024.5);
     }
+    const score = (states: Record<string, BlockState>) =>
+      scorePosture({
+        blocks,
+        model,
+        blockStates: states,
+        advanceOrder: script.deployments!.map((d) => d.blockId),
+        year: 2030,
+        sliders: scriptSliders(script),
+        adversaryOc: 4,
+        modelServedExternally: true,
+      });
     const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
-    const without = scorePosture({
-      blocks,
-      model,
-      blockStates: { ...raw, ...Object.fromEntries(research.map((id) => [id, "not_started" as BlockState])) },
-      advanceOrder: script.deployments!.map((d) => d.blockId),
-      year: 2030,
-      sliders: scriptSliders(script),
-      adversaryOc: 4,
-      modelServedExternally: true,
-    });
+    const without = score({ ...raw, ...Object.fromEntries(research.map((id) => [id, "not_started" as BlockState])) });
     expect(without.sl.level).toBeLessThan(5);
+    const late = { ...script, deployments: script.deployments!.map((d) => ({ ...d, startYear: d.startYear + 2 })) };
+    const startedIn2026 = score(computeScriptBlockStates(late, 2030, blocks) as Record<string, BlockState>);
+    expect(startedIn2026.sl.level, `started 2026: SL ${startedIn2026.sl.value.toFixed(2)}`).toBe(4);
   });
 
   it("never leave a scripted deployment stuck before deployed by 2030", () => {

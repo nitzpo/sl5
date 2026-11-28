@@ -4,10 +4,100 @@ export const SCRIPTS: TimeLapseScript[] = [
   {
     id: "proactive-program",
     name: "Proactive Program",
-    description: "Start early. Hard-stops first. Ahead of the AI curve.",
+    description: "Start early, SL4 first, then the SL5 build. Ahead of the AI curve.",
     type: "scripted",
-    // A well-funded program that plans within its means — and starts the
-    // research-gated controls on day one.
+    // A realistic, well-funded lab that took RAND's 2024 report seriously. It
+    // builds the SL3–SL4 programme first (2024–25), starts the research-gated
+    // controls once the SL5 Standard and RAND's SL3 guidance exist (2026.5), and
+    // breaks ground on the SL5 facility in 2027. No special government
+    // partnership (gov_cooperation 0.5, neutral).
+    //
+    // Same 49 programmes and budget as the Crash Program (~$3,890M of $4,000M at
+    // risk_tolerance 0.65, nothing unfunded); only the timing and the world differ.
+    //
+    // What it buys (Nov 2026 calibration, scripts.test.ts): SL2 contesting SL3 in
+    // 2026, SL3 when the inference-channel defenses land (2027.5), SL4 when the
+    // hardware root of trust and the weight keys are in (2028.5), and still SL4 in
+    // 2030 — OC5 contested — because the SCIF-grade facility and the research-gated
+    // controls are still being built. SL5 by 2030 takes the Crash Program.
+    sliderOverrides: { budget_millions: 4000, org_transformation: 0.5, vendor_cooperation: 0.6, gov_cooperation: 0.5, risk_tolerance: 0.65 },
+    deployments: [
+      // 2024 — the SL3–SL4 groundwork and every cheap quick win.
+      { blockId: "HW-01", startYear: 2024 },
+      { blockId: "HW-03", startYear: 2024 },
+      { blockId: "PER-01", startYear: 2024 },
+      { blockId: "IAM-01", startYear: 2024 },
+      { blockId: "END-01", startYear: 2024 },
+      { blockId: "CFG-01", startYear: 2024 },
+      { blockId: "DET-01", startYear: 2024 },
+      { blockId: "SW-01", startYear: 2024 },
+      { blockId: "CUS-01", startYear: 2024 },
+      { blockId: "GOV-01", startYear: 2024 },
+      { blockId: "PER-08", startYear: 2024 },
+      { blockId: "PHY-03", startYear: 2024 },
+      { blockId: "PER-06", startYear: 2024 },
+      { blockId: "PER-02", startYear: 2024 },
+      // 2024.5 — weight isolation, the weight keys, the inference channel.
+      { blockId: "NET-01", startYear: 2024.5 },
+      { blockId: "NET-02", startYear: 2024.5 },
+      { blockId: "AI-07", startYear: 2024.5 },
+      { blockId: "NET-04", startYear: 2024.5 },
+      { blockId: "KEY-01", startYear: 2024.5 },
+      { blockId: "PER-03", startYear: 2024.5 },
+      { blockId: "NET-07", startYear: 2024.5 },
+      { blockId: "DEC-01", startYear: 2024.5 },
+      { blockId: "AI-11", startYear: 2024.5 },
+      // 2025 — confidential computing, monitoring, vetting, supply chain.
+      { blockId: "HW-07", startYear: 2025 },
+      { blockId: "AI-01", startYear: 2025 },
+      { blockId: "PHY-04", startYear: 2025 },
+      { blockId: "HW-05", startYear: 2025 },
+      { blockId: "PHY-07", startYear: 2025 },
+      { blockId: "SC-08", startYear: 2025 },
+      { blockId: "AI-09", startYear: 2025 },
+      { blockId: "PER-04", startYear: 2025 },
+      { blockId: "PER-09", startYear: 2025 },
+      { blockId: "SC-04", startYear: 2025 },
+      { blockId: "AI-06", startYear: 2025.5 },
+      { blockId: "AI-04", startYear: 2025.5 },
+      { blockId: "HW-09", startYear: 2025.5 },
+      { blockId: "NET-03", startYear: 2025.5 },
+      // 2026.5 — the research-gated controls, once the SL5 Standard names them.
+      { blockId: "SRV-01", startYear: 2026.5 },
+      { blockId: "AI-10", startYear: 2026.5 },
+      { blockId: "ACA-01", startYear: 2026.5 },
+      { blockId: "AI-02", startYear: 2026.5 },
+      // 2027 — the SL5 build: facility, emanations, one-way links, chip-level hardware.
+      { blockId: "PHY-01", startYear: 2027 },
+      { blockId: "PHY-02", startYear: 2027 },
+      { blockId: "PHY-06", startYear: 2027 },
+      { blockId: "NET-05", startYear: 2027 },
+      { blockId: "NET-06", startYear: 2027 },
+      { blockId: "HW-06", startYear: 2027 },
+      { blockId: "HW-04", startYear: 2027 },
+      { blockId: "PHY-08", startYear: 2028.5 },
+    ],
+    annotations: [
+      { atYear: 2024, message: "2024: the groundwork starts — identity, patching, custody, dual authorization, the hardware root of trust. Nothing aimed at the top tier yet." },
+      { atYear: 2025, message: "The quick wins land first — identity, patching, custody, dual authorization — before any long project finishes" },
+      { atYear: 2026.5, message: "The new standards name the controls that still need research: a hardened serving interface, AI-control protocols, verified access control. They start now, five to six years out.", highlight: { type: "block", id: "SRV-01" } },
+      { atYear: 2027, message: "The top-tier build breaks ground: a SCIF-grade facility, emanation shielding, one-way links, chip-level tamper protection.", highlight: { type: "block", id: "PHY-01" } },
+      { atYear: 2027.5, message: "The inference-channel defenses land: SL3, OC3 now usually fails.", highlight: { type: "block", id: "AI-07" } },
+      { atYear: 2028.5, message: "The hardware root of trust lands and unlocks the weight keys: SL4, only just.", highlight: { type: "block", id: "KEY-01" } },
+      { atYear: 2030, message: "$3.9B, 49 programmes: SL4, and OC5 is still contested — the facility and the research-gated controls are still being built. SL5 comes in the early 2030s; by 2030 it takes the Crash Program.", highlight: { type: "block", id: "PHY-01" } },
+    ],
+  },
+  {
+    id: "crash-program",
+    name: "Crash Program",
+    description: "Everything at once from 2024, with national-security help. What SL5 by 2030 takes.",
+    type: "scripted",
+    // "Proactive plus": the most aggressive plan the catalogue allows, and not a
+    // realistic one. Every programme starts at once in 2024, including the
+    // research-gated controls (before the SL5 Standard existed), and the lab has
+    // the national-security partnership RAND says SL5 needs (gov_cooperation 0.9:
+    // a cleared workforce, state counter-intelligence) and reorganises around
+    // security (org_transformation 0.9).
     //
     // The plan is SIZED to the budget: 49 programmes cost ~$3,890M at the shared
     // risk_tolerance 0.65 basis (`min + (1 - rt) * (max - min)`), against the
@@ -15,23 +105,16 @@ export const SCRIPTS: TimeLapseScript[] = [
     // PHY-01, the building; about $1,000M is the six research-required controls
     // (HW-04, HW-06, SRV-01, ACA-01, AI-02, AI-10).
     //
-    // What it buys, measured by the threat-relative SL (Nov 2026 calibration):
-    // SL2 in 2026, SL3 when the air gap lands (2026.5), SL4 when the hardware
-    // root of trust and the weight keys land (2028), and SL5 from 2029 as the
-    // research-required controls land — only just, with the model served. SL5
-    // in 2030 is reachable only because those controls started in 2024: their
-    // lead times are five to six years, so a programme that starts them today
-    // lands them after 2030. That, not the arithmetic, is what makes SL5 out of
-    // reach today.
+    // What it buys, by the threat-relative SL: SL3 when the air gap lands
+    // (2026.5), SL4 when the hardware root of trust and the weight keys land
+    // (2028), and SL5 from 2029 as the research-required controls land — only
+    // just, with the model served. The same plan started in 2026 is SL4 in 2030
+    // (asserted by scripts.test.ts): their lead times are four to six years.
     //
     // The schedule is staged so every half-year step holds the line against
     // OC4 (asserted by scripts.test.ts): SRV-01 starts in 2024.5 so its
     // completion lands in a step where nothing else would.
-    //
-    // gov_cooperation is set high: a program this well-resourced assumes
-    // government partnership, so personnel/supply-chain controls aren't
-    // govMult-penalized.
-    sliderOverrides: { budget_millions: 4000, org_transformation: 0.7, vendor_cooperation: 0.6, gov_cooperation: 0.7, risk_tolerance: 0.65 },
+    sliderOverrides: { budget_millions: 4000, org_transformation: 0.9, vendor_cooperation: 0.8, gov_cooperation: 0.9, risk_tolerance: 0.65 },
     deployments: [
       // 2024 — the long-lead foundations plus every cheap quick win.
       { blockId: "HW-01", startYear: 2024 },
@@ -90,7 +173,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { blockId: "PHY-08", startYear: 2027.5 },
     ],
     annotations: [
-      { atYear: 2024, message: "2024: the long-lead foundations, the research-gated controls the top level will need, and every cheap quick win start together." },
+      { atYear: 2024, message: "2024: everything starts at once — the long-lead foundations, the research-gated controls, every quick win — with the national-security community as a partner." },
       { atYear: 2025, message: "The quick wins land first — identity, patching, custody, dual authorization — before a single mega-project finishes" },
       { atYear: 2026.5, message: "The air gap reaches deployed and the network family lands with it: SL3, OC3 now usually fails — only just", highlight: { type: "block", id: "NET-01" } },
       { atYear: 2027, message: "The curve flattens. Concrete and silicon are still curing, and OC4 is still contested.", highlight: { type: "chain", id: "long-game" } },
@@ -98,7 +181,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       // and unlocks the weight keys; the research-gated controls land 2029–2030.
       { atYear: 2028, message: "The hardware root of trust lands and unlocks the weight keys: stolen disks and stray copies now yield ciphertext. SL4, only just.", highlight: { type: "block", id: "KEY-01" } },
       { atYear: 2029, message: "The research-gated controls start landing, AI-control protocols first: SL5, only just.", highlight: { type: "block", id: "AI-10" } },
-      { atYear: 2030, message: "$3.9B, 49 programmes, SL5 — only just, and only because the research started in 2024. Started today, it lands after 2030.", highlight: { type: "block", id: "HW-04" } },
+      { atYear: 2030, message: "$3.9B, 49 programmes, government help: SL5, reached in 2029 — and only because it all started in 2024. Started in 2026, the same plan is SL4 in 2030.", highlight: { type: "block", id: "HW-04" } },
     ],
   },
   {

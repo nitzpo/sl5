@@ -70,9 +70,6 @@ export interface PostureInput {
   modelServedExternally: boolean;
   /** World toggle: count the FUT-xx future-capability blocks. Default off. */
   futureCapabilities?: boolean;
-  /** Where an unfunded block falls back to. Omitted = its real-world baseline;
-   * the mini-game, which builds from nothing, passes all-`not_started`. */
-  budgetFloorStates?: Record<string, BlockState>;
   /** Model switches for tests and the reference-probe fixture. */
   options?: ModelOptions;
 }
@@ -257,7 +254,7 @@ export function orderAfterActivating(
 export function effectivePosture(
   input: Pick<
     PostureInput,
-    "blocks" | "blockStates" | "advanceOrder" | "sliders" | "budgetFloorStates" | "futureCapabilities"
+    "blocks" | "blockStates" | "advanceOrder" | "sliders" | "futureCapabilities"
   >
 ) {
   const catalogue = catalogueInForce(input.blocks, input.futureCapabilities);
@@ -268,7 +265,6 @@ export function effectivePosture(
   } = applyBudgetConstraint(catalogue, input.blockStates, input.sliders.budget_millions, {
     order: input.advanceOrder,
     riskTolerance: input.sliders.risk_tolerance,
-    floorStates: input.budgetFloorStates,
   });
   const {
     effectiveStates,

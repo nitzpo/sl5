@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { Block, BlockState, Stage } from "../../engine/types";
 import { useSimulationStore } from "../../store/simulation";
 import { useScore } from "../../store/derived";
+import type { PostureScore } from "../../engine/posture";
 import { useUiStore } from "../../store/ui";
 import { blockColumn } from "../../model/catalogue-layout";
 import {
@@ -45,20 +46,52 @@ function StateControl({ block, state }: { block: Block; state: BlockState }) {
   );
 }
 
-function MiniBlock({ id, blocks, states, onOpen }: { id: string; blocks: Map<string, Block>; states: Record<string, BlockState>; onOpen: (id: string) => void }) {
+/** Why the engine counts a block below what the reader set it to, or null. */
+function cappedWhy(id: string, score: PostureScore): string | null {
+  if (score.budgetExceededIds.has(id)) return "past the budget line, not funded";
+  const waiting = score.dependencyUnmetRequires.get(id);
+  if (waiting) return `waiting on ${waiting.join(", ")}`;
+  return null;
+}
+
+/** A companion or prerequisite as the engine counts it: its state after the
+ * budget and prerequisite caps, with what the reader set beside it when the
+ * two differ. A clicked-but-unfunded companion holds nothing up. */
+function MiniBlock({
+  id,
+  blocks,
+  clicked,
+  score,
+  onOpen,
+}: {
+  id: string;
+  blocks: Map<string, Block>;
+  clicked: Record<string, BlockState>;
+  score: PostureScore;
+  onOpen: (id: string) => void;
+}) {
   const b = blocks.get(id);
   if (!b) return null;
-  const st = states[id] ?? "not_started";
+  const set = clicked[id] ?? "not_started";
+  const st = score.effectiveStates[id] ?? set;
+  const why = st !== set ? cappedWhy(id, score) : null;
   const fill = TILE_FILL[st];
   return (
-    <button type="button" onClick={() => onOpen(id)} className="flex w-full items-center gap-2 py-1 text-left hover:bg-tint">
-      <TypeBar type={b.defense_type} width={5} height={18} />
-      <span className="relative h-[14px] w-[22px] shrink-0 border border-ink-2" aria-hidden="true">
-        <span className="absolute inset-x-0 bottom-0 bg-ink" style={{ height: `${fill * 100}%` }} />
+    <button type="button" onClick={() => onOpen(id)} className="block w-full py-1 text-left hover:bg-tint">
+      <span className="flex items-center gap-2">
+        <TypeBar type={b.defense_type} width={5} height={18} />
+        <span className="relative h-[14px] w-[22px] shrink-0 border border-ink-2" aria-hidden="true">
+          <span className="absolute inset-x-0 bottom-0 bg-ink" style={{ height: `${fill * 100}%` }} />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{blockName(id, b.name)}</span>
+        <span className="font-plex text-[12px] text-ink-3">{id}</span>
+        <span className={`w-[92px] text-right text-[12px] ${isOperational(st) ? "font-semibold text-ink" : "text-ink-2"}`}>{STATE_WORDS[st].toLowerCase()}</span>
       </span>
-      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{blockName(id, b.name)}</span>
-      <span className="font-plex text-[12px] text-ink-3">{id}</span>
-      <span className={`w-[92px] text-right text-[12px] ${isOperational(st) ? "font-semibold text-ink" : "text-ink-2"}`}>{STATE_WORDS[st].toLowerCase()}</span>
+      {why && (
+        <span className="block pl-[43px] text-[12px] leading-snug text-ink-2">
+          Set to {STATE_WORDS[set].toLowerCase()}, but {why}
+        </span>
+      )}
     </button>
   );
 }
@@ -183,12 +216,12 @@ export function BlockDrawer() {
             <div className="flex items-baseline justify-between">
               <h3 className="cap">Needs these to hold</h3>
               <span className="text-[12px] text-ink-2">
-                {comp.blocks.filter((id) => !isOperational(blockStates[id])).length} of {comp.blocks.length} not yet deployed
+                {comp.blocks.filter((id) => !isOperational(score.effectiveStates[id] ?? blockStates[id])).length} of {comp.blocks.length} not yet deployed
               </span>
             </div>
             <div className="mt-1">
               {comp.blocks.map((id) => (
-                <MiniBlock key={id} id={id} blocks={byId} states={blockStates} onOpen={openDetail} />
+                <MiniBlock key={id} id={id} blocks={byId} clicked={blockStates} score={score} onOpen={openDetail} />
               ))}
             </div>
             <p className="mt-1.5 text-[13px] leading-snug text-ink-2" data-prose>
@@ -203,7 +236,7 @@ export function BlockDrawer() {
             <p className="text-[12px] text-ink-2">It cannot be deployed before these are.</p>
             <div className="mt-1">
               {requires.map((id) => (
-                <MiniBlock key={id} id={id} blocks={byId} states={blockStates} onOpen={openDetail} />
+                <MiniBlock key={id} id={id} blocks={byId} clicked={blockStates} score={score} onOpen={openDetail} />
               ))}
             </div>
           </section>

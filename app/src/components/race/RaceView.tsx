@@ -18,36 +18,69 @@ const LABEL_W = 250;
 const AXIS_END = 2034;
 const ROW = 22;
 
+/** What the race's lines read from the posture input: everything but the year. */
+const RACE_INPUTS = [
+  "blocks",
+  "model",
+  "blockStates",
+  "advanceOrder",
+  "sliders",
+  "adversaryOc",
+  "modelServedExternally",
+  "futureCapabilities",
+] as const;
+
+/**
+ * The SL strip's lines. ~65 `scorePosture` runs (13 years × your posture and
+ * four stories, ~80 ms), so they read a deferred copy of the inputs and are
+ * memoised on the fields they use: never the year (every sample sets its own),
+ * which is what changes on every playback frame and every scrub of the year
+ * control. The story lines read your world but not your blocks, so a click
+ * redraws only your line.
+ */
 function useRaceData() {
   const input = usePostureInput();
   const deferred = useDeferredValue(input);
-  return useMemo(() => {
-    const { year: _year, ...rest } = deferred;
-    void _year;
-    const mine = slOverYears(rest);
-    const stories = SCRIPTS.filter((s) => s.type === "scripted").map((script) => {
-      const order = [
-        ...Object.keys(script.initialBlockStates ?? {}).filter((id) => script.initialBlockStates?.[id] !== "not_started"),
-        ...(script.deployments ?? []).map((d) => d.blockId),
-      ].filter((id, i, arr) => arr.indexOf(id) === i);
-      const sliders = { ...rest.sliders, ...script.sliderOverrides };
-      return {
-        id: script.id,
-        name: script.name,
-        samples: RACE_YEARS.map((year) => ({
-          year,
-          value: scorePosture({
-            ...rest,
+  const { blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally, futureCapabilities } = deferred;
+  const mine = useMemo(
+    () => slOverYears({ blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally, futureCapabilities }),
+    [blocks, model, blockStates, advanceOrder, sliders, adversaryOc, modelServedExternally, futureCapabilities]
+  );
+  const stories = useMemo(
+    () =>
+      SCRIPTS.filter((s) => s.type === "scripted").map((script) => {
+        const order = [
+          ...Object.keys(script.initialBlockStates ?? {}).filter((id) => script.initialBlockStates?.[id] !== "not_started"),
+          ...(script.deployments ?? []).map((d) => d.blockId),
+        ].filter((id, i, arr) => arr.indexOf(id) === i);
+        // Each story's plan in YOUR world, so the lines compare like with like
+        // as you change the bar, the AI pace or serving. (Played, a story pins
+        // those, as its captions state fixed outcomes; see `storyWorld`.)
+        const storySliders = { ...sliders, ...script.sliderOverrides };
+        return {
+          id: script.id,
+          name: script.name,
+          samples: RACE_YEARS.map((year) => ({
             year,
-            sliders,
-            advanceOrder: order,
-            blockStates: computeScriptBlockStates(script, year, rest.blocks),
-          }).sl.value,
-        })),
-      };
-    });
-    return { mine, stories, stale: deferred !== input };
-  }, [deferred, input]);
+            value: scorePosture({
+              blocks,
+              model,
+              adversaryOc,
+              futureCapabilities,
+              year,
+              sliders: storySliders,
+              modelServedExternally,
+              advanceOrder: order,
+              blockStates: computeScriptBlockStates(script, year, blocks),
+            }).sl.value,
+          })),
+        };
+      }),
+    [blocks, model, sliders, adversaryOc, modelServedExternally, futureCapabilities]
+  );
+  // Behind only if a field the lines read is: a year change alone is not.
+  const stale = RACE_INPUTS.some((k) => deferred[k] !== input[k]);
+  return { mine, stories, stale };
 }
 
 function LeadBar({ block, x0, x1, xMax, y, landsLate, mayLandLate }: { block: Block; x0: number; x1: number; xMax: number; y: number; landsLate: boolean; mayLandLate: boolean }) {

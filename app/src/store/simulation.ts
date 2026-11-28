@@ -15,6 +15,9 @@ import {
   saveScenarios,
   type PersistedState,
 } from "./persistence";
+// A cycle (the playback store drives this one), but only ever read inside
+// actions, never while either module is still evaluating.
+import { usePlaybackStore } from "../timelapse/playback-store";
 
 interface SimulationStore {
   // Data (loaded once)
@@ -50,8 +53,13 @@ interface SimulationStore {
   setModelServed: (served: boolean) => void;
   setFutureCapabilities: (on: boolean) => void;
   setPlaybackActive: (active: boolean) => void;
-  /** Replace the posture and world with a saved or shared one. */
+  /** Replace the posture and world with a saved or shared one. Low level: it
+   * leaves a running story alone, so it is for the playback store's own
+   * restore; anything a reader triggers goes through an action that ends the
+   * story first (`openShared`, `restoreMine`, ...). */
   applyPersisted: (state: PersistedState, extra?: Partial<Pick<SimulationStore, "scenarioName" | "viewingShared">>) => void;
+  /** Open a share link pasted into this tab. */
+  openShared: (state: PersistedState, name?: string) => void;
   copyShareUrl: () => string;
   saveShared: () => void;
   restoreMine: () => void;
@@ -127,16 +135,34 @@ function persistedOf(s: Snapshot): PersistedState {
   };
 }
 
-function snapshotFrom(state: PersistedState): Snapshot {
+/** A saved or shared posture as store state. Blocks added to the catalogue
+ * since it was made are not in it, and they open at their baseline, as on a
+ * fresh start: read as `not_started`, a v1 link would lose the identity,
+ * patching and detection the lab already runs and score below the real-world
+ * posture it was made on. The UNDATED baseline, the one a fresh posture and the
+ * budget's sunk-cost rule both use. */
+function snapshotFrom(state: PersistedState, blocks: Block[]): Snapshot {
+  const blockStates = { ...baselineStates(blocks), ...state.blockStates };
   return {
-    blockStates: state.blockStates,
-    advanceOrder: state.advanceOrder ?? deriveOrder(state.blockStates),
+    blockStates,
+    advanceOrder: state.advanceOrder ?? deriveOrder(blockStates),
     year: state.year,
     adversaryOc: state.adversaryOc,
     sliders: state.sliders,
     modelServedExternally: state.modelServedExternally,
     futureCapabilities: state.futureCapabilities ?? false,
   };
+}
+
+/** End a running story before an action that saves or replaces the posture.
+ * Stopping puts back what the reader had — their posture, their world, and
+ * whether it was a shared link they were viewing — so "Keep this as mine",
+ * "Back to mine", loading or saving a named posture, a reset and a pasted link
+ * all act on that, never on a story frame. */
+function endStory() {
+  if (usePlaybackStore.getState().state !== "idle" || useSimulationStore.getState().playbackActive) {
+    usePlaybackStore.getState().stop();
+  }
 }
 
 export const useSimulationStore = create<SimulationStore>()(subscribeWithSelector((set, get) => ({
@@ -163,12 +189,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
     const fromUrl = loadFromUrlHash();
     if (fromUrl) {
       clearUrlHash();
-      set({ ...snapshotFrom(fromUrl.state), scenarioName: fromUrl.name ?? null, viewingShared: true, dataLoaded: true });
+      set({ ...snapshotFrom(fromUrl.state, blocks), scenarioName: fromUrl.name ?? null, viewingShared: true, dataLoaded: true });
       return;
     }
     const fromStorage = loadFromLocalStorage();
     if (fromStorage) {
-      set({ ...snapshotFrom(fromStorage), dataLoaded: true });
+      set({ ...snapshotFrom(fromStorage, blocks), dataLoaded: true });
       return;
     }
     // The starting posture: each block's researched baseline (see
@@ -207,7 +233,12 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   setFutureCapabilities: (on) => set({ futureCapabilities: on, scenarioName: null }),
   setPlaybackActive: (active) => set({ playbackActive: active }),
 
-  applyPersisted: (state, extra = {}) => set({ ...snapshotFrom(state), ...extra }),
+  applyPersisted: (state, extra = {}) => set({ ...snapshotFrom(state, get().blocks), ...extra }),
+
+  openShared: (state, name) => {
+    endStory();
+    get().applyPersisted(state, { scenarioName: name ?? null, viewingShared: true });
+  },
 
   copyShareUrl: () => {
     const s = get();
@@ -217,6 +248,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 
   saveShared: () => {
+    endStory();
     const s = get();
     const persisted = persistedOf(s);
     saveToLocalStorage(persisted);
@@ -229,12 +261,14 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 
   restoreMine: () => {
+    endStory();
     const saved = loadFromLocalStorage();
-    if (saved) set({ ...snapshotFrom(saved), viewingShared: false });
+    if (saved) set({ ...snapshotFrom(saved, get().blocks), viewingShared: false });
     else get().resetToBaseline();
   },
 
   resetToBaseline: () => {
+    endStory();
     const states = baselineStates(get().blocks);
     clearLocalStorage();
     set({
@@ -251,6 +285,7 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   },
 
   saveScenario: (name) => {
+    endStory();
     const scenarios = loadScenarios();
     const entry = { name, savedAt: Date.now(), state: persistedOf(get()) };
     const existing = scenarios.findIndex((sc) => sc.name === name);
@@ -263,7 +298,8 @@ export const useSimulationStore = create<SimulationStore>()(subscribeWithSelecto
   loadScenario: (index) => {
     const scenario = loadScenarios()[index];
     if (!scenario) return;
-    set({ ...snapshotFrom(scenario.state), scenarioName: scenario.name, viewingShared: false });
+    endStory();
+    set({ ...snapshotFrom(scenario.state, get().blocks), scenarioName: scenario.name, viewingShared: false });
   },
 
   deleteScenario: (index) => {

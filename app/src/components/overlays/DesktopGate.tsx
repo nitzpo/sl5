@@ -63,7 +63,7 @@ export function DesktopGate() {
               href={`${import.meta.env.BASE_URL}intro/`}
               className="mt-6 flex items-center justify-between bg-ink px-5 py-4 text-[16px] font-bold text-paper"
             >
-              Read the 5-minute introduction <span aria-hidden="true">→</span>
+              Read the six-minute introduction <span aria-hidden="true">→</span>
             </a>
             <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
               Why model weights are a target, and how the instrument works. Written to read on a phone.

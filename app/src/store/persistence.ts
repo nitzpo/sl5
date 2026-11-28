@@ -27,7 +27,9 @@ export interface PersistedState {
  * Bring a saved posture or share link from an older catalogue up to date:
  * merged-away block ids (PER-05, SC-02, ...) map onto the blocks that
  * absorbed them, sliders added since get their defaults, and the future toggle
- * defaults off. Idempotent, so it is safe on every load path.
+ * defaults off. Idempotent, so it is safe on every load path. Blocks added
+ * since are filled in at their baseline when the store applies the state
+ * (`snapshotFrom` in simulation.ts), which is where the catalogue is known.
  */
 export function migratePersistedState(state: PersistedState): PersistedState {
   const sliders = { ...(state.sliders ?? {}) } as Partial<Sliders>;

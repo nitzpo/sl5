@@ -59,10 +59,11 @@ export function counterRelevance(blocks: Block[]): RelevanceWeights {
 
 // Keyed by `string`, not `BlockState`, on purpose: `partially_deployed` is NOT a
 // BlockState and is unreachable through the UI's advancement cycle. It stays
-// because 19 blocks in public/data still declare it as their `baseline_state`,
+// because many blocks in public/data still declare it as their `baseline_state`,
 // and callers that read those files directly (scoring.test.ts) need a sane value.
-// The store coerces any out-of-cycle baseline to `not_started`, so the running app
-// never scores a block at 0.6.
+// The app never scores a block at 0.6: `baselineStates` (engine/baseline.ts) maps
+// `partially_deployed` onto `implementing`, and the other out-of-cycle baselines
+// onto `not_started`, before a posture reaches the engine.
 const STATE_EFFECTIVENESS: Record<string, number> = {
   not_started: 0.0,
   investing: 0.1,
@@ -116,18 +117,20 @@ export function aiDegradation(
 
 // What counts as a companion actually being there. `implementing` deliberately
 // doesn't: a diode being installed is not a diode you can move data through.
-// Neither do the non-BlockState baselines in public/data (`partially_deployed`,
-// `widely_deployed`) — the store coerces them out of the running app anyway, and a
-// half-there companion closing a gap fully would be the wrong way to round.
+// Neither do the non-BlockState baselines in public/data (`partially_deployed`
+// and the like) — `baselineStates` maps them onto the cycle before the running
+// app sees them anyway, and a half-there companion closing a gap fully would be
+// the wrong way to round.
 const OPERATIONAL: ReadonlySet<string> = new Set(["deployed", "mature"]);
 
 /**
  * How much of a block's effectiveness it actually gets, given which of its
  * `completed_by` companions are operational.
  *
- * Returns 1 for the 40 blocks that declare no companions, so this is a no-op
- * almost everywhere. For the rest it interpolates from `standalone_share` (none of
- * them present) to 1 (all of them), linearly in the count.
+ * Returns 1 for every block that declares no companions (just over half the
+ * catalogue), so for those it is a no-op. For the rest it interpolates from
+ * `standalone_share` (none of them present) to 1 (all of them), linearly in the
+ * count.
  *
  * The mini-game is what made this necessary. On a $150M budget the air gap is a
  * single click that drops four of seven chains by ~60 points, which teaches a

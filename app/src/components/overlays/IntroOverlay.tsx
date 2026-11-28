@@ -83,7 +83,7 @@ export function IntroOverlay({ onClose }: IntroOverlayProps) {
           className="mt-6 flex items-center justify-between gap-3 bg-ink px-5 py-4 text-paper hover:bg-ink-2"
         >
           <span>
-            <span className="block text-[16px] font-bold">Start with the 5-minute introduction</span>
+            <span className="block text-[16px] font-bold">Start with the six-minute introduction</span>
             <span className="mt-0.5 block text-[13px] text-on-ink-2">Why model weights are a target, and how to read this tool</span>
           </span>
           <span className="text-[20px]">→</span>

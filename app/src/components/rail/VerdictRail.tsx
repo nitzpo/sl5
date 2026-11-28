@@ -17,6 +17,7 @@ import {
   slTitle,
 } from "../../model/words";
 import { StoryCaption } from "../timelapse/StoryCaption";
+import { candidateUpfrontRange } from "../../utils/ciso-recommendations";
 
 export function Section({ title, aside, children, className = "" }: { title: string; aside?: ReactNode; children: ReactNode; className?: string }) {
   return (
@@ -246,8 +247,7 @@ function NextDefense() {
           {analysis.candidates.map((c) => {
             const ids = c.blockIds;
             const on = ids.every((id) => highlightIds.includes(id));
-            const lo = c.prerequisites.reduce((s, b) => s + b.dimensions.cost.upfront_millions.min, c.block.dimensions.cost.upfront_millions.min);
-            const hi = c.prerequisites.reduce((s, b) => s + b.dimensions.cost.upfront_millions.max, c.block.dimensions.cost.upfront_millions.max);
+            const upfront = candidateUpfrontRange(c);
             const lead = c.block.dimensions.time_to_deploy_months;
             const narrows = c.narrowed[0]?.approach.id;
             return (
@@ -268,7 +268,7 @@ function NextDefense() {
                       <span className="font-plex text-[12px] text-ink-3">{c.block.id}</span>
                     </span>
                     <span className="block text-[12px] leading-snug text-ink-2">
-                      {moneyRange(lo, hi)} · {leadTime(lead.min, lead.max)}
+                      {upfront ? moneyRange(upfront.min, upfront.max) : "already funded"} · {leadTime(lead.min, lead.max)}
                       {narrows && <> · narrows {approachName(narrows)}</>}
                       {c.prerequisites.length > 0 && <> · with {c.prerequisites.map((b) => b.id).join(", ")}</>}
                     </span>

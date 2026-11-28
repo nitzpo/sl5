@@ -8,7 +8,8 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import { render, cleanup, fireEvent, act } from "@testing-library/react";
 import { useSimulationStore } from "../../src/store/simulation";
 import { useUiStore } from "../../src/store/ui";
-import { deriveScore } from "../../src/store/derived";
+import { deriveScore, postureInput } from "../../src/store/derived";
+import { recommendInvestments } from "../../src/utils/ciso-recommendations";
 import { STORAGE_KEY, SCENARIOS_KEY } from "../../src/store/persistence";
 import { StageMatrix } from "../../src/components/catalogue/StageMatrix";
 import { ClusterMap } from "../../src/components/catalogue/ClusterMap";
@@ -106,6 +107,24 @@ describe("the verdict rail", () => {
     const { sl: result } = deriveScore(useSimulationStore.getState());
     expect(sl.textContent).toBe(`SL${result.level}`);
     expect(sl.getAttribute("title")).toContain(result.value.toFixed(2));
+  });
+});
+
+describe("next defense to fund", () => {
+  it("shows a block the programme already funds as already funded, not at its full price", () => {
+    // A prerequisite-free block the lab doesn't run yet, advanced one step: it
+    // is in the funding queue, so finishing it costs nothing new.
+    const { blockStates } = useSimulationStore.getState();
+    const before = recommendInvestments(postureInput(useSimulationStore.getState()));
+    const id = before.candidates.find(
+      (c) => c.prerequisites.length === 0 && (blockStates[c.block.id] ?? "not_started") === "not_started"
+    )!.block.id;
+    act(() => useSimulationStore.getState().setBlockState(id, "implementing"));
+    const { getByTestId } = render(<VerdictRail />);
+    const row = Array.from(getByTestId("next-defense").querySelectorAll("li")).find((li) => li.textContent!.includes(id));
+    expect(row, `${id} should be among the next defenses`).toBeDefined();
+    expect(row!.textContent).toContain("already funded");
+    expect(row!.textContent).not.toMatch(/\$/);
   });
 });
 

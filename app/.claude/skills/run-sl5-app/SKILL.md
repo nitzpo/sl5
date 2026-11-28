@@ -145,7 +145,7 @@ remembers itself under `sl5v2_intro_seen`; saved state lives under `sl5v2-state`
 
 ```bash
 npm run lint      # eslint — clean
-npm test          # vitest — 26 files, 365 tests
+npm test          # vitest — 29 files, 384 tests
 npm run build     # tsc -b && vite build → dist/ (two pages)
 ```
 

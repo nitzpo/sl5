@@ -124,7 +124,7 @@ function App() {
     const parsed = loadFromUrlHashLive();
     if (!parsed) return;
     clearUrlHash();
-    useSimulationStore.getState().applyPersisted(parsed.state, { scenarioName: parsed.name ?? null, viewingShared: true });
+    useSimulationStore.getState().openShared(parsed.state, parsed.name);
   }, []);
   useEffect(() => {
     window.addEventListener("hashchange", applyHash);

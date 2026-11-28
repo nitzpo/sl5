@@ -133,7 +133,7 @@ export function ParametersDrawer() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto px-6 pt-4 pb-8">
-        {playing && <p className="mb-3 border border-ink p-2 text-[13px]">A story is playing: it sets its own world. Changes apply to your posture when it stops.</p>}
+        {playing && <p className="mb-3 border border-ink p-2 text-[13px]">A story is playing in its own world. Changes here last only until it stops, when your own settings come back.</p>}
 
         <Group title="How strict is “stops”">
           <p className="-mt-1 text-[13px] leading-snug text-ink-2">

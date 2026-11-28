@@ -6,14 +6,24 @@ import type { TimeLapseScript, PlaybackSpeed, PlaybackState } from "./types";
 import { useSimulationStore } from "../store/simulation";
 import { computeScriptBlockStates } from "./compute-script-state";
 import { adjacentStop } from "./events";
+import { storyWorld } from "./story-world";
 import { TIMELINE_START, TIMELINE_END, quantizeYear } from "../utils/timeline";
+
+/** What a story replaces and `stop` puts back. Not just the posture: whether
+ * the reader was viewing a shared link decides whether their next click is
+ * auto-saved as their own, so it has to come back exactly as it was. */
+export interface SavedUserState {
+  posture: PersistedState;
+  viewingShared: boolean;
+  scenarioName: string | null;
+}
 
 interface PlaybackStore {
   state: PlaybackState;
   speed: PlaybackSpeed;
   activeScript: TimeLapseScript | null;
   playbackT: number;
-  savedUserState: PersistedState | null;
+  savedUserState: SavedUserState | null;
   currentAnnotation: string | null;
 
   startScript: (script: TimeLapseScript) => void;
@@ -75,17 +85,23 @@ export const usePlaybackStore = create<PlaybackStore>()(
     startScript: (script) => {
       const currentState = get().state;
       const sim = useSimulationStore.getState();
-      const snapshot = (): PersistedState => ({
-        blockStates: sim.blockStates,
-        advanceOrder: sim.advanceOrder,
-        year: sim.year,
-        adversaryOc: sim.adversaryOc,
-        sliders: sim.sliders,
-        modelServedExternally: sim.modelServedExternally,
-        futureCapabilities: sim.futureCapabilities,
+      const snapshot = (): SavedUserState => ({
+        posture: {
+          blockStates: sim.blockStates,
+          advanceOrder: sim.advanceOrder,
+          year: sim.year,
+          adversaryOc: sim.adversaryOc,
+          sliders: sim.sliders,
+          modelServedExternally: sim.modelServedExternally,
+          futureCapabilities: sim.futureCapabilities,
+        },
+        viewingShared: sim.viewingShared,
+        scenarioName: sim.scenarioName,
       });
-      const saved: PersistedState =
+      // Switching stories keeps the state saved when the first one started.
+      const saved: SavedUserState =
         currentState === "idle" ? snapshot() : get().savedUserState ?? snapshot();
+      const mine = saved.posture;
 
       const startYear = script.startYear ?? TIMELINE_START;
       // Mark playback first: the auto-save subscriber runs synchronously on
@@ -94,12 +110,11 @@ export const usePlaybackStore = create<PlaybackStore>()(
       useSimulationStore.getState().setPlaybackActive(true);
 
       if (script.type === "scripted") {
-        // Overrides layer on the saved USER baseline, never on the live sliders:
-        // switching stories while one is active would otherwise leak the prior
-        // script's overrides (e.g. an unset vendor_cooperation) into the next.
-        const newSliders = script.sliderOverrides
-          ? { ...saved.sliders, ...script.sliderOverrides }
-          : saved.sliders;
+        // The story's world layers on the saved USER world, never on the live
+        // sliders: switching stories while one is active would otherwise leak
+        // the prior script's overrides (e.g. an unset vendor_cooperation) into
+        // the next. What its captions turn on is pinned (`storyWorld`).
+        const world = storyWorld(script, mine);
 
         const newBlockStates: Record<string, BlockState> = {};
         for (const b of sim.blocks) {
@@ -123,10 +138,20 @@ export const usePlaybackStore = create<PlaybackStore>()(
           year: startYear,
           blockStates: newBlockStates,
           advanceOrder: scriptOrder,
-          sliders: newSliders,
+          sliders: world.sliders,
+          modelServedExternally: world.modelServedExternally,
         });
       } else {
-        useSimulationStore.setState({ year: startYear });
+        // The reader's own posture run forward — theirs as saved, not whatever
+        // story was playing before this one.
+        useSimulationStore.setState({
+          year: startYear,
+          blockStates: mine.blockStates,
+          advanceOrder: mine.advanceOrder ?? [],
+          sliders: mine.sliders,
+          modelServedExternally: mine.modelServedExternally,
+          futureCapabilities: mine.futureCapabilities ?? false,
+        });
       }
 
       set({
@@ -142,8 +167,16 @@ export const usePlaybackStore = create<PlaybackStore>()(
     pause: () => set({ state: "paused" }),
 
     stop: () => {
-      const { savedUserState } = get();
-      if (savedUserState) useSimulationStore.getState().applyPersisted(savedUserState);
+      const { savedUserState: saved } = get();
+      // Restored while playback is still marked active, so the auto-save
+      // subscriber doesn't record the write; after it, the next change saves
+      // only if the reader wasn't viewing a shared posture.
+      if (saved) {
+        useSimulationStore.getState().applyPersisted(saved.posture, {
+          viewingShared: saved.viewingShared,
+          scenarioName: saved.scenarioName,
+        });
+      }
       useSimulationStore.getState().setPlaybackActive(false);
       set({
         state: "idle",

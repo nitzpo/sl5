@@ -40,7 +40,7 @@ export const SERVED = false;
  *  - Two prerequisite pairs are on the list (DEC-01 needs DET-01 running;
  *    PER-06 and PER-02 need PER-01), so a pick in the wrong order is capped,
  *    and the fix is on the board.
- *  - The air gap is the tempting big buy: a third of the year's money for one
+ *  - The air gap is the tempting big buy: $100M of the year's $150M for one
  *    hard stop that helps, but less than spending the same money across
  *    approaches.
  *  - Five of them start partly in place at a typical lab, so the reader sees

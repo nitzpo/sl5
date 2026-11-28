@@ -19,14 +19,14 @@ const MARK_STEP = 46;
 
 /** A counter as a mark: its type's shape in outline, filled from the bottom
  * as far as its state. */
-function CounterMark({ x, y, type, state, id, gap }: { x: number; y: number; type: DefenseType; state: BlockState; id: string; gap?: boolean }) {
+function CounterMark({ x, y, type, state, note, id, gap }: { x: number; y: number; type: DefenseType; state: BlockState; note?: string; id: string; gap?: boolean }) {
   const clip = useId();
   const h = BAND_H + 8;
   const rects = typeBarRects(type, x, y, 8, h);
   const fill = STATE_FILL[state];
   return (
     <g>
-      <title>{`${blockName(id)} (${id}) — ${state.replace("_", " ")}${gap ? ": not built, would counter this step" : ""}`}</title>
+      <title>{`${blockName(id)} (${id}) — ${state.replace("_", " ")}${note ? ` (${note})` : ""}${gap ? ": not built, would counter this step" : ""}`}</title>
       {rects.map((r, i) => (
         <rect key={i} x={r.x + 0.5} y={r.y + 0.5} width={r.width - 1} height={r.height - 1} fill="var(--paper)" stroke="var(--ink)" strokeDasharray={gap ? "2 2" : undefined} />
       ))}
@@ -54,6 +54,8 @@ function Lane({
   bar,
   blocks,
   states,
+  effective,
+  unfunded,
   scenarioName,
   needsGov,
   propensity,
@@ -64,7 +66,12 @@ function Lane({
   a: ApproachResult;
   bar: number;
   blocks: Map<string, Block>;
+  /** What the reader set each block to. */
   states: Record<string, BlockState>;
+  /** What the engine counts it as, after the budget and prerequisite caps. */
+  effective: Record<string, BlockState>;
+  /** Blocks past the budget line (the rest of the capped ones wait on a prerequisite). */
+  unfunded: Set<string>;
   scenarioName?: string;
   needsGov: boolean;
 }) {
@@ -103,8 +110,16 @@ function Lane({
     shapes.push(<rect key={`p${i}`} x={cutX} y={BAND_Y + (BAND_H - after) / 2} width={x0 + SEG_W - cutX} height={after} fill="var(--signal)" />);
     counters.forEach((c, k) => {
       const b = blocks.get(c.blockId);
+      // Filled as far as the engine counts it, which is what the wash shows;
+      // a clicked-but-capped block says so on hover.
+      const set = states[c.blockId] ?? "not_started";
+      const counted = effective[c.blockId] ?? set;
+      const note =
+        counted === set
+          ? undefined
+          : `set to ${set.replace("_", " ")}, ${unfunded.has(c.blockId) ? "not funded" : "waiting on a prerequisite"}`;
       shapes.push(
-        <CounterMark key={`m${i}${k}`} x={markX + k * MARK_STEP} y={BAND_Y - 4} type={b?.defense_type ?? c.type} state={states[c.blockId] ?? "not_started"} id={c.blockId} />
+        <CounterMark key={`m${i}${k}`} x={markX + k * MARK_STEP} y={BAND_Y - 4} type={b?.defense_type ?? c.type} state={counted} note={note} id={c.blockId} />
       );
     });
     if (counters.length === 0) {
@@ -217,6 +232,8 @@ export function ApproachLanes() {
             bar={score.sl.bar}
             blocks={byId}
             states={states}
+            effective={score.effectiveStates}
+            unfunded={score.budgetExceededIds}
             scenarioName={scenarios.find((s) => s.approach === a.id)?.name}
             needsGov={a.path.some((s) => gov.has(s.vectorId))}
             propensity={propensity}

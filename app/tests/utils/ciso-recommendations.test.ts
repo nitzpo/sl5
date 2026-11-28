@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import { baselineStates } from "../../src/engine/baseline";
 import { blockCostBasis } from "../../src/engine/budget";
 import { orderAfterActivating, scorePosture, type PostureInput } from "../../src/engine/posture";
-import { NEXT_TIER_WEIGHT, recommendInvestments } from "../../src/utils/ciso-recommendations";
+import { NEXT_TIER_WEIGHT, candidateUpfrontRange, recommendInvestments } from "../../src/utils/ciso-recommendations";
 import type { BlockState } from "../../src/engine/types";
 import { APP_SLIDERS, loadBlocks, loadModel } from "../load-data";
 
@@ -132,6 +132,33 @@ describe("CISO priority investments", () => {
     const c = funded.candidates.find((x) => x.block.id === id);
     expect(c, `${id} should still be recommended`).toBeDefined();
     expect(c!.costMillions).toBe(0);
+    // And the range the rail shows agrees: nothing left to pay.
+    expect(c!.costs.every((x) => x.alreadyFunded)).toBe(true);
+    expect(candidateUpfrontRange(c!)).toBeNull();
+  });
+
+  it("shows the authored upfront range of only the blocks still to pay for", () => {
+    for (const c of analysis.candidates) {
+      // Nothing is funded yet at the default posture: every block's full range.
+      const all = [...c.prerequisites, c.block];
+      expect(candidateUpfrontRange(c), c.block.id).toEqual({
+        min: all.reduce((s, b) => s + b.dimensions.cost.upfront_millions.min, 0),
+        max: all.reduce((s, b) => s + b.dimensions.cost.upfront_millions.max, 0),
+      });
+    }
+    // A bundle whose prerequisite is already paid for shows only the rest.
+    const bundle = analysis.candidates.find((c) => c.prerequisites.length > 0);
+    if (bundle) {
+      const [prereq] = bundle.prerequisites;
+      const partly = {
+        ...bundle,
+        costs: bundle.costs.map((x) => (x.id === prereq.id ? { ...x, millions: 0, alreadyFunded: true } : x)),
+      };
+      const range = candidateUpfrontRange(partly)!;
+      const full = candidateUpfrontRange(bundle)!;
+      expect(range.min).toBeCloseTo(full.min - prereq.dimensions.cost.upfront_millions.min, 9);
+      expect(range.max).toBeCloseTo(full.max - prereq.dimensions.cost.upfront_millions.max, 9);
+    }
   });
 
   it("explains itself truthfully", () => {

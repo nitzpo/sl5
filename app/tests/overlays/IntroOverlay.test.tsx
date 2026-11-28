@@ -12,7 +12,7 @@ import { IntroOverlay } from "../../src/components/overlays/IntroOverlay";
 import { SCRIPTS } from "../../src/timelapse/scripts";
 import { usePlaybackStore } from "../../src/timelapse/playback-store";
 
-const INTRO_CTA = "Start with the 5-minute introduction";
+const INTRO_CTA = "Start with the six-minute introduction";
 
 // The real startScript rewrites the simulation store; the modal's only contract
 // is that it hands the chosen script over, so stub it and restore afterwards.

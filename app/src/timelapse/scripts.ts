@@ -159,7 +159,7 @@ export const SCRIPTS: TimeLapseScript[] = [
       { atYear: 2025, message: "Nothing has happened yet, so nothing gets funded. The budget is intact and so is the exposure." },
       { atYear: 2025.5, message: "Network probe detected — scrambling to deploy firewall controls" },
       { atYear: 2026.5, message: "Breach attempt. Starting air-gap project — won't deploy until 2028.5", highlight: { type: "block", id: "NET-01" } },
-      { atYear: 2027, message: "Insider incident. Personnel controls start but AI already at 65%" },
+      { atYear: 2027, message: "Insider incident. Personnel controls start, but AI capability is already strong" },
       { atYear: 2028.5, message: "AI-specific controls started too late — won't mature before 2030", highlight: { type: "block", id: "AI-01" } },
     ],
   },
@@ -215,9 +215,9 @@ export const SCRIPTS: TimeLapseScript[] = [
     deployments: [],
     annotations: [
       { atYear: 2024, message: "2024: no defenses, and no plan to build any. We just watch." },
-      { atYear: 2025.5, message: "AI at 15% — the attackers start climbing the tiers" },
-      { atYear: 2027, message: "AI at 65% — probabilistic defenses would be deeply eroded by now", highlight: { type: "chain", id: "patient-distillation" } },
-      { atYear: 2028.5, message: "AI at 88% — even OC3 adversaries succeed on multiple paths" },
+      { atYear: 2025.5, message: "AI capability emerging — the attackers start climbing the tiers" },
+      { atYear: 2027, message: "AI capability strong — probabilistic defenses would be deeply eroded by now", highlight: { type: "chain", id: "patient-distillation" } },
+      { atYear: 2028.5, message: "AI capability very strong — even OC3 attackers get through on several approaches" },
       { atYear: 2030, message: "Full AI capability. Even OC1 gets through more than one time in five: SL0." },
     ],
   },
@@ -228,8 +228,8 @@ export const SCRIPTS: TimeLapseScript[] = [
     type: "passthrough",
     annotations: [
       { atYear: 2024, message: "2024: your current posture, held fixed while time advances." },
-      { atYear: 2026, message: "AI at 35% — check which probabilistic defenses are eroding" },
-      { atYear: 2028, message: "AI at 82% — are your hard-stops in place?" },
+      { atYear: 2026, message: "AI capability modest — check which probabilistic defenses are eroding" },
+      { atYear: 2028, message: "AI capability very strong — are your hard stops in place?" },
     ],
   },
 ];

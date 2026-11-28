@@ -39,8 +39,9 @@ export interface InvestmentCandidate {
   /** Upfront $M the move adds to the plan, at the budget's cost basis. Zero for
    * a block the program is already funding and only has to finish. */
   costMillions: number;
-  /** The same, per advanced block. */
-  costs: { id: string; millions: number }[];
+  /** The same, per advanced block. `alreadyFunded` marks one the programme is
+   * already paying for (priced at $0). */
+  costs: { id: string; millions: number; alreadyFunded: boolean }[];
   /** Change in the threat-relative SL readout (level + progress). */
   slDelta: number;
   /** Change in campaign success against the adversary tier. ≤ 0. */
@@ -127,6 +128,26 @@ function objective(score: PostureScore, adversaryOc: number): number {
   return here + NEXT_TIER_WEIGHT * next;
 }
 
+/**
+ * The upfront range a move still has to pay, for display: each advanced
+ * block's authored min–max, except the ones the programme already funds, which
+ * cost nothing more — the same pricing the ranking uses. `null` when every
+ * block in the move is already paid for.
+ */
+export function candidateUpfrontRange(c: Pick<InvestmentCandidate, "block" | "prerequisites" | "costs">): { min: number; max: number } | null {
+  const byId = new Map([...c.prerequisites, c.block].map((b) => [b.id, b]));
+  const unpaid = c.costs.filter((cost) => !cost.alreadyFunded);
+  if (unpaid.length === 0) return null;
+  let min = 0;
+  let max = 0;
+  for (const cost of unpaid) {
+    const range = byId.get(cost.id)?.dimensions.cost.upfront_millions;
+    min += range?.min ?? 0;
+    max += range?.max ?? range?.min ?? 0;
+  }
+  return { min, max };
+}
+
 export function recommendInvestments(
   input: PostureInput,
   opts: { limit?: number } = {}
@@ -182,10 +203,10 @@ export function recommendInvestments(
     }
     if (!movesSomething) continue;
 
-    const costs = blockIds.map((id) => ({
-      id,
-      millions: funded(id) ? 0 : blockCostBasis(byId.get(id)!, rt),
-    }));
+    const costs = blockIds.map((id) => {
+      const alreadyFunded = funded(id);
+      return { id, millions: alreadyFunded ? 0 : blockCostBasis(byId.get(id)!, rt), alreadyFunded };
+    });
     const costMillions = costs.reduce((sum, c) => sum + c.millions, 0);
 
     const after = new Map(result.approaches.map((a) => [a.id, a.p]));

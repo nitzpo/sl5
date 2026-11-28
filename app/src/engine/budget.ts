@@ -21,13 +21,6 @@ export interface BudgetOptions {
    * can only cap THAT block — it never evicts an earlier commitment. */
   order?: string[];
   riskTolerance?: number;
-  /** Where an unfunded block falls back to, overriding the real-world baseline.
-   * The introduction's mini-game builds from nothing, so its floor is
-   * `not_started` for every block. A missing id falls back to the baseline.
-   * Only for postures that never sit a block between this floor and its
-   * baseline — otherwise deploying it unfunded could drop it below the state it
-   * held for free. */
-  floorStates?: Record<string, BlockState>;
 }
 
 const STATE_ORDER: BlockState[] = [
@@ -110,11 +103,11 @@ export function applyBudgetConstraint(
     // while the same block at `implementing` still counts as free, so deploying
     // it would make the posture worse. Keeping the two rules on one baseline is
     // also what keeps effective states independent of the year.
-    const floor = opts.floorStates?.[id] ?? baselineStateFor(block);
+    const floor = baselineStateFor(block);
     const state = blockStates[id] ?? "not_started";
     // The floor is a ceiling on what an unfunded block can claim, never a
     // boost. (An exceeded block is active, so it already sits above its
-    // baseline and this always applies; the guard is for `floorStates`.)
+    // baseline and this always applies.)
     if (STATE_ORDER.indexOf(floor) < STATE_ORDER.indexOf(state)) {
       effectiveStates[id] = floor;
     }

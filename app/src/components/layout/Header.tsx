@@ -9,6 +9,7 @@ import { OC_LONG } from "../../model/names";
 import { aiWord } from "../../model/words";
 import { ScenariosDropdown } from "./ScenariosDropdown";
 import { NAV_BTN } from "./header-button";
+import { VERSIONS_README, versionsHref } from "./versions-link";
 
 
 function YearControl() {
@@ -132,6 +133,7 @@ export function Header({ onShowHelp }: { onShowHelp: () => void }) {
   const setParamsOpen = useUiStore((s) => s.setParamsOpen);
   const [copied, setCopied] = useState(false);
   const base = import.meta.env.BASE_URL;
+  const versions = versionsHref(base);
 
   return (
     <header className="flex items-end gap-6 border-b-2 border-ink px-6 pt-3 pb-3">
@@ -162,7 +164,12 @@ export function Header({ onShowHelp }: { onShowHelp: () => void }) {
         <a className={NAV_BTN} href={`${base}intro/`} title="Why model weights are a target, and how to use this tool">
           Intro
         </a>
-        <a className={NAV_BTN} href={`${base}../`} title="All versions of the explorable">
+        <a
+          className={NAV_BTN}
+          href={versions}
+          title="All versions of the explorable"
+          {...(versions === VERSIONS_README ? { target: "_blank", rel: "noreferrer" } : {})}
+        >
           Versions
         </a>
         <button type="button" className={`${NAV_BTN} w-8 justify-center border border-ink no-underline hover:bg-ink hover:text-paper`} aria-label="How to use" title="How to use" onClick={onShowHelp}>

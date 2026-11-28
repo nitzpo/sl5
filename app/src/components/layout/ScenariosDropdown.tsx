@@ -19,6 +19,9 @@ export function ScenariosDropdown() {
   const deleteScenario = useSimulationStore((s) => s.deleteScenario);
   const resetToBaseline = useSimulationStore((s) => s.resetToBaseline);
   const startScript = usePlaybackStore((s) => s.startScript);
+  // Saving mid-story is ambiguous (the story's frame, or your posture?), so it
+  // waits for the story to stop. Loading and resetting are not: they end it.
+  const playing = useSimulationStore((s) => s.playbackActive);
 
   useEffect(() => {
     if (!open) return;
@@ -41,7 +44,7 @@ export function ScenariosDropdown() {
 
   function save() {
     const n = name.trim();
-    if (!n) return;
+    if (!n || playing) return;
     if (saved.some((s) => s.name === n) && !confirmOverwrite) {
       setConfirmOverwrite(true);
       return;
@@ -96,12 +99,14 @@ export function ScenariosDropdown() {
             <button
               type="button"
               onClick={save}
-              disabled={!name.trim()}
+              disabled={!name.trim() || playing}
+              title={playing ? "Stop the story to save your posture" : undefined}
               className="border border-ink bg-ink px-3 text-[13px] font-semibold text-paper disabled:opacity-40"
             >
               {confirmOverwrite ? "Overwrite?" : "Save"}
             </button>
           </div>
+          {playing && <p className="mt-1 text-[12px] text-ink-2">Stop the story to save your posture.</p>}
           {saved.length === 0 ? (
             <p className="mt-2 text-[12px] text-ink-2">No saved postures yet.</p>
           ) : (

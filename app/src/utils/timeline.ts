@@ -42,3 +42,12 @@ export function quantizeYear(year: number): number {
   // for a whole year, and that misses every `=== year` comparison downstream.
   return clampYear(Math.round(year * 12) / 12);
 }
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Label a quantized year as "Mon YYYY", e.g. 2026.5 → "Jul 2026". */
+export function formatYearMonth(year: number): string {
+  const whole = Math.floor(year);
+  const month = Math.round((year - whole) * 12) + 1;
+  return `${MONTH_NAMES[month]} ${whole}`;
+}

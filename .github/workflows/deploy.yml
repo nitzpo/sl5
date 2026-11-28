@@ -1,3 +1,13 @@
+# Publishes two versions of the explorable side by side, plus a version picker:
+#
+#   /sl5/          site/index.html: choose a version. Pre-v2 links that carry
+#                  state (?story=…, #state=…) are forwarded to /sl5/v1/.
+#   /sl5/intro/    site/intro/index.html: forwards to /sl5/v1/intro/ + #hash.
+#   /sl5/v1/       the original app, built from the pinned commit V1_SHA.
+#   /sl5/v2/       the app in this commit.
+#
+# Each app is a two-page Vite build (the instrument and /intro/), built with
+# `--base` so its asset and data URLs live under its own prefix.
 name: Deploy to GitHub Pages
 
 on:
@@ -13,23 +23,57 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # v1 is frozen here: the last commit of the original explorable (#24), before
+  # the v2 rebuild. /sl5/v1/ is rebuilt from exactly this commit on every
+  # deploy, so it only changes if this line does.
+  V1_SHA: ec5d9bd5955aecc03aa267efd024d23c886c48e9
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, so the pinned v1 commit is available to check out.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - run: npm ci
+
+      # v2: this commit.
+      - name: Install v2
+        run: npm ci
         working-directory: app
-      - run: npx vite build
+      - name: Build v2
+        run: npx vite build --base /sl5/v2/ --outDir "$GITHUB_WORKSPACE/dist/v2" --emptyOutDir
         working-directory: app
+
+      # v1: the pinned commit, in its own worktree with its own lockfile.
+      - name: Check out v1
+        run: git worktree add --detach "$RUNNER_TEMP/v1" "$V1_SHA"
+      - name: Install v1
+        run: npm ci
+        working-directory: ${{ runner.temp }}/v1/app
+      - name: Build v1
+        run: npx vite build --base /sl5/v1/ --outDir "$GITHUB_WORKSPACE/dist/v1" --emptyOutDir
+        working-directory: ${{ runner.temp }}/v1/app
+
+      # The version picker and the redirects at the root. Plain static files,
+      # copied as they are (site/README.md and the capture script stay behind).
+      - name: Add the landing page
+        run: |
+          cp site/index.html dist/
+          mkdir -p dist/intro dist/thumbs
+          cp site/intro/index.html dist/intro/
+          cp site/thumbs/*.webp dist/thumbs/
+          find dist -maxdepth 3 -name index.html | sort
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: app/dist
+          path: dist
 
   deploy:
     needs: build

@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SL5 Explorable</title>
+<script>
+  // Links made before the version split point here with v1 state in them:
+  // Share links (#state=…), story links (?story=…), intro hand-offs. That state
+  // format belongs to v1, so send them on with the query and hash intact.
+  // replace() keeps this page out of the back stack. Campaign tags that other
+  // sites append to any link (utm_*, fbclid, …) are not state and stay here.
+  (function () {
+    var l = window.location;
+    var state = l.search.replace(/^\?/, "").split("&").filter(function (p) {
+      return p && !/^(utm_[a-z_]+|fbclid|gclid|msclkid|ref)(=|$)/i.test(p);
+    });
+    if (state.length || l.hash.length > 1) l.replace("v1/" + l.search + l.hash);
+  })();
+</script>
+<meta name="description" content="An interactive instrument for planning how a frontier AI lab defends its model weights against nation-state attackers. Choose v2 (current) or v1 (the original).">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F4F3EE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131312" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="SL5 Explorable">
+<meta property="og:description" content="An interactive instrument for planning how a frontier AI lab defends its model weights against nation-state attackers.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111110'/%3E%3Crect x='6' y='6' width='6' height='20' fill='%23F4F3EE'/%3E%3Crect x='15' y='14' width='5' height='12' fill='%23F4F3EE'/%3E%3Crect x='23' y='20' width='4' height='6' fill='%23C4301A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* "Swiss signal": the v2 visual system. Paper and ink, one signal red used
+     for the single thing that is new, hierarchy from type scale and weight,
+     areas separated by rules and space rather than boxes. */
+  :root {
+    --paper: #F4F3EE;
+    --ink: #111110;
+    --ink-2: #52514C;
+    --ink-3: #6B6A64;
+    --rule: #D5D4CD;
+    --signal: #C4301A;
+    --on-signal: #F4F3EE;
+    --gutter: clamp(16px, 4vw, 56px);
+    --col-gap: clamp(24px, 3.5vw, 56px);
+    --sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #131312;
+      --ink: #EEEDE7;
+      --ink-2: #B4B3AB;
+      --ink-3: #9A9992;
+      --rule: #3A3935;
+      --signal: #E5573B;
+      --on-signal: #131312;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 16px/1.5 var(--sans);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, p { margin: 0; }
+  a { color: inherit; }
+  img { display: block; max-width: 100%; height: auto; }
+
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+  .mono {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .page {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+
+  /* ---- masthead ---- */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 20px 0 12px;
+    border-bottom: 4px solid var(--ink);
+  }
+  .masthead a { text-decoration: none; color: var(--ink); white-space: nowrap; }
+  .masthead a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ---- title ---- */
+  .hero {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--col-gap);
+    row-gap: 20px;
+    align-items: end;
+    padding: clamp(32px, 5vw, 64px) 0 clamp(40px, 5vw, 64px);
+  }
+  h1 {
+    grid-column: 1 / span 7;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.32em;
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 500;
+  }
+  h1 .mark {
+    font-size: clamp(72px, 10.5vw, 152px);
+    line-height: 0.8;
+    font-weight: 850;
+    font-stretch: 108%;
+    letter-spacing: -0.035em;
+  }
+  h1 .word { color: var(--ink-2); }
+  .lede {
+    grid-column: 8 / span 5;
+    font-size: clamp(20px, 1.9vw, 28px);
+    line-height: 1.25;
+    font-weight: 450;
+    letter-spacing: -0.005em;
+    max-width: 26em;
+  }
+
+  /* ---- versions ---- */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 12px;
+  }
+  .versions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--col-gap);
+    row-gap: 56px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-top: 2px solid var(--ink);
+    padding-top: 16px;
+  }
+  .mono.path { text-transform: none; letter-spacing: 0.02em; }
+  .tile .meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .shot {
+    order: -1;               /* image first visually; heading stays first in the source */
+    margin: 0 0 20px;
+    border: 1px solid var(--rule);
+    background: var(--rule);
+    aspect-ratio: 1200 / 750;
+    overflow: hidden;
+    transition: border-color 120ms ease;
+  }
+  .shot img { width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+  .tile > .meta { order: -2; }
+  h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 16px;
+    row-gap: 4px;
+    font-size: 28px;
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  h2 .num {
+    font-size: clamp(44px, 5vw, 72px);
+    line-height: 0.85;
+    font-weight: 850;
+    font-stretch: 108%;
+    letter-spacing: -0.04em;
+  }
+  .tag {
+    align-self: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--on-signal);
+    background: var(--signal);
+    padding: 5px 7px 4px;
+  }
+  .tile p.what {
+    margin-top: 16px;
+    max-width: 36em;
+    color: var(--ink-2);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 32px;
+    margin-top: auto;        /* side by side, both tiles' links share a baseline */
+    padding-top: 20px;
+    font-size: 16px;
+    line-height: 1.25;
+    font-weight: 650;
+  }
+  .actions a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    text-decoration: none;
+    border-bottom: 2px solid var(--ink);
+  }
+  .actions a.secondary { border-bottom-color: var(--rule); font-weight: 500; }
+  .actions svg { width: 16px; height: 12px; flex: none; transition: transform 120ms ease; }
+
+  /* The whole tile opens the instrument: the primary link's box is stretched
+     over it. "Introduction" sits above that box so it stays its own target. */
+  .actions a.open::after { content: ""; position: absolute; inset: 0; }
+  .actions a.secondary { position: relative; z-index: 1; }
+  .actions a.secondary:hover { border-bottom-color: var(--ink); }
+  .tile:hover .shot { border-color: var(--ink); }
+  .tile:hover a.open svg, .actions a:hover svg, .actions a:focus-visible svg { transform: translateX(3px); }
+  .actions a.open:focus-visible { outline: none; }
+  .actions a.open:focus-visible::after { outline: 3px solid var(--ink); outline-offset: 8px; }
+
+  /* ---- footer ---- */
+  .foot {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--col-gap);
+    row-gap: 24px;
+    margin-top: clamp(56px, 7vw, 96px);
+    padding: 16px 0 40px;
+    border-top: 1px solid var(--rule);
+  }
+  .disclaimer { grid-column: 1 / span 7; }
+  .disclaimer p:last-child {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 52em;
+  }
+  .links { grid-column: 9 / span 4; }
+  .links ul { list-style: none; margin: 8px 0 0; padding: 0; }
+  .links li + li { margin-top: 4px; }
+  .links a { font-size: 14px; line-height: 1.5; text-underline-offset: 3px; text-decoration-color: var(--rule); }
+  .links a:hover { text-decoration-color: currentColor; }
+
+  /* ---- narrow screens ---- */
+  @media (max-width: 899px) {
+    h1, .lede { grid-column: 1 / -1; }
+    .versions { grid-template-columns: minmax(0, 1fr); }
+    .disclaimer, .links { grid-column: 1 / -1; }
+  }
+  @media (max-width: 479px) {
+    .masthead .more { display: none; }
+    h1 { font-size: 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shot, .actions svg { transition: none; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .shot img { filter: brightness(0.92); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <p class="mono">Security Level 5<span class="more"> &middot; Defending frontier model weights</span></p>
+    <a class="mono" href="https://github.com/nitzpo/sl5">Source on GitHub</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1><span class="mark">SL5</span> <span class="word">Explorable</span></h1>
+      <p class="lede">An interactive instrument for planning how a frontier AI lab defends its model weights against nation-state attackers.</p>
+    </section>
+
+    <section aria-labelledby="versions-label">
+      <div class="section-head">
+        <p class="mono" id="versions-label">Choose a version</p>
+      </div>
+
+      <ul class="versions">
+        <li class="tile">
+          <h2><span class="num">v2</span> Threat-relative <span class="tag">New</span></h2>
+          <div class="meta">
+            <p class="mono">Current</p>
+            <p class="mono path">/sl5/v2/</p>
+          </div>
+          <div class="shot">
+            <img src="thumbs/v2.webp" width="1200" height="750" alt="The v2 catalogue on paper-white: defenses laid out as a matrix of attack stage by category, the easiest attack path drawn through them in red, and the security-level verdict in a rail on the right.">
+          </div>
+          <p class="what">Security level is now threat-relative: SL&nbsp;n means an OC&nbsp;n attacker mostly fails. Scoring runs on RAND&rsquo;s attack-vector model, and the defense catalogue has two views, a stage matrix and category clusters.</p>
+          <div class="actions">
+            <a class="open" href="v2/">Open the instrument <svg viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14M9 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+            <a class="secondary" href="v2/intro/">Introduction <svg viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14M9 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+          </div>
+        </li>
+
+        <li class="tile">
+          <h2><span class="num">v1</span> Original</h2>
+          <div class="meta">
+            <p class="mono">2025&ndash;26 &middot; frozen</p>
+            <p class="mono path">/sl5/v1/</p>
+          </div>
+          <div class="shot">
+            <img src="thumbs/v1.webp" width="1200" height="750" alt="The v1 explorable in its dark theme: defense blocks as hexagons clustered by category on a map, with the score card and controls around it.">
+          </div>
+          <p class="what">The original 2025&ndash;26 build, kept for reference: a hex map of defenses, a coverage-based security level and seven narrative attack chains. Share links made before v2 open here.</p>
+          <div class="actions">
+            <a class="open" href="v1/">Open the instrument <svg viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14M9 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+            <a class="secondary" href="v1/intro/">Introduction <svg viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14M9 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="disclaimer">
+      <p class="mono">Disclaimer</p>
+      <p>An educational, illustrative model, not authoritative security guidance. Its defenses, attack paths, costs and odds are a modelling interpretation of public sources, not official figures. Use it to build intuition, not to make procurement or accreditation decisions.</p>
+    </div>
+    <nav class="links" aria-label="Project">
+      <p class="mono">Project</p>
+      <ul>
+        <li><a href="https://github.com/nitzpo/sl5">Source code on GitHub</a></li>
+        <li><a href="https://github.com/nitzpo/sl5#readme">Sources, method and full disclaimer</a></li>
+        <li><a href="https://github.com/nitzpo/sl5/blob/main/LICENSE">MIT License</a></li>
+      </ul>
+    </nav>
+  </footer>
+</div>
+</body>
+</html>

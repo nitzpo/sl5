@@ -1,5 +1,7 @@
 # SL5 Explorable — Design Decisions Log
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. Decisions about perspectives, attack chains and a coverage-based SL were superseded in v2; the data-in-JSON architecture and the audience still hold.
+
 ## Confirmed Decisions
 
 ### Data Architecture

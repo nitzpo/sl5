@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction · SL5 Explorable</title>
+<script>
+  // /sl5/intro/ was v1's introduction before the version split. Its slides
+  // deep-link by hash (#the-oc-ladder), so keep the hash, and the query too.
+  location.replace("../v1/intro/" + location.search + location.hash);
+</script>
+<!-- Without JavaScript: a plain refresh (it cannot carry the hash). Inside
+     <noscript> so it never races the scripted redirect above. -->
+<noscript><meta http-equiv="refresh" content="0; url=../v1/intro/"></noscript>
+<link rel="canonical" href="https://nitzpo.github.io/sl5/v1/intro/">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<style>
+  body { margin: 0; padding: 40px 16px; background: #F4F3EE; color: #111110; font: 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  @media (prefers-color-scheme: dark) { body { background: #131312; color: #EEEDE7; } }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<p>The introduction has moved to <a href="../v1/intro/">/sl5/v1/intro/</a>. There is also a <a href="../">newer version</a>.</p>
+</body>
+</html>

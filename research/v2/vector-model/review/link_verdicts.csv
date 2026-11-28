@@ -1,0 +1,81 @@
+block,vector,current,proposed,reason
+AI-01,V-SELF-2,strong,keep,Least privilege is the structural counter
+AI-02,V-SELF-5,strong,keep,"Primary, but probabilistic: erodes hard at AC4-5"
+AI-04,V-SELF-6,strong,keep+hybrid,Quota accounting is software (July 2026 bypass); add type_override hybrid like its V-SELF-2/3 links
+AI-07,V-ML-4,strong,keep,Removing logits/logprobs defeats Carlini-2024-style extraction
+AI-07,V-ML-5,strong,partial,Rate limits and detection slow distillation; account-farm campaigns persist. Move V-ML-5 to its own meter
+AI-08,V-ML-3,strong,partial,Injection filters are bypassable classifiers; prompt injection is unsolved
+AI-09,V-SELF-3,strong,keep,Confined execution with no shared egress is the primary counter
+AI-10,V-SELF-2,strong,keep,"Keep, but probabilistic erosion at AC4-5"
+AI-11,V-SELF-1,strong,keep (weights only),Split V-SELF-1: no counter to self-distilled data
+AI-12,V-SELF-5,strong,partial,"Lineage proves provenance, not soundness: subtly flawed code and sandbagged evals re-execute identically"
+CUS-01,V-BYP-2,strong,keep,"Inventory, centralisation, destruction: RAND SL3"
+HW-05,V-NET-2,strong,keep (EM only),Shielding does nothing for cache/timing side channels
+IAM-01,V-CRED-1,strong,keep if scoped,Strong only if IAM-01 covers help-desk/recovery proofing; RAND SE includes getting staff to run code (Uber 2022)
+IAM-01,V-CRED-2,strong,keep,Passwordless
+IAM-01,V-CRED-3,strong,keep,Needs secrets vaulting/workload identity for service creds
+IAM-01,V-CRED-4,strong,keep,Zero standing privilege
+KEY-01,V-BYP-2,strong,keep,Stray copies are ciphertext
+KEY-01,V-ACS-4,strong,partial,"RAND's vector is third-party roots (Comodo, DigiNotar, Flame); weight-key HSMs do not protect them"
+NET-01,V-CODE-1,strong,keep+floor,Floor at V-NET-1 score (residual)
+NET-01,V-CODE-2,strong,keep+floor,Floor at V-NET-1
+NET-01,V-CODE-3,strong,keep+floor,Floor at V-NET-1
+NET-01,V-CODE-4,strong,keep+floor,Floor at V-NET-1
+NET-01,V-PHYS-3,strong,keep,Off-site devices have no route in
+NET-01,V-SELF-3,strong,partial,The escape that matters is into the lab's own network; AI-09 is primary
+NET-02,V-CODE-1,strong,partial,Allow-listed software still carries n-days; patching (missing block) is primary
+NET-02,V-CODE-2,strong,partial,Same
+NET-02,V-CRED-4,strong,keep,Segmentation vs lateral movement
+NET-03,V-NET-3,strong,keep,Redundant with NET-07
+NET-04,V-SELF-1,strong,keep (weights only),Cap does not bound keys or self-distilled data; split V-SELF-1
+NET-05,V-NET-1,strong,partial,"Diodes stop outbound flow, not inbound malware (Stuxnet, Agent.btz), insider media or induced emergency links (RAND App. A)"
+NET-06,V-NET-3,strong,keep,
+NET-07,V-NET-3,strong,keep,
+PER-02,V-PHYS-1,strong,keep,
+PER-03,V-HUM-1,strong,partial,Detection only (RAND SL4 insider-threat programme); PER-06 is the structural counter
+PER-04,V-HUM-3,strong,keep,
+PER-06,V-HUM-1,strong,keep,Collusion of two remains
+PER-06,V-HUM-2,strong,keep,
+PER-06,V-HUM-3,strong,keep,
+PER-08,V-BYP-3,strong,partial,"RAND's examples are recovery, break-glass, admin impersonation, legacy auth: identity, not BMCs"
+PER-08,V-SUP-3,strong,partial,"Removes remote vendor access only; on-site contractors, colo/cloud staff, OPM-style credentials remain"
+PER-09,V-HUM-2,strong,keep,RAND SL5 personal protection
+PHY-01,V-PHYS-1,strong,keep,
+PHY-02,V-NET-2,strong,keep (EM only),
+PHY-04,V-PHYS-6,strong,keep,
+SC-07,V-SUP-2,strong,partial,Only critical components are in-house; SW-01 carries the vector
+SC-07,V-ACS-2,strong,keep+NET-03,In-house code implementing a subverted standard keeps the backdoor (Dual_EC); pair with NET-03
+SW-01,V-SUP-2,strong,keep,xz-class maintainer backdoors erode it at OC5
+SW-01,V-ML-2,strong,keep (software half),Hardware half is PHY-07/SC-02
+IAM-01,V-BYP-3,partial,strong,Recovery and fallback auth are the vector's main path
+AI-09,V-ML-3,partial,strong,Injected agent's code runs where no weights live: structural
+HW-04,V-PHYS-5,partial,remove,V-PHYS-5 assumes_defense HW-04: contradicts e4
+KEY-01,V-PHYS-5,partial,remove,assumes_defense KEY-01: contradicts e4
+PHY-03,V-PHYS-4,partial,remove,assumes_defense PHY-03: contradicts e4
+PHY-04,V-PHYS-4,partial,"keep, fix assumes_defense",Human response survives digital PACS compromise; take PHY-04 off V-PHYS-4 assumes_defense
+HW-07,V-SUP-3,partial,"partial, weak",Provider staff have physical access (TEE.fail); hypervisor-level only
+HW-07,V-CODE-3,partial,keep partial,"Block should be hybrid, not hard_stop"
+HW-03,V-PHYS-1,partial,"keep partial, weak",Covers NVLink only; DIMM interposers and pulled drives untouched
+KEY-01,V-PHYS-7,partial,"keep partial, weak",
+KEY-01,V-HUM-5,partial,keep partial,RAND SL5 irrecoverable key policy
+PER-06,V-ACS-3,partial,keep partial only if co-sign is out-of-band,MPA is usually implemented inside the ACS software
+NET-04,V-CODE-4,partial,move to exfil stage,"Egress effect, not a code counter"
+NET-04,V-CRED-4,partial,move to exfil stage,
+NET-04,V-NET-1,partial,move to exfil stage,
+PHY-05,V-PHYS-2,partial,strong after extension,"RAND SL3 sweeps, SL4 device ban, SL5 hardware-disabled comms"
+NET-05,V-PHYS-2,partial,keep partial,
+NET-01,V-CRED-1,partial,keep partial,
+NET-01,V-SUP-1,partial,keep partial,
+DET-01,V-HUM-4,partial,"keep partial, weak",Counter-intelligence liaison is not a SOC function
+DEC-01,V-HUM-1,partial,"keep partial, weak",
+CUS-01,V-PHYS-1,partial,keep partial,Waste-media route
+SC-03,V-ML-3,partial,keep partial,Novel Recs inbound screening
+AI-05,V-BYP-1,partial,move to new config-assurance block,
+KEY-01,V-BYP-1,none,none->partial,Misconfigured store exposes ciphertext (Microsoft 38TB)
+KEY-01,V-CRED-3,none,none->partial,Leaked storage creds yield ciphertext
+AI-01,V-ML-3,none,none->partial,Least-privileged agent bounds the confused deputy
+AI-04,V-ML-3,none,none->partial,Scoped network/API limits injected agent
+NET-02,V-NET-2,none,none->partial,Dedicated weight hardware removes co-tenant microarchitectural channels (RAND SL3)
+NET-03,V-ACS-4,none,none->partial,Second vendor's keys
+SC-07,V-ACS-4,none,none->partial,Own trust roots instead of public CAs/vendor keys
+DET-01,V-SUP-1,none,none->partial,SolarWinds was found by a victim SOC; or model DET-01 as a stage multiplier

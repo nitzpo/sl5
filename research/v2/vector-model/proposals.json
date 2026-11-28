@@ -1,0 +1,194 @@
+{
+  "status": "PROPOSAL: none of this is in the app's data yet; the user decides.",
+  "merges": [
+    {
+      "id": "P-MERGE-AI03",
+      "absorb": [
+        "AI-03"
+      ],
+      "into": [
+        "AI-07",
+        "AI-08"
+      ],
+      "why": "Probing detection belongs with outbound inference defence (AI-07), adversarial-input detection with inbound (AI-08); red-teaming becomes part of control assurance. AI-03's three links are already held by AI-07/AI-08."
+    },
+    {
+      "id": "P-MERGE-HW10",
+      "absorb": [
+        "HW-10"
+      ],
+      "into": [
+        "HW-06"
+      ],
+      "why": "Composition-attack prevention is an advanced tier of execution integrity; research-stage, no deployments."
+    },
+    {
+      "id": "P-MERGE-PER07",
+      "absorb": [
+        "PER-07"
+      ],
+      "into": [
+        "PER-02"
+      ],
+      "why": "Body-worn cameras are the evidence mechanism of two-person integrity (already its completed_by)."
+    },
+    {
+      "id": "P-MERGE-PER05",
+      "absorb": [
+        "PER-05"
+      ],
+      "into": [
+        "PER-03"
+      ],
+      "why": "Post-employment restrictions act after the weights have left; their useful part is monitoring around departures."
+    },
+    {
+      "id": "P-MERGE-SC",
+      "absorb": [
+        "SC-02",
+        "SC-05",
+        "SC-06"
+      ],
+      "into": [
+        "SC-08"
+      ],
+      "new_id": "SC-08",
+      "name": "Hardware Provenance & Authenticity",
+      "why": "Upstream inspection, counterfeit detection and chain of custody are one programme; SBOMs move to SW-01."
+    },
+    {
+      "id": "P-EXTEND-PHY05",
+      "absorb": [
+        "PHY-05"
+      ],
+      "into": [
+        "PHY-08"
+      ],
+      "new_id": "PHY-08",
+      "name": "No Unapproved Devices or Ports",
+      "why": "Extends the wireless ban to all unapproved devices, media and ports, with interfaces disabled in hardware (RAND SL3 sweeps, SL4 device ban, SL5 hardware-disabled communication). Closes cheap gap V-PHYS-2."
+    }
+  ],
+  "new_blocks": [
+    {
+      "id": "END-01",
+      "proposal": "P-NEW-END",
+      "name": "Patch & Endpoint Management",
+      "defense_type": "hybrid",
+      "category": "network",
+      "rand_ref": "SL2-SL3 software update management; SL4 limiting attack surface",
+      "primary_for": [
+        "V-CODE-1",
+        "V-CODE-2"
+      ]
+    },
+    {
+      "id": "CFG-01",
+      "proposal": "P-NEW-CFG",
+      "name": "Configuration Integrity & Gold Image",
+      "defense_type": "hybrid",
+      "category": "network",
+      "rand_ref": "SL3 policy enforcement through code; integrity checks against a gold image",
+      "primary_for": [
+        "V-BYP-1"
+      ]
+    },
+    {
+      "id": "GOV-01",
+      "proposal": "P-NEW-GOV",
+      "name": "Governance & Investor Vetting",
+      "defense_type": "probabilistic",
+      "category": "personnel",
+      "rand_ref": "SL4 vetting of investors and positions of influence; security team empowered",
+      "primary_for": [
+        "V-HUM-4"
+      ]
+    },
+    {
+      "id": "ACA-01",
+      "proposal": "P-NEW-ACA",
+      "name": "Access-Control Assurance & Formal Verification",
+      "defense_type": "hybrid",
+      "category": "machine",
+      "rand_ref": "SL5 formal hardware verification of key components",
+      "primary_for": [
+        "V-ACS-1",
+        "V-ACS-3"
+      ]
+    },
+    {
+      "id": "SRV-01",
+      "proposal": "P-NEW-SRV",
+      "name": "Hardened Weight-Access & Serving Interface",
+      "defense_type": "hybrid",
+      "category": "machine",
+      "rand_ref": "SL3 permitted interfaces; SL4 specialised hardware for external interfaces; SL5 ML-specific HSM",
+      "primary_for": [
+        "V-ML-1"
+      ]
+    }
+  ],
+  "reclassify": [
+    {
+      "block": "AI-06",
+      "from": "hard_stop",
+      "to": "hybrid",
+      "role": "response",
+      "why": "A kill-switch acts only on a detection trigger; score it as a response multiplier on AI-10/AI-01."
+    },
+    {
+      "block": "HW-07",
+      "from": "hard_stop",
+      "to": "hybrid",
+      "why": "Defends against host software only; physical interposers (TEE.fail) and TEE bugs are in scope at OC4-5."
+    },
+    {
+      "block": "SC-07",
+      "from": "hard_stop",
+      "to": "hybrid",
+      "why": "In-house development relocates supply-chain risk to internal developers rather than removing it."
+    },
+    {
+      "block": "HW-05",
+      "from": "hard_stop",
+      "to": "hybrid",
+      "added_by": "vector backbone author",
+      "why": "Hard stop for EM shielding, detection-only for tampering."
+    },
+    {
+      "block": "AI-04",
+      "from": "hard_stop",
+      "to": "hybrid",
+      "added_by": "vector backbone author",
+      "why": "Quotas are software set by humans; the July 2026 agent worked around throttling."
+    }
+  ],
+  "rescope": [
+    {
+      "block": "IAM-01",
+      "adds": [
+        "help-desk and account-recovery identity proofing",
+        "workload identity for service credentials"
+      ],
+      "why": "Needed for its strong links to V-CRED-1 (Uber 2022 help-desk social engineering) and V-CRED-3."
+    },
+    {
+      "block": "AI-05",
+      "removes": [
+        "configuration-drift role (to CFG-01)",
+        "honeypots and canaries (to DEC-01)"
+      ],
+      "why": "Keeps AI containment exercises only."
+    },
+    {
+      "block": "AI-01",
+      "adds": [
+        "per-agent identity and least privilege"
+      ],
+      "removes": [
+        "behavioural monitoring (lives in AI-10)"
+      ],
+      "why": "Removes overlap with AI-10."
+    }
+  ]
+}

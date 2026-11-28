@@ -1,0 +1,195 @@
+[
+  {
+    "id": "remote",
+    "name": "Remote network intrusion",
+    "adversary": "human",
+    "headline": true,
+    "stages": {
+      "entry": [
+        "V-CODE-1",
+        "V-CODE-2",
+        "V-CODE-3",
+        "V-CODE-4",
+        "V-CRED-1",
+        "V-CRED-2",
+        "V-CRED-3",
+        "V-BYP-3",
+        "V-PHYS-2",
+        "V-PHYS-3",
+        "V-SUP-3",
+        "V-NET-1"
+      ],
+      "reach": [
+        "V-CRED-4",
+        "V-ACS-1",
+        "V-ACS-2",
+        "V-ACS-3",
+        "V-ACS-4",
+        "V-BYP-1",
+        "V-BYP-2",
+        "V-ML-1",
+        "V-NET-2"
+      ],
+      "exfil": [
+        "V-X-3",
+        "V-NET-1"
+      ]
+    },
+    "notes": "Classic foothold, escalate, exfiltrate. With NET-01 deployed, the code and credential vectors are countered but V-NET-1 (residual) joins entry and exfil, so the stage never falls below V-NET-1: the reviewer's floor falls out of the structure. Planted USB (V-PHYS-2) and off-site laptops (V-PHYS-3) are entry here because the operator then works remotely."
+  },
+  {
+    "id": "insider",
+    "name": "Human insider",
+    "adversary": "human",
+    "headline": true,
+    "stages": {
+      "entry": [
+        "V-HUM-1",
+        "V-HUM-2",
+        "V-HUM-3",
+        "V-HUM-4",
+        "V-HUM-5",
+        "V-SUP-3"
+      ],
+      "reach": [
+        "V-X-1",
+        "V-BYP-2",
+        "V-CRED-4",
+        "V-ACS-4"
+      ],
+      "exfil": [
+        "V-X-3",
+        "V-X-4"
+      ]
+    },
+    "notes": "Entry is getting a cooperating person (recruited, coerced, placed, or a vendor's staff). At an SL1 victim the insider's standing access (V-X-1) and carry-out (V-X-3/V-X-4) are certain, so insider carry-out is complete on its own until PER-06, KEY-01 or egress controls exist. Leadership-approved access (V-HUM-5) is an entry like any other: split custody and dual authorisation still apply."
+  },
+  {
+    "id": "physical",
+    "name": "Physical intrusion and seizure",
+    "adversary": "human",
+    "headline": true,
+    "stages": {
+      "entry": [
+        "V-PHYS-1",
+        "V-PHYS-4",
+        "V-PHYS-6",
+        "V-PHYS-7"
+      ],
+      "reach": [
+        "V-X-2",
+        "V-PHYS-5",
+        "V-NET-3",
+        "V-NET-2",
+        "V-BYP-2"
+      ],
+      "exfil": [
+        "V-X-4",
+        "V-X-3"
+      ]
+    },
+    "notes": "Someone gets to the hardware, reads or taps the weights, and carries them out. Armed break-in and military takeover (V-PHYS-6/7) skip exfil because they take the hardware, but still need a reach step to read it (KEY-01 strong). Wiretaps (V-NET-3) skip exfil."
+  },
+  {
+    "id": "supply_chain",
+    "name": "Supply chain",
+    "adversary": "human",
+    "headline": true,
+    "stages": {
+      "entry": [
+        "V-SUP-1",
+        "V-SUP-2",
+        "V-ML-2"
+      ],
+      "reach": [
+        "V-CRED-4",
+        "V-ML-1",
+        "V-BYP-1",
+        "V-BYP-2",
+        "V-ACS-2",
+        "V-ACS-3"
+      ],
+      "exfil": [
+        "V-X-3",
+        "V-NET-1"
+      ]
+    },
+    "notes": "A compromised product, package or component gives a foothold inside the trusted boundary, including behind an air gap. Kept staged: an implant still has to reach the weights and get them out (covert channels are V-NET-1)."
+  },
+  {
+    "id": "served",
+    "name": "Served model",
+    "adversary": "human",
+    "headline": true,
+    "requires_external_serving": true,
+    "stages": {
+      "entry": [
+        "V-ML-3",
+        "V-ML-1",
+        "V-ML-4"
+      ],
+      "reach": [
+        "V-CRED-4",
+        "V-ML-1",
+        "V-BYP-1"
+      ],
+      "exfil": [
+        "V-X-3",
+        "V-X-5"
+      ]
+    },
+    "notes": "Exists only if the model is served externally (world-state toggle). Prompt-triggered code execution or serving-stack bugs give a foothold on infrastructure that holds weights; model extraction (V-ML-4) needs nothing but the API, but a weight-scale volume of responses still has to leave through it (V-X-5, metered by AI-07). NET-01 does not apply: RAND exempts production serving."
+  },
+  {
+    "id": "ai_insider",
+    "name": "The lab's own model as insider",
+    "adversary": "ai",
+    "headline": true,
+    "stages": {
+      "entry": [],
+      "reach": [
+        "V-SELF-2",
+        "V-SELF-3",
+        "V-SELF-7",
+        "V-SELF-6"
+      ],
+      "exfil": [
+        "V-SELF-1",
+        "V-SELF-8",
+        "V-SELF-4"
+      ]
+    },
+    "notes": "No entry stage: the model is already inside. Scored on AC bands, not OC tiers; SL5 must hold it separately (user decision). Unsanctioned internal workloads (V-SELF-6) skip exfil. V-SELF-4 is residual: a candidate only once overt egress is capped or inspected (NET-04 / AI-07). Sabotage of oversight (V-SELF-5) is not here: it is an integrity harm, scored on its own meter outside SL."
+  },
+  {
+    "id": "capability_copy",
+    "name": "API distillation (capability copy)",
+    "adversary": "human",
+    "headline": false,
+    "requires_external_serving": true,
+    "stages": {
+      "entry": [
+        "V-ML-5"
+      ],
+      "reach": [],
+      "exfil": []
+    },
+    "notes": "Its own meter, outside the headline: distillation copies capability, not weights.",
+    "meter": "capability_leakage"
+  },
+  {
+    "id": "integrity",
+    "name": "Sabotage by the lab's own model",
+    "adversary": "ai",
+    "headline": false,
+    "meter": "integrity",
+    "stages": {
+      "entry": [],
+      "reach": [
+        "V-SELF-5"
+      ],
+      "exfil": []
+    },
+    "notes": "Its own meter, outside SL and breach: subverting oversight, sandbagging and tampering with results damage integrity rather than move weights."
+  }
+]

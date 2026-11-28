@@ -1,119 +1,130 @@
-import { useEffect, useState, useCallback } from "react";
-import { useViewBoxPanZoom } from "./utils/use-viewbox-pan-zoom";
+import { useCallback, useEffect, useState } from "react";
 import { useSimulationStore } from "./store/simulation";
 import { loadFromUrlHashLive, clearUrlHash } from "./store/persistence";
+import { introSeen } from "./store/intro-seen";
+import { useUiStore } from "./store/ui";
 import { Header } from "./components/layout/Header";
-import { IntroOverlay } from "./components/overlays/IntroOverlay";
 import { SharedBanner } from "./components/layout/SharedBanner";
-import { BottomPanel } from "./components/layout/BottomPanel";
-import { RightPanels } from "./components/layout/RightPanels";
-import { BlockGrid } from "./components/blocks/BlockGrid";
-import { DefenseRings } from "./components/rings/DefenseRings";
-import { ClusterView } from "./components/clusters/ClusterView";
-import { ChainStrip } from "./components/analysis/ChainStrip";
-import { useViewStore } from "./store/view";
-import type { BadgeKey } from "./store/view";
+import { ViewBar } from "./components/layout/ViewBar";
+import { IntroOverlay } from "./components/overlays/IntroOverlay";
+import { StageMatrix } from "./components/catalogue/StageMatrix";
+import { ClusterMap } from "./components/catalogue/ClusterMap";
+import { ApproachLanes } from "./components/approaches/ApproachLanes";
+import { RaceView } from "./components/race/RaceView";
+import { VerdictRail } from "./components/rail/VerdictRail";
+import { BlockDrawer } from "./components/detail/BlockDrawer";
+import { ParametersDrawer } from "./components/params/ParametersDrawer";
+import { PlaybackBar } from "./components/timelapse/PlaybackBar";
 import { SCRIPTS } from "./timelapse/scripts";
 import { usePlaybackStore } from "./timelapse/playback-store";
+import { usePlaybackLoop } from "./timelapse/use-playback-loop";
 import type { Block } from "./engine/types";
 
-type ViewMode = "clusters" | "grid" | "rings";
+const BLOCK_FILES = [
+  "blocks-network.json",
+  "blocks-machine.json",
+  "blocks-physical.json",
+  "blocks-personnel.json",
+  "blocks-supply-chain.json",
+  "blocks-ai-specific.json",
+];
+
+/** A story beat can point at a block or a scenario; show it in the catalogue
+ * while the beat is on screen. */
+function useStoryHighlights() {
+  useEffect(
+    () =>
+      usePlaybackStore.subscribe(
+        (s) => [s.state, s.currentAnnotation] as const,
+        ([state, message]) => {
+          const ui = useUiStore.getState();
+          if (state === "idle") {
+            ui.setFocusApproach(null);
+            ui.setHighlight([]);
+            return;
+          }
+          const script = usePlaybackStore.getState().activeScript;
+          const beat = script?.annotations?.find((a) => a.message === message);
+          const h = beat?.highlight;
+          if (h?.type === "block") {
+            ui.setHighlight([h.id]);
+          } else if (h?.type === "chain") {
+            const scenario = useSimulationStore.getState().threatModel.scenarios.find((s) => s.id === h.id);
+            ui.setFocusApproach(scenario?.approach ?? null);
+            ui.setHighlight([]);
+          } else {
+            ui.setHighlight([]);
+          }
+        },
+        { equalityFn: (a, b) => a[0] === b[0] && a[1] === b[1] }
+      ),
+    []
+  );
+}
+
+function MainView() {
+  const tab = useUiStore((s) => s.tab);
+  const view = useUiStore((s) => s.catalogueView);
+  if (tab === "approaches") return <ApproachLanes />;
+  if (tab === "race") return <RaceView />;
+  return view === "clusters" ? <ClusterMap /> : <StageMatrix />;
+}
 
 function App() {
   const loadData = useSimulationStore((s) => s.loadData);
   const dataLoaded = useSimulationStore((s) => s.dataLoaded);
-  const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
-  const [scoreOpen, setScoreOpen] = useState(true);
-  const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("sl5_intro_seen"));
-
-  // Selecting a block opens its own innermost Block Detail panel (handled in
-  // RightPanels); it no longer touches the Security Posture panel's open state.
-  const selectBlock = (block: Block | null) => {
-    setSelectedBlock(block);
-  };
-  const [viewMode, setViewMode] = useState<ViewMode>("clusters");
-  // One shared map-style pan/zoom engine; the view mode is its reset key so
-  // switching views re-centers.
-  const panZoom = useViewBoxPanZoom(viewMode);
+  const [showIntro, setShowIntro] = useState(() => !introSeen());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const tab = useUiStore((s) => s.tab);
+  const view = useUiStore((s) => s.catalogueView);
+
+  usePlaybackLoop();
+  useStoryHighlights();
 
   useEffect(() => {
     async function load() {
-      const blockFiles = [
-        "blocks-network.json",
-        "blocks-machine.json",
-        "blocks-physical.json",
-        "blocks-personnel.json",
-        "blocks-supply-chain.json",
-        "blocks-ai-specific.json",
-      ];
-
       const fetchJson = async (file: string) => {
         const resp = await fetch(`${import.meta.env.BASE_URL}data/${file}`);
         if (!resp.ok) throw new Error(`${file}: HTTP ${resp.status}`);
         return resp.json();
       };
-
-      const [chains, worldState, ...blockArrays] = await Promise.all([
-        fetchJson("attack-chains.json"),
+      const [vectors, approaches, scenarios, worldState, ...blockArrays] = await Promise.all([
+        fetchJson("vectors.json"),
+        fetchJson("approaches.json"),
+        fetchJson("scenarios.json"),
         fetchJson("world-state.json"),
-        ...blockFiles.map(fetchJson),
+        ...BLOCK_FILES.map(fetchJson),
       ]);
       const blocks: Block[] = blockArrays.flat();
-
-      loadData(blocks, chains, worldState?.oc_definitions ?? []);
+      loadData(blocks, { vectors, approaches, scenarios }, worldState?.oc_definitions ?? []);
     }
-    load().catch((err: unknown) => {
-      setLoadError(err instanceof Error ? err.message : String(err));
-    });
+    load().catch((err: unknown) => setLoadError(err instanceof Error ? err.message : String(err)));
   }, [loadData, loadAttempt]);
 
-  // `?story=<id>` — the introduction's "Watch the 1-min story" CTA hands off to
-  // the app with a script already running. Waits for dataLoaded because
+  // `?story=<id>` — the introduction's "Watch the 1-min story" CTA hands off
+  // to the app with a script already running. Waits for dataLoaded because
   // startScript writes block states, then strips the param so a reload (or a
   // Share link built afterwards) doesn't restart the story.
   useEffect(() => {
     if (!dataLoaded) return;
-    const requested = new URLSearchParams(window.location.search).get("story");
-    if (!requested) return;
-
     const params = new URLSearchParams(window.location.search);
+    const requested = params.get("story");
+    if (!requested) return;
     params.delete("story");
     const query = params.toString();
-    history.replaceState(
-      null,
-      "",
-      window.location.pathname + (query ? `?${query}` : "") + window.location.hash
-    );
-
+    history.replaceState(null, "", window.location.pathname + (query ? `?${query}` : "") + window.location.hash);
     const script = SCRIPTS.find((s) => s.id === requested);
     if (script) usePlaybackStore.getState().startScript(script);
   }, [dataLoaded]);
 
-  // Listen for hash changes (paste URL in same tab)
+  // A share link pasted into this tab.
   const applyHash = useCallback(() => {
     const parsed = loadFromUrlHashLive();
-    if (parsed) {
-      clearUrlHash();
-      useSimulationStore.setState({
-        blockStates: parsed.state.blockStates,
-        advanceOrder:
-          parsed.state.advanceOrder ??
-          Object.keys(parsed.state.blockStates).filter(
-            (id) => parsed.state.blockStates[id] !== "not_started"
-          ),
-        year: parsed.state.year,
-        perspective: parsed.state.perspective,
-        adversaryOc: parsed.state.adversaryOc,
-        sliders: parsed.state.sliders,
-        modelServedExternally: parsed.state.modelServedExternally,
-        scenarioName: parsed.name ?? null,
-        viewingShared: true,
-      });
-    }
+    if (!parsed) return;
+    clearUrlHash();
+    useSimulationStore.getState().openShared(parsed.state, parsed.name);
   }, []);
-
   useEffect(() => {
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
@@ -121,15 +132,16 @@ function App() {
 
   if (loadError) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-3">
-        <span className="text-red-400 text-sm">Failed to load simulation data</span>
-        <span className="text-gray-500 text-xs font-mono">{loadError}</span>
+      <div className="sl5 flex h-screen flex-col items-center justify-center gap-3 bg-paper font-archivo text-ink">
+        <span className="text-[16px] font-bold">The model's data didn't load.</span>
+        <span className="font-plex text-[12px] text-ink-2">{loadError}</span>
         <button
+          type="button"
           onClick={() => {
             setLoadError(null);
             setLoadAttempt((n) => n + 1);
           }}
-          className="px-4 py-1.5 text-sm rounded bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
+          className="border border-ink px-4 py-1.5 text-[14px] font-semibold hover:bg-ink hover:text-paper"
         >
           Retry
         </button>
@@ -139,218 +151,34 @@ function App() {
 
   if (!dataLoaded) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-500">
-        Loading simulation data...
+      <div className="sl5 flex h-screen items-center justify-center bg-paper font-archivo text-[14px] text-ink-2">
+        Loading the catalogue…
       </div>
     );
   }
 
-  // Narrow viewports never get here: `Root` in main.tsx renders `DesktopGate`
-  // instead of `App`, so nothing below mounts on a phone.
+  // Narrow viewports never get here: `Root` renders `DesktopGate` instead.
+  const fill = tab === "catalogue" && view === "clusters";
   return (
-    <div className="flex flex-col h-screen">
-      <Header onShowIntro={() => setShowIntro(true)} />
+    <div className="sl5 flex h-screen flex-col bg-paper font-archivo text-ink">
+      <Header onShowHelp={() => setShowIntro(true)} />
       <SharedBanner />
       {showIntro && <IntroOverlay onClose={() => setShowIntro(false)} />}
-
-      <div className="relative flex flex-1 overflow-hidden">
-        {/* Main view area — the map-style canvas fills the whole space; the view
-            toggle, legend, chain strip and zoom controls float on top of it so
-            the map uses the full area (map-app chrome, not a reserved header). */}
-        <div className="relative flex-1 overflow-hidden">
-          {/* Map-style canvas: fills the area. Each view owns an <svg> whose
-              single transform group is moved by wheel-zoom and drag-to-pan. */}
-          <div className="absolute inset-0 overflow-hidden">
-            {viewMode === "clusters" ? (
-              <ClusterView
-                panZoom={panZoom}
-                grouping="category"
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            ) : viewMode === "grid" ? (
-              <BlockGrid
-                panZoom={panZoom}
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            ) : (
-              <DefenseRings
-                panZoom={panZoom}
-                onSelectBlock={selectBlock}
-                selectedBlock={selectedBlock}
-                onClearSelection={() => setSelectedBlock(null)}
-              />
-            )}
+      <div className="relative flex min-h-0 flex-1">
+        <main className="flex min-w-0 flex-1 flex-col pr-6 pl-6">
+          <ViewBar />
+          <div id="main-view" role="tabpanel" className={`min-h-0 flex-1 ${fill ? "overflow-hidden" : "overflow-auto"}`}>
+            <MainView />
           </div>
-
-          {/* Floating top chrome — over the map. The wrapper ignores pointer
-              events so drags pass through to the canvas; interactive children
-              re-enable them. A soft gradient keeps text legible over content. */}
-          <div className="absolute top-0 left-0 right-0 z-10 px-4 pt-4 pointer-events-none bg-gradient-to-b from-gray-950/90 via-gray-950/60 to-transparent pb-6">
-          <div className="mb-2 flex items-center gap-4 [&_button]:pointer-events-auto [&_a]:pointer-events-auto">
-            {/* View toggle */}
-            <div className="flex items-center gap-0.5 bg-gray-800 rounded p-0.5">
-              <button
-                onClick={() => setViewMode("clusters")}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "clusters" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
-                title="Category Clusters"
-              >
-                Clusters
-              </button>
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "grid" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
-                title="Category Grid"
-              >
-                Grid
-              </button>
-              <button
-                onClick={() => setViewMode("rings")}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${viewMode === "rings" ? "bg-gray-700 text-gray-200" : "text-gray-500 hover:text-gray-300"}`}
-                title="Defense Rings"
-              >
-                Rings
-              </button>
-            </div>
-
-            <span className="text-xs text-gray-600 whitespace-nowrap hidden xl:inline">
-              Click for details | Right-click to cycle state
-            </span>
-            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
-              <LegendItem color="bg-blue-600" label="Hard stop" tip="Binary — blocks completely or doesn't. Immune to AI erosion." />
-              <LegendItem color="bg-amber-600" label="Probabilistic" tip="Reduces probability but can be bypassed. Degrades with AI." />
-              <LegendItem color="bg-teal-600" label="Hybrid" tip="Hard-stop core + probabilistic detection layers." />
-              <span className="w-px h-3 bg-gray-700" />
-              <ToggleLegendItem
-                badge="startNow"
-                swatch={<span className="w-2 h-2 rounded-full bg-red-500 text-[8px] leading-none text-white flex items-center justify-center font-bold">!</span>}
-                label="Start now"
-                tip="Deployment window closing — must start soon to be ready by 2030. Click to toggle."
-              />
-              <ToggleLegendItem
-                badge="requires"
-                swatch={<span className="text-sky-400 text-[10px] leading-none">→</span>}
-                label="Requires"
-                tip="Hover/select a block: solid arrows point from its prerequisites into it. A deployed block with a missing prerequisite is capped (dotted sky ring). Click to toggle."
-              />
-              <ToggleLegendItem
-                badge="enhances"
-                swatch={<span className="text-sky-400 text-[10px] leading-none tracking-tighter">⇢</span>}
-                label="Enhances"
-                tip="Dashed lines point to blocks this one makes more effective. Click to toggle."
-              />
-              <ToggleLegendItem
-                badge="allRelations"
-                swatch={<span className="text-sky-400 text-[10px] leading-none">✦</span>}
-                label="Show all relations"
-                tip="Draw the whole dependency web at once (dimmed); hovering a block still highlights just its own edges. Click to toggle."
-              />
-              <ToggleLegendItem
-                badge="contested"
-                swatch={<span className="w-2 h-2 rounded-full bg-gray-800 border border-slate-400 text-[8px] leading-none text-slate-300 flex items-center justify-center font-bold">?</span>}
-                label="Contested"
-                tip="Experts disagree on feasibility — high or fundamental open questions. Click to toggle."
-              />
-              <ToggleLegendItem
-                badge="overBudget"
-                swatch={<span className="w-2 h-2 rounded-sm border border-dashed border-pink-500" />}
-                label="Over budget"
-                tip="Cost exceeds budget — effectiveness capped at Implementing level. Click to toggle."
-              />
-            </div>
-          </div>
-          <div className="pointer-events-auto">
-            <ChainStrip />
-          </div>
-          </div>
-        </div>
-
-        {/* Zoom control — floats over the map, stable bottom-left corner */}
-        <div className="absolute bottom-4 left-4 z-20 flex items-center bg-gray-900/90 border border-gray-700 rounded-lg backdrop-blur-sm shadow-lg overflow-hidden">
-          <button
-            onClick={panZoom.zoomOut}
-            className="text-base text-gray-300 hover:text-white hover:bg-gray-800 w-7 h-7 flex items-center justify-center transition-colors"
-            title="Zoom out"
-          >
-            −
-          </button>
-          <button
-            onClick={panZoom.reset}
-            className="text-[11px] text-gray-400 hover:text-gray-200 w-12 h-7 flex items-center justify-center border-x border-gray-700 transition-colors"
-            title="Reset view"
-          >
-            {Math.round(panZoom.scale * 100)}%
-          </button>
-          <button
-            onClick={panZoom.zoomIn}
-            className="text-base text-gray-300 hover:text-white hover:bg-gray-800 w-7 h-7 flex items-center justify-center transition-colors"
-            title="Zoom in"
-          >
-            +
-          </button>
-        </div>
-
-        {/* Right panels — in-flow flex column, canvas is never occluded */}
-        <div className="shrink-0 h-full">
-          <RightPanels
-            selectedBlock={selectedBlock}
-            onCloseBlock={() => setSelectedBlock(null)}
-            onNavigateBlock={(id) => {
-              const b = useSimulationStore.getState().blocks.find((x) => x.id === id);
-              if (b) selectBlock(b);
-            }}
-            scoreOpen={scoreOpen}
-            onScoreOpenChange={setScoreOpen}
-          />
-        </div>
+          <PlaybackBar />
+        </main>
+        <aside className="w-[392px] shrink-0 overflow-y-auto border-l border-rule px-6" aria-label="Verdict">
+          <VerdictRail />
+        </aside>
+        <BlockDrawer />
+        <ParametersDrawer />
       </div>
-
-      <BottomPanel />
     </div>
-  );
-}
-
-function LegendItem({ color, label, tip }: { color: string; label: string; tip: string }) {
-  return (
-    <span className="relative flex items-center gap-1 group cursor-default whitespace-nowrap">
-      <span className={`w-2 h-2 rounded-sm ${color}`} /> {label}
-      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-        {tip}
-      </span>
-    </span>
-  );
-}
-
-function ToggleLegendItem({
-  badge,
-  swatch,
-  label,
-  tip,
-}: {
-  badge: BadgeKey;
-  swatch: React.ReactNode;
-  label: string;
-  tip: string;
-}) {
-  const on = useViewStore((s) => s.badges[badge]);
-  const toggleBadge = useViewStore((s) => s.toggleBadge);
-  return (
-    <button
-      onClick={() => toggleBadge(badge)}
-      aria-pressed={on}
-      className={`relative flex items-center gap-1 group transition-opacity whitespace-nowrap ${
-        on ? "" : "opacity-35"
-      }`}
-    >
-      {swatch}
-      <span className={on ? "" : "line-through"}>{label}</span>
-      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[10px] text-gray-200 bg-gray-800 border border-gray-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-        {on ? tip : `${label} hidden — click to show`}
-      </span>
-    </button>
   );
 }
 

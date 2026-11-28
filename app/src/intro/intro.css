@@ -1,0 +1,234 @@
+/*
+ * The introduction's own stylesheet. The intro is a separate Vite entry, so it
+ * loads this instead of the app's index.css: the app is being restyled on its
+ * own schedule, and the intro must not pick up rules meant for the instrument.
+ *
+ * Same "Swiss signal" system as the app, same token names and values: paper
+ * and ink, one signal red reserved for the adversary, a defender ink for your
+ * own posture. Checked pairings (WCAG, ≥ 4.5:1 for text):
+ *   light  ink 17.0 · ink-2 7.2 · ink-3 4.9 · signal-ink 5.7 on paper
+ *   dark   ink 15.9 · ink-2 8.8 · ink-3 6.5 · signal-ink 6.1 on paper
+ * ink-3 is never set on tint (4.3:1). `--signal` is for large marks only
+ * (3.7:1 on paper); small red text uses `--signal-ink`.
+ */
+@import "tailwindcss" source(none);
+@source "./";
+
+:root {
+  --paper: #f4f3ee;
+  --ink: #111110;
+  --ink-2: #52514c;
+  --ink-3: #6b6a64;
+  --rule: #d5d4cd;
+  --rule-2: #bdbcb5;
+  --tint: #e6e5de;
+  --mid: #a9a8a1;
+  --signal: #eb3a1c;
+  --signal-ink: #b8260c;
+  --signal-wash: rgb(235 58 28 / 0.1);
+  --on-ink: #f4f3ee;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #131312;
+    --ink: #eeede7;
+    --ink-2: #b4b3ab;
+    --ink-3: #9a9992;
+    --rule: #3a3935;
+    --rule-2: #55544f;
+    --tint: #262523;
+    --mid: #6a6964;
+    --signal: #e5573b;
+    --signal-ink: #f26a4b;
+    --signal-wash: rgb(229 87 59 / 0.14);
+    --on-ink: #131312;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-tint: var(--tint);
+  --color-mid: var(--mid);
+  --color-signal: var(--signal);
+  --color-signal-ink: var(--signal-ink);
+  --color-signal-wash: var(--signal-wash);
+  --color-on-ink: var(--on-ink);
+  --font-archivo: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-plex: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-archivo);
+    font-size: 16px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  #root {
+    min-height: 100svh;
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* One focus style everywhere: an ink outline, never a glow. */
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* ---- Type --------------------------------------------------------------- */
+
+  /* Mono small caps: section labels, figure captions, axis labels. 12px is the
+   * floor; nothing in the intro is set smaller. */
+  .cap {
+    font-family: var(--font-plex);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .mono {
+    font-family: var(--font-plex);
+  }
+
+  .display {
+    font-family: var(--font-archivo);
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+  }
+
+  /* ---- Marks -------------------------------------------------------------- */
+
+  /* The adversary's hatch: OC5's bar, the attacker's lift, "not covered" cells. */
+  .hatch-signal {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--signal) 0 1.5px,
+      transparent 1.5px 6px
+    );
+  }
+
+  /* AI capability: ink with a hatch, never a hue of its own. */
+  .hatch-ink {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--ink-2) 0 1px,
+      transparent 1px 5px
+    );
+  }
+
+  /* Inputs drawn in ink rather than the browser's accent colour. */
+  .intro-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 24px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .intro-range::-webkit-slider-runnable-track {
+    height: 2px;
+    background: var(--ink);
+  }
+  .intro-range::-moz-range-track {
+    height: 2px;
+    background: var(--ink);
+  }
+  .intro-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 20px;
+    margin-top: -9px;
+    background: var(--ink);
+    border: 2px solid var(--paper);
+  }
+  .intro-range::-moz-range-thumb {
+    width: 14px;
+    height: 20px;
+    border-radius: 0;
+    background: var(--ink);
+    border: 2px solid var(--paper);
+  }
+}
+
+/* ---- Motion ------------------------------------------------------------- */
+
+@keyframes intro-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.intro-enter {
+  animation: intro-enter 0.28s ease-out;
+}
+
+/* The "−1 band" chip: appears at a tier that just changed, then fades. */
+@keyframes intro-chip {
+  0% {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  12% {
+    opacity: 1;
+    transform: none;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.intro-chip {
+  animation: intro-chip 1.8s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* A chip that faded in a millisecond would never be seen: hold it instead. */
+  .intro-chip {
+    animation: none;
+    opacity: 1;
+  }
+}

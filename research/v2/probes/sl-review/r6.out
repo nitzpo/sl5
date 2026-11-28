@@ -1,0 +1,51 @@
+== Q1 scenarios (OC4 / OC5 = one campaign this year; words = the operation ...)
+baseline               cov 1.38 | UNION (HEAD band): SL2 OC4 94% (usually succeeds) OC5 97% (usually succeeds) | +OC5 variants: SL2 OC4 94% (usually succeeds) OC5 97% (usually succeeds) | +T5.2 lookup: SL2 OC4 94% (usually succeeds) OC5 97% (usually succeeds) | +both: SL2 OC4 94% (usually succeeds) OC5 97% (usually succeeds)
+do-nothing 2030        cov 1.40 | UNION (HEAD band): SL1 OC4 94% (usually succeeds) OC5 96% (usually succeeds) | +OC5 variants: SL1 OC4 94% (usually succeeds) OC5 96% (usually succeeds) | +T5.2 lookup: SL1 OC4 94% (usually succeeds) OC5 96% (usually succeeds) | +both: SL1 OC4 94% (usually succeeds) OC5 96% (usually succeeds)
+budget-constr 2030     cov 1.84 | UNION (HEAD band): SL2 OC4 59% (usually succeeds) OC5 67% (usually succeeds) | +OC5 variants: SL2 OC4 59% (usually succeeds) OC5 67% (usually succeeds) | +T5.2 lookup: SL2 OC4 59% (usually succeeds) OC5 67% (usually succeeds) | +both: SL2 OC4 59% (usually succeeds) OC5 67% (usually succeeds)
+reactive 2030          cov 2.07 | UNION (HEAD band): SL3 OC4 40% (contested) OC5 48% (contested) | +OC5 variants: SL3 OC4 40% (contested) OC5 50% (contested) | +T5.2 lookup: SL3 OC4 47% (contested) OC5 58% (usually succeeds) | +both: SL3 OC4 47% (contested) OC5 58% (usually succeeds)
+proactive 2030         cov 3.53 | UNION (HEAD band): SL4 OC4 17% (usually fails) OC5 21% (contested) | +OC5 variants: SL4 OC4 17% (usually fails) OC5 21% (contested) | +T5.2 lookup: SL4 OC4 18% (usually fails) OC5 23% (contested) | +both: SL4 OC4 18% (usually fails) OC5 23% (contested)
+proactive+PER-02/04    cov 3.78 | UNION (HEAD band): SL5 OC4 5% (usually fails) OC5 8% (usually fails) | +OC5 variants: SL5 OC4 5% (usually fails) OC5 8% (usually fails) | +T5.2 lookup: SL5 OC4 6% (usually fails) OC5 9% (usually fails) | +both: SL5 OC4 6% (usually fails) OC5 10% (usually fails)
+cheap27 ($559M) 2030   cov 2.83 | UNION (HEAD band): SL5 OC4 11% (usually fails) OC5 18% (usually fails) | +OC5 variants: SL5 OC4 11% (usually fails) OC5 18% (usually fails) | +T5.2 lookup: SL4 OC4 17% (usually fails) OC5 24% (contested) | +both: SL4 OC4 17% (usually fails) OC5 25% (contested)
+all mature 2030        cov 4.41 | UNION (HEAD band): SL5 OC4 4% (usually fails) OC5 6% (usually fails) | +OC5 variants: SL5 OC4 4% (usually fails) OC5 6% (usually fails) | +T5.2 lookup: SL5 OC4 4% (usually fails) OC5 7% (usually fails) | +both: SL5 OC4 4% (usually fails) OC5 7% (usually fails)
+
+Per-strategy p at OC4/OC5 (UNION) for headline rows:
+  proactive 2030 OC4: physical 0.1, supply 0.1, insider 16.1, remote 0.5
+  proactive 2030 OC5: physical 0.2, supply 0.3, insider 20.0, remote 0.6
+  cheap27 ($559M) 2030 OC4: physical 1.5, supply 3.3, insider 4.6, remote 2.2
+  cheap27 ($559M) 2030 OC5: physical 2.6, supply 6.9, insider 7.1, remote 2.4
+  all mature 2030 OC4: physical 0.0, supply 0.0, insider 4.0, remote 0.1
+  all mature 2030 OC5: physical 0.0, supply 0.0, insider 6.2, remote 0.2
+  OC5-variant gate for OC4 in 2030: fab-implant 0.10, placed-agent 0.39, multi-zero-day 0.76
+
+== Q2 600 strong postures, 2030
+  UNION (HEAD band)  SL hist 0/35/209/123/45/188  P(SL5|SL>=4) 81%  OC5/OC4 median 1.38 (P10 1.26, P90 1.47)
+  +OC5 variants      SL hist 0/35/209/124/47/185  P(SL5|SL>=4) 80%  OC5/OC4 median 1.40 (P10 1.27, P90 1.48)
+  +T5.2 lookup       SL hist 0/40/219/134/55/152  P(SL5|SL>=4) 73%  OC5/OC4 median 1.45 (P10 1.31, P90 1.56)
+  +both              SL hist 0/40/219/134/55/152  P(SL5|SL>=4) 73%  OC5/OC4 median 1.45 (P10 1.31, P90 1.56)
+
+== Q3 catalogue growth (UNION and +both)
+  UNION (HEAD band) proactive 2030         OC4 17% | dup 17% | +1 median 17% | +1 =worst 30% | +3 median 17%   ||   OC5 21% | dup 21% | +1 median 21% | +1 =worst 37% | +3 median 21%
+  UNION (HEAD band) cheap27 ($559M) 2030   OC4 11% | dup 14% | +1 median 13% | +1 =worst 15% | +3 median 17%   ||   OC5 18% | dup 21% | +1 median 20% | +1 =worst 23% | +3 median 24%
+  UNION (HEAD band) all mature 2030        OC4 4% | dup 4% | +1 median 4% | +1 =worst 8% | +3 median 4%   ||   OC5 6% | dup 6% | +1 median 6% | +1 =worst 12% | +3 median 6%
+  +both          proactive 2030         OC4 18% | dup 18% | +1 median 18% | +1 =worst 31% | +3 median 19%   ||   OC5 23% | dup 23% | +1 median 24% | +1 =worst 39% | +3 median 26%
+  +both          cheap27 ($559M) 2030   OC4 17% | dup 19% | +1 median 20% | +1 =worst 24% | +3 median 26%   ||   OC5 25% | dup 28% | +1 median 30% | +1 =worst 32% | +3 median 39%
+  +both          all mature 2030        OC4 4% | dup 4% | +1 median 4% | +1 =worst 8% | +3 median 5%   ||   OC5 7% | dup 7% | +1 median 7% | +1 =worst 13% | +3 median 7%
+
+== Q4 detection q (sequential, best strategy first)
+  UNION (HEAD band) proactive 2030         q=0: SL4 OC3 7% OC4 17% OC5 21%  |  q=0.2: SL4 OC3 7% OC4 16% OC5 21%  |  q=0.5: SL4 OC3 7% OC4 16% OC5 20%
+  UNION (HEAD band) cheap27 ($559M) 2030   q=0: SL5 OC3 3% OC4 11% OC5 18%  |  q=0.2: SL5 OC3 3% OC4 9% OC5 15%  |  q=0.5: SL5 OC3 3% OC4 7% OC5 11%
+  UNION (HEAD band) proactive+PER-02/04    q=0: SL5 OC3 3% OC4 5% OC5 8%  |  q=0.2: SL5 OC3 3% OC4 5% OC5 8%  |  q=0.5: SL5 OC3 3% OC4 5% OC5 7%
+  UNION (HEAD band) reactive 2030          q=0: SL3 OC3 14% OC4 40% OC5 48%  |  q=0.2: SL3 OC3 12% OC4 34% OC5 42%  |  q=0.5: SL3 OC3 10% OC4 27% OC5 34%
+  UNION (HEAD band) baseline               q=0: SL2 OC3 66% OC4 94% OC5 97%  |  q=0.2: SL2 OC3 62% OC4 86% OC5 91%  |  q=0.5: SL2 OC3 58% OC4 77% OC5 83%
+  +both          proactive 2030         q=0: SL4 OC3 7% OC4 18% OC5 23%  |  q=0.2: SL4 OC3 7% OC4 17% OC5 22%  |  q=0.5: SL4 OC3 7% OC4 17% OC5 21%
+  +both          cheap27 ($559M) 2030   q=0: SL4 OC3 5% OC4 17% OC5 25%  |  q=0.2: SL5 OC3 4% OC4 14% OC5 20%  |  q=0.5: SL5 OC3 4% OC4 11% OC5 15%
+  +both          proactive+PER-02/04    q=0: SL5 OC3 3% OC4 6% OC5 10%  |  q=0.2: SL5 OC3 3% OC4 6% OC5 9%  |  q=0.5: SL5 OC3 3% OC4 5% OC5 8%
+  +both          reactive 2030          q=0: SL3 OC3 16% OC4 47% OC5 58%  |  q=0.2: SL3 OC3 14% OC4 39% OC5 49%  |  q=0.5: SL3 OC3 12% OC4 30% OC5 39%
+  +both          baseline               q=0: SL2 OC3 66% OC4 94% OC5 97%  |  q=0.2: SL2 OC3 62% OC4 86% OC5 91%  |  q=0.5: SL2 OC3 58% OC4 77% OC5 83%
+  UNION q=0.2: 26/300 strong postures gain >=1 SL
+  UNION q=0.5: 52/300 strong postures gain >=1 SL
+
+== Q5 monotonicity
+  UNION (HEAD band) 211 postures: advance-a-block violations 0, P non-decreasing in OC violations 0, year violations 0
+  +both          210 postures: advance-a-block violations 0, P non-decreasing in OC violations 0, year violations 0
+  +both q=0.5    214 postures: advance-a-block violations 0, P non-decreasing in OC violations 0, year violations 0

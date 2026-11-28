@@ -1,27 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { resolveLayer } from "../../src/utils/ring-geometry";
 import { NO_DEADLINE_MONTHS } from "../../src/utils/decision-windows";
-import type { AttackChain, Block } from "../../src/engine/types";
-import fs from "fs";
-import path from "path";
-
-const DATA = path.join(__dirname, "../../public/data");
-
-function loadBlocks(): Block[] {
-  const blocks: Block[] = [];
-  for (const file of fs.readdirSync(DATA)) {
-    if (file.startsWith("blocks-") && file.endsWith(".json")) {
-      blocks.push(...JSON.parse(fs.readFileSync(path.join(DATA, file), "utf-8")));
-    }
-  }
-  return blocks;
-}
+import { LEGACY_BLOCK_IDS } from "../../src/engine/catalogue";
+import { STAGES } from "../../src/engine/types";
+import { loadBlocks, loadModel } from "../load-data";
 
 const blocks = loadBlocks();
-const chains: AttackChain[] = JSON.parse(
-  fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8")
-);
+const model = loadModel();
 const blockIds = new Set(blocks.map((b) => b.id));
+const vectorById = new Map(model.vectors.map((v) => [v.id, v]));
 
 describe("block data integrity", () => {
   it("has unique block ids", () => {
@@ -93,14 +79,6 @@ describe("block data integrity", () => {
     for (const b of blocks) visit(b.id, []);
   });
 
-  it("every layer contribution resolves to a canonical layer", () => {
-    for (const b of blocks) {
-      for (const raw of b.defense_in_depth?.layer_contributions ?? []) {
-        expect(resolveLayer(raw), `${b.id}: unresolvable layer "${raw}"`).not.toBeNull();
-      }
-    }
-  });
-
   it("cost and deploy-time ranges are ordered and sane", () => {
     for (const b of blocks) {
       const cost = b.dimensions.cost.upfront_millions;
@@ -125,43 +103,181 @@ describe("block data integrity", () => {
   });
 });
 
-describe("attack-chain data integrity", () => {
-  it("every exploited block resolves", () => {
-    for (const c of chains) {
-      for (const id of c.blocks_exploited) {
-        expect(blockIds.has(id), `${c.id}: unknown exploited block ${id}`).toBe(true);
+describe("vector backbone integrity", () => {
+  it("has the 38 RAND vectors, 8 authored AI-insider vectors and 5 structural placeholders", () => {
+    const by = (src: string) => model.vectors.filter((v) => v.source === src).length;
+    expect([by("rand"), by("authored"), by("structural")]).toEqual([38, 8, 5]);
+    expect(new Set(model.vectors.map((v) => v.id)).size).toBe(model.vectors.length);
+  });
+
+  it("RAND feasibility never falls with the OC tier, and authored scores never fall with the AC band", () => {
+    for (const v of model.vectors) {
+      const table = v.source === "rand" ? v.rand_feasibility : v.source === "authored" ? v.ai_feasibility : v.structural_p;
+      const s = Object.values(table!);
+      expect(s, `${v.id} feasibility not monotone`).toEqual([...s].sort((a, b) => a - b));
+    }
+  });
+
+  it("authored and structural vectors are labelled as assumptions", () => {
+    for (const v of model.vectors.filter((x) => x.source !== "rand")) {
+      expect(v.assumption, `${v.id}`).toBe(true);
+      expect((v.assumption_note ?? "").length, `${v.id} assumption_note`).toBeGreaterThan(40);
+    }
+  });
+
+  it("every RAND vector carries an authored AI shift with a reason, within 0–1", () => {
+    for (const v of model.vectors.filter((x) => x.source === "rand")) {
+      expect(typeof v.ai_shift, `${v.id}`).toBe("number");
+      expect(v.ai_shift!).toBeGreaterThanOrEqual(0);
+      expect(v.ai_shift!).toBeLessThanOrEqual(1);
+      expect((v.ai_shift_basis ?? "").length, `${v.id} ai_shift_basis`).toBeGreaterThan(20);
+    }
+  });
+
+  it("every vector has at least one counter, or a flag saying why not", () => {
+    const countered = new Set(blocks.flatMap((b) => b.counters.map((c) => c.vector_id)));
+    for (const v of model.vectors) {
+      const flagged = !!(v.needs_government || v.assumes_defense?.length || v.lane);
+      expect(countered.has(v.id) || flagged, `${v.id} has no counter and no flag`).toBe(true);
+    }
+  });
+
+  it("every approach names real vectors, and only the meters and the AI insider skip the entry stage", () => {
+    for (const a of model.approaches) {
+      for (const st of STAGES) {
+        for (const id of a.stages[st]) expect(vectorById.has(id), `${a.id}: unknown ${id}`).toBe(true);
+      }
+      if (a.adversary === "human" && a.headline) expect(a.stages.entry.length, a.id).toBeGreaterThan(0);
+    }
+    const headline = model.approaches.filter((a) => a.headline).map((a) => a.id).sort();
+    expect(headline).toEqual(["ai_insider", "insider", "physical", "remote", "served", "supply_chain"]);
+  });
+
+  it("the lab's own model is scored only on authored vectors, and human approaches only on RAND or structural ones", () => {
+    for (const a of model.approaches) {
+      for (const id of Object.values(a.stages).flat()) {
+        const src = vectorById.get(id)!.source;
+        if (a.adversary === "ai") expect(src, `${a.id}/${id}`).toBe("authored");
+        else expect(src, `${a.id}/${id}`).not.toBe("authored");
+      }
+    }
+  });
+});
+
+describe("counter data integrity", () => {
+  it("every block counters at least one vector", () => {
+    for (const b of blocks) expect(b.counters.length, `${b.id} counters nothing`).toBeGreaterThan(0);
+  });
+
+  it("every counter names a real vector, a strength, a reason, and a valid type override", () => {
+    for (const b of blocks) {
+      for (const c of b.counters) {
+        expect(vectorById.has(c.vector_id), `${b.id} → ${c.vector_id}`).toBe(true);
+        expect(["strong", "partial"]).toContain(c.strength);
+        expect(c.why.length, `${b.id} → ${c.vector_id} why`).toBeGreaterThan(10);
+        if (c.type_override) expect(["hard_stop", "probabilistic", "hybrid"]).toContain(c.type_override);
+      }
+      const ids = b.counters.map((c) => c.vector_id);
+      expect(new Set(ids).size, `${b.id} lists a vector twice`).toBe(ids.length);
+    }
+  });
+
+  it("a residual vector's assumed defenses never counter it", () => {
+    for (const v of model.vectors.filter((x) => x.assumes_defense)) {
+      for (const d of v.assumes_defense!) {
+        expect(blockIds.has(d), `${v.id} assumes unknown ${d}`).toBe(true);
+        const b = blocks.find((x) => x.id === d)!;
+        expect(b.counters.some((c) => c.vector_id === v.id), `${d} counters its own residual ${v.id}`).toBe(false);
       }
     }
   });
 
-  it("every stopper resolves, and stopper_details refer to listed stoppers", () => {
-    for (const c of chains) {
-      for (const id of c.stoppers ?? []) {
-        expect(blockIds.has(id), `${c.id}: unknown stopper ${id}`).toBe(true);
+  it("merged-away block ids are gone from the data, and their successors exist", () => {
+    for (const [old, to] of Object.entries(LEGACY_BLOCK_IDS)) {
+      expect(blockIds.has(old), `${old} still in the data`).toBe(false);
+      for (const id of to) expect(blockIds.has(id), `${old} → ${id} missing`).toBe(true);
+    }
+  });
+
+  it("has no future-capability (FUT) blocks: they were retired for research-required controls", () => {
+    expect(blocks.some((b) => b.id.startsWith("FUT-"))).toBe(false);
+    for (const b of blocks) expect("future" in b, `${b.id} still carries a future flag`).toBe(false);
+    for (let n = 1; n <= 5; n++) expect(LEGACY_BLOCK_IDS[`FUT-0${n}`], `FUT-0${n} migration`).toEqual([]);
+  });
+
+  it("flags the research-heavy controls as research-required, each with a note and a long lead time", () => {
+    const research = blocks.filter((b) => b.research_required);
+    expect(research.map((b) => b.id).sort()).toEqual(["ACA-01", "AI-02", "AI-10", "HW-04", "HW-06", "SC-03", "SRV-01"]);
+    for (const b of research) {
+      expect((b.research_note ?? "").length, `${b.id} research_note`).toBeGreaterThan(40);
+      // Low technical feasibility, and a lead time that lands after 2029 if started in 2024–2026.
+      expect(b.dimensions.technical_feasibility.value, b.id).toBeLessThanOrEqual(78);
+      expect(b.dimensions.time_to_deploy_months.max, `${b.id} lead time`).toBeGreaterThanOrEqual(60);
+    }
+    // Nothing else is flagged without a note.
+    for (const b of blocks.filter((x) => !x.research_required)) expect(b.research_note, b.id).toBeUndefined();
+  });
+
+  it("flags only detection, monitoring, review and patching blocks as AI-augmented, each with a note", () => {
+    const flagged = blocks.filter((b) => b.defender_ai);
+    expect(flagged.length).toBeGreaterThanOrEqual(6);
+    expect(flagged.length).toBeLessThanOrEqual(12);
+    for (const b of flagged) {
+      expect(b.defense_type, `${b.id} is a hard stop`).not.toBe("hard_stop");
+      expect((b.defender_ai_note ?? "").length, `${b.id} defender_ai_note`).toBeGreaterThan(30);
+    }
+    for (const id of ["DET-01", "PER-03", "END-01", "SW-01", "AI-02", "AI-10"]) {
+      expect(blocks.find((b) => b.id === id)!.defender_ai, id).toBe(true);
+    }
+  });
+
+  it("baseline states are evidence-based: a deployed baseline says why in its current_state", () => {
+    const deployed = blocks.filter((b) => b.current_state.baseline_state === "deployed");
+    expect(deployed.length).toBeGreaterThanOrEqual(5);
+    for (const b of deployed) {
+      expect(b.current_state.summary, b.id).toMatch(/Counted as deployed at baseline/);
+      expect(b.research_required, `${b.id} cannot be both`).toBeFalsy();
+    }
+    for (const b of blocks) {
+      expect(["not_started", "researching", "proven_not_deployed", "partially_deployed", "deployed"], b.id).toContain(
+        b.current_state.baseline_state
+      );
+    }
+  });
+});
+
+describe("scenario data integrity", () => {
+  it("every scenario names real vectors and a real approach", () => {
+    const approaches = new Set(model.approaches.map((a) => a.id));
+    for (const s of model.scenarios) {
+      expect(approaches.has(s.approach), `${s.id}: approach ${s.approach}`).toBe(true);
+      for (const v of s.vectors) expect(vectorById.has(v), `${s.id}: ${v}`).toBe(true);
+      const stepVectors = new Set(s.steps.flatMap((st) => st.vector_ids));
+      expect(new Set(s.vectors)).toEqual(stepVectors);
+    }
+  });
+
+  it("every gap a step names, and every stopper, counters one of the scenario's vectors", () => {
+    const counters = (id: string) => new Set(blocks.find((b) => b.id === id)?.counters.map((c) => c.vector_id) ?? []);
+    for (const s of model.scenarios) {
+      for (const st of s.steps) {
+        if (!st.block_gap_used) continue;
+        const c = counters(st.block_gap_used);
+        expect(st.vector_ids.some((v) => c.has(v)), `${s.id}/${st.phase}: ${st.block_gap_used}`).toBe(true);
       }
-      for (const d of c.stopper_details ?? []) {
-        expect(
-          (c.stoppers ?? []).includes(d.block_id),
-          `${c.id}: stopper_details for ${d.block_id} which is not a stopper`
-        ).toBe(true);
+      for (const d of s.stopper_details) {
+        expect(blockIds.has(d.block_id), `${s.id}: unknown stopper ${d.block_id}`).toBe(true);
+        const c = counters(d.block_id);
+        expect(s.vectors.some((v) => c.has(v)), `${s.id}: ${d.block_id} counters none of its vectors`).toBe(true);
       }
     }
   });
 
   it("min_oc within 1-5 and ≤ typical_oc", () => {
-    for (const c of chains) {
-      expect(c.adversary_profile.min_oc).toBeGreaterThanOrEqual(1);
-      expect(c.adversary_profile.min_oc).toBeLessThanOrEqual(5);
-      expect(c.adversary_profile.typical_oc).toBeGreaterThanOrEqual(c.adversary_profile.min_oc);
-    }
-  });
-
-  it("every chain can be stopped: it has at least one stopper or exploited block", () => {
-    for (const c of chains) {
-      expect(
-        c.blocks_exploited.length + (c.stoppers ?? []).length,
-        `${c.id} has no defenses at all`
-      ).toBeGreaterThan(0);
+    for (const s of model.scenarios) {
+      expect(s.adversary_profile.min_oc).toBeGreaterThanOrEqual(1);
+      expect(s.adversary_profile.min_oc).toBeLessThanOrEqual(5);
+      expect(s.adversary_profile.typical_oc).toBeGreaterThanOrEqual(s.adversary_profile.min_oc);
     }
   });
 });

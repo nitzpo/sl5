@@ -1,0 +1,365 @@
+{
+ "source": "scratchpad/vectors/src/probe.py (the reviewed calibration probe), run against the approved vectors.json / control_map.json / routes.json. Copied verbatim for the rows the shipped catalogue can represent; the 57-block current-catalogue rows are omitted because the merged blocks no longer exist.",
+ "rule": "Calibration probe for the staged route model.\n\n    python3 -I probe.py <out_dir> [--json results.json]\n\nScores -> bin midpoints: 1->0.05, 2->0.3, 3->0.5, 4->0.7, 5->0.9 (structural stage vectors: 1.0).\nRoute success  = best path: product over the route's stages of the best available vector per stage,\n                 skipping stages a chosen vector makes unnecessary.\nCampaign       = 1 - prod(1 - route) over every headline human route (no breadth limit).\nAI insider     = its own route, scored per AC band; SL5 must hold it separately.\nCounter stacking (reviewer's rule): the best strong counter multiplies by 0.3; the remaining counters,\n                 strongest first (extra strongs count as partials), multiply by 0.8, 0.9, 0.95; further\n                 counters add nothing; partials alone can never beat one strong counter (floor 0.3).\nErosion (optional): each counter keeps only part of its effect against stronger adversaries, using the\n                 README's bands: hard stop 0.98->0.86, probabilistic 0.95->0.40 across tiers 1->5,\n                 hybrid halfway. m_eff = 1 - (1 - m) * retention.\nResidual vectors (assumes_defense) are candidates only once one of the defenses they assume is deployed.",
+ "scenarios": {
+  "undefended": {
+   "served=True": {
+    "campaign_oc": [
+     0.31238750625,
+     0.6260265625,
+     0.99609835,
+     0.99799645,
+     0.99979423
+    ],
+    "ai_insider_ac": [
+     0.3,
+     0.5,
+     0.7,
+     0.9,
+     0.9
+    ]
+   },
+   "served=False": {
+    "campaign_oc": [
+     0.24438187500000008,
+     0.50136875,
+     0.989455,
+     0.994585,
+     0.998917
+    ],
+    "ai_insider_ac": [
+     0.3,
+     0.5,
+     0.7,
+     0.9,
+     0.9
+    ]
+   },
+   "routes_served": {
+    "remote": [
+     0.15,
+     0.35,
+     0.81,
+     0.81,
+     0.81
+    ],
+    "insider": [
+     0.05,
+     0.05,
+     0.7,
+     0.7,
+     0.9
+    ],
+    "physical": [
+     0.05,
+     0.05,
+     0.5,
+     0.5,
+     0.7
+    ],
+    "supply_chain": [
+     0.015,
+     0.15,
+     0.63,
+     0.81,
+     0.81
+    ],
+    "served": [
+     0.09,
+     0.25,
+     0.63,
+     0.63,
+     0.81
+    ]
+   },
+   "binding_tier4": {
+    "remote": {
+     "entry": "V-CODE-1",
+     "reach": "V-CRED-4",
+     "exfil": "V-X-3"
+    },
+    "insider": {
+     "entry": "V-HUM-1",
+     "reach": "V-X-1",
+     "exfil": "V-X-4"
+    },
+    "physical": {
+     "entry": "V-PHYS-1",
+     "reach": "V-X-2",
+     "exfil": "V-X-4"
+    },
+    "supply_chain": {
+     "entry": "V-SUP-1",
+     "reach": "V-CRED-4",
+     "exfil": "V-X-3"
+    },
+    "served": {
+     "entry": "V-ML-3",
+     "reach": "V-CRED-4",
+     "exfil": "V-X-3"
+    }
+   },
+   "binding_tier5": {
+    "remote": {
+     "entry": "V-CODE-1",
+     "reach": "V-ML-1",
+     "exfil": "V-X-3"
+    },
+    "insider": {
+     "entry": "V-HUM-1",
+     "reach": "V-X-1",
+     "exfil": "V-X-4"
+    },
+    "physical": {
+     "entry": "V-PHYS-1",
+     "reach": "V-X-2",
+     "exfil": "V-X-4"
+    },
+    "supply_chain": {
+     "entry": "V-SUP-1",
+     "reach": "V-ML-1",
+     "exfil": "V-X-3"
+    },
+    "served": {
+     "entry": "V-ML-1",
+     "reach": "V-ML-1",
+     "exfil": "V-X-3"
+    }
+   },
+   "ai_binding_ac5": {
+    "reach": "V-SELF-6"
+   },
+   "capability_meter": [
+    0.05,
+    0.05,
+    0.3,
+    0.3,
+    0.5
+   ]
+  },
+  "uniform_strong": {
+   "served=True": {
+    "campaign_oc": [
+     0.025117190754878504,
+     0.033938578426507715,
+     0.08524425841495364,
+     0.17272966439801762,
+     0.2643775575126901
+    ],
+    "ai_insider_ac": [
+     0.09,
+     0.15,
+     0.21,
+     0.27,
+     0.27
+    ]
+   },
+   "served=False": {
+    "campaign_oc": [
+     0.010271259649622833,
+     0.019226983174119527,
+     0.06941500769586029,
+     0.09091171911870066,
+     0.13456183236787067
+    ],
+    "ai_insider_ac": [
+     0.09,
+     0.15,
+     0.21,
+     0.27,
+     0.27
+    ]
+   }
+  },
+  "proposed_no_erosion": {
+   "served=True": {
+    "campaign_oc": [
+     0.025585471594246623,
+     0.031340536299165334,
+     0.06792616653876582,
+     0.1910036920870034,
+     0.38552218435870644
+    ],
+    "ai_insider_ac": [
+     0.06156000000000001,
+     0.10260000000000002,
+     0.14364000000000002,
+     0.18468000000000004,
+     0.29474928
+    ]
+   },
+   "served=False": {
+    "campaign_oc": [
+     0.01074667166928589,
+     0.016589376953467294,
+     0.05373214877032062,
+     0.11099306822747634,
+     0.2770849227749488
+    ],
+    "ai_insider_ac": [
+     0.06156000000000001,
+     0.10260000000000002,
+     0.14364000000000002,
+     0.18468000000000004,
+     0.29474928
+    ]
+   }
+  },
+  "proposed_eroded": {
+   "served=True": {
+    "campaign_oc": [
+     0.02836547063221284,
+     0.04355158458732522,
+     0.14264056044504192,
+     0.36546262780355143,
+     0.6479755479128827
+    ],
+    "ai_insider_ac": [
+     0.0671396478588,
+     0.134060184,
+     0.217708356096,
+     0.32166135561105,
+     0.432490262818199
+    ]
+   },
+   "served=False": {
+    "campaign_oc": [
+     0.012340698464804234,
+     0.02482828771138379,
+     0.12335435628327396,
+     0.2536171590937498,
+     0.5114164440151043
+    ],
+    "ai_insider_ac": [
+     0.0671396478588,
+     0.134060184,
+     0.217708356096,
+     0.32166135561105,
+     0.432490262818199
+    ]
+   },
+   "routes_served": {
+    "remote": [
+     0.0019146038514040562,
+     0.006103782858108635,
+     0.019196031680286923,
+     0.03543413966980179,
+     0.11335042450932943
+    ],
+    "insider": [
+     0.0018184643793341304,
+     0.0030986811694555198,
+     0.06646931472795743,
+     0.09942873537029476,
+     0.18351397742333597
+    ],
+    "physical": [
+     0.008141351051895633,
+     0.009976074025190403,
+     0.013561560076812763,
+     0.0842161017875814,
+     0.21480500119098248
+    ],
+    "supply_chain": [
+     0.0005061174153904785,
+     0.005872251251088582,
+     0.02939331272761315,
+     0.06174978765574678,
+     0.14047095594740236
+    ],
+    "served": [
+     0.016225,
+     0.019200000000000002,
+     0.022000000000000006,
+     0.14984999999999998,
+     0.2795
+    ]
+   },
+   "binding_tier4": {
+    "remote": {
+     "entry": "V-CRED-1",
+     "reach": "V-BYP-2",
+     "exfil": "V-X-3"
+    },
+    "insider": {
+     "exfil": "V-X-4",
+     "entry": "V-HUM-1",
+     "reach": "V-X-1"
+    },
+    "physical": {
+     "reach": "V-NET-3",
+     "entry": "V-PHYS-4"
+    },
+    "supply_chain": {
+     "exfil": "V-X-3",
+     "entry": "V-SUP-1",
+     "reach": "V-BYP-2"
+    },
+    "served": {
+     "entry": "V-ML-4"
+    }
+   },
+   "binding_tier5": {
+    "remote": {
+     "entry": "V-NET-1",
+     "reach": "V-BYP-2",
+     "exfil": "V-NET-1"
+    },
+    "insider": {
+     "exfil": "V-X-4",
+     "entry": "V-HUM-1",
+     "reach": "V-X-1"
+    },
+    "physical": {
+     "reach": "V-NET-3",
+     "entry": "V-PHYS-4"
+    },
+    "supply_chain": {
+     "entry": "V-SUP-1",
+     "reach": "V-BYP-2",
+     "exfil": "V-NET-1"
+    },
+    "served": {
+     "entry": "V-ML-4"
+    }
+   },
+   "ai_binding_ac5": {
+    "reach": "V-SELF-7",
+    "exfil": "V-SELF-8"
+   },
+   "capability_meter": [
+    0.040350000000000004,
+    0.04120000000000001,
+    0.252,
+    0.2571,
+    0.437
+   ]
+  }
+ },
+ "sensitivity_score1": {
+  "0.1": [
+   0.399,
+   0.664,
+   0.332,
+   0.552
+  ],
+  "0.05": [
+   0.312,
+   0.626,
+   0.244,
+   0.501
+  ],
+  "0.02": [
+   0.262,
+   0.602,
+   0.189,
+   0.469
+  ],
+  "0.0": [
+   0.227,
+   0.586,
+   0.15,
+   0.448
+  ]
+ }
+}

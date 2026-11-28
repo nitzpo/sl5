@@ -164,8 +164,8 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
+# mkdocs documentation: not used here. `site/` is the GitHub Pages landing page
+# (version picker) and is tracked, so the template's `/site` entry is dropped.
 
 # mypy
 .mypy_cache/

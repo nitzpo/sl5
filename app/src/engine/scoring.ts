@@ -1,13 +1,19 @@
-import type { AttackChain, Block, BlockState, Category, Sliders } from "./types";
+import type { Block, BlockState, Category, Sliders } from "./types";
 import { getAiCapability } from "./ai-curve";
-import { SUPPORTING_WEIGHT, supportingBlocks } from "./supporting";
 
+/**
+ * Programme completeness — the coverage score that used to be "the SL".
+ *
+ * Phase 2 made the security level threat-relative (`threat-sl.ts`: SL-n holds
+ * OC-n). This file keeps the old coverage number as `programCompleteness`, a
+ * secondary readout: how much of the threat-relevant catalogue is in place,
+ * with defender-side AI erosion of probabilistic blocks. Same formula as
+ * before; relevance now comes from the vector map instead of chain names.
+ */
 export interface ScoringConfig {
-  /** Overall SL = weakest_link_weight·min(categories) + (1−weakest_link_weight)·mean.
+  /** Overall = weakest_link_weight·min(categories) + (1−weakest_link_weight)·mean.
    * A small weakest-link term keeps defense-in-depth honest (a wide-open category
-   * still drags the score) while the average lets broad coverage dominate — so a
-   * program that buys the controls that matter isn't pinned to its single most
-   * expensive-to-defend category. */
+   * still drags the score) while the average lets broad coverage dominate. */
   weakest_link_weight: number;
   baseline_floor: number;
 }
@@ -18,54 +24,43 @@ const DEFAULT_CONFIG: ScoringConfig = {
 };
 
 /**
- * How much each block counts toward the SL score, keyed by block id.
+ * How much a block that only partially counters the threat counts, relative to
+ * one that strongly counters at least one vector. Kept at the old chain model's
+ * supporting-defense weight so the completeness number moves the way it did.
+ */
+export const SUPPORTING_WEIGHT = 0.34;
+
+/**
+ * How much each block counts toward completeness, keyed by block id.
  *
- * A `Map` rather than a `Set` because relevance is not binary: a named chain step
- * counts fully (1), a supporting defense from the same family counts at
- * `SUPPORTING_WEIGHT`. `Set` membership gave a supporting block the same
- * influence over a category mean that breach gives it a third of — so the two
- * numbers disagreed about what deploying it was worth.
+ * A `Map` rather than a `Set` because relevance is not binary: a block that is
+ * a strong counter on at least one vector counts fully (1); a block with only
+ * partial counters counts at `SUPPORTING_WEIGHT`.
  */
 export type RelevanceWeights = Map<string, number>;
 
 /**
- * The blocks that actually matter to the threat model, with their weight: every
- * block any attack chain exploits or is stopped by at full weight, plus — when the
- * block catalog is supplied — the supporting defenses around them (same
- * `summary_group`) at `SUPPORTING_WEIGHT`. Category scores are measured over
- * these, not the full catalog, so deep catalogs of exotic controls no threat
- * exercises don't dilute a category's real coverage.
- *
- * Including supporting blocks keeps SL consistent with breach, which counts them
- * too: without it, a block could lower breach while leaving SL untouched. Using
- * the same weight keeps them consistent about how *much* it is worth.
- *
- * A block that is both named on one chain and supporting on another keeps the
- * higher (named) weight.
+ * Relevance from the vector map: every block counters at least one vector
+ * (the data-integrity test enforces it), so every block is relevant; strong
+ * counters weigh 1, partial-only blocks `SUPPORTING_WEIGHT`.
  */
-export function relevantBlockIds(chains?: AttackChain[], allBlocks?: Block[]): RelevanceWeights {
+export function counterRelevance(blocks: Block[]): RelevanceWeights {
   const weights: RelevanceWeights = new Map();
-  if (!chains) return weights;
-  for (const chain of chains) {
-    for (const id of chain.blocks_exploited ?? []) weights.set(id, 1);
-    for (const id of chain.stoppers ?? []) weights.set(id, 1);
-  }
-  if (allBlocks) {
-    for (const chain of chains) {
-      for (const b of supportingBlocks(chain, allBlocks)) {
-        if (!weights.has(b.id)) weights.set(b.id, SUPPORTING_WEIGHT);
-      }
-    }
+  for (const b of blocks) {
+    const counters = b.counters ?? [];
+    if (counters.length === 0) continue;
+    weights.set(b.id, counters.some((c) => c.strength === "strong") ? 1 : SUPPORTING_WEIGHT);
   }
   return weights;
 }
 
 // Keyed by `string`, not `BlockState`, on purpose: `partially_deployed` is NOT a
 // BlockState and is unreachable through the UI's advancement cycle. It stays
-// because 19 blocks in public/data still declare it as their `baseline_state`,
+// because many blocks in public/data still declare it as their `baseline_state`,
 // and callers that read those files directly (scoring.test.ts) need a sane value.
-// The store coerces any out-of-cycle baseline to `not_started`, so the running app
-// never scores a block at 0.6.
+// The app never scores a block at 0.6: `baselineStates` (engine/baseline.ts) maps
+// `partially_deployed` onto `implementing`, and the other out-of-cycle baselines
+// onto `not_started`, before a posture reaches the engine.
 const STATE_EFFECTIVENESS: Record<string, number> = {
   not_started: 0.0,
   investing: 0.1,
@@ -88,10 +83,11 @@ export function getStateEffectiveness(state: BlockState | string): number {
  * so the type belongs between the other two on both AI channels, and half is the
  * honest split absent per-block data saying otherwise.
  *
- * Used by `aiDegradation` (defender channel) and by `blockExploitProbability` in
- * breach.ts (attacker channel), so the two can't disagree about what a hybrid is.
- * Both treat it as a lerp between the hard-stop and probabilistic branches, which
- * keeps it bracketed by them by construction rather than by a tuned constant.
+ * Used by `aiDegradation` (defender channel, completeness) and by
+ * `counterRetention` in breach.ts (attacker channel, the vector model), so the
+ * two can't disagree about what a hybrid is. Both treat it as a lerp between the
+ * hard-stop and probabilistic branches, which keeps it bracketed by them by
+ * construction rather than by a tuned constant.
  *
  * Before this existed, both call sites branched only on `hard_stop`, so all three
  * hybrid blocks fell through to the pure-probabilistic path — NET-05 got no credit
@@ -118,18 +114,20 @@ export function aiDegradation(
 
 // What counts as a companion actually being there. `implementing` deliberately
 // doesn't: a diode being installed is not a diode you can move data through.
-// Neither do the non-BlockState baselines in public/data (`partially_deployed`,
-// `widely_deployed`) — the store coerces them out of the running app anyway, and a
-// half-there companion closing a gap fully would be the wrong way to round.
+// Neither do the non-BlockState baselines in public/data (`partially_deployed`
+// and the like) — `baselineStates` maps them onto the cycle before the running
+// app sees them anyway, and a half-there companion closing a gap fully would be
+// the wrong way to round.
 const OPERATIONAL: ReadonlySet<string> = new Set(["deployed", "mature"]);
 
 /**
  * How much of a block's effectiveness it actually gets, given which of its
  * `completed_by` companions are operational.
  *
- * Returns 1 for the 40 blocks that declare no companions, so this is a no-op
- * almost everywhere. For the rest it interpolates from `standalone_share` (none of
- * them present) to 1 (all of them), linearly in the count.
+ * Returns 1 for every block that declares no companions (just over half the
+ * catalogue), so for those it is a no-op. For the rest it interpolates from
+ * `standalone_share` (none of them present) to 1 (all of them), linearly in the
+ * count.
  *
  * The mini-game is what made this necessary. On a $150M budget the air gap is a
  * single click that drops four of seven chains by ~60 points, which teaches a
@@ -196,10 +194,10 @@ function govCoopMultiplier(block: Block, govCooperation: number): number {
  * counted exactly once:
  *  - the DEFENDER channel (here): probabilistic defenses erode as AI advances
  *    (`aiDegradation`), which lowers SL scores;
- *  - the ATTACKER channel (breach.ts): AI lifts the adversary's effective OC,
- *    which raises the capability gate and lowers probabilistic resist.
- * Breach therefore evaluates blocks with `opts.aiErosion: false` so the same
- * `ai_oc_shift` is never double-counted in one number.
+ *  - the ATTACKER channel (vector-model.ts): AI lifts the attacker's effective
+ *    tier per vector, which raises feasibility and erodes counters.
+ * The vector model therefore evaluates blocks with `opts.aiErosion: false` so
+ * AI is never counted twice in one number.
  *
  * Pass `opts.blockStates` to apply `enablementFactor` — a control declaring
  * `completed_by` companions is worth less while they're missing. Omitted, the
@@ -216,7 +214,7 @@ export function blockEffectiveness(
 ): number {
   // Backward compat: accept bare ai_timeline number
   const s: Sliders = typeof sliders === "number"
-    ? { ai_timeline: sliders, gov_cooperation: 1, vendor_cooperation: 1, budget_millions: 2000, org_transformation: 1, risk_tolerance: 0.5 }
+    ? { ai_timeline: sliders, gov_cooperation: 1, vendor_cooperation: 1, budget_millions: 2000, org_transformation: 1, risk_tolerance: 0.5, sl_bar: 0.2, ai_propensity: 0.5 }
     : sliders;
 
   const base = getStateEffectiveness(state);
@@ -232,15 +230,12 @@ export function blockEffectiveness(
  * Score for a single category (0-5 SL scale).
  *
  * The score is a WEIGHTED mean of effectiveness over the category's
- * *threat-relevant* blocks (`relevantIds`): named chain steps at full weight,
- * supporting defenses at `SUPPORTING_WEIGHT` — matching how breach counts them,
- * so the two numbers agree about what a block is worth. Scoring over the whole
- * catalog instead would divide by exotic controls no threat exercises, making a
- * well-covered category look like a D.
+ * *threat-relevant* blocks (`relevantIds`): strong counters at full weight,
+ * partial-only blocks at `SUPPORTING_WEIGHT` (see `counterRelevance`).
  *
  * Two "no relevant blocks" cases are handled distinctly:
- *  - `relevantIds` omitted → no chain context; score over the full category at
- *    equal weight (back-compat for callers/tests without chains);
+ *  - `relevantIds` omitted → no relevance context; score over the full
+ *    category at equal weight (back-compat for callers/tests);
  *  - `relevantIds` given but this category has none of them → the category has
  *    no exposure in the current threat model, so return the neutral baseline
  *    floor rather than diluting with the full catalog (which would re-introduce
@@ -305,10 +300,9 @@ export function overallSlScore(
 /**
  * Compute all category scores from blocks and states.
  *
- * Pass `relevantIds` (from `relevantBlockIds(chains, blocks)`) so each category is
+ * Pass `relevantIds` (from `counterRelevance(blocks)`) so each category is
  * scored over its threat-relevant blocks at their relevance weight. Omit it and
- * categories score over the full catalog at equal weight (back-compat for tests /
- * callers without chain context).
+ * categories score over the full catalog at equal weight (back-compat for tests).
  */
 export function computeCategoryScores(
   blocks: Block[],

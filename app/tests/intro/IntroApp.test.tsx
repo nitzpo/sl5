@@ -1,433 +1,320 @@
 // @vitest-environment jsdom
 //
-// Behavioural smoke test for the introduction at /sl5/intro/. `content.test.ts`
-// guards the numbers; this guards that every slide actually renders and that
-// navigation and the interactive demos respond — the intro has no other test
-// surface, and its whole job is to be clicked through by a first-time reader.
+// Behavioural test for the introduction: every slide renders with one figure,
+// its demos run on the shipped data, navigation and deep links work, and the
+// copy keeps the rules the user set: no probability percentages, and the
+// defender's vocabulary (attack vector, stage, approach, attack path,
+// scenario), never "route", "attack flow" or "ways in".
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
 import { IntroApp } from "../../src/intro/IntroApp";
 import { SLIDES } from "../../src/intro/slides";
-import { DEMO_BLOCKS, GLOSSARY, LONG_GAME } from "../../src/intro/content";
+import { GLOSSARY, OC_TIERS } from "../../src/intro/content";
+import { resetThreatDataCache } from "../../src/intro/data";
+import { INTRO_SEEN_KEY } from "../../src/intro/nav";
 import { SCRIPTS } from "../../src/timelapse/scripts";
+import { stubFetch } from "./stub-fetch";
+
+const BASE = import.meta.env.BASE_URL;
+
+function open(slug?: string) {
+  window.history.replaceState(null, "", `/sl5/intro/${slug ? `#${slug}` : ""}`);
+  return render(<IntroApp />);
+}
+
+async function settled() {
+  await waitFor(() => expect(screen.queryByText(/Loading the catalogue/)).toBeNull());
+  expect(screen.queryByText(/Couldn't load the catalogue/)).toBeNull();
+}
+
+/** Everything a reader can see or hear: text, tooltips and accessible names. */
+function readable(): string {
+  const attrs = Array.from(document.querySelectorAll("[title],[aria-label]")).map(
+    (el) => `${el.getAttribute("title") ?? ""} ${el.getAttribute("aria-label") ?? ""}`
+  );
+  return `${document.body.textContent} ${attrs.join(" ")}`;
+}
 
 beforeEach(() => {
-  window.history.replaceState(null, "", "/sl5/intro/");
   localStorage.clear();
+  resetThreatDataCache();
+  stubFetch();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
-describe("every slide renders", () => {
-  // Rendered one at a time via a deep link, which is also how a shared
-  // #slug URL arrives. A slide that throws fails here rather than in someone's
-  // browser on slide 11.
+describe("every slide", () => {
   for (const [i, slide] of SLIDES.entries()) {
-    it(`#${slide.slug} (${i + 1}/${SLIDES.length})`, () => {
-      window.history.replaceState(null, "", `/sl5/intro/#${slide.slug}`);
-      render(<IntroApp />);
-      expect(screen.getByText(`${i + 1}/${SLIDES.length}`)).toBeTruthy();
+    it(`#${slide.slug} (${i + 1}/${SLIDES.length}) renders one figure, with the rules kept`, async () => {
+      open(slide.slug);
+      await settled();
+      expect(screen.getByLabelText(`Slide ${i + 1} of ${SLIDES.length}`)).toBeTruthy();
       expect(document.title).toBe(`${slide.title} · SL5 Explorable`);
-      // The container that takes focus on every slide change carries the
-      // slide's name, so a screen reader announces where it landed.
-      expect(screen.getByRole("region", { name: slide.title })).toBeTruthy();
+      const region = screen.getByRole("region", { name: slide.title });
+      expect(region.querySelectorAll("figure")).toHaveLength(1);
+
+      const text = readable();
+      expect(text, "a percentage on the page").not.toMatch(/\d\s?%|percent/i);
+      expect(text).not.toMatch(/\broutes?\b/i);
+      expect(text).not.toMatch(/attack flow/i);
+      expect(text).not.toMatch(/ways in/i);
     });
   }
 });
 
 describe("navigation", () => {
-  it("Next and Back walk the deck and sync the hash", () => {
-    render(<IntroApp />);
+  it("Next and Back walk the deck and keep the hash in step", () => {
+    open();
     expect(window.location.hash).toBe(`#${SLIDES[0].slug}`);
-
     fireEvent.click(screen.getByText("Next →"));
     expect(window.location.hash).toBe(`#${SLIDES[1].slug}`);
-
     fireEvent.click(screen.getByText("← Back"));
     expect(window.location.hash).toBe(`#${SLIDES[0].slug}`);
   });
 
-  it("arrow keys navigate, and Home/End jump to the ends", () => {
-    render(<IntroApp />);
+  it("names the next slide on the Next button", () => {
+    open();
+    expect(screen.getByText(`${SLIDES[1].title} →`)).toBeTruthy();
+  });
+
+  it("arrow keys navigate, Home and End jump, and neither end is overrun", () => {
+    open();
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(window.location.hash).toBe(`#${SLIDES[0].slug}`);
     fireEvent.keyDown(window, { key: "ArrowRight" });
     expect(window.location.hash).toBe(`#${SLIDES[1].slug}`);
-
     fireEvent.keyDown(window, { key: "End" });
+    fireEvent.keyDown(window, { key: "ArrowRight" });
     expect(window.location.hash).toBe(`#${SLIDES[SLIDES.length - 1].slug}`);
-
     fireEvent.keyDown(window, { key: "Home" });
     expect(window.location.hash).toBe(`#${SLIDES[0].slug}`);
   });
 
-  it("does not run off either end", () => {
-    render(<IntroApp />);
-    fireEvent.keyDown(window, { key: "ArrowLeft" });
-    expect(window.location.hash).toBe(`#${SLIDES[0].slug}`);
-
-    fireEvent.keyDown(window, { key: "End" });
-    fireEvent.keyDown(window, { key: "ArrowRight" });
-    expect(window.location.hash).toBe(`#${SLIDES[SLIDES.length - 1].slug}`);
-  });
-
-  it("ignores arrow keys aimed at a slider — the year scrubbers need them", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#why-it-gets-worse");
-    render(<IntroApp />);
-    const scrubber = screen.getByLabelText("Year");
-    fireEvent.keyDown(scrubber, { key: "ArrowRight" });
+  it("leaves arrow keys to a slider that has focus", () => {
+    open("why-it-gets-worse");
+    fireEvent.keyDown(screen.getByLabelText("Year"), { key: "ArrowRight" });
     expect(window.location.hash).toBe("#why-it-gets-worse");
   });
 
   it("the progress rail jumps straight to a slide", () => {
-    render(<IntroApp />);
-    // By role: once navigated, the focused slide region carries the same
-    // accessible name as its rail tick.
-    const tick = () => screen.getByRole("button", { name: SLIDES[8].title });
-    fireEvent.click(tick());
+    open();
+    fireEvent.click(screen.getByRole("button", { name: SLIDES[8].title }));
     expect(window.location.hash).toBe(`#${SLIDES[8].slug}`);
-    expect(tick().getAttribute("aria-current")).toBe("step");
+    expect(screen.getByRole("button", { name: SLIDES[8].title }).getAttribute("aria-current")).toBe("step");
   });
 
-  it("an unknown slug falls back to the first slide instead of blanking", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#no-such-slide");
-    render(<IntroApp />);
-    expect(screen.getByText(`1/${SLIDES.length}`)).toBeTruthy();
+  it("an unknown slug falls back to the first slide", () => {
+    open("no-such-slide");
+    expect(screen.getByLabelText(`Slide 1 of ${SLIDES.length}`)).toBeTruthy();
+  });
+
+  it("links to retired v1 slugs land on the slide that took over their topic", () => {
+    for (const [old, now] of [
+      ["the-rest", "ready"],
+      ["constraints", "budget"],
+      ["why-steal-them", "start"],
+      ["lifecycle", "blocks"],
+    ]) {
+      open(old);
+      expect(window.location.hash).toBe(`#${now}`);
+      cleanup();
+    }
+  });
+
+  it("moves focus to the new slide's region, which carries its name", () => {
+    open();
+    fireEvent.click(screen.getByText("Next →"));
+    expect(document.activeElement).toBe(screen.getByRole("region", { name: SLIDES[1].title }));
   });
 });
 
-describe("handing off to the app", () => {
-  // BASE_URL is "/" under vitest (no `base` applied in the test env) and "/sl5/"
-  // in dev and on Pages; assert on the shape, not the literal prefix.
-  const BASE = import.meta.env.BASE_URL;
-
-  it("the header link marks the intro seen so the first-run modal is skipped", () => {
-    render(<IntroApp />);
-    const open = screen.getAllByText("Open the app →")[0];
-    expect(open.getAttribute("href")).toBe(BASE);
-    fireEvent.click(open);
-    expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
+describe("handing off to the instrument", () => {
+  it("links to the configured base and marks the intro seen under v2's own key", () => {
+    open();
+    const link = screen.getAllByText("Open the instrument →")[0].closest("a")!;
+    expect(link.getAttribute("href")).toBe(BASE);
+    fireEvent.click(link);
+    expect(localStorage.getItem(INTRO_SEEN_KEY)).toBe("1");
+    expect(INTRO_SEEN_KEY).toBe("sl5v2_intro_seen");
+    // v1 shares the origin: its key is never written.
+    expect(localStorage.getItem("sl5_intro_seen")).toBeNull();
   });
 
-  it("the story CTA opens a picker offering every authored story", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#the-rest");
-    render(<IntroApp />);
-    fireEvent.click(screen.getByText("▶ Watch a 1-min story"));
-
-    // Every scripted story is offered; the passthrough one isn't, because it
-    // just advances time on a posture a newcomer hasn't built.
+  it("the last slide offers every scripted scenario, and picking one marks the intro seen", () => {
+    open("ready");
+    fireEvent.click(screen.getByText("▶ Watch a 1-minute scenario"));
     const scripted = SCRIPTS.filter((s) => s.type !== "passthrough");
     expect(scripted.length).toBeGreaterThan(1);
     for (const s of scripted) {
-      expect(screen.getByText(`▶ ${s.name}`).closest("a")!.getAttribute("href")).toBe(
-        `${BASE}?story=${s.id}`
-      );
+      expect(screen.getByText(`▶ ${s.name}`).closest("a")!.getAttribute("href")).toBe(`${BASE}?story=${s.id}`);
     }
-    for (const s of SCRIPTS.filter((s) => s.type === "passthrough")) {
-      expect(screen.queryByText(`▶ ${s.name}`)).toBeNull();
-    }
-  });
-
-  it("picking a story marks the intro seen, and Back returns to the CTAs", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#the-rest");
-    render(<IntroApp />);
-    fireEvent.click(screen.getByText("▶ Watch a 1-min story"));
-
     fireEvent.click(screen.getByText("Cancel"));
-    expect(screen.getByText("▶ Watch a 1-min story")).toBeTruthy();
-
-    fireEvent.click(screen.getByText("▶ Watch a 1-min story"));
-    fireEvent.click(screen.getByText("▶ Proactive Program"));
-    expect(localStorage.getItem("sl5_intro_seen")).toBe("1");
+    fireEvent.click(screen.getByText("▶ Watch a 1-minute scenario"));
+    fireEvent.click(screen.getByText(`▶ ${scripted[0].name}`));
+    expect(localStorage.getItem(INTRO_SEEN_KEY)).toBe("1");
   });
 });
 
 describe("the demos respond", () => {
-  /** The erosion percentages currently on screen, in render order. */
-  function readErosion(): number[] {
-    return screen
-      .queryAllByText(/% eroded$/)
-      .map((el) => Number(el.textContent!.replace(/[^0-9]/g, "")));
-  }
-
-  it("erosion deepens from 2026 to 2030 and never touches the hard stop", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#blocks");
-    render(<IntroApp />);
-    // AI capability is already 35% in 2026, so two of the three erode from the
-    // start; the exact percentages come from the engine (see content.test.ts).
-    const erodedIn2026 = readErosion();
-    expect(erodedIn2026).toHaveLength(2);
-    expect(screen.getAllByText("no erosion")).toHaveLength(1);
-
-    fireEvent.click(screen.getByText("2030"));
-    const erodedIn2030 = readErosion();
-    expect(erodedIn2030).toHaveLength(2);
-    // Four more years of AI progress bites deeper...
-    erodedIn2030.forEach((pct, i) => expect(pct).toBeGreaterThan(erodedIn2026[i]));
-    // ...and never touches the hard stop, which is the point of the slide.
-    expect(screen.getAllByText("no erosion")).toHaveLength(1);
+  it("AI lifts the attacker a full tier on code and credentials by 2030", () => {
+    open("why-it-gets-worse");
+    expect(screen.queryByText("works like OC4")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Year"), { target: { value: "2030" } });
+    expect(screen.getByText("works like OC4")).toBeTruthy();
+    // People and places barely move, and military force not at all.
+    expect(screen.getByText("unchanged")).toBeTruthy();
   });
 
-  it("the lifecycle hex cycles through all five states and wraps", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#lifecycle");
-    render(<IntroApp />);
-    const block = DEMO_BLOCKS["NET-01"];
-    const hex = screen.getByRole("button", { name: `${block.id} ${block.name}` });
-    expect(screen.getByText("0%")).toBeTruthy();
-
-    for (const pct of ["10%", "40%", "85%", "100%"]) {
-      fireEvent.click(hex);
-      expect(screen.getByText(pct)).toBeTruthy();
-    }
-    fireEvent.click(hex); // wraps back to not_started
-    expect(screen.getByText("0%")).toBeTruthy();
-  });
-
-  it("right-click advances too — the gesture the app itself uses", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#lifecycle");
-    render(<IntroApp />);
-    const block = DEMO_BLOCKS["NET-01"];
-    const hex = screen.getByRole("button", { name: `${block.id} ${block.name}` });
-    fireEvent.contextMenu(hex);
-    expect(screen.getByText("10%")).toBeTruthy();
-  });
-
-  it("the segmented control jumps to a state directly, including backwards", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#lifecycle");
-    render(<IntroApp />);
-    fireEvent.click(screen.getByLabelText("Mature"));
-    expect(screen.getByText("100%")).toBeTruthy();
-    fireEvent.click(screen.getByLabelText("Investing"));
-    expect(screen.getByText("10%")).toBeTruthy();
-  });
-
-  it("the decision-window demo separates a closed window from a closing one", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#timeline");
-    render(<IntroApp />);
-    // Defaults to 2027, the one year where the three blocks sit in three tiers.
-    expect(screen.getByText("Window closed")).toBeTruthy();
-    expect(screen.getByText("Window closing")).toBeTruthy();
-    expect(screen.getByText("On the horizon")).toBeTruthy();
-  });
-
-  /** `!` glyphs drawn on a hexagon — the slide's prose also says "!", so count
-   *  the SVG badges rather than every match on the page. */
-  function countBadges(): number {
-    return Array.from(document.querySelectorAll("svg text")).filter(
-      (t) => t.textContent === "!"
-    ).length;
-  }
-
-  it("only closed and closing windows get the ! badge, and only closed pulses", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#timeline");
-    render(<IntroApp />);
-    // Two badges at 2027 — the "upcoming" block is deliberately unbadged,
-    // matching BlockGrid/ClusterView/DefenseRings, which all drop it.
-    expect(countBadges()).toBe(2);
-    // The pulse is the overdue-only tell (BlockCell does the same).
-    expect(document.querySelectorAll("animate")).toHaveLength(1);
-  });
-
-  it("scrubbing to 2029 closes every window on the demo", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#timeline");
-    render(<IntroApp />);
-    fireEvent.change(screen.getByLabelText("Year"), { target: { value: "2029" } });
-    expect(screen.getAllByText("Window closed")).toHaveLength(3);
-    expect(countBadges()).toBe(3);
-    expect(screen.queryByText("Window closing")).toBeNull();
-  });
-
-  it("scrubbing to 2024 leaves nothing pressing", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#timeline");
-    render(<IntroApp />);
-    fireEvent.change(screen.getByLabelText("Year"), { target: { value: "2024" } });
-    // Only HW-07's 48-month build is even on the two-year horizon, and it's
-    // still "upcoming" — so no badge appears anywhere.
-    expect(countBadges()).toBe(0);
-    expect(screen.getAllByText("Not pressing yet")).toHaveLength(2);
-  });
-
-  it("the AI curve scrubber moves the readout", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#why-it-gets-worse");
-    render(<IntroApp />);
-    const svg = screen.getByRole("img");
-    expect(svg.getAttribute("aria-label")).toMatch(/2026 is at 35 percent/);
-
-    const scrubber = screen.getByLabelText("Year") as HTMLInputElement;
-    fireEvent.change(scrubber, { target: { value: "2030" } });
-    expect(svg.getAttribute("aria-label")).toMatch(/2030 is at 100 percent/);
-  });
-
-  it("the OC ladder shows OC5's step-change resources when picked", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#the-oc-ladder");
-    render(<IntroApp />);
-    // Defaults to OC4 — the tier the app's baseline adversary sits at.
-    expect(screen.getByText(/^OC4 — /)).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "OC5" }));
-    expect(screen.getByText(/^OC5 — Top-Priority State Operations$/)).toBeTruthy();
-    expect(screen.getByText("$1B")).toBeTruthy();
+  it("the OC ladder opens on OC4 and shows OC5's resources when picked", () => {
+    open("the-oc-ladder");
+    expect(screen.getByText(OC_TIERS[3].name)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^OC5,/ }));
+    expect(screen.getByText(OC_TIERS[4].name)).toBeTruthy();
+    expect(screen.getByText("$1B · 1,000 people · 5 years")).toBeTruthy();
     expect(screen.getByText("50+ zero-days simultaneously")).toBeTruthy();
   });
 
-  it("the OC ladder's patience readout is never off by a plural", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#the-oc-ladder");
-    render(<IntroApp />);
-    // OC1 is a quarter of a month, OC2 exactly one, OC4 exactly twelve — the
-    // three values that sit right on a formatTime boundary.
+  it("the level matrix explains a level, and marks where a typical lab starts", async () => {
+    open("security-levels");
+    await settled();
+    expect(screen.getByText(/OC1 to OC3 usually fail against you/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^SL5:/ }));
+    expect(screen.getByText(/and so does your own model/)).toBeTruthy();
+    expect(screen.getByText(/where a typical lab starts in 2026/)).toBeTruthy();
+  });
+
+  it("the own-model figure gives a band per year for both postures", async () => {
+    open("own-model");
+    await settled();
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("Today's typical lab")).toBeTruthy();
+    expect(within(table).getByText("Every defense, mature")).toBeTruthy();
+    expect(within(table).getAllByText(/usually fails|contested|usually succeeds/).length).toBe(6);
+  });
+
+  it("the catalogue tile advances on click and steps back on right-click", () => {
+    open("blocks");
+    const tile = screen.getByRole("button", { name: /^NET-01 .*not started/ });
+    fireEvent.click(tile);
+    expect(screen.getByRole("button", { name: /^NET-01 .*investing/ })).toBeTruthy();
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^NET-01 .*investing/ }));
+    expect(screen.getByRole("button", { name: /^NET-01 .*not started/ })).toBeTruthy();
+    fireEvent.click(screen.getByText("Step back"));
+    expect(screen.getByRole("button", { name: /^NET-01 .*mature/ })).toBeTruthy();
+  });
+
+  it("the stage figure shows more vectors usually succeeding as the tier rises", async () => {
+    open("attack-vectors");
+    await settled();
+    const getIn = () => screen.getByRole("region", { name: "Get in" }).textContent!;
+    const count = () => Number(getIn().match(/(\d+) of \d+ RAND vectors usually succeed/)![1]);
     fireEvent.click(screen.getByRole("button", { name: "OC1" }));
-    expect(screen.getByText("1 week")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "OC2" }));
-    expect(screen.getByText("1 month")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "OC4" }));
-    expect(screen.getByText("1 year")).toBeTruthy();
+    const low = count();
     fireEvent.click(screen.getByRole("button", { name: "OC5" }));
-    expect(screen.getByText("5 years")).toBeTruthy();
+    expect(count()).toBeGreaterThan(low);
+    expect(screen.getByRole("region", { name: "Get them out" }).textContent).toMatch(/RAND scores none/);
   });
 
-  it("deploying PER-04 blocks The Long Game at its first step", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#attack-paths");
-    render(<IntroApp />);
-    expect(screen.getByText("☠ Weights exfiltrated")).toBeTruthy();
-
-    fireEvent.click(screen.getByText(`✗ PER-04 ${DEMO_BLOCKS["PER-04"].shortLabel}`));
-    expect(screen.getByText("■ Chain blocked")).toBeTruthy();
-    // ...and explains why, in the data's own words.
-    expect(screen.getByText(LONG_GAME.steps[0].howItStops!)).toBeTruthy();
+  it("deploying defenses on the easiest path moves it", async () => {
+    open("attack-paths");
+    await settled();
+    const path = () => screen.getByRole("list", { name: "Attack path, stage by stage" }).textContent;
+    const before = path();
+    // Deploy the first counter offered at each stage until something moves.
+    const offered = within(screen.getByRole("list", { name: "Attack path, stage by stage" })).getAllByRole("button", {
+      pressed: false,
+    });
+    for (const b of offered) fireEvent.click(b);
+    expect(path()).not.toBe(before);
+    expect(screen.getByText("Reset defenses")).toBeTruthy();
   });
 
-  it("deploying a later-step defense still lets the earlier steps succeed", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#attack-paths");
-    render(<IntroApp />);
-    fireEvent.click(screen.getByText(`✗ PER-05 ${DEMO_BLOCKS["PER-05"].shortLabel}`));
-    expect(screen.getByText("■ Chain blocked")).toBeTruthy();
-    expect(screen.getByText(LONG_GAME.steps[3].howItStops!)).toBeTruthy();
+  it("stacking: partial counters leave the step usually succeeding; the strong one does more", async () => {
+    open("stacking");
+    await settled();
+    const toggles = screen.getAllByRole("button", { pressed: false });
+    const partials = toggles.filter((b) => / · partial/.test(b.textContent!));
+    const strong = toggles.find((b) => / · strong/.test(b.textContent!))!;
+    for (const b of partials) fireEvent.click(b);
+    expect(screen.getByRole("status").textContent).toMatch(/partial counters: still (usually succeeds|contested)/);
+    expect(screen.getAllByText("adds nothing").length).toBeGreaterThan(0);
+    for (const b of partials) fireEvent.click(b);
+    fireEvent.click(strong);
+    expect(screen.getByRole("status").textContent).toMatch(/One strong counter alone: (contested|usually fails)/);
+  });
+
+  it("the level demo reaches SL5 with every defense, and not without the research-required ones", async () => {
+    open("your-level");
+    await settled();
+    const level = () => screen.getByLabelText(/^Security level \d/).textContent;
+    expect(level()).toBe("SL5");
+    fireEvent.click(screen.getByRole("switch", { name: /Research-required defenses built/ }));
+    expect(level()).not.toBe("SL5");
+    fireEvent.click(screen.getByRole("button", { name: "Today's typical lab" }));
+    expect(level()).toBe("SL2");
+    expect(screen.getByText("What still gets through")).toBeTruthy();
+  });
+
+  it("the race moves the threat front with the AI pace, and late starts land after it", async () => {
+    open("timeline");
+    await settled();
+    const front = () => screen.getByText(/^The front:/).textContent;
+    expect(front()).toMatch(/The front: 2030/);
+    expect(screen.getByText(/Doing nothing is a decline/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Faster" }));
+    expect(front()).toMatch(/The front: Apr 2028/);
+    fireEvent.click(screen.getByRole("button", { name: "2028" }));
+    expect(screen.getAllByText("lands after the front").length).toBeGreaterThan(3);
   });
 });
 
-describe("jargon is explained in place", () => {
-  // The intro was reported as too text-heavy, and specifically as using "OC"
-  // without ever saying what it stands for. Detail now hides behind <Reveal>
-  // and terms behind <Term>, so these guard that the explanation is actually
-  // reachable rather than merely written.
-
-  it("clicking a term shows its definition, and clicking again hides it", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
-    render(<IntroApp />);
+describe("jargon explains itself", () => {
+  it("a click opens a term and a second click closes it", () => {
+    open();
     const term = screen.getByRole("button", { name: "weights" });
-    expect(term.getAttribute("aria-expanded")).toBe("false");
-
     fireEvent.click(term);
     expect(term.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByText(GLOSSARY.weights.definition, { exact: false })).toBeTruthy();
-
+    expect(screen.getByText(GLOSSARY.weights.definition)).toBeTruthy();
     fireEvent.click(term);
     expect(term.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("one tap opens a term — the whole touch cascade, not just the click", () => {
-    // A tap fires FOUR events: pointerenter, a synthesized mouseenter, focus,
-    // then click. Every ungated auto-open handler in that cascade opens the card
-    // for the click behind it to toggle shut, which is why a term used to need
-    // two taps on a phone — the first opened and closed it, and the second only
-    // worked because mouseenter doesn't fire twice.
-    //
-    // This test previously fired focus + click and passed while the phone was
-    // still broken, because it left the hover events out. Firing the real
-    // sequence is the whole point.
-    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
-    render(<IntroApp />);
+  it("one tap opens a term: the whole touch cascade, not just the click", () => {
+    open();
     const term = screen.getByRole("button", { name: "weights" });
-
     const tap = () => {
-      // pointerType "touch" is what distinguishes this from a mouse; jsdom
-      // likewise never matches `:focus-visible` for a pointer, so both gates see
-      // exactly what a phone would send.
       fireEvent.pointerEnter(term, { pointerType: "touch" });
       fireEvent.mouseEnter(term);
       fireEvent.focus(term);
       fireEvent.click(term);
     };
-
     tap();
     expect(term.getAttribute("aria-expanded")).toBe("true");
-
-    // And a second tap dismisses it — the click-to-hide behaviour to preserve.
     tap();
     expect(term.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("a mouse still opens a term on hover alone", () => {
-    // The touch fix gates hover on pointerType, so this guards the other side of
-    // that gate: a mouse must still get hover-to-open with no click at all.
-    window.history.replaceState(null, "", "/sl5/intro/#the-asset");
-    render(<IntroApp />);
+  it("a mouse opens a term on hover alone", () => {
+    open();
     const term = screen.getByRole("button", { name: "weights" });
-
     fireEvent.pointerEnter(term, { pointerType: "mouse" });
     expect(term.getAttribute("aria-expanded")).toBe("true");
     fireEvent.pointerLeave(term, { pointerType: "mouse" });
     expect(term.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("the OC slide spells out the abbreviation without needing a click", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#the-oc-ladder");
-    render(<IntroApp />);
-    // Visible prose, not a collapsed popover: this is the term a reader told us
-    // they couldn't follow, so it can't be one interaction away.
-    expect(screen.getByText(/OC = Operational Capability/)).toBeTruthy();
-    // The heading no longer leads with the bare abbreviation either.
-    expect(document.title).toBe("How capable is the attacker? · SL5 Explorable");
-  });
-
-  it("the security-levels slide spells out SL the same way", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#security-levels");
-    render(<IntroApp />);
-    expect(screen.getByText(/SL = Security Level/)).toBeTruthy();
-  });
-
-  it("doesn't define the SL tiers by a layer count", () => {
-    // The layer count is a field no code in the app reads — `overallSlScore`
-    // blends category scores and never sees it — so presenting 1/1/2/4/8 as
-    // what the tiers *are* taught the reader something the model doesn't do.
-    // What separates SL4 from SL5 is which controls are on the table.
-    window.history.replaceState(null, "", "/sl5/intro/#security-levels");
-    render(<IntroApp />);
-    expect(screen.queryByText("Layers")).toBeNull();
-    expect(screen.queryByText(/independent layers/)).toBeNull();
-    // The SL5 row still renders its description, minus the trailing count.
-    expect(screen.getByText(/Complete isolation, formal hardware verification/))
-      .toBeTruthy();
-  });
-
-  it("the cover tells the reader the dotted underlines are clickable", () => {
-    render(<IntroApp />);
-    expect(screen.getByText(/dotted underline/)).toBeTruthy();
-  });
-
-  it("the sources slide carries the full glossary, collapsed", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#sources");
-    render(<IntroApp />);
-    const entries = Object.values(GLOSSARY);
-    // Present in the DOM but inside a closed <details>, so it costs no reading
-    // effort until asked for.
-    const details = screen.getByText(/Glossary — every term/).closest("details")!;
-    expect(details.open).toBe(false);
-    for (const e of entries) expect(screen.getByText(e.label)).toBeTruthy();
-  });
-
-  it("every Term on every slide points at a glossary entry that exists", () => {
-    // `keyof typeof GLOSSARY` makes a bad key a type error, but only if the
-    // slide renders — so walk the whole deck and check each popover resolves to
-    // a real label rather than an empty span.
+  it("every term on every slide points at a glossary entry", async () => {
     const labels = new Set(Object.values(GLOSSARY).map((e) => e.label));
     let checked = 0;
     for (const slide of SLIDES) {
-      window.history.replaceState(null, "", `/sl5/intro/#${slide.slug}`);
-      render(<IntroApp />);
+      open(slide.slug);
+      await settled();
       for (const btn of screen.queryAllByRole("button", { expanded: false })) {
         fireEvent.click(btn);
-        // An open Term describes its trigger with the popover it just rendered,
-        // and the popover's first span is the glossary label.
         const id = btn.getAttribute("aria-describedby");
         const popover = id ? document.getElementById(id) : null;
         if (!popover || popover.getAttribute("role") !== "tooltip") continue;
@@ -436,21 +323,25 @@ describe("jargon is explained in place", () => {
       }
       cleanup();
     }
-    // Guard against the sweep silently checking nothing — which is exactly what
-    // happened when Term moved from aria-controls to aria-describedby.
-    expect(checked, "no Term popovers were opened").toBeGreaterThan(15);
+    expect(checked, "no term popovers were opened").toBeGreaterThan(15);
+  });
+
+  it("the sources slide carries the whole glossary, collapsed", () => {
+    open("sources");
+    const details = screen.getByText(/Glossary: every term/).closest("details")!;
+    expect(details.open).toBe(false);
+    for (const e of Object.values(GLOSSARY)) expect(within(details).getByText(e.label)).toBeTruthy();
   });
 });
 
-describe("external links are safe", () => {
-  it("every off-site link opens in a new tab with rel=noopener", () => {
-    window.history.replaceState(null, "", "/sl5/intro/#sources");
-    render(<IntroApp />);
+describe("external links", () => {
+  it("open in a new tab with rel=noopener", () => {
+    open("sources");
     const external = Array.from(document.querySelectorAll("a[href^='http']"));
-    expect(external.length).toBeGreaterThan(0);
+    expect(external.length).toBeGreaterThan(4);
     for (const a of external) {
-      expect(a.getAttribute("target"), `${a.getAttribute("href")} target`).toBe("_blank");
-      expect(a.getAttribute("rel"), `${a.getAttribute("href")} rel`).toMatch(/noopener/);
+      expect(a.getAttribute("target")).toBe("_blank");
+      expect(a.getAttribute("rel")).toMatch(/noopener/);
     }
   });
 });

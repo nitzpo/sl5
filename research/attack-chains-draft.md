@@ -1,5 +1,7 @@
 # SL5 Explorable — Curated Attack Chain Scenarios
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. These chains were v1's scoring backbone. In v2 they are scenarios (`app/public/data/scenarios.json`): each told as one specific attack path through the vectors, to illustrate, never to score.
+
 These are "Option C" narratives showing multi-block failure cascades.
 Each demonstrates defense-in-depth: the adversary needed multiple blocks absent simultaneously.
 
@@ -21,9 +23,9 @@ A foreign intelligence service identifies a target AI lab's new datacenter. They
 
 The engineer passes background checks (no Private SF-86 in place at this lab, only standard employment verification). After 4 months building trust, they're on the routine maintenance rotation.
 
-During a scheduled coolant check — alone, no TPI enforced — the engineer installs a passive optical splitter on an NVLink interconnect tray between GPU racks. The device is 3cm × 1cm, epoxied beneath existing cable management. It records to 4TB internal flash.
+During a scheduled coolant check — alone, no TPI enforced — the engineer seats a custom interposer in-line on one of a rack's copper NVLink links, behind a compute tray. (NVLink inside a GB200 NVL72-class rack runs over copper, not fiber, so there is no optical splitter to clip on; and checkpoints travel over the storage network, not NVLink.) It records to 4TB internal flash.
 
-Three weeks later, same maintenance window, device retrieved. Contains complete model weights captured during a training checkpoint sync.
+Three weeks later, same maintenance window, device retrieved. Contains complete model weights, captured as sharded training gathered the parameters across the NVLink domain step after step.
 
 The implant is never detected because no periodic hardware inspection protocol exists. No X-ray, no visual audit against baseline.
 
@@ -167,7 +169,7 @@ The researcher uses legitimate access to exfiltrate weights. They don't need to 
 
 **Defense-in-depth lesson:** Intelligence agencies play long games. The 36-month timeline is short by HUMINT standards. AI labs hiring from academia are especially vulnerable — researchers move freely between institutions, have broad access, and consider information sharing a professional norm. The entire SenL framework exists because traditional tech-company HR cannot detect state-sponsored recruitment.
 
-**Real-world parallel:** Multiple cases of Chinese MSS recruiting semiconductor engineers through academic fronts (e.g., Thousand Talents Program cases, 2018-2023). The same tradecraft applies to AI researchers. The Manhattan Project identified ~0.5% insider compromise rate even with TS/SCI clearances — private-sector vetting catches less.
+**Real-world parallel:** Multiple cases of Chinese MSS recruiting semiconductor engineers through academic fronts (e.g., Thousand Talents Program cases, 2018-2023). The same tradecraft applies to AI researchers. Wartime vetting did not stop Soviet penetration of the Manhattan Project (Fuchs, Hall and others) — private-sector vetting catches less.
 
 ---
 

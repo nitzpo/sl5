@@ -1,5 +1,7 @@
 # SL5 Explorable — Ideation Log
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. The aha moments still frame v2; the views and mechanics sketched here are v1's.
+
 ## Session 1 — 2026-04-26
 
 ### Audience

@@ -1,69 +1,47 @@
 import { describe, it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
 import { SCRIPTS } from "../../src/timelapse/scripts";
 import { computeScriptBlockStates } from "../../src/timelapse/compute-script-state";
-import { applyBudgetConstraint } from "../../src/engine/budget";
-import { computeBreachProbabilities } from "../../src/engine/breach";
+import { scorePosture } from "../../src/engine/posture";
 import { TIMELINE_START, TIMELINE_END } from "../../src/utils/timeline";
 import type { Block, BlockState, Sliders } from "../../src/engine/types";
+import { loadBlocks, loadModel, NEUTRAL_SLIDERS } from "../load-data";
 
 /**
- * WHY the breach curve drifts upward between block completions.
+ * WHY campaign success drifts upward between block completions.
  *
  * Playback advances the year monthly, so the gaps between completions are
- * visible for the first time, and in them breach ticks *up*. `scripts.test.ts`
- * bounds how big that drift may get; this file pins what causes it, which is
- * the part that would rot silently if someone changed how the engine reads the
- * year.
+ * visible, and in them success ticks *up*. `scripts.test.ts` bounds how big
+ * that drift may get; this file pins what causes it.
  *
- * `year` reaches breach through exactly two paths, both via `getAiCapability`:
- *   1. `aiDegradation` (scoring.ts) erodes probabilistic blocks, half-erodes
- *      hybrids, and leaves hard stops alone.
- *   2. `chainEffectiveOc` (breach.ts) lifts the attacker's effective OC by
- *      `avgShift × aiCap`, whatever the defenses are made of.
+ * In the vector model `year` reaches the campaign only through the AI
+ * capability curve, and only on the attacker's side (rewritten in Phase 2; the
+ * chain model also had a defender-side erosion term):
+ *   1. each vector's effective tier, OC + ai_shift × aiCap, which raises its
+ *      feasibility and erodes the counters on it;
+ *   2. the lab's own model's AC band;
+ *   3. the detection q, which AI-assisted evasion erodes.
  * Everything else that moves during playback is block state, which only ever
- * improves. These tests take those apart one at a time.
+ * improves.
  */
 
-const DATA = path.join(__dirname, "../../public/data");
-
-function loadBlocks(): Block[] {
-  const blocks: Block[] = [];
-  for (const file of fs.readdirSync(DATA)) {
-    if (file.startsWith("blocks-") && file.endsWith(".json")) {
-      blocks.push(...JSON.parse(fs.readFileSync(path.join(DATA, file), "utf-8")));
-    }
-  }
-  return blocks;
-}
-
 const blocks = loadBlocks();
-const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
+const model = loadModel();
 const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
 const order = (script.deployments ?? []).map((d) => d.blockId);
-const sliders: Sliders = {
-  ai_timeline: 0.5,
-  gov_cooperation: 0.5,
-  vendor_cooperation: 0.5,
-  budget_millions: 2000,
-  org_transformation: 0.5,
-  risk_tolerance: 0.5,
-  ...(script.sliderOverrides ?? {}),
-} as Sliders;
+const sliders: Sliders = { ...NEUTRAL_SLIDERS, ...(script.sliderOverrides ?? {}) } as Sliders;
 
-/** Worst-case breach for a posture, scored at a given year. */
-function breachAt(states: Record<string, BlockState>, year: number): number {
-  const { effectiveStates } = applyBudgetConstraint(blocks, states, sliders.budget_millions, {
-    order,
-    riskTolerance: sliders.risk_tolerance,
-  });
-  return Math.max(
-    ...Object.values(
-      computeBreachProbabilities(chains, blocks, effectiveStates, 4, year, sliders, true)
-    ),
-    0
-  );
+/** Campaign success against OC4 for a posture, scored at a given year. */
+function breachAt(states: Record<string, BlockState>, year: number, catalogue: Block[] = blocks): number {
+  return scorePosture({
+    blocks: catalogue,
+    model,
+    blockStates: states,
+    advanceOrder: order,
+    year,
+    sliders,
+    adversaryOc: 4,
+    modelServedExternally: true,
+  }).campaign;
 }
 
 /** One sample per month across the whole timeline. */
@@ -80,7 +58,7 @@ function postureOf(type: Block["defense_type"]): Record<string, BlockState> {
   return states;
 }
 
-describe("what makes breach drift up between completions", () => {
+describe("what makes campaign success drift up between completions", () => {
   it("is not the posture: advancing it with the year held still never raises breach", () => {
     // The rival explanation, and the one that would be a bug: block states
     // regressing under the `higherOf` clamp in compute-script-state.ts. Freeze
@@ -108,13 +86,11 @@ describe("what makes breach drift up between completions", () => {
     }
   });
 
-  it("is mostly the adversary getting stronger, not defenses eroding", () => {
-    // A posture of nothing but hard stops cannot erode — `aiDegradation`
-    // returns 0.0 for them by construction — so every point of rise it shows is
-    // `chainEffectiveOc` lifting the attacker. It is the larger share of the
-    // effect, which is why this is "the adversary climbs past the defense"
-    // rather than "the defense decays". Erosion is real but secondary: swap in
-    // a posture that CAN erode and the rise grows, it does not appear.
+  it("is the adversary getting stronger, and erodible counters lose more ground", () => {
+    // A posture of nothing but hard stops still loses ground as AI lifts the
+    // attacker's tier: feasibility rises, and even hard stops keep a little
+    // less of their effect at a higher tier. Swap in a posture of probabilistic
+    // counters — whose band is far wider — and the rise grows.
     const hardStop = byMonth((year) => breachAt(postureOf("hard_stop"), year));
     const probabilistic = byMonth((year) => breachAt(postureOf("probabilistic"), year));
     const rise = (s: { p: number }[]) => s[s.length - 1].p - s[0].p;
@@ -123,11 +99,22 @@ describe("what makes breach drift up between completions", () => {
     expect(
       ocLift,
       `erosion-immune posture should still lose ground; it moved ${(ocLift * 100).toFixed(2)}pp`
-    ).toBeGreaterThan(0.05);
+    ).toBeGreaterThan(0.02);
 
     expect(
       rise(probabilistic),
       `erodible posture ${(rise(probabilistic) * 100).toFixed(2)}pp vs erosion-immune ${(ocLift * 100).toFixed(2)}pp`
     ).toBeGreaterThan(ocLift);
+  });
+
+  it("counts AI once: the blocks' defender-side erosion figures never reach the campaign", () => {
+    // `ai_oc_shift` on a block drives the defender-side erosion that programme
+    // completeness uses. The vector model reads the attacker's tier instead, so
+    // zeroing every block's ai_oc_shift must leave every campaign number alone.
+    const zeroed = blocks.map((b) => ({ ...b, adversary_exploitation: { ...b.adversary_exploitation, ai_oc_shift: 0 } }));
+    const states = computeScriptBlockStates(script, 2028, blocks);
+    for (const year of [2026, 2028, 2030]) {
+      expect(breachAt(states, year, zeroed)).toBeCloseTo(breachAt(states, year), 12);
+    }
   });
 });

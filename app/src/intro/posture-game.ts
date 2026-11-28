@@ -1,76 +1,71 @@
-// The mini-game's rules and arithmetic, with no React in it.
+// The budget mini-game's rules and arithmetic, with no React in it.
 //
-// Split out from the component for one reason: every number the game shows has
-// to come from the real engine, and the only way to prove that is a test that
-// loads the shipped JSON and runs `evaluatePosture` directly. Nothing here is a
-// re-implementation — `applyBudgetConstraint`, `applyDependencyConstraint`,
-// `blockCostBasis`, `computeCategoryScores`, `overallSlScore` and
-// `computeBreachProbabilities` are the same functions `store/derived.ts` calls
-// for the app's own Security Posture card, in the same order.
+// The reader starts where a typical frontier lab is today (the instrument's
+// researched starting posture), gets one year and a fixed budget, and picks
+// defenses. What they see is which attacker tiers they now usually stop, in
+// words, and the security level with its bar toward the next one.
+//
+// Every number is `scorePosture`, the pipeline the instrument runs: budget
+// (funded in pick order, unfunded blocks stay at the lab's baseline), then
+// prerequisites (a block whose `requires` isn't running is capped at
+// implementing), then the vector model at every tier. The price is the same
+// `blockCostBasis` the instrument's budget line charges.
 
-import {
-  applyBudgetConstraint,
-  applyDependencyConstraint,
-  blockCostBasis,
-  computeBreachProbabilities,
-  computeCategoryScores,
-  overallSlScore,
-  relevantBlockIds,
-} from "../engine";
-import type { AttackChain, Block, BlockState, Category, Sliders } from "../engine/types";
+import { blockCostBasis } from "../engine/budget";
+import { baselineStates, baselineStateFor } from "../engine/baseline";
+import { scorePosture, type PostureScore } from "../engine/posture";
+import { SL_BAR_PRESETS } from "../engine/threat-sl";
+import type { Block, BlockState, Sliders } from "../engine/types";
+import type { ThreatData } from "./data";
+import { APPROACH_LABEL, STAGE_LABEL, shortVectorName, stopsInWords } from "./engine-views";
 
-/** A deliberately tight year. The app's own default is $200M; $150M is enough
- * to buy several controls but nowhere near the whole shortlist, so the budget
- * actually decides something. */
+/** One year's money. Enough for most of the shortlist, not all of it, so the
+ * order of picks and the choice between one big structural buy and several
+ * cheap ones both matter. */
 export const BUDGET_MILLIONS = 150;
-export const YEAR = 2026;
-/** OC4 — a leading nation-state, which is the app's baseline adversary. */
-export const ADVERSARY_OC = 4;
-/** Below this, the app's Attacker perspective files a chain under "blocked". */
-export const VIABLE_THRESHOLD = 0.02;
+/** 2028: today's typical lab, two years on, with nothing added. Since the Nov
+ * 2026 recalibration today's lab holds SL2 in 2026, and no $150M year buys
+ * SL3 from there; by 2028 AI has lifted the attackers and it has slipped to
+ * SL1, so the year's choice is whether you get back to SL2. */
+export const YEAR = 2028;
+/** Kept off the public API in this exercise: serving the model adds an
+ * approach of its own, which the reader meets in the instrument. */
+export const SERVED = false;
 
-/** The ten blocks you choose from. Picked to make the trade-offs land, under
- * four constraints the tests enforce:
+/**
+ * The ten defenses on offer. Chosen, against the shipped data, so that
+ * choices matter (all asserted by `tests/intro/posture-game.test.ts`):
  *
- *  - All six categories and all three defense types, so no lesson is missing.
- *  - Costs $243.5M against a $150M budget, so the budget genuinely binds and
- *    "the air gap, or eight cheap controls" is a real decision.
- *  - No block requires anything off this list, so every cap the reader hits is
- *    one they can actually fix. `PER-04` requires `PER-01`, which is here on
- *    purpose: buy vetting with no sensitivity framework underneath it and the
- *    real dependency rule caps it.
- *  - Between them they stop chains: `AI-07` and `NET-01` are stoppers on the
- *    chain that drives the headline number, so the breach percentage does move.
- *  - At least one `completed_by` companion is buyable here, so the "your air gap
- *    is 55% of an air gap" lesson comes with a move the reader can make: `PER-08`
- *    is a NET-01 companion at $10M, taking it to 70% inside the budget.
- *
- * `completed_by` companions are otherwise allowed off the list, unlike `requires`.
- * The two relations differ exactly here: an unmeetable `requires` is a cap the
- * reader can't clear and reads as a broken game, whereas an unmeetable
- * `completed_by` is the lesson — the air gap the budget can buy is not the air gap
- * the standard describes, and no ten-block year makes it one. Buying `NET-01`'s
- * other two companions needs `NET-05` and `NET-04`, both of which require the $50M
- * `NET-02` enclave; that whole set is $191M against a $150M budget, so putting them
- * on the list would only sell a completion the reader cannot afford.
- *
- * Every id, cost, category and dependency is asserted against the shipped JSON
- * by `tests/intro/posture-game.test.ts`. */
+ *  - Starting from today's typical lab in 2028 (SL1: OC1 usually fails, OC2
+ *    contested), the right picks within the budget get back to SL2 and push
+ *    OC3 to contested; most picks don't. The headline moves in words, not
+ *    near "usually succeeds" for everything.
+ *  - The list costs well over the budget, and every block fits on its own.
+ *  - Four prerequisite pairs are on the list (PER-06, PER-02, PER-03 and
+ *    PER-09 need PER-01), so a pick in the wrong order is capped, and the fix
+ *    is on the board.
+ *  - The air gap is the big buy: $100M of the year's $150M. No year gets back
+ *    to SL2 without it, but it does not get there alone: one structural
+ *    purchase is not most of security.
+ *  - Three of them start partly in place at a typical lab, so the reader sees
+ *    the state fill as well as the shape. (Identity, patching and a SOC, the
+ *    old list's quick wins, are now counted as deployed at baseline.)
+ */
 export const SHORTLIST = [
-  "NET-01", // Air gap — hard stop, and two thirds of the budget in one click
-  "AI-07", // Inference channel outbound defense — hybrid
-  "HW-05", // Tamper-evident enclosures — hard stop
-  "PHY-03", // Mantraps — cheap probabilistic
+  "PER-03", // Continuous behavioural monitoring — needs PER-01
+  "PER-09", // Coercion and duress protection — needs PER-01
+  "HW-05", // Tamper-evident enclosures — hybrid
+  "AI-11", // No self-weight access — hard stop
+  "NET-01", // Air gap — hard stop, the big buy
   "PER-01", // Sensitivity levels framework — the prerequisite
-  "PER-04", // SF-86-equivalent vetting — requires PER-01
-  "PER-05", // Post-employment restrictions — cheap probabilistic
-  "PER-08", // No remote access — cheap hard stop
-  "SC-04", // Sub-tier flow-down of security requirements — probabilistic
-  "SC-05", // Counterfeit detection — cheap probabilistic
+  "PER-06", // Dual authorization — needs PER-01
+  "PER-02", // Two-person integrity — needs PER-01
+  "CUS-01", // Weight custody
+  "PHY-03", // Mantraps
 ] as const;
 
-/** World sliders held at the app's own defaults. The game is about the budget
- * and the blocks; nothing else should move underneath the reader. */
+/** The world held still underneath the reader: neutral cooperation, the
+ * standard bar, the default AI pace. The game is about the budget. */
 export const SLIDERS: Sliders = {
   ai_timeline: 0.5,
   gov_cooperation: 0.5,
@@ -78,113 +73,78 @@ export const SLIDERS: Sliders = {
   budget_millions: BUDGET_MILLIONS,
   org_transformation: 0.5,
   risk_tolerance: 0.5,
+  sl_bar: SL_BAR_PRESETS.standard,
+  ai_propensity: 0.5,
 };
 
-export const BLOCK_FILES = [
-  "blocks-network.json",
-  "blocks-machine.json",
-  "blocks-physical.json",
-  "blocks-personnel.json",
-  "blocks-supply-chain.json",
-  "blocks-ai-specific.json",
-] as const;
-
-export interface GameData {
-  blocks: Block[];
-  chains: AttackChain[];
-}
-
-/** What the game charges for a block: the same planning cost the app's budget
- * line uses, at the same default risk tolerance. */
+/** What the game charges for a block: the instrument's planning cost at the
+ * same risk tolerance. */
 export function costOf(block: Block): number {
   return blockCostBasis(block, SLIDERS.risk_tolerance);
 }
 
-export interface PostureResult {
-  /** Overall SL score, 0–5. */
-  sl: number;
-  categories: Record<Category, number>;
-  /** Chance at least one chain works, i.e. the app's headline number. */
-  breach: number;
-  /** Every chain, most likely first — the Attacker perspective's ordering. */
-  ranked: { chain: AttackChain; p: number }[];
-  /** Total planned spend, and what the budget couldn't pay for. */
+/** True when a typical lab already runs part of this (sunk cost: only
+ * advancing it past that costs money). */
+export function startsPartlyInPlace(block: Block): boolean {
+  return baselineStateFor(block) !== "not_started";
+}
+
+export interface GameResult {
+  score: PostureScore;
+  /** What each block counts as after the budget and prerequisite caps. */
+  effectiveStates: Record<string, BlockState>;
   spentMillions: number;
   budgetExceeded: Set<string>;
-  /** Blocks capped because a prerequisite isn't operational. */
   dependencyUnmet: Set<string>;
   dependencyUnmetRequires: Map<string, string[]>;
-  /** What each shortlist block actually counts as after both caps, which is
-   * what the score was computed over — not necessarily what was clicked. */
-  effectiveStates: Record<string, BlockState>;
-  /** Lowest-scoring category, which is the app's own "fix this next" signal. */
-  weakestCategory: Category;
+  /** "OC1 and OC2" — the headline. */
+  stops: string;
+  /** The next tier up, its band and its easiest approach and path, in words.
+   * Null at SL5. */
+  stillGetsThrough: { tier: number; band: string; approach: string; path: string[] } | null;
 }
 
 /**
- * Score one posture. `chosen` is the reader's click order, which is also the
- * funding order — first clicked, first paid for, exactly as in the app.
- *
- * Blocks outside `chosen` are scored as `not_started` rather than at their
- * real-world baseline: the game is "build a posture from nothing", so the
- * reader sees their own choices move the number instead of reading a score they
- * didn't earn.
+ * Score one posture. `chosen` is the reader's pick order, which is also the
+ * funding order, as in the instrument: the first pick is paid for first, so a
+ * later pick can only ever cap itself.
  */
-export function evaluatePosture(data: GameData, chosen: string[]): PostureResult {
-  const requested: Record<string, BlockState> = {};
-  for (const b of data.blocks) requested[b.id] = "not_started";
-  for (const id of chosen) requested[id] = "deployed";
+export function evaluatePosture(data: ThreatData, chosen: string[], year = YEAR): GameResult {
+  const states = baselineStates(data.blocks);
+  for (const id of chosen) states[id] = "deployed";
 
-  const {
-    effectiveStates: budgeted,
-    exceededIds: budgetExceeded,
-    spentMillions,
-  } = applyBudgetConstraint(data.blocks, requested, BUDGET_MILLIONS, {
-    order: chosen,
-    riskTolerance: SLIDERS.risk_tolerance,
+  const score = scorePosture({
+    blocks: data.blocks,
+    model: data.model,
+    blockStates: states,
+    advanceOrder: chosen,
+    year,
+    sliders: SLIDERS,
+    adversaryOc: 4,
+    modelServedExternally: SERVED,
   });
 
-  const {
-    effectiveStates,
-    unmetIds: dependencyUnmet,
-    unmetRequires: dependencyUnmetRequires,
-  } = applyDependencyConstraint(data.blocks, budgeted);
-
-  const categories = computeCategoryScores(
-    data.blocks,
-    effectiveStates,
-    YEAR,
-    SLIDERS,
-    relevantBlockIds(data.chains, data.blocks)
-  );
-  const breaches = computeBreachProbabilities(
-    data.chains,
-    data.blocks,
-    effectiveStates,
-    ADVERSARY_OC,
-    YEAR,
-    SLIDERS
-  );
-
-  const ranked = data.chains
-    .map((chain) => ({ chain, p: breaches[chain.id] ?? 0 }))
-    .sort((a, b) => b.p - a.p);
-
-  const entries = Object.entries(categories) as [Category, number][];
-  const weakestCategory = entries.reduce((lo, e) => (e[1] < lo[1] ? e : lo))[0];
+  const names = new Map(data.model.vectors.map((v) => [v.id, v.name]));
+  const limit = score.sl.limitedBy;
+  const stillGetsThrough = limit
+    ? {
+        tier: limit.tier,
+        band: score.tiers[limit.tier - 1].band,
+        approach: APPROACH_LABEL[limit.approach ?? ""] ?? limit.approach ?? "",
+        path: limit.path.map(
+          (s) => `${STAGE_LABEL[s.stage]}: ${shortVectorName(names.get(s.vectorId) ?? s.vectorId)}`
+        ),
+      }
+    : null;
 
   return {
-    sl: overallSlScore(categories),
-    categories,
-    // The app's headline breach number is the worst live chain, which after the
-    // sort is the first one.
-    breach: ranked[0]?.p ?? 0,
-    ranked,
-    spentMillions,
-    budgetExceeded,
-    dependencyUnmet,
-    dependencyUnmetRequires,
-    effectiveStates,
-    weakestCategory,
+    score,
+    effectiveStates: score.effectiveStates,
+    spentMillions: score.spentMillions,
+    budgetExceeded: score.budgetExceededIds,
+    dependencyUnmet: score.dependencyUnmetIds,
+    dependencyUnmetRequires: score.dependencyUnmetRequires,
+    stops: stopsInWords(score.sl.level),
+    stillGetsThrough,
   };
 }

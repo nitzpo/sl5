@@ -1,29 +1,26 @@
 import { describe, it, expect } from "vitest";
+// Programme completeness: the old coverage score, kept as a secondary readout.
+// (The threat-relative SL has its own tests: breach / calibration /
+// monotonicity.) Rewritten in Phase 2 where the meaning changed: relevance now
+// comes from the vector map, and the calibration pins are over today's
+// 56-block catalogue.
 import {
   blockEffectiveness,
   categoryScore,
   overallSlScore,
   computeCategoryScores,
+  counterRelevance,
   enablementFactor,
   getStateEffectiveness,
-  relevantBlockIds,
+  SUPPORTING_WEIGHT,
 } from "../../src/engine/scoring";
-import { SUPPORTING_WEIGHT } from "../../src/engine/supporting";
 import { getAiCapability } from "../../src/engine/ai-curve";
 import type { Block } from "../../src/engine/types";
-import fs from "fs";
-import path from "path";
+import { loadBlocks as loadAll } from "../load-data";
 
+/** The catalogue (the Nov 2026 recalibration retired the future blocks). */
 function loadBlocks(): Block[] {
-  const dataDir = path.join(__dirname, "../../public/data");
-  const blocks: Block[] = [];
-  for (const file of fs.readdirSync(dataDir)) {
-    if (file.startsWith("blocks-") && file.endsWith(".json")) {
-      const data = JSON.parse(fs.readFileSync(path.join(dataDir, file), "utf-8"));
-      blocks.push(...data);
-    }
-  }
-  return blocks;
+  return loadAll();
 }
 
 describe("State Effectiveness", () => {
@@ -63,7 +60,7 @@ describe("AI Capability Curve", () => {
 describe("Block Effectiveness", () => {
   const blocks = loadBlocks();
   const net01 = blocks.find((b) => b.id === "NET-01")!;
-  const ai03 = blocks.find((b) => b.id === "AI-03")!;
+  const per03 = blocks.find((b) => b.id === "PER-03")!;
 
   it("hard stop blocks have no AI degradation", () => {
     const eff2026 = blockEffectiveness(net01, "deployed", 2026);
@@ -73,14 +70,15 @@ describe("Block Effectiveness", () => {
   });
 
   it("probabilistic blocks degrade over time", () => {
-    const eff2026 = blockEffectiveness(ai03, "deployed", 2026);
-    const eff2030 = blockEffectiveness(ai03, "deployed", 2030);
+    expect(per03.defense_type).toBe("probabilistic");
+    const eff2026 = blockEffectiveness(per03, "deployed", 2026);
+    const eff2030 = blockEffectiveness(per03, "deployed", 2030);
     expect(eff2030).toBeLessThan(eff2026);
   });
 
   it("not_started always returns 0", () => {
     expect(blockEffectiveness(net01, "not_started", 2026)).toBe(0);
-    expect(blockEffectiveness(ai03, "not_started", 2030)).toBe(0);
+    expect(blockEffectiveness(per03, "not_started", 2030)).toBe(0);
   });
 
   it("hybrid blocks erode, but only over their probabilistic half", () => {
@@ -182,8 +180,12 @@ describe("Category and Overall Scores", () => {
   // posture every companion is operational and every factor is 1. If a future
   // change moves Scenario 3, something is wrong with the mechanic; if it moves
   // 1/2/4, check the annotations before re-baselining.
+  //
+  // Phase 2 re-baselined all four (1.82 → 1.85, 2.33 → 2.30, 4.18 → 4.17,
+  // 2.14 → 2.12) because the catalogue changed under them: 47 → 56 blocks, six
+  // merges and five reclassifications to hybrid. The ceiling held to 0.01.
 
-  it("Scenario 1: Baseline 2026 (~1.82)", () => {
+  it("Scenario 1: Baseline 2026 (~1.94)", () => {
     // Feeds `baseline_state` straight into the engine, so it exercises the raw
     // data path and scores `partially_deployed` at the 0.6 shim — NOT what the
     // app shows, which maps that state onto the advancement cycle. Moved 1.75 →
@@ -191,33 +193,36 @@ describe("Category and Overall Scores", () => {
     // from "no lab has done this" to `partially_deployed` against published lab
     // disclosures, then back to 1.82 when NET-04 returned to `not_started`: the
     // deployed egress controls are software rate limits, not the hardware-
-    // enforced physical cap that block actually specifies.
+    // enforced physical cap that block actually specifies. 1.85 → 1.94 in the
+    // Nov 2026 recalibration: seven controls labs demonstrably run are now
+    // `deployed` at baseline, and NET-04 is `partially_deployed` from 2025 (the
+    // ASL-3 software egress limits are the partial version of the block).
     const baselineStates: Record<string, string> = {};
     for (const b of blocks) {
       baselineStates[b.id] = b.current_state.baseline_state;
     }
     const catScores = computeCategoryScores(blocks, baselineStates, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(1.82, 1);
+    expect(overall).toBeCloseTo(1.94, 1);
   });
 
-  it("Scenario 2: All implementing 2026 (~2.33)", () => {
+  it("Scenario 2: All implementing 2026 (~2.30)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) states[b.id] = "implementing";
     const catScores = computeCategoryScores(blocks, states, 2026);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(2.33, 1);
+    expect(overall).toBeCloseTo(2.3, 1);
   });
 
-  it("Scenario 3: All deployed 2029 (~4.18)", () => {
+  it("Scenario 3: All deployed 2029 (~4.17)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) states[b.id] = "deployed";
     const catScores = computeCategoryScores(blocks, states, 2029);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(4.18, 1);
+    expect(overall).toBeCloseTo(4.17, 1);
   });
 
-  it("Scenario 4: Network+Physical deployed, AI absent 2028 (~2.14)", () => {
+  it("Scenario 4: Network+Physical deployed, AI absent 2028 (~2.12)", () => {
     const states: Record<string, string> = {};
     for (const b of blocks) {
       if (b.category === "network" || b.category === "physical") {
@@ -232,7 +237,7 @@ describe("Category and Overall Scores", () => {
     }
     const catScores = computeCategoryScores(blocks, states, 2028);
     const overall = overallSlScore(catScores);
-    expect(overall).toBeCloseTo(2.14, 1);
+    expect(overall).toBeCloseTo(2.12, 1);
   });
 
   it("an absent category still drags overall below full coverage", () => {
@@ -253,53 +258,37 @@ describe("Category and Overall Scores", () => {
 
 describe("Threat relevance weighting", () => {
   const blocks = loadBlocks();
-  const chains = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "../../public/data/attack-chains.json"), "utf-8")
-  );
 
-  it("weights named chain steps fully and supporting defenses at the breach weight", () => {
-    const weights = relevantBlockIds(chains, blocks);
-    const named = new Set<string>();
-    for (const c of chains) {
-      for (const id of c.blocks_exploited ?? []) named.add(id);
-      for (const id of c.stoppers ?? []) named.add(id);
+  it("weights strong counters fully and partial-only blocks at the supporting weight", () => {
+    const weights = counterRelevance(blocks);
+    // Every block counters something, so every block is relevant.
+    expect(weights.size).toBe(blocks.length);
+    for (const b of blocks) {
+      const strong = b.counters.some((c) => c.strength === "strong");
+      expect(weights.get(b.id), b.id).toBe(strong ? 1 : SUPPORTING_WEIGHT);
     }
-    expect(named.size).toBeGreaterThan(0);
-    for (const id of named) expect(weights.get(id), id).toBe(1);
-    // Everything else that made the cut is a supporting defense, and must carry
-    // the SAME weight breach.ts gives it — otherwise deploying one moves the two
-    // numbers by different amounts.
-    const supporting = [...weights.keys()].filter((id) => !named.has(id));
-    expect(supporting.length).toBeGreaterThan(0);
-    for (const id of supporting) expect(weights.get(id), id).toBe(SUPPORTING_WEIGHT);
+    expect([...weights.values()].filter((w) => w === 1).length).toBeGreaterThan(0);
+    expect([...weights.values()].filter((w) => w === SUPPORTING_WEIGHT).length).toBeGreaterThan(0);
   });
 
-  it("lets a named step move a category score more than a supporting one", () => {
-    const weights = relevantBlockIds(chains, blocks);
-    const named = new Set<string>();
-    for (const c of chains) {
-      for (const id of c.blocks_exploited ?? []) named.add(id);
-      for (const id of c.stoppers ?? []) named.add(id);
-    }
-    // Pick a category holding both kinds so the comparison is within one mean.
-    const cat = (["network", "physical", "personnel"] as const).find((c) => {
-      const inCat = blocks.filter((b) => b.category === c && weights.has(b.id));
-      return inCat.some((b) => named.has(b.id)) && inCat.some((b) => !named.has(b.id));
+  it("lets a strong counter move a category score more than a partial-only one", () => {
+    const weights = counterRelevance(blocks);
+    const cat = (["network", "physical", "personnel", "machine"] as const).find((c) => {
+      const inCat = blocks.filter((b) => b.category === c);
+      return inCat.some((b) => weights.get(b.id) === 1) && inCat.some((b) => weights.get(b.id) === SUPPORTING_WEIGHT);
     })!;
-    const inCat = blocks.filter((b) => b.category === cat && weights.has(b.id));
-    const namedBlock = inCat.find((b) => named.has(b.id))!;
-    const suppBlock = inCat.find((b) => !named.has(b.id))!;
-
+    const catBlocks = blocks.filter((b) => b.category === cat);
+    // Same state and no companions, so only the weight differs.
+    const plain = (b: Block) => !b.dependencies.completed_by && b.defense_type === "hard_stop";
+    const strongBlock = catBlocks.find((b) => weights.get(b.id) === 1 && plain(b)) ?? catBlocks.find((b) => weights.get(b.id) === 1)!;
+    const partialBlock =
+      catBlocks.find((b) => weights.get(b.id) === SUPPORTING_WEIGHT && plain(b)) ??
+      catBlocks.find((b) => weights.get(b.id) === SUPPORTING_WEIGHT)!;
     const base: Record<string, string> = {};
     for (const b of blocks) base[b.id] = "not_started";
-    const catBlocks = blocks.filter((b) => b.category === cat);
-    const score = (id: string) =>
-      categoryScore(catBlocks, { ...base, [id]: "mature" }, 2026, 0.5, weights);
-
-    expect(score(namedBlock.id)).toBeGreaterThan(score(suppBlock.id));
-    // ...but a supporting block is not inert: it still has to move the number.
-    expect(score(suppBlock.id)).toBeGreaterThan(
-      categoryScore(catBlocks, base, 2026, 0.5, weights)
-    );
+    const score = (id: string) => categoryScore(catBlocks, { ...base, [id]: "mature" }, 2024, 1, weights);
+    expect(score(strongBlock.id)).toBeGreaterThan(score(partialBlock.id));
+    // ...but a partial-only block is not inert: it still moves the number.
+    expect(score(partialBlock.id)).toBeGreaterThan(categoryScore(catBlocks, base, 2024, 1, weights));
   });
 });

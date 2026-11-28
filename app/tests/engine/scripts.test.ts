@@ -1,42 +1,44 @@
+// The five narrative stories, through the same pipeline playback runs.
+// Rewritten in Phase 2: the ordering and the Proactive bands are now on the
+// threat-relative SL (level + progress) and campaign success, not on the old
+// worst-chain breach and coverage SL. Retargeted in the Nov 2026
+// recalibration (research/scoring-model.md, "Calibration targets and evidence"),
+// then split: the old all-at-once Proactive is now the Crash Program, and
+// Proactive is the realistic plan that ends at SL4 (research/v2/decisions.md D27).
 import { describe, it, expect } from "vitest";
 import { SCRIPTS } from "../../src/timelapse/scripts";
 import { computeScriptBlockStates } from "../../src/timelapse/compute-script-state";
 import { applyBudgetConstraint, blockCostBasis } from "../../src/engine/budget";
-import { computeBreachProbabilities } from "../../src/engine/breach";
-import { computeCategoryScores, overallSlScore, relevantBlockIds } from "../../src/engine/scoring";
-import type { Block, BlockState, Sliders } from "../../src/engine/types";
-import fs from "fs";
-import path from "path";
-
-const DATA = path.join(__dirname, "../../public/data");
-
-function loadBlocks(): Block[] {
-  const blocks: Block[] = [];
-  for (const file of fs.readdirSync(DATA)) {
-    if (file.startsWith("blocks-") && file.endsWith(".json")) {
-      blocks.push(...JSON.parse(fs.readFileSync(path.join(DATA, file), "utf-8")));
-    }
-  }
-  return blocks;
-}
+import { scorePosture } from "../../src/engine/posture";
+import type { BlockState, Sliders } from "../../src/engine/types";
+import { loadBlocks, loadModel, NEUTRAL_SLIDERS } from "../load-data";
 
 const blocks = loadBlocks();
+const model = loadModel();
 const blockById = new Map(blocks.map((b) => [b.id, b]));
+
+/** A story at one year, scored as playback scores it (OC4, model served). */
+function storyAt(id: string, year: number, served = true) {
+  const script = SCRIPTS.find((s) => s.id === id)!;
+  const raw = computeScriptBlockStates(script, year, blocks) as Record<string, BlockState>;
+  return scorePosture({
+    blocks,
+    model,
+    blockStates: raw,
+    advanceOrder: (script.deployments ?? []).map((d) => d.blockId),
+    year,
+    sliders: scriptSliders(script),
+    adversaryOc: 4,
+    modelServedExternally: served,
+  });
+}
 
 // Sliders as a story actually plays them: neutral defaults, then the story's own
 // overrides. The budget MUST come from `sliderOverrides` — a literal here would
 // let a cost or schedule regression be checked against a more-funded posture
-// than playback ever runs (Proactive is a $2,800M plan, not the $2,000M default).
+// than playback ever runs (Proactive is a $4,000M plan, not the $2,000M default).
 function scriptSliders(script: (typeof SCRIPTS)[number]): Sliders {
-  return {
-    ai_timeline: 0.5,
-    gov_cooperation: 0.5,
-    vendor_cooperation: 0.5,
-    budget_millions: 2000,
-    org_transformation: 0.5,
-    risk_tolerance: 0.5,
-    ...(script.sliderOverrides ?? {}),
-  } as Sliders;
+  return { ...NEUTRAL_SLIDERS, ...(script.sliderOverrides ?? {}) } as Sliders;
 }
 
 describe("time-lapse scripts", () => {
@@ -63,14 +65,13 @@ describe("time-lapse scripts", () => {
     // Stories are costed at their OWN `risk_tolerance`, which selects where in
     // each block's authored min–max range the plan is budgeted (see
     // `blockCostBasis`). Every story must plan inside its own budget: a plan that
-    // outruns its funding gets capped at `implementing` by the funding queue, and
+    // outruns its funding is left at its baseline by the funding queue, and
     // the start years past the budget line stop meaning anything — the blocks sit
     // frozen regardless of when the story says they began.
     //
     // Proactive used to overrun deliberately ($1,624M on $800M), which froze 20
     // of its 31 deployments for six years. Its residual risk now comes from what
-    // the plan LEAVES OUT rather than from what it cannot pay for, which is the
-    // honest version of the same lesson.
+    // no catalogue block can stop rather than from what it cannot pay for.
     for (const script of SCRIPTS) {
       const budget = script.sliderOverrides?.budget_millions;
       if (budget === undefined || !script.deployments?.length) continue;
@@ -89,7 +90,7 @@ describe("time-lapse scripts", () => {
     }
   });
 
-  it("never cap a scripted deployment at implementing", () => {
+  it("never leave a scripted deployment unfunded", () => {
     // The corollary of the affordability test, checked through the engine rather
     // than by summing costs: no story should be narrating a block that the
     // funding queue has frozen. If this fails, some story's start years are
@@ -105,78 +106,41 @@ describe("time-lapse scripts", () => {
       });
       expect(
         [...exceededIds],
-        `${script.id} caps ${exceededIds.size} block(s) at implementing`
+        `${script.id} leaves ${exceededIds.size} block(s) unfunded`
       ).toEqual([]);
     }
   });
 
-  it("keep the Proactive curve monotonically improving", () => {
-    // The story's whole claim is that starting early and staying inside the
-    // budget keeps paying off. A step where nothing completes is a step where AI
-    // advances unopposed and breach ticks back UP — which reads as the program
-    // losing ground and previously happened for the last three years of the
-    // playback. The deployment schedule is staged so every half-year lands at
-    // least one completion; this pins that.
-    const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
-    const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
-    const sliders = scriptSliders(script);
-    const order = (script.deployments ?? []).map((d) => d.blockId);
-
+  it("keep the Crash Program curve monotonically improving", () => {
+    // The story's whole claim is that starting everything early and staying
+    // inside the budget keeps paying off. A step where nothing completes is a step where AI
+    // advances unopposed and campaign success ticks back UP. The schedule is
+    // staged so every half-year step holds the line; this pins it, on campaign
+    // success against OC4 with the model served (what playback shows).
     let prev = Infinity;
     for (let year = 2024; year <= 2030 + 1e-9; year += 0.5) {
-      const raw = computeScriptBlockStates(script, year, blocks) as Record<string, BlockState>;
-      const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
-        order,
-        riskTolerance: sliders.risk_tolerance,
-      });
-      const p = Math.max(
-        ...Object.values(
-          computeBreachProbabilities(chains, blocks, effectiveStates, 4, year, sliders, true)
-        ),
-        0
-      );
+      const p = storyAt("crash-program", year).campaign;
       expect(
         p,
-        `proactive rises at ${year.toFixed(1)}: ${(prev * 100).toFixed(1)}% → ${(p * 100).toFixed(1)}%`
+        `crash rises at ${year.toFixed(1)}: ${(prev * 100).toFixed(1)}% → ${(p * 100).toFixed(1)}%`
       ).toBeLessThanOrEqual(prev + 1e-9);
       prev = p;
     }
   });
 
-  it("keep the Proactive curve from sawtoothing at the resolution playback shows", () => {
-    // Playback now advances the year monthly rather than snapping to whole
-    // years, so the space *between* completions is visible for the first time.
-    // In that space AI advances against defenses that haven't finished, and
-    // breach genuinely ticks up a little — that is the futureproofing race, not
-    // a bug, so this does not assert strict monotonicity the way the half-year
-    // test above does. What it pins is that the drift stays far below the
-    // display's own resolution (integer percent) and that it never accumulates:
-    // every rolling 12 months is still downward.
-    const MAX_MONTHLY_RISE = 0.005; // 0.5pp; the real worst case is ~0.36pp
-    const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
-    const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
-    const sliders = scriptSliders(script);
-    const order = (script.deployments ?? []).map((d) => d.blockId);
-
+  it("keep the Crash Program curve from sawtoothing at the resolution playback shows", () => {
+    // Playback advances the year monthly, so the space *between* completions
+    // is visible. In that space AI advances against defenses that haven't
+    // finished and success genuinely ticks up a little — that is the
+    // futureproofing race, not a bug — so this does not assert strict
+    // monotonicity. It pins that the drift stays below a point a month and
+    // never accumulates: every rolling 12 months is still downward.
+    const MAX_MONTHLY_RISE = 0.01;
     const series: { year: number; p: number }[] = [];
     for (let month = 2024 * 12; month <= 2030 * 12; month++) {
       const year = month / 12;
-      const raw = computeScriptBlockStates(script, year, blocks) as Record<string, BlockState>;
-      const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
-        order,
-        riskTolerance: sliders.risk_tolerance,
-      });
-      series.push({
-        year,
-        p: Math.max(
-          ...Object.values(
-            computeBreachProbabilities(chains, blocks, effectiveStates, 4, year, sliders, true)
-          ),
-          0
-        ),
-      });
+      series.push({ year, p: storyAt("crash-program", year).campaign });
     }
-
     for (let i = 1; i < series.length; i++) {
       const rise = series[i].p - series[i - 1].p;
       expect(
@@ -184,7 +148,6 @@ describe("time-lapse scripts", () => {
         `month-on-month jump at ${series[i].year.toFixed(2)}: +${(rise * 100).toFixed(2)}pp`
       ).toBeLessThanOrEqual(MAX_MONTHLY_RISE);
     }
-
     for (let i = 12; i < series.length; i++) {
       const change = series[i].p - series[i - 12].p;
       expect(
@@ -194,100 +157,113 @@ describe("time-lapse scripts", () => {
     }
   });
 
-  it("rank sensibly at 2030 against an OC4 adversary", () => {
-    // The calibration contract for the four narrative stories. Numbers will
-    // drift as data and constants are tuned; the ORDER and the size of the gaps
-    // are the thing being asserted:
-    //   Do Nothing ~100%  >  Budget-Constrained  >  Reactive  >>  Proactive
-    // and Proactive must land in a band that reads as "serious program, real
-    // residual risk" — not as "solved". Cheap near-perfect defense is the exact
-    // failure mode this model was recalibrated to remove.
-    const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
-    const worst = (id: string): number => {
-      const script = SCRIPTS.find((s) => s.id === id)!;
-      const sliders = {
-        ai_timeline: 0.5,
-        gov_cooperation: 0.5,
-        vendor_cooperation: 0.5,
-        budget_millions: 2000,
-        org_transformation: 0.5,
-        risk_tolerance: 0.5,
-        ...(script.sliderOverrides ?? {}),
-      } as Sliders;
-      const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
-      const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
-        order: (script.deployments ?? []).map((d) => d.blockId),
-        riskTolerance: sliders.risk_tolerance,
-      });
-      return Math.max(
-        ...Object.values(
-          computeBreachProbabilities(chains, blocks, effectiveStates, 4, 2030, sliders, true)
-        ),
-        0
-      );
-    };
-
-    const proactive = worst("proactive-program");
-    const reactive = worst("reactive-ciso");
-    const constrained = worst("budget-constrained");
-    const nothing = worst("do-nothing");
-
-    // Doing nothing no longer means a bare field: since the baseline change,
-    // every story starts from the posture labs actually have (see
-    // `engine/baseline.ts`), so "Do Nothing" is "today's controls, eroding as
-    // AI improves" rather than zero defenses. That puts it near 0.68 instead of
-    // above 0.95 — the story is now about erosion, not absence.
-    expect(nothing).toBeGreaterThan(0.6);
-    // The top of the ordering, pinned relatively too: doing nothing must never
-    // come out better than spending $200M badly.
-    expect(nothing).toBeGreaterThan(constrained);
-    expect(constrained).toBeGreaterThan(reactive);
-    // Reactive stays worse than proactive, but the margin narrowed sharply when
-    // PHY-01 was repriced (~19% vs ~16%, where it used to be a 1.5x gap). That
-    // is the model reporting something real: once the facility is $6.5B, a
-    // reactive program that starts it in 2026 is not meaningfully cheaper than
-    // a proactive one starting in 2024 — it just has less time to mature what
-    // it bought. The old gap partly measured underfunding, because at $700M
-    // this story ran with 12 of its 16 blocks frozen by the funding queue.
-    expect(reactive).toBeGreaterThan(proactive);
-    // Proactive: $2,610M of a $2,800M budget, every program matured, and an
-    // all-personnel chain still gets through ~16% of the time. The floor matters
-    // as much as the ceiling — if this ever drops into single digits the story
-    // reads as "solved", which is the failure mode the recalibration removed.
-    // Both bounds are load-bearing: every measured plan that ALSO closes PER-02
-    // and PER-04 collapses to ~4.7%, because the other six chains are then all
-    // sitting on the residual floor and breach is a max.
-    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeGreaterThan(0.10);
-    expect(proactive, `proactive at ${(proactive * 100).toFixed(1)}%`).toBeLessThan(0.25);
+  it("keep the Proactive curve from losing a level it has reached", () => {
+    // Proactive's last two years are a plateau: SL4 holds while the SL5 build is
+    // still under way, and AI erodes it a little (honest, not a scheduling gap).
+    // It must never give back a level, and the drift stays under a point per
+    // half-year.
+    let best = 0;
+    let prev = Infinity;
+    for (let year = 2024; year <= 2030 + 1e-9; year += 0.5) {
+      const s = storyAt("proactive-program", year);
+      expect(s.sl.level, `proactive drops a level at ${year.toFixed(1)}`).toBeGreaterThanOrEqual(best);
+      best = Math.max(best, s.sl.level);
+      expect(s.campaign - prev, `proactive drifts up at ${year.toFixed(1)}`).toBeLessThanOrEqual(0.01);
+      prev = s.campaign;
+    }
   });
 
-  it("land Proactive at SL 3.5-4.0 by 2030", () => {
-    // The other half of the calibration contract, and previously unpinned: the
-    // breach band alone let the story drift to SL 2.5, which reads as a failing
-    // grade on a $1.3B program that cut its worst path by 85%.
-    //
-    // SL is a BREADTH measure — 44 of 46 blocks are threat-relevant, so a plan
-    // that buys 23 of them structurally caps near 2.5 no matter which 23. 3.5
-    // takes 33 blocks — one of which, PHY-02, earns its place by completing
-    // PHY-01 and PHY-05 rather than by covering new ground; see `completed_by`.
-    // The ceiling is ~4.4 (whole catalog matured, $4,474M), not
-    // 5.0, because slider penalties and AI erosion never fully clear.
-    const chains = JSON.parse(fs.readFileSync(path.join(DATA, "attack-chains.json"), "utf-8"));
+  it("rank Do Nothing ≤ Budget-Constrained ≤ Reactive ≤ Proactive ≤ Crash at 2030 on SL plus progress", () => {
+    // The calibration contract for the four narrative stories, on the
+    // threat-relative SL (level + progress toward the next level), measured at
+    // 2030 vs OC4 with the model served. Numbers drift as data and constants are
+    // tuned; the ORDER is the thing asserted, with real gaps between stories.
+    const value = (id: string) => storyAt(id, 2030).sl.value;
+    const nothing = value("do-nothing");
+    const constrained = value("budget-constrained");
+    const reactive = value("reactive-ciso");
+    const proactive = value("proactive-program");
+    const crash = value("crash-program");
+    expect(constrained).toBeGreaterThan(nothing);
+    expect(reactive).toBeGreaterThan(constrained);
+    expect(proactive).toBeGreaterThan(reactive);
+    expect(crash).toBeGreaterThan(proactive);
+    // And the gaps are real, not ties.
+    expect(proactive - nothing).toBeGreaterThan(2);
+    expect(reactive - constrained).toBeGreaterThan(0.5);
+  });
+
+  it("let Do Nothing decline, moderately: today's SL2 slips but never below SL1", () => {
+    // Nov 2026 recalibration: a fixed posture decays as AI lifts the attackers,
+    // but defender AI and the controls labs already run keep it from collapsing.
+    const at = (year: number) => storyAt("do-nothing", year).sl;
+    expect(at(2026).level).toBe(2);
+    expect(at(2030).value).toBeLessThan(at(2026).value - 0.4);
+    expect(at(2030).level).toBeGreaterThanOrEqual(1);
+    for (let year = 2026; year <= 2030; year += 0.5) {
+      expect(at(year).value, `${year}`).toBeLessThanOrEqual(at(Math.max(2026, year - 0.5)).value + 1e-9);
+    }
+  });
+
+  it("land the Reactive CISO at about SL3 by 2030, a step behind", () => {
+    const r = storyAt("reactive-ciso", 2030);
+    expect(r.sl.value, `SL ${r.sl.value.toFixed(2)}`).toBeGreaterThanOrEqual(2.75);
+    expect(r.sl.level).toBeLessThan(4);
+    // Late controls: in 2028 it is worse off than when it started.
+    expect(storyAt("reactive-ciso", 2028).sl.value).toBeLessThan(storyAt("reactive-ciso", 2026).sl.value);
+  });
+
+  it("land Proactive at SL3 by 2028 and SL4 by 2030, not SL5", () => {
+    // The realistic plan: SL4 first, the SL5 build from 2026.5–2027. By 2030 the
+    // facility and the research-gated controls are still being built, so OC5 is
+    // still contested. User target (Nov 2026): "even if we are proactive, we
+    // won't reach SL5 by 2030. Maybe we reach SL4."
     const script = SCRIPTS.find((s) => s.id === "proactive-program")!;
-    const sliders = scriptSliders(script);
-    // Calibrate against the budget the story is documented and validated at, so
-    // this never silently grades a better-funded posture than playback runs.
-    expect(sliders.budget_millions, "proactive must calibrate at its own budget").toBe(2800);
+    expect(scriptSliders(script).budget_millions, "proactive must calibrate at its own budget").toBe(4000);
+    expect(storyAt("proactive-program", 2026).sl.level).toBe(2);
+    for (const served of [true, false]) {
+      const r = storyAt("proactive-program", 2030, served);
+      expect(r.sl.level, `served=${served}: SL ${r.sl.value.toFixed(2)}`).toBe(4);
+      expect(storyAt("proactive-program", 2028, served).sl.level).toBeGreaterThanOrEqual(3);
+    }
+    // OC5 contested, not merely a whisker from the bar.
+    const r = storyAt("proactive-program", 2030);
+    expect(r.tiers[4].p).toBeGreaterThanOrEqual(r.sl.bar * 1.2);
+  });
+
+  it("land the Crash Program at SL5 by 2030, only just, and only because it all started in 2024", () => {
+    // "Proactive plus": every programme from 2024 with national-security help.
+    // It reaches SL5 in 2029–2030, served and not; in 2028, before the research
+    // controls land, it is not SL5. Without them, or started in 2026, it is not
+    // SL5 in 2030.
+    const script = SCRIPTS.find((s) => s.id === "crash-program")!;
+    expect(scriptSliders(script).budget_millions, "crash must calibrate at its own budget").toBe(4000);
+    for (const served of [true, false]) {
+      expect(storyAt("crash-program", 2030, served).sl.level, `served=${served}`).toBe(5);
+      expect(storyAt("crash-program", 2028, served).sl.level).toBeLessThan(5);
+    }
+    const research = blocks.filter((b) => b.research_required).map((b) => b.id);
+    for (const id of research) {
+      const dep = script.deployments!.find((d) => d.blockId === id);
+      if (dep) expect(dep.startYear, `${id} starts late`).toBeLessThanOrEqual(2024.5);
+    }
+    const score = (states: Record<string, BlockState>) =>
+      scorePosture({
+        blocks,
+        model,
+        blockStates: states,
+        advanceOrder: script.deployments!.map((d) => d.blockId),
+        year: 2030,
+        sliders: scriptSliders(script),
+        adversaryOc: 4,
+        modelServedExternally: true,
+      });
     const raw = computeScriptBlockStates(script, 2030, blocks) as Record<string, BlockState>;
-    const { effectiveStates } = applyBudgetConstraint(blocks, raw, sliders.budget_millions, {
-      order: (script.deployments ?? []).map((d) => d.blockId),
-      riskTolerance: sliders.risk_tolerance,
-    });
-    const sl = overallSlScore(
-      computeCategoryScores(blocks, effectiveStates, 2030, sliders, relevantBlockIds(chains, blocks))
-    );
-    expect(sl, `proactive SL at 2030 is ${sl.toFixed(2)}`).toBeGreaterThanOrEqual(3.5);
-    expect(sl, `proactive SL at 2030 is ${sl.toFixed(2)}`).toBeLessThanOrEqual(4.0);
+    const without = score({ ...raw, ...Object.fromEntries(research.map((id) => [id, "not_started" as BlockState])) });
+    expect(without.sl.level).toBeLessThan(5);
+    const late = { ...script, deployments: script.deployments!.map((d) => ({ ...d, startYear: d.startYear + 2 })) };
+    const startedIn2026 = score(computeScriptBlockStates(late, 2030, blocks) as Record<string, BlockState>);
+    expect(startedIn2026.sl.level, `started 2026: SL ${startedIn2026.sl.value.toFixed(2)}`).toBe(4);
   });
 
   it("never leave a scripted deployment stuck before deployed by 2030", () => {

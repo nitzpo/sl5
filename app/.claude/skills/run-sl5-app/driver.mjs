@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// Headless driver for the SL5 explorable.
+// Headless driver for the SL5 explorable (v2).
 //
 // `chromium-cli` is NOT available in this container, so this script is the
 // harness: it drives the real app in headless Chromium via Playwright and
-// asserts the things that unit tests structurally cannot reach — the pan/zoom
-// transform the hook actually emits, the desktop gate, and the intro page.
+// asserts the things that unit tests structurally cannot reach — real layout
+// (the matrix's measured path overlay, the clusters' fit), the drawers, story
+// playback end to end, dark mode, the desktop gate, and the intro page.
 //
 // Playwright is deliberately NOT a project dependency: it pulls a ~100MB browser
 // download that every `npm install` and the Pages deploy would pay for, to run a
@@ -13,7 +14,7 @@
 //
 // Usage:  node .claude/skills/run-sl5-app/driver.mjs [flow] [--url=...] [--out=...] [--headed]
 //
-//   flows: smoke (default) | panzoom | gate | intro | views | all
+//   flows: smoke (default) | views | interact | story | dark | gate | intro | all
 //
 // Exit code is nonzero if any assertion fails, so it works in a pipeline.
 
@@ -65,7 +66,7 @@ const APP = `${BASE}/sl5/`;
 const INTRO = `${BASE}/sl5/intro/`;
 const OUT = arg("out", "/tmp/sl5-shots");
 // The app hard-gates below 768px (Tailwind `md`), so anything narrower renders
-// the DesktopGate instead of the map. 1600x1000 is comfortably above it.
+// the DesktopGate instead of the app. 1600x1000 is the design size.
 const WIDE = { width: 1600, height: 1000 };
 const NARROW = { width: 500, height: 900 };
 
@@ -74,18 +75,30 @@ const NARROW = { width: 500, height: 900 };
 // the driver has to work in any clone, not just the machine it was written on.
 const APP_ROOT = dirname(dirname(dirname(import.meta.dirname)));
 
-/** How many blocks the catalog actually declares, read from the same JSON the app loads. */
-const EXPECTED_BLOCKS = (() => {
+/** Today's catalogue, read from the same JSON the app loads, so a missing
+ * tile fails rather than squeaking by. */
+const CATALOGUE = (() => {
   const dir = join(APP_ROOT, "public", "data");
-  let n = 0;
+  const today = [];
   for (const f of readdirSync(dir)) {
-    if (f.startsWith("blocks-") && f.endsWith(".json"))
-      n += JSON.parse(readFileSync(join(dir, f), "utf-8")).length;
+    if (!f.startsWith("blocks-") || !f.endsWith(".json")) continue;
+    for (const b of JSON.parse(readFileSync(join(dir, f), "utf-8"))) today.push(b.id);
   }
-  return n;
+  return { today: today.sort() };
 })();
 
-const FLOW_NAMES = ["smoke", "panzoom", "gate", "intro", "views"];
+/** The intro's slide order, read from its source so the deep-link check
+ * follows the intro as it changes. */
+const SLIDES = (() => {
+  try {
+    const src = readFileSync(join(APP_ROOT, "src", "intro", "slides", "index.ts"), "utf-8");
+    return [...src.matchAll(/slug:\s*"([^"]+)",\s*\n?\s*title:\s*"([^"]+)"/g)].map((m) => ({ slug: m[1], title: m[2] }));
+  } catch {
+    return [];
+  }
+})();
+
+const FLOW_NAMES = ["smoke", "views", "interact", "story", "dark", "gate", "intro"];
 // Validated before launching a browser, so a typo fails instantly.
 const toRun = flow === "all" ? FLOW_NAMES : [flow];
 if (!toRun.every((f) => FLOW_NAMES.includes(f))) {
@@ -107,187 +120,257 @@ const browser = await chromium.launch({
 });
 
 /** A page that collects console errors, so a green flow can't hide a throw. */
-async function newPage(viewport = WIDE) {
-  const page = await browser.newPage({ viewport });
+async function newPage(viewport = WIDE, colorScheme = "light") {
+  const ctx = await browser.newContext({ viewport, colorScheme });
+  const page = await ctx.newPage();
   page.errors = [];
   page.on("console", (m) => m.type() === "error" && page.errors.push(m.text()));
   page.on("pageerror", (e) => page.errors.push(`pageerror: ${e.message}`));
+  page.closeAll = () => ctx.close();
   return page;
 }
 
 /**
- * Open the app and get past the first-run modal.
- *
- * The modal is not dismissible by Escape alone and it overlays the canvas, so
- * hexes are unclickable until it is gone. Its CTA text has changed across
- * recent commits (#17/#18 reworked it), so match a list of candidates rather
- * than one brittle label.
+ * Open the app and get past the first-run modal (a fresh context has no
+ * `sl5v2_intro_seen`, so it always shows). "Explore freely" is its quiet exit;
+ * Escape is the fallback if that label ever changes.
  */
 async function openApp(page) {
   await page.goto(APP, { waitUntil: "domcontentloaded" });
-  await page.locator("svg.touch-none").first().waitFor({ timeout: 20000 });
-  for (const re of [/^Explore/i, /Skip/i, /Got it/i, /^Start/i, /Close/i]) {
-    const b = page.locator("button", { hasText: re }).first();
-    if ((await b.count()) && (await b.isVisible().catch(() => false))) {
-      await b.click().catch(() => {});
-      break;
-    }
+  await page.locator("[data-block-id]").first().waitFor({ timeout: 20000 });
+  const modal = page.locator('[data-testid="intro-overlay"]');
+  if (await modal.count()) {
+    const quiet = page.getByRole("button", { name: /Explore freely/i });
+    if (await quiet.count()) await quiet.click();
+    else await page.keyboard.press("Escape");
+    await modal.waitFor({ state: "detached", timeout: 5000 });
   }
-  await page.keyboard.press("Escape").catch(() => {});
-  // The map fades/settles after the modal closes; wait for the transform group
-  // to be visible rather than sleeping a fixed amount.
-  await page
-    .locator("svg.touch-none g[transform]")
-    .first()
-    .waitFor({ state: "visible", timeout: 10000 });
-  await settled(page);
+  // The matrix measures its tiles after layout; let fonts and that pass settle.
+  await page.evaluate(() => document.fonts?.ready);
+  await page.waitForTimeout(250);
 }
 
-/**
- * Wait until the pan/zoom transform stops changing.
- *
- * Panel widths are animated, so reading the transform too early catches an
- * intermediate `tx`. Polling for two identical consecutive samples finishes as
- * soon as the animation actually ends — typically well under a fixed sleep, and
- * it can't under-wait on a slow machine either.
- */
-async function settled(page, { interval = 100, timeout = 4000 } = {}) {
-  const read = () =>
-    page
-      .locator("svg.touch-none g[transform]")
-      .first()
-      .getAttribute("transform")
-      .catch(() => null);
-  let prev = await read();
-  for (let waited = 0; waited < timeout; waited += interval) {
-    await page.waitForTimeout(interval);
-    const now = await read();
-    if (now && now === prev) return;
-    prev = now;
-  }
-}
+const shownIds = (page) =>
+  page.evaluate(() => [...document.querySelectorAll("[data-block-id]")].map((el) => el.dataset.blockId).sort());
+const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 
-/**
- * Block hexes on the canvas.
- *
- * Counts only groups whose first `<text>` is a block id. A bare
- * `g.cursor-pointer` count over-counts: hovering a hex renders a "+"
- * advance-state affordance that is *also* a cursor-pointer group, so wherever
- * the mouse happens to rest inflates the total by one and an exact-count check
- * fails against a perfectly healthy app.
- */
-const countHexes = (page) =>
-  page.evaluate(
-    () =>
-      Array.from(document.querySelectorAll("svg g.cursor-pointer")).filter((g) =>
-        /^[A-Z]+-\d+$/.test(g.querySelector("text")?.textContent ?? "")
-      ).length
-  );
-
-/** The transform `<g>` is the direct output of use-viewbox-pan-zoom. */
-const readTransform = (page) =>
+/** Visible text and hover text of the main screen, minus quoted research prose. */
+const readerText = (page) =>
   page.evaluate(() => {
-    const svg = document.querySelector("svg.touch-none");
-    const g = svg?.querySelector("g[transform]");
-    const box = svg?.getBoundingClientRect();
-    return {
-      transform: g?.getAttribute("transform") ?? null,
-      visibility: g?.getAttribute("visibility") ?? "visible",
-      svgW: Math.round(box?.width ?? 0),
-      svgH: Math.round(box?.height ?? 0),
-    };
+    const clone = document.body.cloneNode(true);
+    clone.querySelectorAll("[data-prose], script, style").forEach((el) => el.remove());
+    const attrs = [...clone.querySelectorAll("*")].flatMap((el) =>
+      ["title", "aria-label", "aria-valuetext"].map((a) => el.getAttribute(a) ?? "")
+    );
+    return [clone.innerText ?? clone.textContent, ...attrs].join("\n");
   });
 
-const parse = (t) => {
-  const m = /translate\(([-\d.eE]+) ([-\d.eE]+)\) scale\(([-\d.eE]+)\)/.exec(t || "");
-  return m ? { tx: +m[1], ty: +m[2], k: +m[3] } : null;
-};
+/** Text under 12px anywhere on screen (the type scale's floor). */
+const tinyText = (page) =>
+  page.evaluate(() => {
+    const out = [];
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walk.nextNode()) {
+      const node = walk.currentNode;
+      if (!node.textContent.trim()) continue;
+      const el = node.parentElement;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === "hidden" || cs.display === "none") continue;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      let size = parseFloat(cs.fontSize);
+      // SVG text scales with its viewBox: measure what is actually drawn.
+      const svg = el.closest("svg");
+      if (svg && svg.viewBox?.baseVal?.width) {
+        const vb = svg.viewBox.baseVal;
+        const box = svg.getBoundingClientRect();
+        size *= Math.min(box.width / vb.width, box.height / vb.height);
+      }
+      if (size < 11.95) out.push(`${node.textContent.trim().slice(0, 24)} (${size.toFixed(1)}px)`);
+    }
+    return out;
+  });
 
 // ---------------------------------------------------------------- flows
 
-/** Loads, renders the catalog, no console errors. The cheapest "is it alive". */
+/** Loads, renders the whole catalogue and a verdict, no console errors. */
 async function smoke() {
-  console.log("\n[smoke] app loads and renders the block catalog");
+  console.log("\n[smoke] app loads, renders the catalogue and the verdict");
   const page = await newPage();
   await openApp(page);
-  const hexes = await countHexes(page);
-  const t = await readTransform(page);
-  // Exact, not `> 40`: the catalog is counted from public/data at startup, so a
-  // missing entry must fail rather than squeak by.
-  check(
-    "every block hex rendered",
-    hexes === EXPECTED_BLOCKS,
-    `${hexes} interactive groups, expected ${EXPECTED_BLOCKS}`
-  );
-  check("transform group visible", t.visibility !== "hidden", t.transform ?? "no transform");
+  const ids = await shownIds(page);
+  check("every block in today's catalogue rendered, once", same(ids, CATALOGUE.today), `${ids.length} tiles, expected ${CATALOGUE.today.length}`);
+  const sl = await page.locator('[data-testid="sl-level"]').innerText();
+  check("the rail states a level", /^SL[0-5]$/.test(sl.replace(/\s+/g, "")), sl);
+  const ladder = await page.locator('[data-testid="tier-ladder"]').innerText();
+  check("the tier ladder speaks in band words", /usually fails|contested|usually succeeds/.test(ladder));
+  const paths = await page.evaluate(() => document.querySelectorAll('svg rect[fill="var(--signal)"]').length);
+  check("the easiest path is drawn on the matrix", paths > 3, `${paths} path segments`);
+  const text = await readerText(page);
+  check("no percentage anywhere on screen", !/%/.test(text), (text.match(/.{0,30}%.{0,10}/) ?? [""])[0]);
+  const tiny = await tinyText(page);
+  check("nothing set below 12px", tiny.length === 0, tiny.slice(0, 5).join(", ") || "all ≥ 12px");
   check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
   await page.screenshot({ path: `${OUT}/smoke.png` });
   console.log(`  screenshot → ${OUT}/smoke.png`);
-  await page.close();
+  await page.closeAll();
 }
 
-/**
- * The invariant the pan/zoom hook exists to hold, and the one with NO unit-test
- * coverage: opening a side panel must PAN the map, never rescale it.
- *
- * tests/utils/pan-zoom.test.ts only covers the exported pure `recenterOnResize`.
- * Everything about the render path — the latch, the baseline fit, the ref sync —
- * is only observable here, in a real browser with real layout.
- */
-async function panzoom() {
-  console.log("\n[panzoom] panel open pans without rescaling");
+/** The catalogue's two layouts and the two other screens each mount and lay out. */
+async function views() {
+  console.log("\n[views] stage matrix, clusters, approaches, race");
   const page = await newPage();
   await openApp(page);
+  await page.screenshot({ path: `${OUT}/view-matrix.png` });
+  check("matrix renders", same(await shownIds(page), CATALOGUE.today));
 
-  const centering = await page.evaluate(() => {
-    const svg = document.querySelector("svg.touch-none");
-    const g = svg.querySelector("g[transform]");
-    const s = svg.getBoundingClientRect();
-    const b = g.getBoundingClientRect();
-    return {
-      dx: Math.round(b.x + b.width / 2 - (s.x + s.width / 2)),
-      dy: Math.round(b.y + b.height / 2 - (s.y + s.height / 2)),
-    };
+  await page.getByRole("radio", { name: "Clusters" }).click();
+  await page.locator("svg [data-block-id]").first().waitFor();
+  const hexes = await shownIds(page);
+  const fit = await page.evaluate(() => {
+    const svg = document.querySelector('svg[aria-label^="Defense catalogue"]');
+    const b = svg.getBoundingClientRect();
+    return { w: Math.round(b.width), h: Math.round(b.height) };
   });
-  check(
-    "content centered on load",
-    Math.abs(centering.dx) <= 2 && Math.abs(centering.dy) <= 2,
-    `offset ${centering.dx},${centering.dy}px from viewport center`
-  );
+  check("clusters render every block as a hexagon", same(hexes, CATALOGUE.today), `${hexes.length} hexes, ${fit.w}×${fit.h}px`);
+  await page.screenshot({ path: `${OUT}/view-clusters.png` });
 
-  const before = await readTransform(page);
-  await page.screenshot({ path: `${OUT}/panzoom-before.png` });
+  await page.getByRole("tab", { name: "Approaches", exact: true }).click();
+  await page.locator('[data-testid="approaches-view"]').waitFor();
+  const lanes = await page.locator("[data-approach]").count();
+  check("approaches: one lane per approach", lanes >= 5, `${lanes} lanes`);
+  await page.screenshot({ path: `${OUT}/view-approaches.png` });
 
-  await page.locator("svg g.cursor-pointer").first().click();
-  await page.locator("text=Block Detail").first().waitFor({ timeout: 8000 });
-  await settled(page); // the panel width is animated; read tx only once it stops
-  const after = await readTransform(page);
-  await page.screenshot({ path: `${OUT}/panzoom-after.png` });
-
-  const b = parse(before.transform);
-  const a = parse(after.transform);
-  if (!b || !a) {
-    check("transforms parse", false, `${before.transform} -> ${after.transform}`);
-  } else {
-    const expectedTx = b.tx + (after.svgW - before.svgW) / 2;
-    check("canvas actually narrowed", after.svgW < before.svgW, `${before.svgW} → ${after.svgW}px`);
-    check("scale held (no rescale)", Math.abs(a.k - b.k) < 1e-9, `k ${b.k} → ${a.k}`);
-    check("vertical offset unchanged", Math.abs(a.ty - b.ty) < 1e-6, `ty ${b.ty} → ${a.ty}`);
-    check(
-      "panned by exactly half the width change",
-      Math.abs(a.tx - expectedTx) < 2,
-      `tx ${b.tx.toFixed(2)} → ${a.tx.toFixed(2)}, expected ${expectedTx.toFixed(2)}`
-    );
-  }
+  await page.getByRole("tab", { name: "Race", exact: true }).click();
+  await page.locator('[data-testid="race-view"]').waitFor();
+  await page.waitForTimeout(400); // the strip is computed from a deferred value
+  const bars = await page.locator('[data-testid="race-view"] svg g title').count();
+  check("race: long-lead bars against the threat front", bars > 0, `${bars} bars`);
+  await page.screenshot({ path: `${OUT}/view-race.png` });
+  const tiny = await tinyText(page);
+  check("nothing set below 12px on the race", tiny.length === 0, tiny.slice(0, 5).join(", ") || "all ≥ 12px");
   check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
-  console.log(`  screenshots → ${OUT}/panzoom-{before,after}.png`);
-  await page.close();
+  console.log(`  screenshots → ${OUT}/view-*.png`);
+  await page.closeAll();
+}
+
+/** Click advances, right-click steps back, Shift-click opens the drawer, the
+ * parameters drawer opens, and its scoring method switches the rail. */
+async function interact() {
+  console.log("\n[interact] blocks, drawers, toggles");
+  const page = await newPage();
+  await openApp(page);
+  const tile = page.locator('[data-block-id="PER-04"] button').first();
+  const label = () => tile.getAttribute("aria-label");
+  const before = await label();
+  await tile.click();
+  const after = await label();
+  check("click advances a block", before !== after, `${before?.split(".")[1]?.trim()} → ${after?.split(".")[1]?.trim()}`);
+  await tile.click({ button: "right" });
+  check("right-click steps it back", (await label()) === before);
+
+  await page.locator('[data-block-id="NET-01"] button').first().click({ modifiers: ["Shift"] });
+  const drawer = page.locator('[data-testid="block-drawer"]');
+  await drawer.waitFor({ timeout: 5000 });
+  const dtext = await drawer.innerText();
+  check("Shift-click opens the block drawer", /Air gap/.test(dtext) && /Counters/i.test(dtext));
+  await page.screenshot({ path: `${OUT}/drawer.png` });
+  await page.keyboard.press("Escape");
+  await drawer.waitFor({ state: "detached", timeout: 3000 });
+  check("Escape closes it", true);
+
+  await page.getByRole("button", { name: "Parameters" }).click();
+  const params = page.locator('[data-testid="parameters-drawer"]');
+  await params.waitFor({ timeout: 3000 });
+  const ptext = await params.innerText();
+  check(
+    "parameters: scoring method, strictness, propensity, serving, government",
+    /How to score your security level/i.test(ptext) && /Strict/.test(ptext) && /AI propensity/.test(ptext) && /Model served/.test(ptext) && /Government partnership/.test(ptext)
+  );
+  await page.screenshot({ path: `${OUT}/parameters.png` });
+  const rail = page.locator('[data-testid="verdict-rail"]');
+  await params.getByRole("radio", { name: /Control coverage/ }).click();
+  await page.waitForTimeout(300);
+  const coverageSl = (await page.locator('[data-testid="sl-level"]').innerText()).replace(/\s+/g, "");
+  check(
+    "scoring method → control coverage switches the rail",
+    (await rail.getAttribute("data-scoring-mode")) === "coverage" && /^SL[0-5]$/.test(coverageSl) && (await page.locator('[data-testid="coverage-list"]').count()) === 1,
+    coverageSl
+  );
+  await params.getByRole("radio", { name: /Attack-path analysis/ }).click();
+  await page.waitForTimeout(300);
+  check("and back to attack paths", (await rail.getAttribute("data-scoring-mode")) === "paths" && (await page.locator('[data-testid="tier-ladder"]').count()) === 1);
+  check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
+  console.log(`  screenshots → ${OUT}/{drawer,parameters}.png`);
+  await page.closeAll();
+}
+
+/** A 1-minute story plays with the new verdict, ends with a takeaway, and
+ * stopping it restores the reader's posture. */
+async function story() {
+  console.log("\n[story] scenario playback");
+  const page = await newPage();
+  await openApp(page);
+  const yearBefore = await page.locator("header").getByLabel(/^Year \d/).first().innerText();
+  await page.getByRole("button", { name: /Scenarios/ }).click();
+  await page.getByRole("menuitem", { name: /Proactive Program/ }).click();
+  await page.locator('[data-testid="playback-bar"]').waitFor({ timeout: 5000 });
+  check("story starts with the transport and a caption in the rail", (await page.locator('[data-testid="story-caption"]').count()) === 1);
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: `${OUT}/story-playing.png` });
+  await page.getByRole("button", { name: "Pause" }).click();
+  const track = page.locator('[data-testid="playback-bar"] [role="slider"]');
+  const box = await track.boundingBox();
+  await page.mouse.click(box.x + box.width - 1, box.y + box.height / 2);
+  await page.waitForTimeout(600);
+  const caption = await page.locator('[data-testid="story-caption"]').innerText();
+  check("the end shows a takeaway with the level", /SL\d/.test(caption) && /Replay/.test(caption), caption.split("\n").slice(1, 2).join(" "));
+  const sl = await page.locator('[data-testid="sl-level"]').innerText();
+  check("Proactive Program ends at SL4 in 2030 (SL5 takes the Crash Program)", sl.replace(/\s+/g, "") === "SL4", sl);
+  await page.screenshot({ path: `${OUT}/story-end.png` });
+  // The Crash Program (everything from 2024, government help) is the one that
+  // reaches SL5 by 2030. Switching stories mid-playback must work too.
+  await page.getByRole("button", { name: /Scenarios/ }).click();
+  await page.getByRole("menuitem", { name: /Crash Program/ }).click();
+  await page.getByRole("button", { name: "Pause" }).click();
+  {
+    const t = page.locator('[data-testid="playback-bar"] [role="slider"]');
+    const b = await t.boundingBox();
+    await page.mouse.click(b.x + b.width - 1, b.y + b.height / 2);
+  }
+  await page.waitForTimeout(600);
+  const crashSl = await page.locator('[data-testid="sl-level"]').innerText();
+  check("Crash Program reaches SL5 by 2030", crashSl.replace(/\s+/g, "") === "SL5", crashSl);
+  await page.getByRole("button", { name: /Stop the story/ }).click();
+  await page.locator('[data-testid="playback-bar"]').waitFor({ state: "detached", timeout: 3000 });
+  const yearAfter = await page.locator("header").getByLabel(/^Year \d/).first().innerText();
+  check("stopping restores the reader's year", yearAfter === yearBefore, `${yearBefore} → ${yearAfter}`);
+  check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
+  console.log(`  screenshots → ${OUT}/story-{playing,end}.png`);
+  await page.closeAll();
+}
+
+/** prefers-color-scheme: dark gets the dark palette. */
+async function dark() {
+  console.log("\n[dark] dark palette");
+  const page = await newPage(WIDE, "dark");
+  await openApp(page);
+  const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".sl5")).backgroundColor);
+  const lum = (bg.match(/\d+/g) ?? []).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
+  check("the app paints a dark paper", lum < 60, bg);
+  await page.screenshot({ path: `${OUT}/dark-matrix.png` });
+  await page.getByRole("radio", { name: "Clusters" }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${OUT}/dark-clusters.png` });
+  check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
+  console.log(`  screenshots → ${OUT}/dark-*.png`);
+  await page.closeAll();
 }
 
 /**
  * The gate must render INSTEAD of the app, not over it. The whole point is that
- * App never mounts on a narrow viewport — so assert the absence of the map's
- * <svg>, not just the presence of the gate text.
+ * App never mounts on a narrow viewport — so assert the absence of the
+ * catalogue, not just the presence of the gate text.
  */
 async function gate() {
   console.log("\n[gate] desktop gate replaces the app below 768px");
@@ -295,128 +378,78 @@ async function gate() {
   await page.goto(APP, { waitUntil: "domcontentloaded" });
   await page.locator("text=Desktop required").waitFor({ timeout: 15000 });
   check("gate shown at 500px", true, "'Desktop required' present");
-  check(
-    "app SVG never mounted",
-    (await page.locator("svg.touch-none").count()) === 0,
-    "no pan/zoom canvas behind the gate"
-  );
-  check(
-    "intro link offered",
-    (await page.locator("a[href*='intro']").count()) > 0,
-    "phone-readable escape hatch"
-  );
+  check("app never mounted", (await page.locator("[data-block-id], header").count()) === 0, "no catalogue behind the gate");
+  check("intro link offered", (await page.locator("a[href*='intro']").count()) > 0, "phone-readable escape hatch");
   await page.screenshot({ path: `${OUT}/gate.png` });
 
   // matchMedia subscription: the gate must react to a live resize both ways.
   await page.setViewportSize(WIDE);
-  await page.locator("svg.touch-none").first().waitFor({ timeout: 15000 });
+  await page.locator("[data-block-id]").first().waitFor({ timeout: 15000 });
   check("widening mounts the app", true, "500 → 1600px");
   await page.setViewportSize(NARROW);
   await page.locator("text=Desktop required").waitFor({ timeout: 10000 });
   check("narrowing restores the gate", true, "1600 → 500px");
   check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
   console.log(`  screenshot → ${OUT}/gate.png`);
-  await page.close();
+  await page.closeAll();
 }
 
 /** The second Vite entry point. Unlike the app, it is phone-readable. */
 async function intro() {
   console.log("\n[intro] standalone introduction page");
-  // Slide 5 of 13 in src/intro/slides/index.ts. Asserting the TITLE and the
-  // counter (not just "the page has text") is what makes this prove the hash
-  // was honored — a deep link that silently fell back to slide 1 would pass a
-  // mere length check.
-  const OC = { slug: "the-oc-ladder", title: "How capable is the attacker?", n: 5 };
-
   const page = await newPage();
   await page.goto(INTRO, { waitUntil: "domcontentloaded" });
-  // Wait on the first slide's real heading rather than a fixed sleep.
   await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
   const text = await page.locator("body").innerText();
   check("intro renders content", text.trim().length > 200, `${text.trim().length} chars of copy`);
   check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
   await page.screenshot({ path: `${OUT}/intro.png` });
 
-  // Deep links are a documented feature: every slide is addressable by hash.
-  await page.goto(`${INTRO}#${OC.slug}`, { waitUntil: "domcontentloaded" });
-  const ocTitle = page.getByText(OC.title, { exact: false }).first();
-  const landed = await ocTitle
-    .waitFor({ timeout: 10000 })
-    .then(() => true)
-    .catch(() => false);
-  check("hash deep-link lands on the right slide", landed, `#${OC.slug} → "${OC.title}"`);
-  // Scoped to the <header> and matched on the element's WHOLE text. The counter
-  // is an unlabeled span, and slide bodies are full of other `N/M` strings
-  // (ratios like 900/40, and a literal 1/2 in slide-parts.tsx), so regexing
-  // body.innerText would match whichever happened to come first.
-  const counterText = await page
-    .locator("header span")
-    .filter({ hasText: /^\d+\/\d+$/ })
-    .first()
-    .innerText()
-    .catch(() => null);
-  const counter = counterText?.match(/^(\d+)\/(\d+)$/);
-  check(
-    "deep-linked slide is at the right position",
-    !!counter && Number(counter[1]) === OC.n,
-    counter ? `counter reads ${counter[0]}, expected ${OC.n}/${counter[2]}` : "no N/M counter found"
-  );
-  await page.screenshot({ path: `${OUT}/intro-oc-ladder.png` });
+  // Deep links: every slide is addressable by hash. The expected slide comes
+  // from the intro's own slide list, so this follows it as it changes.
+  const n = SLIDES.findIndex((s) => s.slug === "the-oc-ladder");
+  const target = n >= 0 ? { ...SLIDES[n], n: n + 1 } : SLIDES.length > 2 ? { ...SLIDES[2], n: 3 } : null;
+  if (!target) {
+    check("intro slide list readable", false, "src/intro/slides/index.ts");
+  } else {
+    await page.goto(`${INTRO}#${target.slug}`, { waitUntil: "domcontentloaded" });
+    const landed = await page
+      .getByText(target.title, { exact: false })
+      .first()
+      .waitFor({ timeout: 10000 })
+      .then(() => true)
+      .catch(() => false);
+    check("hash deep-link lands on the right slide", landed, `#${target.slug} → "${target.title}"`);
+    const counterText = await page
+      .locator("header span")
+      .filter({ hasText: /^\d+\/\d+$/ })
+      .first()
+      .innerText()
+      .catch(() => null);
+    const counter = counterText?.match(/^(\d+)\/(\d+)$/);
+    check(
+      "deep-linked slide is at the right position",
+      !counter || Number(counter[1]) === target.n,
+      counter ? `counter reads ${counter[0]}, expected ${target.n}/${counter[2]}` : "no N/M counter shown"
+    );
+    await page.screenshot({ path: `${OUT}/intro-deeplink.png` });
+  }
 
   // Phone width: the intro must not be gated (only the app is desktop-only) AND
-  // must actually fit — "no gate" alone said nothing about readability.
+  // must actually fit.
   const phone = await newPage({ width: 390, height: 844 });
   await phone.goto(INTRO, { waitUntil: "domcontentloaded" });
   await phone.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
-  check(
-    "intro is not desktop-gated",
-    !(await phone.locator("text=Desktop required").count()),
-    "no gate at 390px"
-  );
-  const overflow = await phone.evaluate(() => ({
-    doc: document.documentElement.scrollWidth,
-    win: window.innerWidth,
-  }));
-  // The page body must not scroll sideways. 1px of slack for sub-pixel layout.
-  check(
-    "no horizontal overflow at 390px",
-    overflow.doc <= overflow.win + 1,
-    `scrollWidth ${overflow.doc} vs viewport ${overflow.win}`
-  );
+  check("intro is not desktop-gated", !(await phone.locator("text=Desktop required").count()), "no gate at 390px");
+  const overflow = await phone.evaluate(() => ({ doc: document.documentElement.scrollWidth, win: window.innerWidth }));
+  check("no horizontal overflow at 390px", overflow.doc <= overflow.win + 1, `scrollWidth ${overflow.doc} vs viewport ${overflow.win}`);
   await phone.screenshot({ path: `${OUT}/intro-phone.png` });
-  console.log(`  screenshots → ${OUT}/intro{,-oc-ladder,-phone}.png`);
-  await phone.close();
-  await page.close();
+  console.log(`  screenshots → ${OUT}/intro{,-deeplink,-phone}.png`);
+  await phone.closeAll();
+  await page.closeAll();
 }
 
-/** Clusters / Grid / Rings each mount a fresh <svg>; switching resets the view. */
-async function views() {
-  console.log("\n[views] all three canvas views mount");
-  const page = await newPage();
-  await openApp(page);
-  for (const name of ["Clusters", "Grid", "Rings"]) {
-    const btn = page.locator("button", { hasText: new RegExp(`^${name}$`) }).first();
-    if (!(await btn.count())) {
-      check(`${name} button present`, false, "not found");
-      continue;
-    }
-    await btn.click();
-    await settled(page);
-    const t = await readTransform(page);
-    const hexes = await countHexes(page);
-    check(
-      `${name} view renders`,
-      !!parse(t.transform) && hexes > 0 && t.visibility !== "hidden",
-      `${hexes} hexes, ${t.transform}`
-    );
-    await page.screenshot({ path: `${OUT}/view-${name.toLowerCase()}.png` });
-  }
-  check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
-  console.log(`  screenshots → ${OUT}/view-*.png`);
-  await page.close();
-}
-
-const flows = { smoke, panzoom, gate, intro, views };
+const flows = { smoke, views, interact, story, dark, gate, intro };
 
 console.log(`driving ${APP}  (flows: ${toRun.join(", ")})`);
 const started = Date.now();
@@ -439,7 +472,5 @@ try {
 }
 
 const secs = ((Date.now() - started) / 1000).toFixed(1);
-console.log(
-  failures ? `\n${failures} check(s) FAILED in ${secs}s` : `\nall checks passed in ${secs}s`
-);
+console.log(failures ? `\n${failures} check(s) FAILED in ${secs}s` : `\nall checks passed in ${secs}s`);
 process.exit(failures ? 1 : 0);

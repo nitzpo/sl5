@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "calibrate": "node scripts/run-ts.mjs scripts/calibration.ts"
   },
   "dependencies": {
     "react": "^19.2.6",

@@ -83,5 +83,23 @@
       "source": "NSA CSfC Program",
       "year": 2020
     }
+  ],
+  "counters": [
+    {
+      "vector_id": "V-NET-3",
+      "strength": "partial",
+      "why": "Fabric taps capture ciphertext; covers accelerator links only"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "An in-rack interposer yields nothing readable",
+      "note": "Weak: accelerator fabric only; DIMM interposers and pulled drives untouched."
+    },
+    {
+      "vector_id": "V-X-2",
+      "strength": "partial",
+      "why": "Fabric traffic is ciphertext"
+    }
   ]
 }

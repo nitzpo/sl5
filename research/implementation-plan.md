@@ -1,5 +1,7 @@
 # SL5 Explorable — Implementation Plan
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. This plan built v1 (perspectives, the block grid, the timeline panel). v2's interface is described in the [root README](../README.md).
+
 ## Tech Stack
 
 | Layer | Choice | Rationale |
@@ -31,7 +33,7 @@ sl5-explorable/
 │       ├── blocks-ai-specific.json
 │       ├── attack-chains.json
 │       ├── world-state.json
-│       └── simulation-config.json
+│       └── simulation-config.json   # never loaded; since removed (constants live in src/engine/)
 ├── src/
 │   ├── main.tsx
 │   ├── App.tsx
@@ -171,7 +173,7 @@ sl5-explorable/
 **Goal:** Fill attack chain narratives, polish text, test with users.
 
 1. Write `attack-chains.json` from draft (7 chains with full data)
-2. Write `simulation-config.json` with calibrated parameters
+2. Write `simulation-config.json` with calibrated parameters *(superseded: the shipped engine hard-codes its constants in `app/src/engine/`, and this file was removed as unused)*
 3. Write `world-state.json` (already exists in schema dir — finalize)
 4. Review all block descriptions for clarity
 5. Add "inspect formula" click-through on scores

@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SL5 Explorable — Attack Vectors",
+  "description": "vectors.json: the 38 RAND Table 5.2 attack vectors (feasibility 1–5 per OC tier against an SL1-grade victim), the 8 authored vectors for the lab's own model as an insider (scored 1–5 per AI-capability band), and 5 structural stage placeholders (probability per tier).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "id",
+      "category",
+      "category_name",
+      "name",
+      "source",
+      "stage",
+      "stages_skipped",
+      "headline",
+      "description"
+    ],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^V-[A-Z]+-[0-9]+$"
+      },
+      "category": {
+        "type": "string"
+      },
+      "category_name": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "rand",
+          "authored",
+          "structural"
+        ]
+      },
+      "rand_feasibility": {
+        "oneOf": [
+          {
+            "type": "null"
+          },
+          {
+            "$ref": "#/$defs/oc_scores"
+          }
+        ]
+      },
+      "ai_feasibility": {
+        "$ref": "#/$defs/ac_scores"
+      },
+      "structural_p": {
+        "$ref": "#/$defs/oc_probabilities"
+      },
+      "stage": {
+        "$ref": "#/$defs/stage"
+      },
+      "stages_skipped": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/stage"
+        },
+        "description": "Stages a path through this vector does not need (seizure carries hardware out; API extraction is complete)."
+      },
+      "assumes_defense": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Residual vector: RAND scored it as if these defenses exist. They never counter it; the engine always admits it as a candidate."
+      },
+      "residual_note": {
+        "type": "string",
+        "description": "Why the residual assumes what it does, where that was revisited (V-PHYS-5 no longer assumes HW-04)"
+      },
+      "needs_government": {
+        "type": "boolean",
+        "description": "Nothing a lab can do alone stops it; gov_cooperation relieves it (halved at full cooperation)."
+      },
+      "needs_government_note": {
+        "type": "string"
+      },
+      "ai_shift": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "RAND vectors only. Attacker AI uplift: effective tier = OC + ai_shift × aiCapability, capped at OC5. Authored assumption."
+      },
+      "ai_shift_basis": {
+        "type": "string"
+      },
+      "rapidly_changing": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "RAND's asterisk: could change very rapidly."
+      },
+      "headline": {
+        "type": "boolean"
+      },
+      "lane": {
+        "type": "string",
+        "enum": [
+          "integrity",
+          "capability"
+        ],
+        "description": "Off the weights-theft headline, on its own meter."
+      },
+      "description": {
+        "type": "string"
+      },
+      "assumption": {
+        "type": "boolean"
+      },
+      "assumption_note": {
+        "type": "string"
+      },
+      "ai_rationale": {
+        "type": "string"
+      },
+      "authored_basis": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "stage_note": {
+        "type": "string"
+      },
+      "transcription_note": {
+        "type": "string"
+      },
+      "source_ref": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "appendix_a_ref": {
+        "type": "number"
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "source": {
+              "const": "rand"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "rand_feasibility",
+            "ai_shift",
+            "ai_shift_basis"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "source": {
+              "const": "authored"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "ai_feasibility",
+            "assumption",
+            "assumption_note"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "source": {
+              "const": "structural"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "structural_p",
+            "assumption",
+            "assumption_note"
+          ]
+        }
+      }
+    ]
+  },
+  "$defs": {
+    "stage": {
+      "type": "string",
+      "enum": [
+        "entry",
+        "reach",
+        "exfil"
+      ]
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "oc_scores": {
+      "type": "object",
+      "required": [
+        "oc1",
+        "oc2",
+        "oc3",
+        "oc4",
+        "oc5"
+      ],
+      "properties": {
+        "oc1": {
+          "$ref": "#/$defs/score"
+        },
+        "oc2": {
+          "$ref": "#/$defs/score"
+        },
+        "oc3": {
+          "$ref": "#/$defs/score"
+        },
+        "oc4": {
+          "$ref": "#/$defs/score"
+        },
+        "oc5": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "ac_scores": {
+      "type": "object",
+      "required": [
+        "ac1",
+        "ac2",
+        "ac3",
+        "ac4",
+        "ac5"
+      ],
+      "properties": {
+        "ac1": {
+          "$ref": "#/$defs/score"
+        },
+        "ac2": {
+          "$ref": "#/$defs/score"
+        },
+        "ac3": {
+          "$ref": "#/$defs/score"
+        },
+        "ac4": {
+          "$ref": "#/$defs/score"
+        },
+        "ac5": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "oc_probabilities": {
+      "type": "object",
+      "required": [
+        "oc1",
+        "oc2",
+        "oc3",
+        "oc4",
+        "oc5"
+      ],
+      "properties": {
+        "oc1": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "oc2": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "oc3": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "oc4": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "oc5": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}

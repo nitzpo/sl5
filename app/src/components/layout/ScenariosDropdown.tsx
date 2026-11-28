@@ -1,153 +1,156 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSimulationStore } from "../../store/simulation";
 import { loadScenarios, type SavedScenario } from "../../store/persistence";
-import { HEADER_BTN } from "./header-button";
+import { SCRIPTS } from "../../timelapse/scripts";
+import { usePlaybackStore } from "../../timelapse/playback-store";
+import { NAV_BTN } from "./header-button";
 
+/** Scenarios: the 1-minute stories to watch, and the postures you saved. */
 export function ScenariosDropdown() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [scenarios, setScenarios] = useState<SavedScenario[]>([]);
+  const [saved, setSaved] = useState<SavedScenario[]>([]);
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const lastLoadedName = useRef<string | null>(null);
 
   const scenarioName = useSimulationStore((s) => s.scenarioName);
   const saveScenario = useSimulationStore((s) => s.saveScenario);
-  const loadScenarioAction = useSimulationStore((s) => s.loadScenario);
+  const loadScenario = useSimulationStore((s) => s.loadScenario);
   const deleteScenario = useSimulationStore((s) => s.deleteScenario);
-
-  // Load the saved-scenario list from localStorage when the dropdown opens.
-  function openDropdown() {
-    setScenarios(loadScenarios());
-    if (!name && lastLoadedName.current) setName(lastLoadedName.current);
-    setOpen(true);
-  }
+  const resetToBaseline = useSimulationStore((s) => s.resetToBaseline);
+  const startScript = usePlaybackStore((s) => s.startScript);
+  // Saving mid-story is ambiguous (the story's frame, or your posture?), so it
+  // waits for the story to stop. Loading and resetting are not: they end it.
+  const playing = useSimulationStore((s) => s.playbackActive);
 
   useEffect(() => {
     if (!open) return;
-    function handleClick(e: MouseEvent) {
+    const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
-  function existingIndex(): number {
-    return scenarios.findIndex((s) => s.name === name.trim());
+  function toggle() {
+    if (!open) setSaved(loadScenarios());
+    setOpen(!open);
   }
 
-  function handleSave() {
-    if (!name.trim()) return;
-    const idx = existingIndex();
-    if (idx >= 0 && !confirmOverwrite) {
+  function save() {
+    const n = name.trim();
+    if (!n || playing) return;
+    if (saved.some((s) => s.name === n) && !confirmOverwrite) {
       setConfirmOverwrite(true);
       return;
     }
-    saveScenario(name.trim());
-    lastLoadedName.current = name.trim();
+    saveScenario(n);
     setName("");
     setConfirmOverwrite(false);
-    setScenarios(loadScenarios());
-  }
-
-  function handleLoad(index: number) {
-    const s = scenarios[index];
-    if (!s) return;
-    lastLoadedName.current = s.name;
-    loadScenarioAction(index);
-    setOpen(false);
-  }
-
-  function handleDelete(index: number) {
-    deleteScenario(index);
-    setScenarios(loadScenarios());
-  }
-
-  function handleNameChange(value: string) {
-    setName(value);
-    setConfirmOverwrite(false);
-  }
-
-  function formatDate(ts: number): string {
-    const d = new Date(ts);
-    return `${d.getMonth() + 1}/${d.getDate()}`;
+    setSaved(loadScenarios());
   }
 
   return (
-    <div className="relative flex items-center" ref={ref}>
-      <button
-        onClick={() => (open ? setOpen(false) : openDropdown())}
-        aria-expanded={open}
-        className={`${HEADER_BTN} ${open ? "bg-gray-800 border-gray-600 text-white" : ""}`}
-      >
-        Scenarios <span className="text-[9px] text-gray-500">▾</span>
+    <div className="relative" ref={ref}>
+      <button type="button" className={NAV_BTN} aria-expanded={open} aria-haspopup="true" onClick={toggle}>
+        Scenarios ▾
       </button>
-
       {open && (
-        <div className="absolute top-full right-0 mt-1 w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-[200] p-2">
-          <div className="flex gap-1 mb-2">
+        <div className="absolute top-full right-0 z-[60] mt-2 w-[340px] border-2 border-ink bg-paper p-4" role="menu">
+          <h3 className="cap">Watch a 1-minute story</h3>
+          <ul className="mt-2 flex flex-col border-t border-rule">
+            {SCRIPTS.map((s) => (
+              <li key={s.id} className="border-b border-rule">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="w-full py-2 text-left hover:bg-tint"
+                  onClick={() => {
+                    setOpen(false);
+                    startScript(s);
+                  }}
+                >
+                  <span className="block text-[14px] font-bold">▶ {s.name}</span>
+                  <span className="block text-[12px] leading-snug text-ink-2">{s.description}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="cap mt-4">Your postures</h3>
+          <div className="mt-2 flex gap-2">
             <input
               type="text"
               value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSave()}
-              placeholder="Scenario name"
-              className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-gray-500"
-              autoFocus
+              onChange={(e) => {
+                setName(e.target.value);
+                setConfirmOverwrite(false);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && save()}
+              placeholder="Name this posture"
+              aria-label="Name this posture"
+              className="min-w-0 flex-1 border border-ink bg-paper px-2 py-1 text-[14px] text-ink placeholder:text-ink-3"
             />
             <button
-              onClick={handleSave}
-              disabled={!name.trim()}
-              className={`text-xs px-2 py-1 rounded text-white disabled:opacity-40 disabled:cursor-not-allowed ${
-                confirmOverwrite
-                  ? "bg-amber-600 hover:bg-amber-500"
-                  : "bg-purple-600 hover:bg-purple-500"
-              }`}
+              type="button"
+              onClick={save}
+              disabled={!name.trim() || playing}
+              title={playing ? "Stop the story to save your posture" : undefined}
+              className="border border-ink bg-ink px-3 text-[13px] font-semibold text-paper disabled:opacity-40"
             >
               {confirmOverwrite ? "Overwrite?" : "Save"}
             </button>
           </div>
-
-          {scenarios.length === 0 ? (
-            <div className="text-[10px] text-gray-600 text-center py-2">No saved scenarios</div>
+          {playing && <p className="mt-1 text-[12px] text-ink-2">Stop the story to save your posture.</p>}
+          {saved.length === 0 ? (
+            <p className="mt-2 text-[12px] text-ink-2">No saved postures yet.</p>
           ) : (
-            <div className="max-h-48 overflow-y-auto no-scrollbar space-y-0.5">
-              {scenarios.map((s, i) => {
-                const isActive = scenarioName === s.name;
-                return (
-                  <div
-                    key={`${s.name}-${s.savedAt}`}
-                    className={`flex items-center gap-1 px-1.5 py-1 rounded hover:bg-gray-800 group ${
-                      isActive ? "border-l-2 border-violet-500 pl-1" : ""
-                    }`}
+            <ul className="mt-2 flex max-h-48 flex-col overflow-y-auto">
+              {saved.map((s, i) => (
+                <li key={`${s.name}-${s.savedAt}`} className="flex items-center gap-2 border-b border-rule py-1">
+                  <button
+                    type="button"
+                    className={`min-w-0 flex-1 truncate text-left text-[14px] hover:underline ${scenarioName === s.name ? "font-bold" : ""}`}
+                    onClick={() => {
+                      loadScenario(i);
+                      setOpen(false);
+                    }}
                   >
-                    <button
-                      onClick={() => handleLoad(i)}
-                      className="flex-1 text-left text-xs text-gray-300 truncate cursor-pointer"
-                    >
-                      {s.name}
-                    </button>
-                    <span className="text-[10px] text-gray-600 shrink-0">
-                      {formatDate(s.savedAt)}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(i)}
-                      className="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 shrink-0 px-0.5"
-                    >
-                      x
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                    {s.name}
+                  </button>
+                  <span className="font-plex text-[12px] text-ink-3">
+                    {new Date(s.savedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Delete ${s.name}`}
+                    className="px-1 text-[13px] text-ink-2 hover:text-ink"
+                    onClick={() => {
+                      deleteScenario(i);
+                      setSaved(loadScenarios());
+                    }}
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
+          <button
+            type="button"
+            className="mt-3 text-[13px] font-semibold underline underline-offset-2"
+            onClick={() => {
+              resetToBaseline();
+              setOpen(false);
+            }}
+          >
+            Reset to today's real-world posture
+          </button>
         </div>
       )}
     </div>

@@ -95,6 +95,18 @@
         "source": "TCG TPM specification",
         "year": 2003
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "Attests genuine accelerators and firmware; an enabler more than a counter"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Detects modified accelerator firmware at attestation"
+      }
     ]
   },
   {
@@ -195,6 +207,28 @@
         "description": "Intel SGX enclaves provide CPU-controlled memory isolation where even the OS cannot read enclave memory. Same principle extended from CPU to accelerator domain.",
         "source": "Intel SGX architecture",
         "year": 2015
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Host root no longer reads accelerator memory holding weights"
+      },
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "partial",
+        "why": "A host zero-day stops short of weights in device memory"
+      },
+      {
+        "vector_id": "V-CODE-4",
+        "strength": "partial",
+        "why": "Same, though a pool of zero-days likely includes device bugs"
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "Closes GPU memory-leak bug classes such as LeftoverLocals"
       }
     ]
   },
@@ -307,6 +341,24 @@
         "source": "Der Spiegel / Snowden documents",
         "year": 2013
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-NET-3",
+        "strength": "partial",
+        "why": "Fabric taps capture ciphertext; covers accelerator links only"
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "An in-rack interposer yields nothing readable",
+        "note": "Weak: accelerator fabric only; DIMM interposers and pulled drives untouched."
+      },
+      {
+        "vector_id": "V-X-2",
+        "strength": "partial",
+        "why": "Fabric traffic is ciphertext"
+      }
     ]
   },
   {
@@ -408,7 +460,38 @@
         "source": "IBM 4770 Cryptographic Coprocessor",
         "year": 2012
       }
-    ]
+    ],
+    "counters": [
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Probing chips during physical access triggers detection or zeroisation"
+      },
+      {
+        "vector_id": "V-PHYS-6",
+        "strength": "partial",
+        "why": "Seized accelerators zeroise rather than yield weights"
+      },
+      {
+        "vector_id": "V-PHYS-7",
+        "strength": "partial",
+        "why": "Zeroisation denies weights from seized hardware"
+      },
+      {
+        "vector_id": "V-X-2",
+        "strength": "strong",
+        "why": "Chip-level tamper response zeroises keys and plaintext when the package is opened, probed or glitched: hardware in hand yields nothing readable.",
+        "note": "Strong since the Nov 2026 recalibration: this is what chip-level tamper protection is for; it is also why it needs research (no FIPS 140-3 Level 4 module exists)."
+      },
+      {
+        "vector_id": "V-PHYS-5",
+        "strength": "strong",
+        "why": "Chip-level tamper response at FIPS 140-3 Level 4 grade (detect and zeroise on probing, glitching or decapping) is beyond the hardware security RAND scored this vector against; it is the counter the vector needs.",
+        "note": "Strong since the Nov 2026 recalibration: V-PHYS-5 no longer lists HW-04 as assumed: RAND scored it against the tamper protection that exists, and no module is validated at the level HW-04 specifies."
+      }
+    ],
+    "research_required": true,
+    "research_note": "Scaling tamper response to accelerator-sized dies is an unsolved packaging and materials problem, and no module is yet validated at FIPS 140-3 Level 4."
   },
   {
     "id": "HW-05",
@@ -468,7 +551,7 @@
         "notes": "Shielded racks complicate physical maintenance access and thermal management. Not a cultural barrier but an engineering one."
       }
     },
-    "defense_type": "hard_stop",
+    "defense_type": "hybrid",
     "sl_requirement": {
       "first_recommended": 3,
       "first_required": 4
@@ -514,6 +597,52 @@
         "source": "TEMPEST program history",
         "year": 1985
       }
+    ],
+    "reclassified": {
+      "from": "hard_stop",
+      "why": "Hard stop for EM shielding, detection-only for tampering."
+    },
+    "counters": [
+      {
+        "vector_id": "V-NET-2",
+        "strength": "strong",
+        "why": "NSA 94-106 shielding attenuates emanations by ~100 dB",
+        "note": "EM only: no effect on cache or timing channels."
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Enclosure seals record tampering for inspection to find",
+        "type_override": "probabilistic",
+        "note": "Tamper-evident is detection, not prevention: a hard stop only for EM shielding."
+      },
+      {
+        "vector_id": "V-PHYS-2",
+        "strength": "partial",
+        "why": "A device planted inside a sealed rack leaves evidence",
+        "type_override": "probabilistic"
+      },
+      {
+        "vector_id": "V-SELF-4",
+        "strength": "partial",
+        "why": "Shielding blocks deliberately modulated EM channels"
+      },
+      {
+        "vector_id": "V-NET-1",
+        "strength": "partial",
+        "why": "Shielded racks contain RF covert channels from implanted hardware"
+      },
+      {
+        "vector_id": "V-X-2",
+        "strength": "partial",
+        "why": "Tamper evidence shows an opened rack",
+        "type_override": "probabilistic"
+      },
+      {
+        "vector_id": "V-PHYS-5",
+        "strength": "partial",
+        "why": "Tamper-evident rack enclosures reveal the access hardware penetration needs."
+      }
     ]
   },
   {
@@ -521,7 +650,7 @@
     "name": "Execution Integrity Verification",
     "category": "machine",
     "summary_group": "hardware_security",
-    "description": "AI accelerators verify that code is cryptographically signed before execution — extending beyond firmware to all operator binaries and workloads. Prevents unauthorized code from running on accelerators that have access to model weights.",
+    "description": "AI accelerators verify that code is cryptographically signed before execution — extending beyond firmware to all operator binaries and workloads. Prevents unauthorized code from running on accelerators that have access to model weights. Advanced tier (absorbs HW-10): composition-attack prevention - task-sequence attestation or verified fused kernels - so individually signed operations cannot be sequenced to leak weights. Research-stage.",
     "current_state": {
       "summary": "Firmware signing is standard on modern accelerators. Extending to workload/operator signing is not. The full SL5 requirement (all code on accelerator must be signed, no exceptions) requires new verification mechanisms.",
       "deployed_by": [
@@ -536,20 +665,20 @@
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
-        "min": 24,
-        "max": 42,
-        "notes": "Requires both silicon features (hardware verification of workload signatures) and software ecosystem (signing all ML kernels/operators)."
+        "min": 48,
+        "max": 72,
+        "notes": "Requires both silicon features (hardware verification of workload signatures) and software ecosystem (signing all ML kernels/operators). Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
       },
       "cost": {
         "upfront_millions": {
           "min": 30,
-          "max": 150
+          "max": 450
         },
         "annual_ongoing_millions": {
           "min": 5,
-          "max": 20
+          "max": 50
         },
-        "notes": "Silicon cost + building signing infrastructure + ongoing workload certification pipeline."
+        "notes": "Silicon cost + building signing infrastructure + ongoing workload certification pipeline. Upper end includes the research-stage composition-attack tier (former HW-10)."
       },
       "vendor_dependency": {
         "value": 85,
@@ -589,7 +718,6 @@
         "HW-01"
       ],
       "enhances": [
-        "HW-10",
         "NET-02"
       ],
       "enabled_by": [
@@ -611,6 +739,16 @@
         "question": "Can composition attacks be prevented — where individually-signed operations are sequenced to exfiltrate data?",
         "uncertainty_level": "high",
         "impact_if_resolved_negatively": "Signing individual operations is insufficient; need task-sequence verification or fused-kernel-only execution"
+      },
+      {
+        "question": "Is composition attack prevention computationally tractable for real ML workloads?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "May be fundamentally infeasible for general workloads — must rely on restrictive allow-lists instead of general verification"
+      },
+      {
+        "question": "Does fused-kernel restriction prevent meaningful ML research?",
+        "uncertainty_level": "high",
+        "impact_if_resolved_negatively": "Choice between security and research capability — may force all experimental work outside the enclave"
       }
     ],
     "real_world_parallels": [
@@ -618,15 +756,71 @@
         "description": "iOS requires all code to be signed by Apple before execution on the device. This has been the single most effective defense against iPhone malware — despite billions of attack attempts.",
         "source": "Apple iOS code signing",
         "year": 2008
+      },
+      {
+        "description": "Return-oriented programming (ROP) in CPU exploitation chains individually-authorized CPU instructions into malicious behavior. Composition attack prevention for accelerators is the hardware equivalent of defeating ROP.",
+        "source": "ROP / code-reuse attack literature",
+        "year": 2007
       }
-    ]
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CODE-1",
+        "strength": "partial",
+        "why": "Unsigned payloads cannot run on accelerators",
+        "type_override": "hybrid",
+        "note": "Signing stops payload loading, not exploitation of signed code (ROP, living off the land)."
+      },
+      {
+        "vector_id": "V-CODE-2",
+        "strength": "partial",
+        "why": "Unsigned payloads cannot run on accelerators",
+        "type_override": "hybrid"
+      },
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "partial",
+        "why": "Zero-day must work inside signed code paths",
+        "type_override": "hybrid"
+      },
+      {
+        "vector_id": "V-CODE-4",
+        "strength": "partial",
+        "why": "Raises cost; many zero-days include signed-code bugs",
+        "type_override": "hybrid"
+      },
+      {
+        "vector_id": "V-ML-1",
+        "strength": "partial",
+        "why": "Malicious kernels fail signature checks"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "strong",
+        "why": "Only signed, verified code executes on the accelerators, so a poisoned ML dependency cannot run there unnoticed.",
+        "note": "Strong since the Nov 2026 recalibration: execution integrity across the composed stack (formerly HW-10) is the research half of this block."
+      },
+      {
+        "vector_id": "V-SELF-6",
+        "strength": "strong",
+        "why": "Only signed, approved workloads execute on the accelerators: a model cannot launch compute jobs nobody sanctioned.",
+        "note": "Strong since the Nov 2026 recalibration: execution integrity is the hard counter to rogue internal deployments."
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "Composition checks stop agents chaining permitted kernels into a dump"
+      }
+    ],
+    "research_required": true,
+    "research_note": "Verifying every workload and operator that runs on an accelerator needs silicon features and verification mechanisms that do not exist yet."
   },
   {
     "id": "HW-07",
     "name": "Confidential Computing / TEE",
     "category": "machine",
     "summary_group": "confidential_computing",
-    "description": "Trusted Execution Environments that protect model weights during computation. Even with full host/OS compromise, the TEE keeps data encrypted and inaccessible. For AI accelerators, this means the GPU/TPU processes weights inside a hardware-protected enclave.",
+    "description": "Trusted Execution Environments that protect model weights during computation. With confidential computing on, the hardware refuses the host OS, hypervisor and DMA access to protected accelerator memory, and attestation proves that configuration before weights are released. NVIDIA's GPU CC protects on-package HBM by access control rather than runtime memory encryption, and its trust anchor is a CPU TEE (which does encrypt the VM's own memory). It defends against a compromised host's software, not against an attacker with physical access: in 2025 a sub-$1,000 DDR5 bus interposer extracted CPU-TEE attestation keys (TEE.fail).",
     "current_state": {
       "summary": "NVIDIA H100/Blackwell have GPU TEE (CC mode) and Rubin extends confidential computing across CPU, GPU and NVLink, but all commercial paths still pair the accelerator with a CPU TEE rather than excluding the CPU from the TCB. Physical attacks are excluded from the commercial threat model, and TEE.Fail (2025) demonstrated that exclusion is load-bearing: a sub-$1,000 DDR5 memory-bus interposer defeated Intel SGX/TDX, AMD SEV-SNP and NVIDIA Confidential Computing, recovering attestation keys. Research (GuardAIn, IEEE S&P 2025, formerly Ascend-CC) shows accelerator-only TEE is possible but has not shipped commercially.",
       "deployed_by": [
@@ -679,7 +873,7 @@
         "notes": "Requires building attestation verification infrastructure and accepting performance loss."
       }
     },
-    "defense_type": "hard_stop",
+    "defense_type": "hybrid",
     "sl_requirement": {
       "first_recommended": 4,
       "first_required": 4
@@ -687,7 +881,7 @@
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 3,
       "ai_oc_shift": 1.0,
-      "exploit_narrative": "Without confidential computing, any adversary who achieves host-level compromise (root/kernel access via zero-day chain) can read model weights directly from accelerator memory. TEE makes this impossible even with full host compromise."
+      "exploit_narrative": "Without confidential computing, any adversary who achieves host-level compromise (root/kernel access via zero-day chain) can read model weights directly from accelerator memory. A TEE closes that route against a software-only host compromise; it does not stop an attacker with physical access to the memory bus."
     },
     "dependencies": {
       "requires": [
@@ -733,6 +927,35 @@
         "description": "Intel SGX enabled confidential computing for CPUs since 2015. Despite being broken multiple times by side-channel attacks (Spectre, Meltdown, Plundervolt), it raised the bar significantly — attacks required months of research rather than standard exploitation.",
         "source": "Intel SGX and attacks history",
         "year": 2015
+      }
+    ],
+    "reclassified": {
+      "from": "hard_stop",
+      "why": "Defends against host software only; physical interposers (TEE.fail) and TEE bugs are in scope at OC4-5."
+    },
+    "counters": [
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Host root and DMA cannot read protected accelerator memory"
+      },
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "partial",
+        "why": "A host-software compromise no longer yields weights in use"
+      },
+      {
+        "vector_id": "V-CODE-4",
+        "strength": "partial",
+        "why": "Same, but TEE implementations themselves have recurring vulnerabilities",
+        "type_override": "probabilistic",
+        "note": "Against a large zero-day pool, TEE bugs are in scope; erodes like a probabilistic control."
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Cloud operator staff cannot read weights in use",
+        "note": "Weak: provider staff have physical access (TEE.fail); hypervisor-level only."
       }
     ]
   },
@@ -832,113 +1055,617 @@
         "source": "Google Cloud Titan chip",
         "year": 2017
       }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-CODE-3",
+        "strength": "partial",
+        "why": "Firmware or boot implants are detected at the next measured boot"
+      },
+      {
+        "vector_id": "V-CODE-4",
+        "strength": "partial",
+        "why": "Removes cheap persistence below the OS"
+      },
+      {
+        "vector_id": "V-SUP-1",
+        "strength": "partial",
+        "why": "Modified firmware in delivered equipment fails measurement"
+      },
+      {
+        "vector_id": "V-ML-2",
+        "strength": "partial",
+        "why": "Tampered drivers or firmware fail boot measurement"
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Firmware implanted during physical access fails measurement"
+      }
     ]
   },
   {
-    "id": "HW-10",
-    "name": "Composition Attack Prevention",
+    "id": "KEY-01",
+    "name": "Weight Encryption at Rest, Attestation-Gated Key Release",
     "category": "machine",
-    "summary_group": "hardware_security",
-    "description": "Mechanisms preventing individually-authorized operations from being sequenced to exfiltrate data. Two approaches: task-sequence attestation (firmware validates operation ordering) or restricting to fused kernels verified not to leak individually or through composition.",
+    "summary_group": "weight_protection",
+    "description": "Weights are encrypted at rest and in transit inside the enclave with keys held in HSMs. A key is released only to an attested workload (measured boot plus TEE attestation) under a policy that names the job, the approvals and the destination. Stolen disks, stray copies and seized hardware yield ciphertext.",
     "current_state": {
-      "summary": "Research-stage. Ascend-CC paper (2024) proposes firmware-level task sequence attestation. Fused kernel approach requires verifying all possible compositions — combinatorially hard. No commercial implementation.",
-      "deployed_by": [],
-      "baseline_state": "researching"
+      "summary": "Encryption at rest with cloud KMS keys is standard. Key release gated on hardware attestation of the consuming workload is not deployed for weights at any lab, though H100-class confidential computing and Apple's Private Cloud Compute show it can be built.",
+      "deployed_by": [
+        "cloud_kms_default",
+        "apple_private_cloud_compute"
+      ],
+      "baseline_state": "partially_deployed"
     },
     "dimensions": {
       "technical_feasibility": {
+        "value": 70,
+        "notes": "Components exist (HSMs, TEE attestation); attestation-gated release at training-cluster scale is new.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 12,
+        "max": 24,
+        "notes": "KMS-backed encryption is quick; the attestation-gated release service is the long pole."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 20,
+          "max": 80
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 15
+        },
+        "notes": "HSM estate, key-release service, attestation verification and re-engineering of the training and serving data paths."
+      },
+      "vendor_dependency": {
+        "value": 70,
+        "key_vendors": [
+          "nvidia",
+          "hsm_vendors",
+          "cloud_kms"
+        ],
+        "notes": "Needs accelerator attestation from the vendor."
+      },
+      "supply_scarcity": {
+        "value": 40,
+        "bottleneck": "Engineers who have built attestation-based key release",
+        "notes": "Few have done it at scale."
+      },
+      "organizational_readiness": {
+        "value": 55,
+        "barriers": [
+          "performance_overhead",
+          "operational_complexity"
+        ],
+        "notes": "Every job start now depends on a key service."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 4,
+      "ai_oc_shift": 0.5,
+      "exploit_narrative": "Without attestation-gated release, anyone who reaches a disk, a backup or a host with the key in memory reads the weights: encryption at rest stops the thief who takes the drive, not the one who takes the server."
+    },
+    "dependencies": {
+      "requires": [
+        "HW-01"
+      ],
+      "enhances": [
+        "CUS-01",
+        "AI-11",
+        "HW-07"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "HW-07",
+          "HW-09"
+        ],
+        "standalone_share": 0.7,
+        "why": "Attestation is only as good as what it measures: without measured boot the host asking for the key can lie about its software, and without a TEE the released key sits in ordinary host memory."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "access_control",
+        "accelerator_security"
+      ],
+      "shared_dependencies": [
+        "key_management_infrastructure"
+      ]
+    },
+    "open_questions": [
+      {
+        "question": "Can attestation-gated release scale to tens of thousands of nodes without the key service becoming the single point of failure?",
+        "uncertainty_level": "significant",
+        "impact_if_resolved_negatively": "Labs would carve out exceptions for availability, recreating plaintext copies."
+      }
+    ],
+    "real_world_parallels": [
+      {
+        "description": "Apple Private Cloud Compute releases data keys only to nodes whose attested software image is publicly logged.",
+        "source": "Apple Security Research",
+        "year": 2024
+      },
+      {
+        "description": "NVIDIA H100 confidential computing mode with remote attestation became generally available.",
+        "source": "NVIDIA",
+        "year": 2023
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-BYP-2",
+        "strength": "strong",
+        "why": "Every copy is ciphertext unless an attested enclave obtains the key"
+      },
+      {
+        "vector_id": "V-ACS-4",
+        "strength": "strong",
+        "why": "Key material lives in HSM-backed KMS and is released only on attestation, so there is no secret to steal from a person or a host.",
+        "note": "Strong since the Nov 2026 recalibration: "
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Stolen drives or servers yield ciphertext"
+      },
+      {
+        "vector_id": "V-PHYS-6",
+        "strength": "partial",
+        "why": "Seized storage yields ciphertext"
+      },
+      {
+        "vector_id": "V-PHYS-7",
+        "strength": "partial",
+        "why": "Seized storage yields ciphertext if keys are destroyed",
+        "note": "Weak: depends on keys being destroyed before seizure."
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Storage-admin rights alone yield ciphertext"
+      },
+      {
+        "vector_id": "V-BYP-3",
+        "strength": "partial",
+        "why": "Irrecoverable-key policy removes escrow and recovery backdoors"
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "Storage vendors and cloud staff see only ciphertext"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Raw weight files are ciphertext outside attested runtimes"
+      },
+      {
+        "vector_id": "V-ACS-1",
+        "strength": "partial",
+        "why": "Attestation adds a check independent of the software ACS"
+      },
+      {
+        "vector_id": "V-ACS-3",
+        "strength": "partial",
+        "why": "Hardware-gated key release survives some ACS software bugs"
+      },
+      {
+        "vector_id": "V-HUM-5",
+        "strength": "partial",
+        "why": "Split custody resists a single executive's order"
+      },
+      {
+        "vector_id": "V-BYP-1",
+        "strength": "partial",
+        "why": "A misconfigured store exposes only ciphertext"
+      },
+      {
+        "vector_id": "V-CRED-3",
+        "strength": "partial",
+        "why": "Leaked storage credentials yield ciphertext"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "strong",
+        "why": "Weight keys are released only to attested workloads, never to people: an insider with storage access holds ciphertext.",
+        "note": "Strong since the Nov 2026 recalibration: attestation-gated key release is the SL4-5 answer to standing human access."
+      },
+      {
+        "vector_id": "V-X-2",
+        "strength": "strong",
+        "why": "Disks and backups hold ciphertext; keys stay in HSMs"
+      }
+    ]
+  },
+  {
+    "id": "CUS-01",
+    "name": "Weight Custody",
+    "category": "machine",
+    "summary_group": "weight_protection",
+    "description": "A custody register of every copy of the weights - checkpoints, backups, evaluation and serving replicas, researcher scratch copies - with approved storage locations, automatic deletion of unapproved copies, chain-of-custody records for every transfer and periodic reconciliation. RAND: limit the number of copies and where they live.",
+    "current_state": {
+      "summary": "Labs track checkpoints for engineering reasons, but none reports a security-grade register of every copy with reconciliation. Stray copies on research clusters, eval boxes and backup buckets are the norm, which is why RAND lists additional less-secure copies as its own attack vector.",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 85,
+        "notes": "Inventory and reconciliation are ordinary engineering; the difficulty is discipline.",
+        "trajectory": "stable"
+      },
+      "time_to_deploy_months": {
+        "min": 6,
+        "max": 12,
+        "notes": "Register and scanners first; deletion of unapproved copies needs research buy-in."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 5,
+          "max": 20
+        },
+        "annual_ongoing_millions": {
+          "min": 2,
+          "max": 6
+        },
+        "notes": "Scanning tooling, custody service, reconciliation staff."
+      },
+      "vendor_dependency": {
+        "value": 15,
+        "key_vendors": [
+          "internal"
+        ],
+        "notes": "Built in-house."
+      },
+      "supply_scarcity": {
+        "value": 15,
+        "bottleneck": "None significant",
+        "notes": "Process, not talent."
+      },
+      "organizational_readiness": {
+        "value": 40,
+        "barriers": [
+          "research_convenience"
+        ],
+        "notes": "Researchers copy checkpoints to wherever the compute is."
+      }
+    },
+    "defense_type": "probabilistic",
+    "sl_requirement": {
+      "first_recommended": 3,
+      "first_required": 4
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 3,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without custody, the attacker skips the hardened copy and takes the one on a research cluster, an eval box or a backup bucket nobody remembers."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "KEY-01",
+        "DET-01"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "KEY-01"
+        ],
+        "standalone_share": 0.7,
+        "why": "A register tells you where the copies are; only encryption with controlled key release makes the copy you missed useless."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "access_control"
+      ],
+      "shared_dependencies": []
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "Meta's LLaMA weights, released to approved researchers only, appeared on a public torrent within a week.",
+        "source": "The Verge",
+        "year": 2023
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-BYP-2",
+        "strength": "strong",
+        "why": "Inventory, centralisation, encrypted backups and media destruction remove stray copies"
+      },
+      {
+        "vector_id": "V-PHYS-1",
+        "strength": "partial",
+        "why": "Media and RMA destruction close the waste-disposal route"
+      },
+      {
+        "vector_id": "V-SUP-3",
+        "strength": "partial",
+        "why": "No weight-bearing drives go back to vendors"
+      },
+      {
+        "vector_id": "V-BYP-1",
+        "strength": "partial",
+        "why": "Inventory sweeps find copies in misconfigured stores"
+      },
+      {
+        "vector_id": "V-SELF-1",
+        "strength": "partial",
+        "why": "Copy inventory flags new weight copies an agent creates"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "partial",
+        "why": "Fewer, inventoried copies within an insider's reach"
+      },
+      {
+        "vector_id": "V-X-2",
+        "strength": "partial",
+        "why": "Destroyed media and no stray drives to read"
+      }
+    ]
+  },
+  {
+    "id": "ACA-01",
+    "name": "Access-Control Assurance & Formal Verification",
+    "category": "machine",
+    "summary_group": "weight_protection",
+    "description": "Independent assurance of the access-control system itself: formal verification of its key components (key-release service, separation kernel or hypervisor, authorisation policy engine), protocol and cryptography review, and continuous red-teaming and code audit of the access stack (RAND SL5 formal verification of key components).",
+    "current_state": {
+      "summary": "Formally verified kernels exist and are fielded in defence (seL4); no lab's weight-access stack is verified or independently assured.",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 50,
+        "notes": "Verified kernels exist; verifying a whole access stack is research-grade engineering.",
+        "trajectory": "improving"
+      },
+      "time_to_deploy_months": {
+        "min": 36,
+        "max": 72,
+        "notes": "Proof engineering is slow and the stack must stay small enough to verify. Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
+      },
+      "cost": {
+        "upfront_millions": {
+          "min": 30,
+          "max": 120
+        },
+        "annual_ongoing_millions": {
+          "min": 5,
+          "max": 15
+        },
+        "notes": "Proof engineers, audit firms, redesign of the access stack to be verifiable."
+      },
+      "vendor_dependency": {
+        "value": 50,
+        "key_vendors": [
+          "proof_engineering_firms",
+          "audit_firms"
+        ],
+        "notes": "A handful of firms."
+      },
+      "supply_scarcity": {
+        "value": 80,
+        "bottleneck": "Proof engineers",
+        "notes": "Perhaps a few hundred worldwide."
+      },
+      "organizational_readiness": {
         "value": 45,
-        "notes": "Conceptually understood but practically very challenging. Verifying no-exfiltration properties across all possible operation sequences is computationally hard. May require severely restricting allowed workloads.",
+        "barriers": [
+          "design_constraints"
+        ],
+        "notes": "Verifiable means small and unchanging, which research infra is not."
+      }
+    },
+    "defense_type": "hybrid",
+    "sl_requirement": {
+      "first_recommended": 5,
+      "first_required": 5
+    },
+    "adversary_exploitation": {
+      "oc_threshold_to_exploit": 5,
+      "ai_oc_shift": 1.0,
+      "exploit_narrative": "Without assurance of the access-control system itself, the attacker skips the people and the keys and exploits the software that decides who gets them."
+    },
+    "dependencies": {
+      "requires": [],
+      "enhances": [
+        "KEY-01",
+        "IAM-01"
+      ],
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "KEY-01",
+          "IAM-01"
+        ],
+        "standalone_share": 0.6,
+        "why": "Assurance needs an access-control system worth assuring: verifying a stack that still has long-lived credentials and keys released to any host proves the wrong thing."
+      }
+    },
+    "defense_in_depth": {
+      "layer_contributions": [
+        "access_control"
+      ],
+      "shared_dependencies": [
+        "formal_verification_toolchain"
+      ]
+    },
+    "open_questions": [],
+    "real_world_parallels": [
+      {
+        "description": "DARPA HACMS: a seL4-based mission computer resisted red teams given root on a partition.",
+        "source": "DARPA HACMS programme",
+        "year": 2017
+      }
+    ],
+    "counters": [
+      {
+        "vector_id": "V-ACS-1",
+        "strength": "strong",
+        "why": "Formally verified cryptographic and authentication protocols (RAND SL5)"
+      },
+      {
+        "vector_id": "V-ACS-3",
+        "strength": "strong",
+        "why": "Verified, minimal access-control code leaves few implementation bugs"
+      },
+      {
+        "vector_id": "V-ACS-2",
+        "strength": "partial",
+        "why": "Independent verification can expose planted weaknesses in implementations"
+      }
+    ],
+    "research_required": true,
+    "research_note": "Formally verifying a whole weight-access stack, not just a kernel, is research-grade proof engineering.",
+    "defender_ai": true,
+    "defender_ai_note": "AI-assisted proof engineering and code review make a verified access stack cheaper to build and keep verified."
+  },
+  {
+    "id": "SRV-01",
+    "name": "Hardened Weight-Access & Serving Interface",
+    "category": "machine",
+    "summary_group": "weight_protection",
+    "description": "The only paths to the weights are narrow, purpose-built interfaces: a minimal serving stack on dedicated hardware for external interfaces, no general-purpose shell on weight-holding nodes, and an ML-specific boundary that performs inference without exporting parameters (RAND SL3 permitted interfaces, SL4 specialised hardware for external interfaces, SL5 ML-specific HSM).",
+    "current_state": {
+      "summary": "Serving runs general-purpose inference servers on hosts that hold full weights in accelerator memory; dedicated interface hardware and ML-specific HSMs are not deployed.",
+      "deployed_by": [],
+      "baseline_state": "not_started"
+    },
+    "dimensions": {
+      "technical_feasibility": {
+        "value": 55,
+        "notes": "Narrow interfaces are buildable; an ML-specific HSM is research-grade.",
         "trajectory": "improving"
       },
       "time_to_deploy_months": {
         "min": 36,
         "max": 60,
-        "notes": "Requires both research breakthroughs and silicon implementation. Longest lead-time hardware block."
+        "notes": "Re-architecting serving and research access around a narrow interface. Lengthened in the Nov 2026 recalibration to reflect the research still needed (research_required)."
       },
       "cost": {
         "upfront_millions": {
-          "min": 50,
-          "max": 300
+          "min": 30,
+          "max": 100
         },
         "annual_ongoing_millions": {
-          "min": 10,
-          "max": 30
+          "min": 5,
+          "max": 20
         },
-        "notes": "Significant research investment with uncertain payoff. If fused-kernel approach: ongoing cost of verifying all new kernels."
+        "notes": "Dedicated interface hardware, serving re-architecture, interface assurance."
       },
       "vendor_dependency": {
-        "value": 90,
+        "value": 70,
         "key_vendors": [
-          "accelerator_manufacturer"
+          "accelerator_vendors",
+          "internal"
         ],
-        "notes": "Requires firmware-level changes in the accelerator. Cannot be implemented by customer alone."
+        "notes": "Depends on accelerator vendor support."
       },
       "supply_scarcity": {
-        "value": 85,
-        "bottleneck": "Researchers at intersection of hardware security, formal verification, and ML systems",
-        "notes": "Extremely rare expertise combination"
+        "value": 60,
+        "bottleneck": "Serving-stack security engineers",
+        "notes": "Scarce."
       },
       "organizational_readiness": {
-        "value": 40,
+        "value": 45,
         "barriers": [
-          "workload_restriction",
-          "kernel_verification_pipeline",
-          "research_dependency"
+          "researcher_access",
+          "debuggability"
         ],
-        "notes": "Even once available, may severely restrict what operations are allowed — impacting ML research flexibility."
+        "notes": "Researchers want shells on the machines with weights."
       }
     },
-    "defense_type": "hard_stop",
+    "defense_type": "hybrid",
     "sl_requirement": {
-      "first_recommended": 4,
-      "first_required": 5
+      "first_recommended": 3,
+      "first_required": 4
     },
     "adversary_exploitation": {
       "oc_threshold_to_exploit": 4,
       "ai_oc_shift": 1.0,
-      "exploit_narrative": "Without composition attack prevention, an adversary who can submit workloads to the accelerator (via compromised host) can construct a sequence of individually-innocent operations that together extract model weights — even if each operation is signed and authorized."
+      "exploit_narrative": "Without a hardened interface, a bug in a GPU driver, an inference server or a debug endpoint on a weight-holding host is a direct read of the weights."
     },
     "dependencies": {
-      "requires": [
-        "HW-01",
-        "HW-06"
-      ],
+      "requires": [],
       "enhances": [
-        "HW-02"
+        "AI-07",
+        "AI-08"
       ],
-      "enabled_by": [
-        "HW-01",
-        "HW-06"
-      ]
+      "enabled_by": [],
+      "completed_by": {
+        "blocks": [
+          "HW-07",
+          "NET-02"
+        ],
+        "standalone_share": 0.65,
+        "why": "A narrow interface on a host the attacker can still reach around - no enclave, no memory protection - is a front door on a building with no walls."
+      }
     },
     "defense_in_depth": {
       "layer_contributions": [
-        "accelerator_security"
+        "host_security",
+        "access_control"
       ],
       "shared_dependencies": [
-        "accelerator_manufacturer_firmware",
-        "formal_verification_toolchain"
+        "serving_infrastructure_integrity"
       ]
     },
-    "open_questions": [
+    "open_questions": [],
+    "real_world_parallels": [],
+    "counters": [
       {
-        "question": "Is composition attack prevention computationally tractable for real ML workloads?",
-        "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "May be fundamentally infeasible for general workloads — must rely on restrictive allow-lists instead of general verification"
+        "vector_id": "V-ML-1",
+        "strength": "strong",
+        "why": "Minimal, memory-safe serving code behind a narrow interface; fuzzed drivers"
       },
       {
-        "question": "Does fused-kernel restriction prevent meaningful ML research?",
-        "uncertainty_level": "high",
-        "impact_if_resolved_negatively": "Choice between security and research capability — may force all experimental work outside the enclave"
+        "vector_id": "V-ML-3",
+        "strength": "partial",
+        "why": "A narrow interface limits what injected code can request"
+      },
+      {
+        "vector_id": "V-CRED-4",
+        "strength": "partial",
+        "why": "Escalated accounts still see weights only through the interface"
+      },
+      {
+        "vector_id": "V-X-1",
+        "strength": "strong",
+        "why": "Weights are reached only through the hardened interface; no person has a path to read or copy raw weights, so recruiting someone with access buys an interface, not the weights.",
+        "note": "Strong since the Nov 2026 recalibration: RAND SL4-5 permitted interfaces; Google DeepMind FSF v1 top level: weights generally not accessible to humans."
+      },
+      {
+        "vector_id": "V-SELF-2",
+        "strength": "partial",
+        "why": "Agents reach weights only through a narrow interface"
+      },
+      {
+        "vector_id": "V-ML-4",
+        "strength": "strong",
+        "why": "A narrow serving interface returns sampled tokens only (no logits or logprobs, no logit bias), quantises what it returns and enforces per-tenant query budgets below the hardware: what each response leaks about the weights is bounded by design, which is what RAND says limits extraction.",
+        "note": "Strong since the Nov 2026 recalibration: RAND SL5 asks for an ML-specific HSM-like interface for production models; this is that block."
+      },
+      {
+        "vector_id": "V-X-5",
+        "strength": "partial",
+        "why": "Query budgets enforced in the serving interface cap the total a tenant can draw out."
       }
     ],
-    "real_world_parallels": [
-      {
-        "description": "Return-oriented programming (ROP) in CPU exploitation chains individually-authorized CPU instructions into malicious behavior. Composition attack prevention for accelerators is the hardware equivalent of defeating ROP.",
-        "source": "ROP / code-reuse attack literature",
-        "year": 2007
-      }
-    ]
+    "research_required": true,
+    "research_note": "RAND: more R&D is needed to serve production models at SL5, starting with an ML-specific HSM-like interface."
   }
 ]

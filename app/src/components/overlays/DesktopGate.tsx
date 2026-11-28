@@ -42,33 +42,35 @@ export function DesktopGate() {
     // viewport means it can't be scrolled away from. `100dvh` so mobile browser
     // chrome doesn't cut the bottom off.
     <div
-      className="fixed inset-0 flex flex-col items-center justify-center overflow-y-auto bg-gray-950 px-6 py-10 text-center"
+      className="sl5 fixed inset-0 flex flex-col justify-center overflow-y-auto bg-paper px-6 py-10 font-archivo text-ink"
       style={{ minHeight: "100dvh" }}
     >
-      <span className="mb-4 text-4xl">🖥️</span>
-      <h1 className="mb-2 text-lg font-semibold text-gray-100">Desktop required</h1>
-      <p className="max-w-[300px] text-sm leading-relaxed text-gray-400">
-        {fromStory
-          ? "That story runs inside the explorable — a map with side panels and a timeline, which needs a wider screen. Open this link on a desktop or laptop to watch it."
-          : "The explorable is a map with side panels and a timeline — it needs a wider screen. Open this on a desktop or laptop."}
-      </p>
+      <div className="mx-auto w-full max-w-[340px]">
+        <div className="text-[44px] leading-none font-black tracking-tight">SL5</div>
+        <div className="mt-1 border-b-2 border-ink pb-3 text-[16px] font-medium text-ink-2">Explorable</div>
+        <h1 className="mt-5 text-[28px] leading-tight font-extrabold">Desktop required</h1>
+        <p className="mt-2 text-[16px] leading-relaxed text-ink-2">
+          {fromStory
+            ? "That story runs inside the explorable — a catalogue of defenses beside a verdict rail, which needs a wider screen. Open this link on a desktop or laptop to watch it."
+            : "The explorable lays out the whole catalogue of defenses beside its verdict, and needs a wider screen. Open it on a desktop or laptop."}
+        </p>
 
-      {/* Only for someone who hasn't just come from the introduction —
-          otherwise this button is the return leg of a loop. */}
-      {!fromIntro && (
-        <>
-          <a
-            href={`${import.meta.env.BASE_URL}intro/`}
-            className="mt-6 rounded-lg bg-violet-600 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-violet-500"
-          >
-            Read the 5-minute introduction →
-          </a>
-          <p className="mt-2.5 max-w-[300px] text-xs leading-relaxed text-gray-500">
-            Why model weights are a target, and how the instrument works. Written
-            to read on a phone.
-          </p>
-        </>
-      )}
+        {/* Only for someone who hasn't just come from the introduction —
+            otherwise this button is the return leg of a loop. */}
+        {!fromIntro && (
+          <>
+            <a
+              href={`${import.meta.env.BASE_URL}intro/`}
+              className="mt-6 flex items-center justify-between bg-ink px-5 py-4 text-[16px] font-bold text-paper"
+            >
+              Read the six-minute introduction <span aria-hidden="true">→</span>
+            </a>
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
+              Why model weights are a target, and how the instrument works. Written to read on a phone.
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

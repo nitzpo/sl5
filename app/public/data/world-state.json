@@ -174,8 +174,8 @@
       "min_label": "None",
       "max_label": "Full (classified partnership)",
       "default_value": 0.2,
-      "effect": "Increases feasibility and reduces time_to_deploy for blocks requiring government involvement. Unlocks certain blocks entirely at high values.",
-      "affects_blocks": ["PER-04", "PHY-01", "SC-05", "NET-03", "PER-01"]
+      "effect": "Increases feasibility and reduces time_to_deploy for blocks requiring government involvement. Unlocks certain blocks entirely at high values. In the vector model it also relieves the vectors no lab can counter alone (needs_government): at full cooperation they are halved.",
+      "affects_blocks": ["PER-04", "PHY-01", "SC-08", "NET-03", "PER-01"]
     },
     "vendor_cooperation": {
       "label": "Vendor Cooperation",
@@ -183,7 +183,7 @@
       "max_label": "Full (security-first roadmap)",
       "default_value": 0.3,
       "effect": "Reduces time_to_deploy and increases availability of vendor-dependent hardware blocks.",
-      "affects_blocks": ["HW-01", "HW-02", "HW-03", "HW-04", "HW-06", "HW-07", "HW-10"]
+      "affects_blocks": ["HW-01", "HW-02", "HW-03", "HW-04", "HW-06", "HW-07"]
     },
     "annual_security_budget": {
       "label": "Annual Security Budget",
@@ -198,7 +198,7 @@
       "max_label": "Committed (national security culture)",
       "default_value": 0.3,
       "effect": "Modifies organizational_readiness scores for all blocks. Low = blocks with cultural barriers take longer and cost more. High = faster cultural adoption.",
-      "affects_blocks": ["NET-01", "PER-02", "PER-08", "PHY-01", "PER-01", "PER-04", "PER-05"]
+      "affects_blocks": ["NET-01", "PER-02", "PER-08", "PHY-01", "PER-01", "PER-04", "PER-03"]
     },
     "risk_tolerance": {
       "label": "Risk Tolerance",
@@ -206,6 +206,20 @@
       "max_label": "Aggressive (assume best case)",
       "default_value": 0.5,
       "effect": "Shifts uncertainty ranges. Conservative: use worst-case estimates for feasibility, time, cost. Aggressive: use best-case."
+    },
+    "sl_bar": {
+      "label": "SL bar (τ)",
+      "min_label": "Strict (0.10)",
+      "max_label": "Lenient (0.33)",
+      "default_value": 0.2,
+      "effect": "A tier OC-n holds when fewer than τ of its campaigns succeed; SL is the highest n with every tier up to n held (SL5 also needs the lab's own model held). Presets: strict 0.10, standard 0.20, lenient 0.33. Advanced parameter."
+    },
+    "ai_propensity": {
+      "label": "AI propensity",
+      "min_label": "Never tries",
+      "max_label": "Always tries",
+      "default_value": 0.5,
+      "effect": "The chance a misaligned model attempts anything at all. Multiplies the lab's-own-model approach and the integrity meter. Authored assumption; no data pins it."
     }
   },
   "stakes": {

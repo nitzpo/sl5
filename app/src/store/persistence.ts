@@ -1,7 +1,13 @@
-import type { BlockState, Perspective, Sliders } from "../engine/types";
+import type { BlockState, Sliders } from "../engine/types";
+import { migrateBlockOrder, migrateBlockStates } from "../engine/catalogue";
+import { DEFAULT_AI_PROPENSITY, DEFAULT_SL_BAR } from "../engine/threat-sl";
+import { DEFAULT_SCORING_MODE, isScoringMode, type ScoringMode } from "../model/scoring-mode";
 
-const STORAGE_KEY = "sl5-state";
-const SCENARIOS_KEY = "sl5-scenarios";
+// v2 shares its origin with the frozen v1 (/sl5/v1/), so it has its own keys
+// and never writes v1's unprefixed ones. Share links (#state=) are not keyed and
+// still open here; `migratePersistedState` brings old ids up to date.
+export const STORAGE_KEY = "sl5v2-state";
+export const SCENARIOS_KEY = "sl5v2-scenarios";
 
 export interface PersistedState {
   blockStates: Record<string, BlockState>;
@@ -9,10 +15,42 @@ export interface PersistedState {
    * Absent in old saves — derived from blockStates on load. */
   advanceOrder?: string[];
   year: number;
-  perspective: Perspective;
+  /** v1's analysis-panel choice. Old links still carry it; v2 ignores it. */
+  perspective?: string;
   adversaryOc: number;
   sliders: Sliders;
   modelServedExternally: boolean;
+  /** The retired future-capabilities toggle (FUT-xx blocks, removed in the
+   * Nov 2026 recalibration). Saves and links made before then may carry it;
+   * it is dropped on load. */
+  futureCapabilities?: boolean;
+  /** How the headline level is scored. Absent in saves and links made before
+   * the setting existed, which open in attack-path mode. */
+  scoringMode?: ScoringMode;
+}
+
+/**
+ * Bring a saved posture or share link from an older catalogue up to date:
+ * merged-away block ids (PER-05, SC-02, ...) map onto the blocks that
+ * absorbed them, the retired FUT-xx blocks and future toggle are dropped,
+ * sliders added since get their defaults, and the scoring mode defaults to
+ * attack paths. Idempotent, so it is safe on every load path. Blocks added
+ * since are filled in at their baseline when the store applies the state
+ * (`snapshotFrom` in simulation.ts), which is where the catalogue is known.
+ */
+export function migratePersistedState(state: PersistedState): PersistedState {
+  const sliders = { ...(state.sliders ?? {}) } as Partial<Sliders>;
+  if (typeof sliders.sl_bar !== "number") sliders.sl_bar = DEFAULT_SL_BAR;
+  if (typeof sliders.ai_propensity !== "number") sliders.ai_propensity = DEFAULT_AI_PROPENSITY;
+  const { futureCapabilities: _retired, ...rest } = state;
+  void _retired;
+  return {
+    ...rest,
+    blockStates: migrateBlockStates(state.blockStates ?? {}),
+    ...(state.advanceOrder ? { advanceOrder: migrateBlockOrder(state.advanceOrder) } : {}),
+    sliders: sliders as Sliders,
+    scoringMode: isScoringMode(state.scoringMode) ? state.scoringMode : DEFAULT_SCORING_MODE,
+  };
 }
 
 export interface SavedScenario {
@@ -25,7 +63,7 @@ export function loadScenarios(): SavedScenario[] {
   try {
     const raw = localStorage.getItem(SCENARIOS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as SavedScenario[];
+    return (JSON.parse(raw) as SavedScenario[]).map((sc) => ({ ...sc, state: migratePersistedState(sc.state) }));
   } catch {
     return [];
   }
@@ -51,7 +89,7 @@ export function loadFromLocalStorage(): PersistedState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as PersistedState;
+    return migratePersistedState(JSON.parse(raw) as PersistedState);
   } catch {
     return null;
   }
@@ -86,9 +124,9 @@ export interface ParsedHashState {
 function parseHashPayload(json: string): ParsedHashState | null {
   const parsed = JSON.parse(json);
   if (parsed && typeof parsed === "object" && "s" in parsed) {
-    return { state: parsed.s as PersistedState, name: parsed.n };
+    return { state: migratePersistedState(parsed.s as PersistedState), name: parsed.n };
   }
-  return { state: parsed as PersistedState };
+  return { state: migratePersistedState(parsed as PersistedState) };
 }
 
 // Capture hash at module load time (before React StrictMode double-mounts)

@@ -75,17 +75,16 @@ const NARROW = { width: 500, height: 900 };
 // the driver has to work in any clone, not just the machine it was written on.
 const APP_ROOT = dirname(dirname(dirname(import.meta.dirname)));
 
-/** Today's catalogue and the future (R&D) blocks, read from the same JSON the
- * app loads, so a missing tile fails rather than squeaking by. */
+/** Today's catalogue, read from the same JSON the app loads, so a missing
+ * tile fails rather than squeaking by. */
 const CATALOGUE = (() => {
   const dir = join(APP_ROOT, "public", "data");
   const today = [];
-  const future = [];
   for (const f of readdirSync(dir)) {
     if (!f.startsWith("blocks-") || !f.endsWith(".json")) continue;
-    for (const b of JSON.parse(readFileSync(join(dir, f), "utf-8"))) (b.future ? future : today).push(b.id);
+    for (const b of JSON.parse(readFileSync(join(dir, f), "utf-8"))) today.push(b.id);
   }
-  return { today: today.sort(), future: future.sort() };
+  return { today: today.sort() };
 })();
 
 /** The intro's slide order, read from its source so the deep-link check
@@ -201,7 +200,6 @@ async function smoke() {
   await openApp(page);
   const ids = await shownIds(page);
   check("every block in today's catalogue rendered, once", same(ids, CATALOGUE.today), `${ids.length} tiles, expected ${CATALOGUE.today.length}`);
-  check("no R&D block shown while the toggle is off", !ids.some((id) => CATALOGUE.future.includes(id)));
   const sl = await page.locator('[data-testid="sl-level"]').innerText();
   check("the rail states a level", /^SL[0-5]$/.test(sl.replace(/\s+/g, "")), sl);
   const ladder = await page.locator('[data-testid="tier-ladder"]').innerText();
@@ -257,7 +255,7 @@ async function views() {
 }
 
 /** Click advances, right-click steps back, Shift-click opens the drawer, the
- * parameters drawer opens, and the future toggle shows the R&D blocks. */
+ * parameters drawer opens, and its scoring method switches the rail. */
 async function interact() {
   console.log("\n[interact] blocks, drawers, toggles");
   const page = await newPage();
@@ -286,14 +284,22 @@ async function interact() {
   await params.waitFor({ timeout: 3000 });
   const ptext = await params.innerText();
   check(
-    "parameters: strictness, propensity, future toggle, serving, government",
-    /Strict/.test(ptext) && /AI propensity/.test(ptext) && /Future capabilities/.test(ptext) && /Model served/.test(ptext) && /Government partnership/.test(ptext)
+    "parameters: scoring method, strictness, propensity, serving, government",
+    /How to score your security level/i.test(ptext) && /Strict/.test(ptext) && /AI propensity/.test(ptext) && /Model served/.test(ptext) && /Government partnership/.test(ptext)
   );
   await page.screenshot({ path: `${OUT}/parameters.png` });
-  await params.getByRole("switch", { name: /Future capabilities/ }).click();
+  const rail = page.locator('[data-testid="verdict-rail"]');
+  await params.getByRole("radio", { name: /Control coverage/ }).click();
   await page.waitForTimeout(300);
-  const ids = await shownIds(page);
-  check("future toggle shows the R&D blocks", CATALOGUE.future.every((id) => ids.includes(id)), `${ids.length} tiles`);
+  const coverageSl = (await page.locator('[data-testid="sl-level"]').innerText()).replace(/\s+/g, "");
+  check(
+    "scoring method → control coverage switches the rail",
+    (await rail.getAttribute("data-scoring-mode")) === "coverage" && /^SL[0-5]$/.test(coverageSl) && (await page.locator('[data-testid="coverage-list"]').count()) === 1,
+    coverageSl
+  );
+  await params.getByRole("radio", { name: /Attack-path analysis/ }).click();
+  await page.waitForTimeout(300);
+  check("and back to attack paths", (await rail.getAttribute("data-scoring-mode")) === "paths" && (await page.locator('[data-testid="tier-ladder"]').count()) === 1);
   check("no console errors", page.errors.length === 0, page.errors.join(" | ") || "clean");
   console.log(`  screenshots → ${OUT}/{drawer,parameters}.png`);
   await page.closeAll();
@@ -320,7 +326,7 @@ async function story() {
   const caption = await page.locator('[data-testid="story-caption"]').innerText();
   check("the end shows a takeaway with the level", /SL\d/.test(caption) && /Replay/.test(caption), caption.split("\n").slice(1, 2).join(" "));
   const sl = await page.locator('[data-testid="sl-level"]').innerText();
-  check("Proactive Program reaches SL3 by 2030", sl.replace(/\s+/g, "") === "SL3", sl);
+  check("Proactive Program reaches SL5 by 2030", sl.replace(/\s+/g, "") === "SL5", sl);
   await page.screenshot({ path: `${OUT}/story-end.png` });
   await page.getByRole("button", { name: /Stop the story/ }).click();
   await page.locator('[data-testid="playback-bar"]').waitFor({ state: "detached", timeout: 3000 });

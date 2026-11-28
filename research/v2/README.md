@@ -16,7 +16,7 @@ v1, frozen at commit `ec5d9bd` and live at `/sl5/v1/`, scored seven hand-written
 
 > **For anything the app computes, the code wins:** [`app/src/engine/`](../../app/src/engine/), the data in [`app/public/data/`](../../app/public/data/), and the model reference [`research/scoring-model.md`](../scoring-model.md).
 
-This folder explains *why*. It is a historical record: numbers in it come from probes and drafts at the time, and several were later changed. In particular the recalibration of 28 Nov, which made SL5 reachable with the full catalogue and retired the "future capabilities" blocks, was still in progress when this folder was written. If a number here disagrees with `scoring-model.md`, trust `scoring-model.md`.
+This folder explains *why*. It is a historical record: numbers in it come from probes and drafts at the time, and several were later changed. In particular, the recalibration of 28 Nov (commit `bbc2c18`) landed after most of this folder was written. It made SL5 reachable with the full catalogue, retired the invented "future capabilities" (FUT) blocks in favour of `research_required` flags on seven existing controls, and moved today's baseline from SL1 to SL2. [`decisions.md`](decisions.md) D23–D25 record what was done and the questions it left open. Mentions of the FUT blocks elsewhere in this folder are history. If a number here disagrees with `scoring-model.md`, trust `scoring-model.md`.
 
 ## Reading order
 

@@ -16,7 +16,7 @@ v2 was built in about a day and a half (26 Nov evening to 28 Nov morning, 2026) 
 | Vector backbone | A mapping agent, then an **independent reviewer** who checked the transcription against the RAND PDF and audited 80 links, then a revision | [`vector-model/`](vector-model/) |
 | Build | Phase 1 correctness → Pages v1/v2 deploy and landing page → Phase 2A data and engine → Phase 3A UI and 3B intro (parallel, with split file ownership) → docs refresh | Commits `35540c0` … `9eba10c` |
 | Check | **Independent code review** of `ffde5b6..8e0037f` from a clean `git archive` (two medium and five lower-severity findings), then a fix agent that fixed all of them | `f68d5d8`, [`probes/codereview/`](probes/codereview/) |
-| After user feedback | Recalibration (engine and data), scoring-mode toggle (UI and store), and this documentation, in parallel with split file ownership | In progress at the time of writing |
+| After user feedback | Recalibration (engine and data), scoring-mode toggle (UI and store), and this documentation, in parallel with split file ownership | Landed: `22af6de` (scoring mode), `504535e` (this folder), `bbc2c18` (recalibration) |
 
 ### Patterns that worked
 

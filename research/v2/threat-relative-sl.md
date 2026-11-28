@@ -248,6 +248,6 @@ The authoritative statement is [`../scoring-model.md`](../scoring-model.md), Par
 
 ### Known weak points carried forward
 
-- **The SL4/SL5 gap and the reachability of SL5 depend on data:** which controls counter which vectors, and how strongly. In the first v2 calibration the full catalogue could not reach SL5, which the user rejected (D23). The recalibration was in progress when this folder was written.
+- **The SL4/SL5 gap and the reachability of SL5 depend on data:** which controls counter which vectors, and how strongly. In the first v2 calibration the full catalogue could not reach SL5, which the user rejected (D23). The recalibration (D23, D24, commit `bbc2c18`) made the mature catalogue SL5, marginal in the default world.
 - **The bar is a modelling choice**, not a RAND number.
 - **Knife-edge verdicts are possible.** The progress bar and the `marginal` flag exist to show them.

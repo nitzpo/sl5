@@ -72,7 +72,7 @@ node site/capture-thumbnails.mjs --only v2 --image v2=path/to/mockup.jpg
 ```
 
 Both thumbnails are captures of the real apps: v2's is its default main screen
-(the stage matrix with the verdict rail, SL1 in 2026). After a visible change to
+(the stage matrix with the verdict rail, SL2 in 2026). After a visible change to
 v2's main screen, run `node site/capture-thumbnails.mjs --only v2`, open
 `site/thumbs/v2.webp` to check it shows the catalogue with no modal over it, and
 commit it. If the screen no longer matches the description, update the v2 `alt`

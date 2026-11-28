@@ -67,10 +67,10 @@ Flows — pass one, or `all`:
 
 | flow | what it asserts |
 |---|---|
-| `smoke` | app loads past the first-run modal; every block of today's catalogue renders once (counted from `public/data`: 56 today), no R&D block while the toggle is off; the rail states a level and band words; a path is drawn; **no `%` anywhere on screen** (text, titles, aria labels; quoted research prose excepted); **nothing under 12px**; no console errors |
+| `smoke` | app loads past the first-run modal; every block of the catalogue renders once (counted from `public/data`: 56 today); the rail states a level and band words; a path is drawn; **no `%` anywhere on screen** (text, titles, aria labels; quoted research prose excepted); **nothing under 12px**; no console errors |
 | `views` | Stage matrix, Clusters, Approaches and Race each mount and lay out (tile/hex/lane/bar counts); nothing under 12px on the race |
-| `interact` | click advances a block, right-click steps it back; Shift-click opens the block drawer, Escape closes it; the Parameters drawer has strictness, propensity, future toggle, serving, government; the future toggle shows the five R&D blocks (61 tiles) |
-| `story` | Scenarios ▾ → Proactive Program plays with the transport and a caption in the rail; the end shows a takeaway; Proactive reaches SL3 by 2030; stopping restores the reader's year |
+| `interact` | click advances a block, right-click steps it back; Shift-click opens the block drawer, Escape closes it; the Parameters drawer has the scoring method, strictness, propensity, serving, government; switching the scoring method to control coverage and back flips the rail |
+| `story` | Scenarios ▾ → Proactive Program plays with the transport and a caption in the rail; the end shows a takeaway; Proactive reaches SL5 by 2030; stopping restores the reader's year |
 | `dark` | `prefers-color-scheme: dark` paints the dark paper |
 | `gate` | below 768px the gate replaces the app (no catalogue mounts), and tracks a live resize both ways |
 | `intro` | `/sl5/intro/` renders, `#the-oc-ladder` deep-links to its slide (title and position read from `src/intro/slides/index.ts`), readable at 390px |
@@ -121,7 +121,7 @@ const sliders = { ai_timeline: 0.5, gov_cooperation: 0.2, vendor_cooperation: 0.
   org_transformation: 0.3, risk_tolerance: 0.5, sl_bar: 0.2, ai_propensity: 0.5 };
 const s = scorePosture({ blocks, model, blockStates: baselineStates(blocks), year: 2026, sliders,
   adversaryOc: 4, modelServedExternally: true });
-console.log("SL", s.sl.level, s.tiers.map((t) => t.band)); // SL 1, [usually fails, contested, ...]
+console.log("SL", s.sl.level, s.tiers.map((t) => t.band)); // SL 2, [usually fails, usually fails, usually succeeds, ...]
 EOF
 node scripts/run-ts.mjs probe.ts && rm probe.ts
 ```
@@ -141,11 +141,16 @@ Desktop-only by design; the app gates below 768px. Ctrl-C to stop. The first-run
 remembers itself under `sl5v2_intro_seen`; saved state lives under `sl5v2-state` and
 `sl5v2-scenarios` (v1, frozen at `/sl5/v1/`, keeps the unprefixed keys).
 
+The headline level has a **scoring-mode** setting (`scoringMode`: `paths`, the default
+attack-path analysis, or `coverage`, v1's control coverage), set at the top of Parameters
+or with the rail's "Scored by" switch; it is saved, travels in share links, and stories
+pin `paths` while they play.
+
 ## Checks
 
 ```bash
 npm run lint      # eslint — clean
-npm test          # vitest — 29 files, 384 tests
+npm test          # vitest — 31 files, 419 tests
 npm run build     # tsc -b && vite build → dist/ (two pages)
 ```
 

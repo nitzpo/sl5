@@ -4,7 +4,7 @@
 
 **[Live →](https://nitzpo.github.io/sl5/)** (choose a version) · **[v2, current →](https://nitzpo.github.io/sl5/v2/)** · **[v1, original →](https://nitzpo.github.io/sl5/v1/)** · **[Start with the v2 introduction →](https://nitzpo.github.io/sl5/v2/intro/)**
 
-![SL5 Explorable v2: the catalogue of defenses as a stage-by-category matrix with the easiest attack path drawn through it in red, and the verdict rail on the right reading SL1, holds OC1](assets/screenshot.png)
+![SL5 Explorable v2: the catalogue of defenses as a stage-by-category matrix with the easiest attack path drawn through it in red, and the verdict rail on the right reading SL2, holds OC1–OC2](assets/screenshot.png)
 
 > ⚠️ **Disclaimer.** This is an educational, illustrative model — not authoritative security guidance. The blocks, attack-vector mappings, scenarios, costs, and probabilities are a *modeling interpretation* synthesized from public sources (see [Data & sources](#data--sources)), not official figures. Use it to build intuition, not to make procurement or accreditation decisions.
 
@@ -36,7 +36,8 @@ The tool is built around **two simultaneous races**:
 - **The catalogue** is the main screen, in two views. The **stage matrix** lays the blocks out by attack stage (get in, reach the weights, get them out, detect and respond) and category; **clusters** groups them by category around the model weights. The easiest attack path is drawn through both, with break marks where a deployed block holds and badges on choke points. Click a block to advance it (not started → investing → implementing → deployed → mature), right-click to step it back, Shift-click for its detail drawer.
 - **The verdict rail** gives the security level as a level plus a progress bar toward the next, flagged *marginal* when it only just holds; a ladder of attacker tiers OC1–OC5 and the lab's own model, each in words (*usually fails*, *contested*, *usually succeeds*); what still gets through; the engine-ranked next defense to fund; programme completeness; the budget; and meters outside the SL. There are no percentages in the UI; the exact estimative word is on hover.
 - **Approaches** shows one lane per broad way in (remote intrusion, insider, physical, supply chain, the served model, the lab's own model) along the attacker's easiest path, with your defenses at each stage. **Race** sets long-lead defenses against the moment AI lifts the attacker to the next tier, and plots your SL over the years beside the four scripted stories.
-- **Parameters** holds the advanced settings: how strict "stops" is (strict, standard, lenient), the adversary, model serving, AI propensity, and the world sliders.
+- **Scoring mode**: the rail's *Scored by* switch (also at the top of Parameters) chooses how the headline level is scored, by attack-path analysis (the default) or by v1's control coverage, and the rail always notes what the other method gives.
+- **Parameters** holds the advanced settings: the scoring mode, how strict "stops" is (strict, standard, lenient), the adversary, model serving, AI propensity, and the world sliders.
 - **Scenarios** plays one-minute stories (Proactive Program, Reactive CISO, Budget-Constrained, Do Nothing, or your own posture run forward in time) with captions in the rail, and saves and reloads postures you name. **Share** copies a link to your posture.
 
 ### The introduction

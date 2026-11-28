@@ -4,7 +4,7 @@ A chronological record of the decisions behind SL5 Explorable v2, made between 2
 
 - **User** means the repository owner. **Agent** means the orchestrating Claude session or one of the subagents it ran (reviewers, designers, implementers).
 - Quotes are the user's own words, verbatim, typos included.
-- **Status:** *Active* (holds in the shipped code), *Superseded* (replaced by a later decision), *Reversed* (undone), or *In progress* (being implemented as this folder was written).
+- **Status:** *Active* (holds in the shipped code), *Superseded* (replaced by a later decision), *Reversed* (undone), or *Done* (a one-off that is finished).
 - Where this log and the code disagree, the code and [`../scoring-model.md`](../scoring-model.md) win.
 
 The review pages linked below are claude.ai artifacts. They are **private to the repository owner**; everyone else should read the copies in this folder.
@@ -35,9 +35,9 @@ The review pages linked below are claude.ai artifacts. They are **private to the
 | [D20](#d20-ship-v1-and-v2-side-by-side) | 28 Nov | v1 frozen, v2 beside it, version picker | User | Active |
 | [D21](#d21-prs-go-up-ready-for-review) | 28 Nov | PRs ready for review, not draft | User | Active |
 | [D22](#d22-implementation-phases-and-code-review) | 27–28 Nov | Phased build, then an independent code review | Agent | Done |
-| [D23](#d23-sl5-must-be-reachable-with-the-catalogue) | 28 Nov | SL5 reachable with the full catalogue; research-required flags | User | In progress |
-| [D24](#d24-recalibrate-the-sobering-numbers) | 28 Nov | Recalibrate against evidence about today's labs | User asked | In progress |
-| [D25](#d25-a-setting-for-the-scoring-method) | 28 Nov | Setting: attack-path analysis or control coverage | User | In progress |
+| [D23](#d23-sl5-must-be-reachable-with-the-catalogue) | 28 Nov | SL5 reachable with the full catalogue; research-required flags | User | Active (`bbc2c18`); open questions |
+| [D24](#d24-recalibrate-the-sobering-numbers) | 28 Nov | Recalibrate against evidence about today's labs | User asked | Active (`bbc2c18`); open questions |
+| [D25](#d25-a-setting-for-the-scoring-method) | 28 Nov | Setting: attack-path analysis or control coverage | User | Active (`22af6de`) |
 | [D26](#d26-document-the-research-in-the-repo) | 28 Nov | Put the research in the repo | User | This folder |
 
 ---
@@ -308,6 +308,9 @@ Full record with images: [`visual-directions.md`](visual-directions.md).
 | 3 | `8e0037f` | The v2 interface: Swiss catalogue, verdict in words, defender-side intro |
 | Docs | `9eba10c` | README versions, model doc, research banners |
 | Review fixes | `f68d5d8` | Fixes for the independent code review's two medium findings |
+| Scoring mode | `22af6de` | The scoring-method setting (D25) |
+| Research docs | `504535e` | This folder (D26) |
+| Recalibration | `bbc2c18` | SL5 reachable with the catalogue, research-required flags, evidence-based baseline, defender AI (D23, D24) |
 
 The independent code review of `ffde5b6..8e0037f` found two medium bugs, both fixed with tests:
 1. a story played over a shared link could overwrite the reader's saved posture;
@@ -328,31 +331,85 @@ It found nothing serious in the engine: about 10,800 random property trials with
   - Retire the invented FUT-01…05 blocks and the future-capabilities toggle. Flag the existing research-heavy controls with `research_required` instead.
 - **Reverses:** D15.4.
 - **Why D15.4 was wrong:** it treated RAND's 2024 "Achieving SL5 is currently not possible" as a property of the catalogue. The constraint is that some controls cannot yet be built.
-- **Status:** in progress in a parallel agent. Check `app/public/data/` and `scoring-model.md` for what landed.
+- **What was done** (commit `bbc2c18`, with D24; details in [`scoring-model.md`](../scoring-model.md) Parts 3, 7 and 12):
+  - **FUT blocks retired.** `blocks-future.json` and the toggle are gone from the data, engine, store, view bar, Parameters and Race view. Old saves and share links drop the FUT ids and the toggle. The catalogue is 56 blocks.
+  - **Seven controls flagged `research_required`**, each with a one-line `research_note`: HW-04 chip-level tamper protection, HW-06 execution integrity verification, SRV-01 the hardened weight-access and serving interface, ACA-01 access-control verification, AI-02 decorrelated multi-model review, AI-10 AI-control protocols and SC-03 adversarial content screening. Where the data called the work research-grade, lead times were lengthened (for example SRV-01 18–36 → 36–60 months, AI-10 12–24 → 36–60), so a programme that starts them in 2026 lands them in 2029–2032. The drawer and the tile's label show the flag. Otherwise they are ordinary blocks.
+  - **Erosion is read relative to what a control was built for.** `erosion tier = max(1, tier − DESIGN_TIER_RELIEF × (first_required − 1))`, with `DESIGN_TIER_RELIEF` = 0.75. Before, every SL5-grade probabilistic control kept 40% of its effect against OC5 at every stage, so even the mature catalogue could not hold OC5. Without the relief it is SL4.80 in 2026.
+  - **The served approach got an exit stage.** Model extraction (V-ML-4) used to skip *reach* and *get out*, which left a floor no counter could pass. It now exits through a new structural vector, V-X-5 (weight-scale volume out through the API), metered by AI-07 (strong) and SRV-01 (partial).
+  - **31 vector-map links changed**, mostly strong counters on the controls the SL5 benchmark relies on, the research-required ones above all. They are listed with reasons in `scoring-model.md` Part 12.
+- **Result** (default world, model served):
+  - The mature catalogue is **SL5 in 2026, 2028 and 2030, but marginal**: OC5 succeeds 0.17–0.19 of the time against a bar of 0.20. In a favourable world it is clear (0.07–0.08).
+  - **Without the research-required controls it is not SL5:** SL4.84 in 2026, SL3.94 in 2030. Without SRV-01 alone there is no SL5.
+  - The Proactive story reaches SL5 in 2030 only because it starts the research controls in 2024.
+  - So research and lead time keep SL5 out of reach today, not the arithmetic.
+- **Status:** active. The open questions it raised are listed [under D24](#open-questions-from-the-recalibration).
 
 ### D24. Recalibrate the "sobering" numbers
 
 - **User:** "The sobering numbers don't sound to good. Are you sure about them?"
-- **Evidence:** in the v2 calibration as shipped (default world, model served):
+- **Evidence:** in the v2 calibration as first shipped (default world, model served):
   - the 2026 baseline was SL1 and marginal, falling below SL1 by 2028;
   - the Proactive story reached only SL3 in 2030;
   - the full catalogue never passed SL3 with the model served;
   - even with the FUT blocks, in a favourable world, it touched SL5 only in 2026.
-- **Diagnosis (agent):** the numbers were too pessimistic, for three reasons:
-  1. the baseline undercounts what labs already run: no block starts as "deployed", and `partially_deployed` maps to *implementing*;
-  2. AI helps only the attacker; there is no defender-side AI;
-  3. the calibration was set up so SL5 could not be reached.
+- **Diagnosis (agent):** the numbers were too pessimistic. Three causes were suspected, and probes on the binding paths tested them:
+  1. **The baseline undercounted what labs already run. Confirmed.** No block started as `deployed`, and `partially_deployed` maps to *implementing*, so identity, patching and the SOC counted at 0.4.
+  2. **AI helped only the attacker. Confirmed, but a small effect.** The baseline's collapse came mostly from under-credit meeting AI-lifted feasibility.
+  3. **The calibration blocked SL5. Confirmed** (the single-stage served approach, partial-only counters on every binding stage, erosion read without regard to what a control was built for; see D23).
+
+  **Refuted:** the residual floor (0.03 at OC5, never binding) and the structural placeholders as such. They bound only because their counters were weak, so the fix went into the counters, not into p.
 - **Chosen:** recalibrate against evidence-based targets (where labs stand against RAND's levels today), add a modest, capped defender-AI term, and fix data and structure rather than global constants.
-- **Status:** in progress. The targets and evidence will be in `scoring-model.md`.
+- **Targets**, from public evidence: RAND's 2024 report and its Aug 2026 SL3 report, Anthropic's ASL-3, GovAI on RSP v3, Google DeepMind's Frontier Safety Framework, IFP, the SL5 Task Force and Ladish. The sources and confidence levels are in [`scoring-model.md`](../scoring-model.md#calibration-targets-and-evidence).
+  - A typical frontier lab in 2026 is **SL2, contesting SL3**, mostly through an insider (moderate confidence).
+  - Held fixed, it **declines by about a level by 2030, not below SL1** (low–moderate).
+  - The **full catalogue, matured, is SL5** in 2026 and 2030, marginal allowed, with no invented blocks (moderate on direction; the margin is authored).
+  - **Without the research-required controls, not SL5** (moderate).
+  - Stories: Do Nothing declines; Budget-Constrained between; Reactive ≈ SL3; Proactive SL4, and SL5 by 2030 only if its research started in 2024.
+- **What was done** (commit `bbc2c18`):
+  1. **Evidence-based baselines.** Six controls start `deployed`, each citing its evidence: IAM-01, END-01, CFG-01, DET-01, SW-01 and AI-08. NET-04 is partial from 2025 (ASL-3's software egress limits).
+  2. **Defender AI.** Eleven detection, monitoring, review and patching blocks carry `defender_ai`. On the vectors they counter they win back half of the attacker's AI uplift (`DEFENDER_AI_SHARE` 0.5, read at the erosion tier only), and half of AI's erosion of detection. It never exceeds the uplift it offsets, so a later year is never safer. The effect is modest: the baseline held to 2030 is SL1.55 without it and 1.61 with it.
+  3. **Design-tier relief, the served exit stage, the 31 map changes and the research-required flags** (D23).
+  4. **Stories rescheduled.** Proactive starts the research controls in 2024 ($4.0B). Reactive buys AI-07 and AI-08 after the Feb 2026 distillation disclosure ($1.95B). Captions, intro copy and the intro's budget game were updated (the game now starts in 2028).
+  5. **The targets are tests** (`tests/engine/calibration.test.ts`, `scripts.test.ts`), and `npm run calibrate` regenerates the tables in `scoring-model.md` Part 11.
+- **Before → after** (SL value, model served, default world; m = marginal; "before" for the full catalogue is with the future toggle off):
+
+  | Posture | 2026 | 2028 | 2030 |
+  |---|---|---|---|
+  | 2026 baseline | 1.51 m → **2.31 m** | 0.84 → **1.72** | 0.75 → **1.60** |
+  | Do Nothing | 1.51 m → **2.33 m** | 0.85 → **1.73** | 0.76 → **1.62** |
+  | Budget-Constrained | 1.71 → **2.41 m** | 1.65 → **1.90** | 1.56 → **1.83** |
+  | Reactive CISO | 1.60 → **2.32 m** | 1.50 → **1.81** | 1.92 → **2.97** |
+  | Proactive Program | 2.51 m → **2.83** | 2.86 → **4.73 m** | 3.60 m → **5.00 m** |
+  | Full catalogue | 3.77 m → **5.00 m** | 3.65 m → **5.00 m** | 2.96 → **5.00 m** |
+  | Full catalogue, research controls not built | — | — | **3.94** |
+
+- **Status:** active, with the open questions below.
+
+#### Open questions from the recalibration
+
+These came out of D23 and D24, and are waiting for the user:
+
+1. **SL5 is only marginal in the default world.** The mature catalogue holds OC5 at 0.17–0.19 against the 0.20 bar. A strict bar loses it, and a government partnership makes it clear. `DESIGN_TIER_RELIEF` = 0.75 is the reading that holds OC5 through 2030 (at 0.5 it is lost from 2028). At 1.0 an SL5-grade control would not erode against OC5 at all, and OC5 would be 0.15–0.16, which gives more margin. Keep 0.75, or move to 1.0?
+2. **The 31 vector-map changes are pending the user's review.** The original map went to the user before any engine code (D14, D15). These changes were made by the agent during the recalibration. Each carries a `why` and a `note` in the data, and they are listed in `scoring-model.md` Part 12.
+3. **The intro's budget game moved from 2026 to 2028.** Today's baseline is now SL2, and no $150M year buys SL3 from there. So the game starts in 2028, after the lab has slipped to SL1, and asks whether you can get back to SL2. The alternative is to keep 2026 with a different goal or budget.
+4. **Reactive ends at 2.97**, just short of the "≈ SL3" target: OC3 succeeds 0.21 of the time in 2030 against the 0.20 bar. The README calls it "about SL3". Accept that, or tune the story over the line?
+5. **With the model not served and full cooperation, SL5 holds even without the research controls** (OC5 0.11–0.12 in the favourable world). In the default world with the model not served, it holds in 2026 (OC5 0.19) and is lost from 2028. This is consistent with RAND: its call for R&D is about serving production models at SL5, and its other SL5 condition is help from the national security community. But it means "SL5 needs research" holds only for a served model, or without government help. Accept, or make the research controls load-bearing in every world?
 
 ### D25. A setting for the scoring method
 
 - **User:** "Can we add the setting to select the scoring logic between the old % of controls Vs the attack path analysis?"
 - **Chosen:**
-  - A `scoringMode` setting: *attack-path analysis* (default) or *control coverage*, the v1 formula.
+  - A `scoringMode` setting: *attack-path analysis* (`paths`, the default) or *control coverage* (`coverage`, the v1 formula).
   - It is persisted and travels in share links.
   - The rail shows a one-line "Other method: SLx" note, so users see where the two disagree. That disagreement is the teaching point.
-- **Status:** in progress.
+- **What was done** (commit `22af6de`):
+  - `scoringMode` is saved with the posture and carried in share links. Old links, which don't have it, load as `paths`.
+  - It is set in two places: "How to score your security level" at the top of Parameters, and a "Scored by: Attack paths | Coverage" switch at the head of the rail.
+  - **Coverage mode** reads the engine's own programme completeness (0.3 × the weakest category + 0.7 × the mean, v1's method) as a level plus a progress bar. Under it, each category shows its coverage share and "x of y in place", with the weakest flagged. The tier ladder is hidden, and the next defense is ranked by coverage gained per $M. The share is printed as "NN% coverage". This is the one percentage in the UI: it is a share of controls built, not a probability, so the no-percentages rule exempts it (`data-coverage-share`).
+  - **Both modes** show "Other method: SLx by … · higher / lower", and the hover explains why the two differ. At today's 2026 baseline, attack paths give SL2 (marginal) and control coverage gives SL1.
+  - **Stories pin `paths`.** Their captions state threat-relative outcomes, so the switch is locked while a story plays and the reader's choice comes back when it stops.
+  - Tests: `tests/store/scoring-mode.test.ts`, `tests/ui/scoring-mode.test.tsx`.
+- **Status:** active.
 
 ### D26. Document the research in the repo
 

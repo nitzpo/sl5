@@ -1,0 +1,1742 @@
+{
+  "ACA-01": [
+    {
+      "vector_id": "V-ACS-1",
+      "strength": "strong",
+      "why": "Formally verified cryptographic and authentication protocols (RAND SL5)",
+      "proposal": "P-NEW-ACA"
+    },
+    {
+      "vector_id": "V-ACS-3",
+      "strength": "strong",
+      "why": "Verified, minimal access-control code leaves few implementation bugs",
+      "proposal": "P-NEW-ACA"
+    },
+    {
+      "vector_id": "V-ACS-2",
+      "strength": "partial",
+      "why": "Independent verification can expose planted weaknesses in implementations",
+      "proposal": "P-NEW-ACA"
+    }
+  ],
+  "AI-01": [
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "strong",
+      "why": "Least privilege and per-action logging for AI processes bound credential and tool misuse"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Restricts AI copy/move rights on weights; monitoring may flag staging"
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "Monitored, least-privileged agents have fewer escape primitives"
+    },
+    {
+      "vector_id": "V-SELF-5",
+      "strength": "partial",
+      "why": "Logging AI-initiated changes helps trace sabotage after the fact"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "AI-initiated job launches are logged and attributable"
+    },
+    {
+      "vector_id": "V-SELF-7",
+      "strength": "partial",
+      "why": "AI requests to staff are logged like an insider's"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "A least-privileged agent limits what an injected prompt can do"
+    }
+  ],
+  "AI-02": [
+    {
+      "vector_id": "V-SELF-5",
+      "strength": "strong",
+      "why": "Independently trained reviewers catch flaws a same-family monitor would collude on",
+      "note": "Probabilistic: erodes hard at AC4-5."
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "A different model family may flag outputs carrying encoded payloads"
+    },
+    {
+      "vector_id": "V-SELF-4",
+      "strength": "partial",
+      "why": "Decorrelated reviewers sometimes detect steganographic patterns"
+    },
+    {
+      "vector_id": "V-SELF-7",
+      "strength": "partial",
+      "why": "Second model reviews AI-originated requests to change controls"
+    },
+    {
+      "vector_id": "V-SELF-8",
+      "strength": "partial",
+      "why": "Reviewers may notice research outputs that carry distillation data"
+    }
+  ],
+  "AI-03": [
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "Red-teaming finds injection paths; detection flags active probing"
+    },
+    {
+      "vector_id": "V-ML-4",
+      "strength": "partial",
+      "why": "Flags systematic probing typical of parameter extraction"
+    },
+    {
+      "vector_id": "V-ML-5",
+      "strength": "partial",
+      "why": "Flags query distributions typical of distillation campaigns"
+    }
+  ],
+  "AI-04": [
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "strong",
+      "why": "Compute budgets and quota accounting expose and cap unsanctioned jobs",
+      "note": "Quota accounting is software; the July 2026 agent worked around throttling.",
+      "type_override": "hybrid"
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "Scoped network, file-system and API permissions narrow tool abuse",
+      "type_override": "hybrid",
+      "note": "Quotas are software set by humans; misuse inside the quota passes, so not a hard stop here."
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "Network-scope limits shrink reachable escape surface",
+      "type_override": "hybrid",
+      "note": "Enforced by the same software stack the agent may exploit."
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "API-call and egress quotas bound exfiltration volume"
+    },
+    {
+      "vector_id": "V-SELF-8",
+      "strength": "partial",
+      "why": "Generation and egress quotas bound distillation volume"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "Scoped network and API limits bound an injected agent"
+    }
+  ],
+  "AI-05": [
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Fake exfiltration opportunities can catch a scheming model early"
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "Exercising containment finds escape paths before a model does"
+    }
+  ],
+  "AI-06": [
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Halts rogue workloads once detected",
+      "type_override": "probabilistic",
+      "note": "A kill-switch is a response: its value depends entirely on a detection trigger (AI-10, AI-01)."
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "Halts an escaping agent mid-attempt if noticed",
+      "type_override": "probabilistic",
+      "note": "Same: no trigger, no effect."
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Stops an exfiltration in progress, before completion",
+      "type_override": "probabilistic",
+      "note": "Same: no trigger, no effect."
+    }
+  ],
+  "AI-07": [
+    {
+      "vector_id": "V-ML-5",
+      "strength": "partial",
+      "why": "Rate limits and detection slow distillation; account-farm campaigns persist"
+    },
+    {
+      "vector_id": "V-ML-4",
+      "strength": "strong",
+      "why": "Removing logit access and limiting queries blocks known parameter-extraction attacks"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Outbound inspection of served outputs catches some encoded payloads"
+    },
+    {
+      "vector_id": "V-SELF-8",
+      "strength": "partial",
+      "why": "Outbound inspection catches some encoded payloads in served outputs"
+    }
+  ],
+  "AI-08": [
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "Injection filters are bypassable classifiers; prompt injection is unsolved"
+    },
+    {
+      "vector_id": "V-ML-1",
+      "strength": "partial",
+      "why": "Filters inputs crafted to trigger serving-stack or output-handling bugs"
+    }
+  ],
+  "AI-09": [
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "strong",
+      "why": "Separate network, no shared egress, diode-fed mirrors: escape reaches nothing (July 2026 fix)"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Unsigned or AI-written code runs only where no weights live"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "No egress path from where AI-generated code executes"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "strong",
+      "why": "Code an injected agent writes runs where no weights live"
+    },
+    {
+      "vector_id": "V-ML-1",
+      "strength": "partial",
+      "why": "ML-stack exploits fired from untrusted code land in a weightless environment"
+    },
+    {
+      "vector_id": "V-SUP-2",
+      "strength": "partial",
+      "why": "Diode-fed package mirrors remove live dependency pulls"
+    },
+    {
+      "vector_id": "V-SELF-8",
+      "strength": "partial",
+      "why": "No egress from where AI-generated code runs"
+    }
+  ],
+  "AI-10": [
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "strong",
+      "why": "Trusted monitor gates each tool call; suspicious actions are blocked or deferred",
+      "note": "Probabilistic: erodes hard at AC4-5."
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Gating catches staging and transfer actions before they complete"
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "Escape attempts look anomalous to a trusted monitor"
+    },
+    {
+      "vector_id": "V-SELF-4",
+      "strength": "partial",
+      "why": "Resampling and paraphrase disrupt steganographic encoding"
+    },
+    {
+      "vector_id": "V-SELF-5",
+      "strength": "partial",
+      "why": "Trusted monitor reviews code for inserted flaws, though weaker than the author"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Job launches pass through gated actions"
+    },
+    {
+      "vector_id": "V-SELF-7",
+      "strength": "partial",
+      "why": "Defer-to-trusted on persuasive or control-changing requests"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "Gates actions of an agent that ingested injected prompts"
+    },
+    {
+      "vector_id": "V-SELF-8",
+      "strength": "partial",
+      "why": "Gating catches bulk generation and transfer of training data"
+    }
+  ],
+  "AI-11": [
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "strong",
+      "why": "The model never holds or reaches its own weight files",
+      "note": "Weights only: self-distillation (V-SELF-8) needs no weight access."
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "Its credentials exclude its own weights by construction"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Cannot spawn copies of itself without its weights"
+    }
+  ],
+  "AI-12": [
+    {
+      "vector_id": "V-SELF-5",
+      "strength": "partial",
+      "why": "Lineage proves provenance, not soundness: flawed code re-executes identically"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Signed lineage detects swapped datasets, annotations or checkpoints"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Runs without signed lineage stand out"
+    },
+    {
+      "vector_id": "V-BYP-2",
+      "strength": "partial",
+      "why": "Lineage records every checkpoint, exposing untracked copies"
+    }
+  ],
+  "CFG-01": [
+    {
+      "vector_id": "V-BYP-1",
+      "strength": "strong",
+      "why": "Policy-as-code and gold-image drift checks catch misconfiguration (RAND SL3)",
+      "proposal": "P-NEW-CFG"
+    },
+    {
+      "vector_id": "V-BYP-2",
+      "strength": "partial",
+      "why": "Drift scans find unexpected stores holding weights",
+      "proposal": "P-NEW-CFG"
+    },
+    {
+      "vector_id": "V-BYP-3",
+      "strength": "partial",
+      "why": "Configuration audits find legacy and fallback access paths",
+      "proposal": "P-NEW-CFG"
+    },
+    {
+      "vector_id": "V-CODE-1",
+      "strength": "partial",
+      "why": "Gold images keep systems at a known patched baseline",
+      "proposal": "P-NEW-CFG"
+    }
+  ],
+  "CUS-01": [
+    {
+      "vector_id": "V-BYP-2",
+      "strength": "strong",
+      "why": "Inventory, centralisation, encrypted backups and media destruction remove stray copies"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Media and RMA destruction close the waste-disposal route"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "No weight-bearing drives go back to vendors"
+    },
+    {
+      "vector_id": "V-BYP-1",
+      "strength": "partial",
+      "why": "Inventory sweeps find copies in misconfigured stores"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Copy inventory flags new weight copies an agent creates"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Fewer, inventoried copies within an insider's reach"
+    },
+    {
+      "vector_id": "V-X-2",
+      "strength": "partial",
+      "why": "Destroyed media and no stray drives to read"
+    }
+  ],
+  "DEC-01": [
+    {
+      "vector_id": "V-CRED-3",
+      "strength": "partial",
+      "why": "Honeytokens reveal stolen credentials when used"
+    },
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Lateral movement trips honeytokens"
+    },
+    {
+      "vector_id": "V-BYP-2",
+      "strength": "partial",
+      "why": "Per-copy fingerprints attribute any leaked copy"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Canary weights expose exfiltration attempts"
+    },
+    {
+      "vector_id": "V-HUM-1",
+      "strength": "partial",
+      "why": "Attribution raises the insider's expected cost",
+      "note": "Weak: deterrence through attribution."
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Per-copy fingerprints attribute a leaked copy"
+    },
+    {
+      "vector_id": "V-X-3",
+      "strength": "partial",
+      "why": "Canary weights flag a transfer in progress"
+    }
+  ],
+  "DET-01": [
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "partial",
+      "why": "Threat hunting and telemetry catch exploitation mid-chain"
+    },
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "partial",
+      "why": "Write-once logs survive; RAND warns many zero-days defeat monitoring"
+    },
+    {
+      "vector_id": "V-CRED-3",
+      "strength": "partial",
+      "why": "Anomalous use of valid credentials is investigated"
+    },
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Lateral movement in enclave telemetry is hunted"
+    },
+    {
+      "vector_id": "V-NET-1",
+      "strength": "partial",
+      "why": "Exfiltration testing finds unintended cross-gap communication"
+    },
+    {
+      "vector_id": "V-BYP-1",
+      "strength": "partial",
+      "why": "Compromise assessment against gold images finds drift"
+    },
+    {
+      "vector_id": "V-HUM-3",
+      "strength": "partial",
+      "why": "Counter-intelligence liaison can flag known officers"
+    },
+    {
+      "vector_id": "V-HUM-4",
+      "strength": "partial",
+      "why": "Counter-intelligence liaison can flag hostile investors or partners",
+      "note": "Weak: counter-intelligence liaison is not a SOC function."
+    },
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "SolarWinds was found by a victim's SOC"
+    },
+    {
+      "vector_id": "V-X-3",
+      "strength": "partial",
+      "why": "Egress telemetry flags bulk transfers"
+    }
+  ],
+  "END-01": [
+    {
+      "vector_id": "V-CODE-1",
+      "strength": "strong",
+      "why": "Fast patching and asset inventory remove the known-vulnerability target",
+      "proposal": "P-NEW-END"
+    },
+    {
+      "vector_id": "V-CODE-2",
+      "strength": "strong",
+      "why": "Patch SLAs, virtual patching and hardening shrink the disclosure window",
+      "proposal": "P-NEW-END"
+    },
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "partial",
+      "why": "EDR and hardening raise exploitation cost",
+      "proposal": "P-NEW-END"
+    },
+    {
+      "vector_id": "V-ML-1",
+      "strength": "partial",
+      "why": "ML-stack CVEs patched on the same cadence",
+      "proposal": "P-NEW-END"
+    },
+    {
+      "vector_id": "V-PHYS-3",
+      "strength": "partial",
+      "why": "Managed, encrypted, EDR-equipped endpoints resist off-site tampering",
+      "proposal": "P-NEW-END"
+    }
+  ],
+  "GOV-01": [
+    {
+      "vector_id": "V-HUM-4",
+      "strength": "strong",
+      "why": "Vets investors, partners and positions of influence (RAND SL4)",
+      "proposal": "P-NEW-GOV"
+    },
+    {
+      "vector_id": "V-HUM-5",
+      "strength": "partial",
+      "why": "Board-level security authority resists covert executive-approved access",
+      "proposal": "P-NEW-GOV"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Partners and vendors with access are vetted too",
+      "proposal": "P-NEW-GOV"
+    }
+  ],
+  "HW-01": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Attests genuine accelerators and firmware; an enabler more than a counter"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Detects modified accelerator firmware at attestation"
+    }
+  ],
+  "HW-02": [
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Host root no longer reads accelerator memory holding weights"
+    },
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "partial",
+      "why": "A host zero-day stops short of weights in device memory"
+    },
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "partial",
+      "why": "Same, though a pool of zero-days likely includes device bugs"
+    },
+    {
+      "vector_id": "V-ML-1",
+      "strength": "partial",
+      "why": "Closes GPU memory-leak bug classes such as LeftoverLocals"
+    }
+  ],
+  "HW-03": [
+    {
+      "vector_id": "V-NET-3",
+      "strength": "partial",
+      "why": "Fabric taps capture ciphertext; covers accelerator links only"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "An in-rack interposer yields nothing readable",
+      "note": "Weak: accelerator fabric only; DIMM interposers and pulled drives untouched."
+    },
+    {
+      "vector_id": "V-X-2",
+      "strength": "partial",
+      "why": "Fabric traffic is ciphertext"
+    }
+  ],
+  "HW-04": [
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Probing chips during physical access triggers detection or zeroisation"
+    },
+    {
+      "vector_id": "V-PHYS-6",
+      "strength": "partial",
+      "why": "Seized accelerators zeroise rather than yield weights"
+    },
+    {
+      "vector_id": "V-PHYS-7",
+      "strength": "partial",
+      "why": "Zeroisation denies weights from seized hardware"
+    },
+    {
+      "vector_id": "V-X-2",
+      "strength": "partial",
+      "why": "Probing chips triggers detection or zeroisation"
+    }
+  ],
+  "HW-05": [
+    {
+      "vector_id": "V-NET-2",
+      "strength": "strong",
+      "why": "NSA 94-106 shielding attenuates emanations by ~100 dB",
+      "note": "EM only: no effect on cache or timing channels."
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Enclosure seals record tampering for inspection to find",
+      "type_override": "probabilistic",
+      "note": "Tamper-evident is detection, not prevention: a hard stop only for EM shielding."
+    },
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "partial",
+      "why": "A device planted inside a sealed rack leaves evidence",
+      "type_override": "probabilistic"
+    },
+    {
+      "vector_id": "V-SELF-4",
+      "strength": "partial",
+      "why": "Shielding blocks deliberately modulated EM channels"
+    },
+    {
+      "vector_id": "V-NET-1",
+      "strength": "partial",
+      "why": "Shielded racks contain RF covert channels from implanted hardware"
+    },
+    {
+      "vector_id": "V-X-2",
+      "strength": "partial",
+      "why": "Tamper evidence shows an opened rack",
+      "type_override": "probabilistic"
+    }
+  ],
+  "HW-06": [
+    {
+      "vector_id": "V-CODE-1",
+      "strength": "partial",
+      "why": "Unsigned payloads cannot run on accelerators",
+      "type_override": "hybrid",
+      "note": "Signing stops payload loading, not exploitation of signed code (ROP, living off the land)."
+    },
+    {
+      "vector_id": "V-CODE-2",
+      "strength": "partial",
+      "why": "Unsigned payloads cannot run on accelerators",
+      "type_override": "hybrid"
+    },
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "partial",
+      "why": "Zero-day must work inside signed code paths",
+      "type_override": "hybrid"
+    },
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "partial",
+      "why": "Raises cost; many zero-days include signed-code bugs",
+      "type_override": "hybrid"
+    },
+    {
+      "vector_id": "V-ML-1",
+      "strength": "partial",
+      "why": "Malicious kernels fail signature checks"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Tampered binaries fail signature unless compromised before signing"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Only signed workloads run; signed code with rogue configs still runs"
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "Composition checks stop agents chaining permitted kernels into a dump",
+      "proposal": "P-MERGE-HW10"
+    }
+  ],
+  "HW-07": [
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Host root and DMA cannot read protected accelerator memory"
+    },
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "partial",
+      "why": "A host-software compromise no longer yields weights in use"
+    },
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "partial",
+      "why": "Same, but TEE implementations themselves have recurring vulnerabilities",
+      "type_override": "probabilistic",
+      "note": "Against a large zero-day pool, TEE bugs are in scope; erodes like a probabilistic control."
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Cloud operator staff cannot read weights in use",
+      "note": "Weak: provider staff have physical access (TEE.fail); hypervisor-level only."
+    }
+  ],
+  "HW-09": [
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "partial",
+      "why": "Firmware or boot implants are detected at the next measured boot"
+    },
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "partial",
+      "why": "Removes cheap persistence below the OS"
+    },
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Modified firmware in delivered equipment fails measurement"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Tampered drivers or firmware fail boot measurement"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Firmware implanted during physical access fails measurement"
+    }
+  ],
+  "HW-10": [
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "partial",
+      "why": "Authorised kernels cannot be sequenced into a weight dump"
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "An agent cannot compose permitted operations to read weights"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Limits what unsanctioned but signed workloads can compute"
+    }
+  ],
+  "IAM-01": [
+    {
+      "vector_id": "V-CRED-1",
+      "strength": "strong",
+      "why": "FIDO2 plus proofed help-desk recovery defeats credential phishing; pretexting for code remains",
+      "note": "Strong only because IAM-01's scope now includes help-desk and recovery identity proofing (proposals.json rescope)."
+    },
+    {
+      "vector_id": "V-CRED-2",
+      "strength": "strong",
+      "why": "No crackable passwords; hardware-bound keys"
+    },
+    {
+      "vector_id": "V-CRED-3",
+      "strength": "strong",
+      "why": "Device-bound, short-lived, vaulted credentials are useless when leaked",
+      "note": "Needs secrets vaulting and workload identity for service credentials (in scope)."
+    },
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "strong",
+      "why": "Zero standing privilege: nothing to escalate into without a fresh grant"
+    },
+    {
+      "vector_id": "V-BYP-3",
+      "strength": "strong",
+      "why": "FIDO2-only recovery and proofed break-glass close the fallback paths"
+    },
+    {
+      "vector_id": "V-ACS-4",
+      "strength": "partial",
+      "why": "Vaulted secrets narrow where signing material lives"
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "Agents get just-in-time, scoped, short-lived credentials"
+    },
+    {
+      "vector_id": "V-PHYS-3",
+      "strength": "partial",
+      "why": "A stolen laptop without its bound key grants nothing"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Zero standing privilege: no standing access to use"
+    }
+  ],
+  "KEY-01": [
+    {
+      "vector_id": "V-BYP-2",
+      "strength": "strong",
+      "why": "Every copy is ciphertext unless an attested enclave obtains the key"
+    },
+    {
+      "vector_id": "V-ACS-4",
+      "strength": "partial",
+      "why": "Protects the lab's own keys, not third-party roots (Comodo, DigiNotar)"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Stolen drives or servers yield ciphertext"
+    },
+    {
+      "vector_id": "V-PHYS-6",
+      "strength": "partial",
+      "why": "Seized storage yields ciphertext"
+    },
+    {
+      "vector_id": "V-PHYS-7",
+      "strength": "partial",
+      "why": "Seized storage yields ciphertext if keys are destroyed",
+      "note": "Weak: depends on keys being destroyed before seizure."
+    },
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Storage-admin rights alone yield ciphertext"
+    },
+    {
+      "vector_id": "V-BYP-3",
+      "strength": "partial",
+      "why": "Irrecoverable-key policy removes escrow and recovery backdoors"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Storage vendors and cloud staff see only ciphertext"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "Raw weight files are ciphertext outside attested runtimes"
+    },
+    {
+      "vector_id": "V-ACS-1",
+      "strength": "partial",
+      "why": "Attestation adds a check independent of the software ACS"
+    },
+    {
+      "vector_id": "V-ACS-3",
+      "strength": "partial",
+      "why": "Hardware-gated key release survives some ACS software bugs"
+    },
+    {
+      "vector_id": "V-HUM-5",
+      "strength": "partial",
+      "why": "Split custody resists a single executive's order"
+    },
+    {
+      "vector_id": "V-BYP-1",
+      "strength": "partial",
+      "why": "A misconfigured store exposes only ciphertext"
+    },
+    {
+      "vector_id": "V-CRED-3",
+      "strength": "partial",
+      "why": "Leaked storage credentials yield ciphertext"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Plaintext weights exist only inside attested runtimes"
+    },
+    {
+      "vector_id": "V-X-2",
+      "strength": "strong",
+      "why": "Disks and backups hold ciphertext; keys stay in HSMs"
+    }
+  ],
+  "NET-01": [
+    {
+      "vector_id": "V-CODE-1",
+      "strength": "strong",
+      "why": "Removes network reach; remote n-day exploitation cannot start"
+    },
+    {
+      "vector_id": "V-CODE-2",
+      "strength": "strong",
+      "why": "Removes network reach for exploits of unpatched software"
+    },
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "strong",
+      "why": "Zero-days need delivery; residual route is V-NET-1"
+    },
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "strong",
+      "why": "Even many zero-days need a path in; residual is V-NET-1"
+    },
+    {
+      "vector_id": "V-PHYS-3",
+      "strength": "strong",
+      "why": "Off-site laptops and phones are not on the isolated network"
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "No internet to escape to; the escape that matters is into the lab"
+    },
+    {
+      "vector_id": "V-CRED-1",
+      "strength": "partial",
+      "why": "Phished credentials are useless without a network path"
+    },
+    {
+      "vector_id": "V-CRED-2",
+      "strength": "partial",
+      "why": "No remote login surface to brute-force"
+    },
+    {
+      "vector_id": "V-CRED-3",
+      "strength": "partial",
+      "why": "Leaked credentials cannot be used remotely"
+    },
+    {
+      "vector_id": "V-BYP-3",
+      "strength": "partial",
+      "why": "Removes remote VPN and legacy remote-access paths"
+    },
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "SaaS and IT-vendor compromises cannot reach the isolated network"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Remote vendor access to the isolated network is impossible"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "External prompts cannot reach internal code-executing agents directly"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "No direct external path, but permitted output channels still cross",
+      "type_override": "hybrid",
+      "note": "A hard stop for network paths only; permitted transfers cross the gap by design."
+    },
+    {
+      "vector_id": "V-SELF-8",
+      "strength": "partial",
+      "why": "No direct external path, but permitted outputs cross by design",
+      "type_override": "hybrid"
+    },
+    {
+      "vector_id": "V-X-3",
+      "strength": "strong",
+      "why": "No external network path for bulk transfer"
+    }
+  ],
+  "NET-02": [
+    {
+      "vector_id": "V-CODE-1",
+      "strength": "partial",
+      "why": "Allow-listed software still carries n-days; patching is primary"
+    },
+    {
+      "vector_id": "V-CODE-2",
+      "strength": "partial",
+      "why": "Allow-listed software still carries reported bugs; patching is primary"
+    },
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "strong",
+      "why": "Lateral movement must breach a second, stricter perimeter"
+    },
+    {
+      "vector_id": "V-CODE-3",
+      "strength": "partial",
+      "why": "Smaller surface, but allow-listed software still has zero-days"
+    },
+    {
+      "vector_id": "V-CODE-4",
+      "strength": "partial",
+      "why": "Second perimeter; a large zero-day pool crosses it"
+    },
+    {
+      "vector_id": "V-ML-1",
+      "strength": "partial",
+      "why": "Only a reviewed, minimal ML stack runs beside the weights"
+    },
+    {
+      "vector_id": "V-BYP-2",
+      "strength": "partial",
+      "why": "Weight copies belong inside the enclave boundary"
+    },
+    {
+      "vector_id": "V-PHYS-3",
+      "strength": "partial",
+      "why": "Weight access only from one facility"
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "No interactive coding where weights live"
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "An escape into the wider network still faces the enclave"
+    },
+    {
+      "vector_id": "V-SELF-6",
+      "strength": "partial",
+      "why": "Unsanctioned code cannot run on weight-holding systems"
+    },
+    {
+      "vector_id": "V-NET-2",
+      "strength": "partial",
+      "why": "Dedicated weight hardware removes co-tenant cache and timing channels"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Few staff can reach the enclave at all"
+    },
+    {
+      "vector_id": "V-X-3",
+      "strength": "partial",
+      "why": "Enclave boundary is a second egress checkpoint"
+    }
+  ],
+  "NET-03": [
+    {
+      "vector_id": "V-NET-3",
+      "strength": "strong",
+      "why": "Two heterogeneous encryptors protect tapped inter-facility links",
+      "note": "Shares its failure mode with NET-07."
+    },
+    {
+      "vector_id": "V-ACS-1",
+      "strength": "partial",
+      "why": "One vendor's crypto flaw does not expose the link"
+    },
+    {
+      "vector_id": "V-ACS-2",
+      "strength": "partial",
+      "why": "A backdoored encryptor is covered by the second vendor"
+    },
+    {
+      "vector_id": "V-ACS-4",
+      "strength": "partial",
+      "why": "A second vendor's keys still protect the link if one is stolen"
+    }
+  ],
+  "NET-04": [
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "strong",
+      "why": "Hardware cap makes moving terabytes of weights take impractically long",
+      "note": "Weights only: keys, gradients and self-distilled data (V-SELF-8) fit under the cap."
+    },
+    {
+      "vector_id": "V-X-3",
+      "strength": "strong",
+      "why": "Hardware cap makes moving terabytes take impractically long"
+    }
+  ],
+  "NET-05": [
+    {
+      "vector_id": "V-NET-1",
+      "strength": "partial",
+      "why": "One-way transfers replace hand-carried media; inbound malware and induced links remain"
+    },
+    {
+      "vector_id": "V-SELF-1",
+      "strength": "partial",
+      "why": "AI-monitored cross-domain transfers screen outbound artefacts"
+    },
+    {
+      "vector_id": "V-SELF-3",
+      "strength": "partial",
+      "why": "Escaped code cannot send data back across a diode"
+    },
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "partial",
+      "why": "Removes the operational need to plug in media"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "Cross-domain AI monitor screens inbound content"
+    },
+    {
+      "vector_id": "V-SELF-8",
+      "strength": "partial",
+      "why": "AI-monitored cross-domain transfers screen outbound artefacts"
+    },
+    {
+      "vector_id": "V-X-3",
+      "strength": "partial",
+      "why": "One-way flows; outbound passes only through monitored cross-domain transfer"
+    }
+  ],
+  "NET-06": [
+    {
+      "vector_id": "V-NET-3",
+      "strength": "strong",
+      "why": "Alarmed, hardened conduit makes cable taps detectable"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Covers cable runs only, not the systems themselves"
+    }
+  ],
+  "NET-07": [
+    {
+      "vector_id": "V-NET-3",
+      "strength": "strong",
+      "why": "FIPS 140-3 encryption makes tapped inter-facility traffic ciphertext"
+    },
+    {
+      "vector_id": "V-ACS-1",
+      "strength": "partial",
+      "why": "Validated cryptography reduces implementation flaws"
+    }
+  ],
+  "PER-01": [
+    {
+      "vector_id": "V-HUM-1",
+      "strength": "partial",
+      "why": "Directs scrutiny to the roles worth recruiting; an enabler"
+    },
+    {
+      "vector_id": "V-HUM-3",
+      "strength": "partial",
+      "why": "Deepest vetting lands on the most sensitive positions"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "SenL tiers restrict who holds weight access"
+    }
+  ],
+  "PER-02": [
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "strong",
+      "why": "A second person present stops solo implants during maintenance"
+    },
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "partial",
+      "why": "Device placement must happen in front of a second person"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Vendor technicians are paired with staff"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Physical weight operations need a second person present"
+    },
+    {
+      "vector_id": "V-X-4",
+      "strength": "partial",
+      "why": "A second person present makes carrying media out harder"
+    }
+  ],
+  "PER-03": [
+    {
+      "vector_id": "V-HUM-1",
+      "strength": "partial",
+      "why": "Detection only; the structural counter is PER-06 at the reach stage"
+    },
+    {
+      "vector_id": "V-HUM-2",
+      "strength": "partial",
+      "why": "Behavioural change under coercion can surface"
+    },
+    {
+      "vector_id": "V-HUM-3",
+      "strength": "partial",
+      "why": "Placed agents' collection behaviour can surface over time"
+    },
+    {
+      "vector_id": "V-CRED-3",
+      "strength": "partial",
+      "why": "Anomalous use of a legitimate account is flagged"
+    },
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Privilege escalation patterns are flagged"
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "Same monitoring applied to AI agents' account activity"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Access-pattern monitoring flags unusual weight access"
+    },
+    {
+      "vector_id": "V-X-4",
+      "strength": "partial",
+      "why": "Departure-window monitoring catches pre-resignation copying",
+      "proposal": "P-MERGE-PER05"
+    }
+  ],
+  "PER-04": [
+    {
+      "vector_id": "V-HUM-3",
+      "strength": "strong",
+      "why": "SF-86-grade vetting with interviews is the primary filter for placed candidates"
+    },
+    {
+      "vector_id": "V-HUM-1",
+      "strength": "partial",
+      "why": "Surfaces financial or ideological vulnerabilities to recruitment"
+    },
+    {
+      "vector_id": "V-HUM-2",
+      "strength": "partial",
+      "why": "Surfaces foreign family and debt that enable coercion"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Vetting extends to contractors with access"
+    }
+  ],
+  "PER-05": [
+    {
+      "vector_id": "V-HUM-1",
+      "strength": "partial",
+      "why": "Deters recruiting leavers; weights already taken are unaffected"
+    }
+  ],
+  "PER-06": [
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Escalated single account still lacks a co-signer"
+    },
+    {
+      "vector_id": "V-BYP-3",
+      "strength": "partial",
+      "why": "Break-glass paths also require two parties"
+    },
+    {
+      "vector_id": "V-ACS-3",
+      "strength": "partial",
+      "why": "Human co-sign is independent of the software access-control system",
+      "note": "Only if co-sign is enforced out-of-band, not inside the ACS software."
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "AI-initiated weight operations need human co-signature"
+    },
+    {
+      "vector_id": "V-SELF-7",
+      "strength": "partial",
+      "why": "A persuaded operator still needs a second approver"
+    },
+    {
+      "vector_id": "V-HUM-5",
+      "strength": "partial",
+      "why": "No single executive can order a weight release"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "strong",
+      "why": "Two-person authorisation: one insider's access is not enough"
+    }
+  ],
+  "PER-07": [
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Recorded maintenance deters and evidences solo tampering"
+    },
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "partial",
+      "why": "Device placement is caught on camera"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Vendor technician actions are recorded"
+    },
+    {
+      "vector_id": "V-X-4",
+      "strength": "partial",
+      "why": "Recorded maintenance deters carrying media out"
+    }
+  ],
+  "PER-08": [
+    {
+      "vector_id": "V-BYP-3",
+      "strength": "partial",
+      "why": "Removes BMC and vendor remote paths; RAND's main examples are identity fallbacks"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Removes remote vendor access; on-site contractors and cloud staff remain"
+    },
+    {
+      "vector_id": "V-CODE-1",
+      "strength": "partial",
+      "why": "Removes perennially unpatched BMC interfaces"
+    },
+    {
+      "vector_id": "V-CODE-2",
+      "strength": "partial",
+      "why": "Removes management firmware with slow patch cycles"
+    },
+    {
+      "vector_id": "V-CRED-3",
+      "strength": "partial",
+      "why": "No remote interface to use leaked credentials on"
+    },
+    {
+      "vector_id": "V-PHYS-3",
+      "strength": "partial",
+      "why": "Hardware never leaves for off-site maintenance"
+    }
+  ],
+  "PER-09": [
+    {
+      "vector_id": "V-HUM-2",
+      "strength": "strong",
+      "why": "Duress signalling, counter-intelligence support and protection target coercion directly"
+    },
+    {
+      "vector_id": "V-HUM-1",
+      "strength": "partial",
+      "why": "Financial-distress support removes a recruitment lever"
+    },
+    {
+      "vector_id": "V-PHYS-3",
+      "strength": "partial",
+      "why": "Travel briefings reduce device compromise abroad"
+    }
+  ],
+  "PHY-01": [
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "strong",
+      "why": "Continuous barrier and controlled entry stop unescorted access",
+      "note": "Does not stop authorised entrants such as cleaners or recruited staff; PER-02 covers them."
+    },
+    {
+      "vector_id": "V-NET-2",
+      "strength": "partial",
+      "why": "RF shielding and acoustic attenuation reduce emanations"
+    },
+    {
+      "vector_id": "V-NET-3",
+      "strength": "partial",
+      "why": "Acoustic and RF bugs from outside are attenuated"
+    },
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "partial",
+      "why": "Fewer places for outsiders to leave devices"
+    },
+    {
+      "vector_id": "V-PHYS-6",
+      "strength": "partial",
+      "why": "Hardened construction delays forced entry"
+    },
+    {
+      "vector_id": "V-X-4",
+      "strength": "partial",
+      "why": "Controlled exits from the protected space"
+    }
+  ],
+  "PHY-02": [
+    {
+      "vector_id": "V-NET-2",
+      "strength": "strong",
+      "why": "TEMPEST shielding and power conditioning stop emanation capture",
+      "note": "EM only: no effect on cache or timing channels."
+    },
+    {
+      "vector_id": "V-SELF-4",
+      "strength": "partial",
+      "why": "Deliberately modulated EM or power signals cannot leave"
+    },
+    {
+      "vector_id": "V-NET-1",
+      "strength": "partial",
+      "why": "Blocks RF covert channels out of the isolated network"
+    }
+  ],
+  "PHY-03": [
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Interlocks and anti-tailgating stop piggybacking"
+    },
+    {
+      "vector_id": "V-X-4",
+      "strength": "partial",
+      "why": "Vestibules allow exit screening"
+    }
+  ],
+  "PHY-04": [
+    {
+      "vector_id": "V-PHYS-6",
+      "strength": "strong",
+      "why": "Armed response within 5-15 minutes is the primary counter to forced entry"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Detects intruders past the perimeter"
+    },
+    {
+      "vector_id": "V-PHYS-4",
+      "strength": "partial",
+      "why": "Layered sensors with human response survive single-system compromise"
+    }
+  ],
+  "PHY-05": [
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "partial",
+      "why": "Bans wireless implants and phones, but not USB media or cables"
+    },
+    {
+      "vector_id": "V-NET-1",
+      "strength": "partial",
+      "why": "No RF bridges across the air gap"
+    },
+    {
+      "vector_id": "V-NET-3",
+      "strength": "partial",
+      "why": "No phones to record audio or photograph screens"
+    },
+    {
+      "vector_id": "V-SELF-4",
+      "strength": "partial",
+      "why": "No wireless device in the room to relay a covert signal"
+    },
+    {
+      "vector_id": "V-X-4",
+      "strength": "partial",
+      "why": "Bans phones and wireless devices, not drives"
+    }
+  ],
+  "PHY-06": [
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Weight systems sit only behind Red Zone boundaries"
+    },
+    {
+      "vector_id": "V-BYP-2",
+      "strength": "partial",
+      "why": "All SL5 hardware, and so copies, must sit in Red Zones"
+    },
+    {
+      "vector_id": "V-NET-1",
+      "strength": "partial",
+      "why": "Black Zones have no network path to SL5 data"
+    }
+  ],
+  "PHY-07": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Catches hardware implants and counterfeits; RAND's vector is mostly software and services"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Inspects accelerators and boards for added logic"
+    },
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "partial",
+      "why": "Routine inspection finds planted devices"
+    },
+    {
+      "vector_id": "V-PHYS-1",
+      "strength": "partial",
+      "why": "Post-maintenance inspection finds implants"
+    }
+  ],
+  "PHY-08": [
+    {
+      "vector_id": "V-PHYS-2",
+      "strength": "strong",
+      "why": "Hardware-disabled ports and a device ban leave nothing to plug in",
+      "proposal": "P-EXTEND-PHY05"
+    },
+    {
+      "vector_id": "V-X-4",
+      "strength": "strong",
+      "why": "No writable media or personal devices to carry weights out",
+      "proposal": "P-EXTEND-PHY05"
+    },
+    {
+      "vector_id": "V-NET-1",
+      "strength": "partial",
+      "why": "No media or RF bridges across the air gap",
+      "proposal": "P-EXTEND-PHY05"
+    },
+    {
+      "vector_id": "V-NET-3",
+      "strength": "partial",
+      "why": "No phones to record audio or photograph screens",
+      "proposal": "P-EXTEND-PHY05"
+    },
+    {
+      "vector_id": "V-SELF-4",
+      "strength": "partial",
+      "why": "No wireless device in the room to relay a covert signal",
+      "proposal": "P-EXTEND-PHY05"
+    }
+  ],
+  "SC-01": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "A second source allows cross-checking and limits single-vendor compromise"
+    },
+    {
+      "vector_id": "V-ACS-2",
+      "strength": "partial",
+      "why": "Heterogeneous products dilute one vendor's backdoor"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Diverse hardware sources limit the reach of one compromised supplier"
+    }
+  ],
+  "SC-02": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Extends inspection to transit and vendor sites against interdiction"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Samples accelerators before they reach the facility"
+    }
+  ],
+  "SC-03": [
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Screens poisoned data or annotations aimed at implanting backdoors"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "Screens external text that could carry injection payloads"
+    }
+  ],
+  "SC-04": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Security requirements reach sub-tier suppliers contractually"
+    },
+    {
+      "vector_id": "V-SUP-3",
+      "strength": "partial",
+      "why": "Contractors with access inherit obligations"
+    }
+  ],
+  "SC-05": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Qualified sources and testing catch counterfeit components"
+    }
+  ],
+  "SC-06": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Chain-of-custody attestation flags substituted components"
+    },
+    {
+      "vector_id": "V-SUP-2",
+      "strength": "partial",
+      "why": "SBOMs make third-party code inventory explicit"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Signed model cards and datasheets detect swapped artefacts"
+    }
+  ],
+  "SC-07": [
+    {
+      "vector_id": "V-SUP-2",
+      "strength": "partial",
+      "why": "Only critical components are in-house; SW-01 carries the rest",
+      "type_override": "hybrid",
+      "note": "Relocates supply-chain risk to internal developers (insiders, AI coders) rather than removing it."
+    },
+    {
+      "vector_id": "V-ACS-2",
+      "strength": "strong",
+      "why": "In-house access-control components remove vendor-planted backdoors",
+      "type_override": "hybrid",
+      "note": "Pair with NET-03: in-house code implementing a subverted standard keeps the backdoor (Dual_EC)."
+    },
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Custom firmware and boards replace vendor parts where feasible",
+      "type_override": "hybrid"
+    },
+    {
+      "vector_id": "V-ACS-1",
+      "strength": "partial",
+      "why": "Owned, reviewable crypto and authentication code"
+    },
+    {
+      "vector_id": "V-ACS-3",
+      "strength": "partial",
+      "why": "Small, owned access-control code can be audited deeply"
+    },
+    {
+      "vector_id": "V-ACS-4",
+      "strength": "partial",
+      "why": "Own trust roots instead of public CAs or vendor keys"
+    }
+  ],
+  "SC-08": [
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Upstream inspection, counterfeit testing and chain of custody together",
+      "proposal": "P-MERGE-SC"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "partial",
+      "why": "Accelerators sampled and attested before installation",
+      "proposal": "P-MERGE-SC"
+    }
+  ],
+  "SRV-01": [
+    {
+      "vector_id": "V-ML-1",
+      "strength": "strong",
+      "why": "Minimal, memory-safe serving code behind a narrow interface; fuzzed drivers",
+      "proposal": "P-NEW-SRV"
+    },
+    {
+      "vector_id": "V-ML-3",
+      "strength": "partial",
+      "why": "A narrow interface limits what injected code can request",
+      "proposal": "P-NEW-SRV"
+    },
+    {
+      "vector_id": "V-CRED-4",
+      "strength": "partial",
+      "why": "Escalated accounts still see weights only through the interface",
+      "proposal": "P-NEW-SRV"
+    },
+    {
+      "vector_id": "V-X-1",
+      "strength": "partial",
+      "why": "Staff touch weights only through interfaces that prevent copying (RAND SL3)",
+      "proposal": "P-NEW-SRV"
+    },
+    {
+      "vector_id": "V-SELF-2",
+      "strength": "partial",
+      "why": "Agents reach weights only through a narrow interface",
+      "proposal": "P-NEW-SRV"
+    }
+  ],
+  "SW-01": [
+    {
+      "vector_id": "V-SUP-2",
+      "strength": "strong",
+      "why": "Vendored, reviewed, hermetically built dependencies; no install-time scripts"
+    },
+    {
+      "vector_id": "V-ML-2",
+      "strength": "strong",
+      "why": "Quarantined, signature-checked mirror and safetensors-only stop torchtriton-style compromises",
+      "note": "Software half; the hardware half sits with PHY-07 / SC-02."
+    },
+    {
+      "vector_id": "V-ML-1",
+      "strength": "partial",
+      "why": "Safetensors removes deserialisation RCE; reviewed dependencies shrink known-bug surface"
+    },
+    {
+      "vector_id": "V-SUP-1",
+      "strength": "partial",
+      "why": "Hardened CI covers the build-system part of services used"
+    }
+  ]
+}

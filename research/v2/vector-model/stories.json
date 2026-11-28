@@ -1,0 +1,295 @@
+[
+  {
+    "id": "quiet-tap",
+    "name": "The Quiet Tap",
+    "route": "physical",
+    "vectors": [
+      "V-HUM-1",
+      "V-PHYS-1",
+      "V-NET-3",
+      "V-X-4"
+    ],
+    "steps": [
+      {
+        "phase": "Infiltration",
+        "vector_ids": [
+          "V-HUM-1",
+          "V-PHYS-1"
+        ]
+      },
+      {
+        "phase": "Implant",
+        "vector_ids": [
+          "V-PHYS-1"
+        ]
+      },
+      {
+        "phase": "Capture",
+        "vector_ids": [
+          "V-NET-3"
+        ]
+      },
+      {
+        "phase": "Retrieval",
+        "vector_ids": [
+          "V-X-4"
+        ]
+      }
+    ],
+    "fit_note": "RAND has no vector for an interposer on the accelerator fabric; it straddles physical access and wiretaps, whose RAND scores describe network links, not in-rack fabrics.",
+    "stopper_check": {
+      "PHY-01": "strong on V-PHYS-1; partial on V-NET-3, V-X-4",
+      "PER-02": "strong on V-PHYS-1; partial on V-X-4",
+      "HW-03": "partial on V-NET-3, V-PHYS-1"
+    }
+  },
+  {
+    "id": "poisoned-chip",
+    "name": "The Poisoned Chip",
+    "route": "supply_chain",
+    "vectors": [
+      "V-ML-2",
+      "V-SUP-1",
+      "V-NET-1"
+    ],
+    "steps": [
+      {
+        "phase": "Compromise",
+        "vector_ids": [
+          "V-ML-2"
+        ]
+      },
+      {
+        "phase": "Delivery",
+        "vector_ids": [
+          "V-SUP-1"
+        ]
+      },
+      {
+        "phase": "Activation",
+        "vector_ids": []
+      },
+      {
+        "phase": "Exfiltration",
+        "vector_ids": [
+          "V-NET-1"
+        ]
+      }
+    ],
+    "fit_note": "HW-04 is a misfit stopper: chip tamper protection detects physical attack in operation, not fab-time implants. The covert RF exfiltration is V-NET-1, so shielding (PHY-02, HW-05) carries it.",
+    "stopper_check": {
+      "SC-02": "partial on V-SUP-1, V-ML-2",
+      "SC-06": "partial on V-SUP-1, V-ML-2",
+      "HW-04": "none: counters no vector in this story",
+      "PHY-02": "partial on V-NET-1"
+    }
+  },
+  {
+    "id": "alignment-researcher",
+    "name": "The Alignment Researcher",
+    "route": "ai_insider",
+    "vectors": [
+      "V-SELF-2",
+      "V-SELF-5",
+      "V-SELF-8",
+      "V-SELF-4"
+    ],
+    "steps": [
+      {
+        "phase": "Misalignment",
+        "vector_ids": [
+          "V-SELF-2"
+        ]
+      },
+      {
+        "phase": "Extraction",
+        "vector_ids": [
+          "V-SELF-5",
+          "V-SELF-8"
+        ]
+      },
+      {
+        "phase": "Encoding",
+        "vector_ids": [
+          "V-SELF-4"
+        ]
+      },
+      {
+        "phase": "Exfiltration",
+        "vector_ids": [
+          "V-SELF-8"
+        ]
+      }
+    ],
+    "fit_note": "Distilled data (V-SELF-8), not terabytes of weights, is the realistic payload; stego (V-SELF-4) is residual. NET-01 is a misfit (permitted outputs cross the gap); AI-06 responds but counters no step.",
+    "stopper_check": {
+      "AI-01": "strong on V-SELF-2; partial on V-SELF-5",
+      "AI-02": "strong on V-SELF-5; partial on V-SELF-4, V-SELF-8",
+      "AI-06": "none: counters no vector in this story",
+      "NET-01": "partial on V-SELF-8"
+    }
+  },
+  {
+    "id": "zero-day-cascade",
+    "name": "The Zero-Day Cascade",
+    "route": "remote",
+    "vectors": [
+      "V-CODE-3",
+      "V-CRED-4",
+      "V-ML-1",
+      "V-X-3"
+    ],
+    "steps": [
+      {
+        "phase": "Initial access",
+        "vector_ids": [
+          "V-CODE-3"
+        ]
+      },
+      {
+        "phase": "Persistence",
+        "vector_ids": [
+          "V-CODE-3",
+          "V-CRED-4"
+        ]
+      },
+      {
+        "phase": "Capture",
+        "vector_ids": [
+          "V-ML-1"
+        ]
+      },
+      {
+        "phase": "Exfiltration",
+        "vector_ids": [
+          "V-X-3"
+        ]
+      }
+    ],
+    "fit_note": "Good fit. The internet-facing gateway exists because the model is served; RAND exempts production serving from full isolation, so NET-01 removes it only if serving is split from training.",
+    "stopper_check": {
+      "NET-01": "strong on V-CODE-3, V-X-3",
+      "HW-07": "partial on V-CRED-4, V-CODE-3",
+      "HW-09": "partial on V-CODE-3"
+    }
+  },
+  {
+    "id": "long-game",
+    "name": "The Long Game",
+    "route": "insider",
+    "vectors": [
+      "V-HUM-1",
+      "V-X-1",
+      "V-BYP-2",
+      "V-X-4"
+    ],
+    "steps": [
+      {
+        "phase": "Recruitment",
+        "vector_ids": [
+          "V-HUM-1"
+        ]
+      },
+      {
+        "phase": "Access",
+        "vector_ids": [
+          "V-HUM-1"
+        ]
+      },
+      {
+        "phase": "Extraction",
+        "vector_ids": [
+          "V-X-1",
+          "V-BYP-2"
+        ]
+      },
+      {
+        "phase": "Delivery",
+        "vector_ids": [
+          "V-X-4"
+        ]
+      }
+    ],
+    "fit_note": "Blends recruiting a current employee (V-HUM-1) with passing hiring vetting (V-HUM-3). PER-05 acts after the weights have left; PER-06, KEY-01 and CUS-01 at the reach stage are the stoppers.",
+    "stopper_check": {
+      "PER-04": "partial on V-HUM-1",
+      "PER-03": "partial on V-HUM-1, V-X-1",
+      "PER-05": "partial on V-HUM-1",
+      "PER-02": "partial on V-X-1, V-X-4"
+    }
+  },
+  {
+    "id": "remote-ghost",
+    "name": "The Remote Ghost",
+    "route": "remote",
+    "vectors": [
+      "V-BYP-3",
+      "V-CODE-2",
+      "V-CRED-4"
+    ],
+    "steps": [
+      {
+        "phase": "Reachability",
+        "vector_ids": [
+          "V-BYP-3"
+        ]
+      },
+      {
+        "phase": "Entry",
+        "vector_ids": [
+          "V-CODE-2"
+        ]
+      },
+      {
+        "phase": "Capture",
+        "vector_ids": [
+          "V-CRED-4"
+        ]
+      }
+    ],
+    "fit_note": "Good fit (RAND also files AMT-style management firmware under V-SUP-1). HW-07 is overstated: a BMC can reflash firmware and control power, so PER-08 and HW-09 are the robust stoppers.",
+    "stopper_check": {
+      "NET-01": "strong on V-CODE-2; partial on V-BYP-3",
+      "HW-07": "partial on V-CRED-4",
+      "PER-08": "partial on V-BYP-3, V-CODE-2"
+    }
+  },
+  {
+    "id": "patient-distillation",
+    "name": "The Patient Distillation",
+    "route": "capability_copy",
+    "vectors": [
+      "V-ML-5"
+    ],
+    "steps": [
+      {
+        "phase": "Setup",
+        "vector_ids": [
+          "V-ML-5"
+        ]
+      },
+      {
+        "phase": "Extraction",
+        "vector_ids": [
+          "V-ML-5"
+        ]
+      },
+      {
+        "phase": "Accumulation",
+        "vector_ids": [
+          "V-ML-5"
+        ]
+      },
+      {
+        "phase": "Distillation",
+        "vector_ids": []
+      }
+    ],
+    "fit_note": "Now on its own capability meter. RAND scores V-ML-5 at 1 for OC2, the chain's min_oc. NET-04 is a misfit (distillation needs gigabytes); NET-01 here is a serving decision, not a control.",
+    "stopper_check": {
+      "AI-07": "partial on V-ML-5",
+      "NET-04": "none: counters no vector in this story",
+      "NET-01": "none: counters no vector in this story"
+    }
+  }
+]

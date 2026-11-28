@@ -1,0 +1,51 @@
+Staged route probe. Columns: tier 1..5 (OC for human routes, AC for the AI insider).
+Bar: 'SL-n thwarts OC-n' if success < 0.20 (the user's ~1-in-5 bar).
+
+=== model served externally: True ===
+undefended (SL1 victim)                      campaign OC1-5: 0.312  0.626  0.996  0.998  1.000   AI-insider AC1-5: 0.300  0.500  0.700  0.900  0.900
+every vector strongly countered (x0.3)       campaign OC1-5: 0.025  0.034  0.085  0.173  0.264   AI-insider AC1-5: 0.090  0.150  0.210  0.270  0.270
+full current catalogue (57), no erosion      campaign OC1-5: 0.035  0.042  0.204  0.289  0.612   AI-insider AC1-5: 0.062  0.103  0.144  0.185  0.295
+full current catalogue (57), eroded          campaign OC1-5: 0.038  0.056  0.318  0.476  0.776   AI-insider AC1-5: 0.067  0.134  0.218  0.322  0.410
+full proposed catalogue, no erosion          campaign OC1-5: 0.026  0.031  0.068  0.191  0.386   AI-insider AC1-5: 0.062  0.103  0.144  0.185  0.295
+full proposed catalogue, eroded              campaign OC1-5: 0.028  0.044  0.143  0.365  0.648   AI-insider AC1-5: 0.067  0.134  0.218  0.322  0.432
+
+=== model served externally: False ===
+undefended (SL1 victim)                      campaign OC1-5: 0.244  0.501  0.989  0.995  0.999   AI-insider AC1-5: 0.300  0.500  0.700  0.900  0.900
+every vector strongly countered (x0.3)       campaign OC1-5: 0.010  0.019  0.069  0.091  0.135   AI-insider AC1-5: 0.090  0.150  0.210  0.270  0.270
+full current catalogue (57), no erosion      campaign OC1-5: 0.023  0.030  0.165  0.233  0.559   AI-insider AC1-5: 0.062  0.103  0.144  0.185  0.295
+full current catalogue (57), eroded          campaign OC1-5: 0.025  0.040  0.272  0.395  0.698   AI-insider AC1-5: 0.067  0.134  0.218  0.322  0.410
+full proposed catalogue, no erosion          campaign OC1-5: 0.011  0.017  0.054  0.111  0.277   AI-insider AC1-5: 0.062  0.103  0.144  0.185  0.295
+full proposed catalogue, eroded              campaign OC1-5: 0.012  0.025  0.123  0.254  0.511   AI-insider AC1-5: 0.067  0.134  0.218  0.322  0.432
+
+--- per-route success, served=True: undefended (SL1 victim) ---
+  remote        0.150  0.350  0.810  0.810  0.810   binding OC4: {'entry': 'V-CODE-1', 'reach': 'V-CRED-4', 'exfil': 'V-X-3'}  OC5: {'entry': 'V-CODE-1', 'reach': 'V-ML-1', 'exfil': 'V-X-3'}
+  insider       0.050  0.050  0.700  0.700  0.900   binding OC4: {'entry': 'V-HUM-1', 'reach': 'V-X-1', 'exfil': 'V-X-4'}  OC5: {'entry': 'V-HUM-1', 'reach': 'V-X-1', 'exfil': 'V-X-4'}
+  physical      0.050  0.050  0.500  0.500  0.700   binding OC4: {'entry': 'V-PHYS-1', 'reach': 'V-X-2', 'exfil': 'V-X-4'}  OC5: {'entry': 'V-PHYS-1', 'reach': 'V-X-2', 'exfil': 'V-X-4'}
+  supply_chain  0.015  0.150  0.630  0.810  0.810   binding OC4: {'entry': 'V-SUP-1', 'reach': 'V-CRED-4', 'exfil': 'V-X-3'}  OC5: {'entry': 'V-SUP-1', 'reach': 'V-ML-1', 'exfil': 'V-X-3'}
+  served        0.090  0.250  0.630  0.630  0.810   binding OC4: {'entry': 'V-ML-3', 'reach': 'V-CRED-4', 'exfil': 'V-X-3'}  OC5: {'entry': 'V-ML-1', 'reach': 'V-ML-1', 'exfil': 'V-X-3'}
+  ai_insider    AC5 0.900   binding path: {'reach': 'V-SELF-6'}
+  capability    0.050  0.050  0.300  0.300  0.500   (V-ML-5 meter, not in headline)
+
+--- per-route success, served=True: full current catalogue (57), eroded ---
+  remote        0.009  0.011  0.062  0.069  0.170   binding OC4: {'entry': 'V-PHYS-2', 'reach': 'V-ML-1', 'exfil': 'V-X-3'}  OC5: {'exfil': 'V-NET-1', 'entry': 'V-PHYS-2', 'reach': 'V-ML-1'}
+  insider       0.006  0.009  0.147  0.192  0.332   binding OC4: {'entry': 'V-HUM-1', 'reach': 'V-X-1', 'exfil': 'V-X-4'}  OC5: {'entry': 'V-HUM-4', 'reach': 'V-X-1', 'exfil': 'V-X-4'}
+  physical      0.008  0.010  0.030  0.118  0.307   binding OC4: {'entry': 'V-PHYS-4', 'reach': 'V-X-2', 'exfil': 'V-X-4'}  OC5: {'entry': 'V-PHYS-4', 'reach': 'V-PHYS-5', 'exfil': 'V-X-4'}
+  supply_chain  0.002  0.011  0.062  0.088  0.215   binding OC4: {'entry': 'V-SUP-1', 'reach': 'V-ML-1', 'exfil': 'V-X-3'}  OC5: {'entry': 'V-SUP-1', 'reach': 'V-ML-1', 'exfil': 'V-NET-1'}
+  served        0.013  0.016  0.062  0.134  0.257   binding OC4: {'entry': 'V-ML-4'}  OC5: {'entry': 'V-ML-4'}
+  ai_insider    AC5 0.410   binding path: {'reach': 'V-SELF-7', 'exfil': 'V-SELF-8'}
+  capability    0.037  0.038  0.235  0.243  0.420   (V-ML-5 meter, not in headline)
+
+--- per-route success, served=True: full proposed catalogue, eroded ---
+  remote        0.002  0.006  0.019  0.035  0.113   binding OC4: {'entry': 'V-CRED-1', 'reach': 'V-BYP-2', 'exfil': 'V-X-3'}  OC5: {'entry': 'V-NET-1', 'reach': 'V-BYP-2', 'exfil': 'V-NET-1'}
+  insider       0.002  0.003  0.066  0.099  0.184   binding OC4: {'exfil': 'V-X-4', 'entry': 'V-HUM-1', 'reach': 'V-X-1'}  OC5: {'exfil': 'V-X-4', 'entry': 'V-HUM-1', 'reach': 'V-X-1'}
+  physical      0.008  0.010  0.014  0.084  0.215   binding OC4: {'reach': 'V-NET-3', 'entry': 'V-PHYS-4'}  OC5: {'reach': 'V-NET-3', 'entry': 'V-PHYS-4'}
+  supply_chain  0.001  0.006  0.029  0.062  0.140   binding OC4: {'exfil': 'V-X-3', 'entry': 'V-SUP-1', 'reach': 'V-BYP-2'}  OC5: {'entry': 'V-SUP-1', 'reach': 'V-BYP-2', 'exfil': 'V-NET-1'}
+  served        0.016  0.019  0.022  0.150  0.280   binding OC4: {'entry': 'V-ML-4'}  OC5: {'entry': 'V-ML-4'}
+  ai_insider    AC5 0.432   binding path: {'reach': 'V-SELF-7', 'exfil': 'V-SELF-8'}
+  capability    0.040  0.041  0.252  0.257  0.437   (V-ML-5 meter, not in headline)
+
+--- sensitivity: undefended OC1/OC2 campaign vs the value read for a RAND '1' ---
+  score 1 -> 0.10: served OC1 0.399 OC2 0.664 | not served OC1 0.332 OC2 0.552
+  score 1 -> 0.05: served OC1 0.312 OC2 0.626 | not served OC1 0.244 OC2 0.501
+  score 1 -> 0.02: served OC1 0.262 OC2 0.602 | not served OC1 0.189 OC2 0.469
+  score 1 -> 0.00: served OC1 0.227 OC2 0.586 | not served OC1 0.150 OC2 0.448

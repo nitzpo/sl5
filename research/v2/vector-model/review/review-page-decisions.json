@@ -1,0 +1,101 @@
+{
+ "questions": [
+  {
+   "q": "Score attacks as approaches made of three stages",
+   "context": "RAND rates attack vectors, which are single steps, not whole attacks. When each vector counted as a complete theft, even a hobbyist got in 96% of the time against an ordinary company, which contradicts RAND's own SL1. So the scoring has six approaches (remote intrusion, insider, physical, supply chain, served model, AI insider). Within each approach the engine finds the attacker's easiest attack path: one vector each to get in, reach the weights and get them out. Every attacker tries every approach it can afford, as you decided.",
+   "rec": "Adopt."
+  },
+  {
+   "q": "How defenses on the same step add up",
+   "context": "A strong counter cuts the chance of a step to about a third. Each extra counter on the same step helps less: ×0.8, then ×0.9, then ×0.95. Partial counters together never beat one strong counter. Without diminishing returns, piling up weak controls looks as good as building a real barrier.",
+   "rec": "Adopt."
+  },
+  {
+   "q": "How to read RAND's lowest rating (1 = 'likely infeasible')",
+   "context": "If a 1 counts as a 5% chance, an undefended lab only half-stops hobbyists (about 3 in 10 get in), so even a basic lab misses SL1, which RAND defines as 'likely thwarts OC1'. If a 1 counts as 2%, hobbyists get in about 1 in 5 times and SL1 means what RAND says.",
+   "rec": "Read a 1 as 2%."
+  },
+  {
+   "q": "Nothing reaches SL5, not even every block",
+   "context": "With every current block at full strength, a lab reaches about SL2–SL3. With the proposed blocks too, about SL3–SL4. What still gets through (the remaining attack paths) is insiders with standing access, physical intrusion, supply-chain implants, and API model extraction when the model is served. This matches RAND ('SL5 is currently not possible'), but it means the tool's top goal is unreachable.",
+   "rec": "Keep it honest by default and show what still gets through. Add a 'future capabilities' switch with clearly labelled R&D blocks (for example verified hardware at scale, a government-cleared workforce) that shows what SL5 would take."
+  },
+  {
+   "q": "Catalogue changes: merges, new blocks, reclassifications",
+   "context": "6 merges remove blocks that duplicate others or counter nothing on their own (catalogue about 57 → 51). 5 new blocks cover gaps RAND names: patching and endpoints, configuration integrity, governance and investor vetting, access-control verification, and a hardened weight-access interface. 5 'hard stops' become hybrid because software or a response step enforces them. Details are below.",
+   "rec": "Approve all. Each one fixes a gap or an over-claim the reviewers found."
+  },
+  {
+   "q": "Threats no lab can counter alone",
+   "context": "Military or police seizure, and access approved by the lab's own leadership or owners, have no lab-level counter. Today they would cap SL5 for good.",
+   "rec": "Keep scoring them, with a 'needs government' badge. A 'government partnership' world setting can reduce them, so users see that some of SL5 is a policy question."
+  },
+  {
+   "q": "The AI insider",
+   "context": "The model's own chance of success rises with that year's AI capability. Whether it tries at all is a separate unknown. Sabotage and integrity (corrupted training or evals) aren't weight theft.",
+   "rec": "Score it against the current year's AI capability, with a separate 'propensity to try' setting. Show sabotage and integrity in their own view, outside SL."
+  }
+ ],
+ "calibration": {
+  "intro": "Does the scoring match RAND's meaning of the levels? The engine's chance that one campaign succeeds, by attacker tier, with the model served (the app default). The words are the 1-in-5 bar you approved. 'Eroded' means AI has worn down the probabilistic defenses. RAND's 1 is read as 5% here, which is why the undefended lab misses SL1; reading it as 2% (decision 3) fixes that.",
+  "legend": "fails = under 1 in 5 · contested = 1 in 5 to about half · succeeds = over half. Numbers are for calibration only; the app shows the words.",
+  "rows": [
+   {
+    "name": "Undefended lab",
+    "v": [
+     "contested .31",
+     "succeeds .63",
+     "succeeds 1.0",
+     "succeeds 1.0",
+     "succeeds 1.0"
+    ],
+    "sl": "below SL1"
+   },
+   {
+    "name": "Every current block, eroded",
+    "v": [
+     "fails .04",
+     "fails .06",
+     "contested .32",
+     "contested .48",
+     "succeeds .78"
+    ],
+    "sl": "SL2"
+   },
+   {
+    "name": "Every current + proposed block, eroded",
+    "v": [
+     "fails .03",
+     "fails .04",
+     "fails .14",
+     "contested .37",
+     "succeeds .65"
+    ],
+    "sl": "SL3"
+   },
+   {
+    "name": "Every current + proposed block, no erosion",
+    "v": [
+     "fails .03",
+     "fails .03",
+     "fails .07",
+     "fails .19",
+     "contested .39"
+    ],
+    "sl": "SL4 (barely)"
+   },
+   {
+    "name": "Same, model not served externally",
+    "v": [
+     "fails .01",
+     "fails .02",
+     "fails .05",
+     "fails .11",
+     "contested .28"
+    ],
+    "sl": "SL4"
+   }
+  ]
+ },
+ "block_recs": {}
+}

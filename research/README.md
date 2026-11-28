@@ -2,6 +2,8 @@
 
 Methodology, design notes, schemas, and source material behind [SL5 Explorable](../README.md). This folder documents *why the model is shaped the way it is*; the live app reads its data from [`../app/public/data/`](../app/public/data/).
 
+> **Picking up v2?** Start at [`v2/README.md`](v2/README.md). It is the entry point for the v2 research, with a reading order, the decision log with the user's own words, the initial review, the SL design debate, the reviewed vector-mapping data, probes and the visual directions explored.
+
 ## Which version each document describes
 
 SL5 Explorable ships two versions (see [Versions](../README.md#versions)): **v1**, the original app, frozen at commit `ec5d9bd` and live at `/sl5/v1/`, which scored seven narrative attack chains with a coverage-based security level; and **v2**, the current app at `/sl5/v2/`, which scores RAND's attack vectors with a threat-relative security level. Most of this folder was written for v1 and is kept as the reasoning record. Each v1-era document opens with a note saying what changed. Where any of them conflicts with v2, `app/src/engine/` and `scoring-model.md` are authoritative.
@@ -10,6 +12,7 @@ SL5 Explorable ships two versions (see [Versions](../README.md#versions)): **v1*
 |---|---|---|
 | [`scoring-model.md`](scoring-model.md) | **v2** | The reference for the shipped engine: vectors, counters, approaches, the campaign, the threat-relative SL, the meters, every constant and the calibration. Update it alongside `app/src/engine/`. |
 | [`schema/`](schema/) | **v2** | JSON Schemas for the data the app loads (below). |
+| [`v2/`](v2/README.md) | **v2** | How and why v2 was built: [decisions](v2/decisions.md), the [review of v1](v2/2026-11-review.md), the [threat-relative SL](v2/threat-relative-sl.md), [scope and rogue AI](v2/scope-and-rogue-ai.md), the reviewed [vector-model draft](v2/vector-model/README.md), [visual directions](v2/visual-directions.md), [lessons](v2/process-and-lessons.md) and [probes](v2/probes/README.md). A historical record; where it differs from the code, the code and `scoring-model.md` win. |
 | [`source-summaries.md`](source-summaries.md), `rand_full.txt`, `sl5_standard.txt`, `sl5_novel.txt` | Both | Digests and text copies of the public sources. |
 | [`distillation-analysis.md`](distillation-analysis.md) | v1-era, still relevant | The reasoning holds; v2 scores distillation as the capability-leakage meter outside the SL. |
 | [`attack-chains-draft.md`](attack-chains-draft.md) | v1-era | v1's chains. In v2 they are scenarios that illustrate attack paths but do not score. |

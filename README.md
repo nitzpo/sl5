@@ -259,6 +259,8 @@ Canonical data the app loads is in `app/public/data/` — the single source of t
 
 (An earlier Python prototype and its frozen data snapshot lived under `research/`; both were removed once `app/tests/engine/` covered the same scenarios against live data. See [`research/README.md`](research/README.md).)
 
+**The research behind v2** — the decision log, the review of v1, the threat-relative SL design debate, the reviewed vector mapping, probes and the visual directions explored — is in [`research/v2/`](research/v2/README.md). Start there to pick up the work.
+
 ---
 
 ## Contributing

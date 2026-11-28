@@ -4,7 +4,9 @@ description: Build, run, test, and drive the SL5 explorable web app (v2). Use wh
 ---
 
 Vite + React + TypeScript explorable, served under the **`/sl5/` base path**, plus a
-second entry point at `/sl5/intro/`. Two ways in, depending on what you touched:
+second entry point at `/sl5/intro/`. This is v2; the Pages deploy builds it with
+`--base /sl5/v2/` next to the frozen v1 at `/sl5/v1/` (see `../site/README.md`). Two
+ways in, depending on what you touched:
 
 - **UI / layout / rendering change** → start the dev server, then drive real headless
   Chromium with **`.claude/skills/run-sl5-app/driver.mjs`** (this directory). It asserts
@@ -65,14 +67,14 @@ Flows — pass one, or `all`:
 
 | flow | what it asserts |
 |---|---|
-| `smoke` | app loads past the first-run modal; every block of today's catalogue renders once (counted from `public/data`), no R&D block while the toggle is off; the rail states a level and band words; a path is drawn; **no `%` anywhere on screen** (text, titles, aria labels; quoted research prose excepted); **nothing under 12px**; no console errors |
+| `smoke` | app loads past the first-run modal; every block of today's catalogue renders once (counted from `public/data`: 56 today), no R&D block while the toggle is off; the rail states a level and band words; a path is drawn; **no `%` anywhere on screen** (text, titles, aria labels; quoted research prose excepted); **nothing under 12px**; no console errors |
 | `views` | Stage matrix, Clusters, Approaches and Race each mount and lay out (tile/hex/lane/bar counts); nothing under 12px on the race |
-| `interact` | click advances a block, right-click steps it back; Shift-click opens the block drawer, Escape closes it; the Parameters drawer has strictness, propensity, future toggle, serving, government; the future toggle shows the R&D blocks |
+| `interact` | click advances a block, right-click steps it back; Shift-click opens the block drawer, Escape closes it; the Parameters drawer has strictness, propensity, future toggle, serving, government; the future toggle shows the five R&D blocks (61 tiles) |
 | `story` | Scenarios ▾ → Proactive Program plays with the transport and a caption in the rail; the end shows a takeaway; Proactive reaches SL3 by 2030; stopping restores the reader's year |
 | `dark` | `prefers-color-scheme: dark` paints the dark paper |
 | `gate` | below 768px the gate replaces the app (no catalogue mounts), and tracks a live resize both ways |
 | `intro` | `/sl5/intro/` renders, `#the-oc-ladder` deep-links to its slide (title and position read from `src/intro/slides/index.ts`), readable at 390px |
-| `all` | all of the above (~37 checks, ~15s) |
+| `all` | all of the above (40 checks, ~15s) |
 
 Flags: `--url=http://localhost:4173` (works against `npm run preview` too),
 `--out=<dir>` (default `/tmp/sl5-shots`), `--headed`.
@@ -82,13 +84,20 @@ Screenshots → `<out>/*.png`: `smoke`, `view-{matrix,clusters,approaches,race}`
 `intro{,-deeplink,-phone}`. Exit code is nonzero if any check fails. **Open the
 screenshots** — a blank frame passes no check but means the launch failed.
 
+After a visible UI change, also refresh the version picker's v2 thumbnail from the repo
+root: `PLAYWRIGHT_DIR=/tmp/pw node site/capture-thumbnails.mjs --only v2` (it builds v2,
+serves it on a free port, dismisses the first-run modal and writes
+`site/thumbs/v2.webp`; see `site/README.md`). The root README's `assets/screenshot.png`
+is the same main screen at 1600×1000, device scale factor 1, saved as PNG.
+
 ### Why the driver exists
 
 The unit tests render components in jsdom, which has no layout. The stage matrix
 measures its tiles to draw the attack-path overlay (`useGeometry` in
 `components/catalogue/StageMatrix.tsx`), the clusters SVG scales to fit, and the 12px
 floor depends on that scale — all only observable in a real browser. The `smoke` flow's
-`%` and 12px checks are the browser-side half of `tests/ui/catalogue.test.tsx`.
+`%` check is the browser-side half of `tests/ui/catalogue.test.tsx`; the 12px floor has
+no jsdom half, so only the driver checks it.
 
 ## Run: engine directly (no browser)
 
@@ -136,7 +145,7 @@ remembers itself under `sl5v2_intro_seen`; saved state lives under `sl5v2-state`
 
 ```bash
 npm run lint      # eslint — clean
-npm test          # vitest — 26 files, 364 tests
+npm test          # vitest — 26 files, 365 tests
 npm run build     # tsc -b && vite build → dist/ (two pages)
 ```
 

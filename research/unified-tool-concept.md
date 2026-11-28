@@ -1,5 +1,7 @@
 # SL5 Explorable — Unified Tool Concept
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. v1's four perspectives (CISO, Attacker, Policy, Observer) and their panels were replaced in v2 by the catalogue, the verdict rail, and the Approaches and Race views.
+
 ## Merging the Four Directions
 
 The four initial directions map to views/panels within a single unified tool:

@@ -155,8 +155,8 @@ function loadChromium() {
 
 async function captureMainScreen(browser, url, version) {
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, reducedMotion: "reduce" });
-  // First-run modal: mark it seen up front, under v1's key and under the
-  // v2-prefixed key v2 is expected to move to (the versions share an origin).
+  // First-run modal: mark it seen up front, under v1's key and under v2's own
+  // `sl5v2_intro_seen` (the versions share an origin, so v2 prefixes its keys).
   // The button/Escape fallback below catches any other key.
   await context.addInitScript(() => {
     try {

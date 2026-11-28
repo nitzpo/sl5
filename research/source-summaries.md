@@ -1,5 +1,7 @@
 # SL5 Security Game — Source Summaries
 
+> **Applies to both versions.** Digests of the public sources behind v1 and v2. v2's scoring rests on RAND's attack vectors (Tables 5.1 and 5.2); see [`scoring-model.md`](scoring-model.md).
+
 ## Core Documents
 
 ### 1. RAND "Securing AI Model Weights" (2024)

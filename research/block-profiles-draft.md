@@ -1,5 +1,7 @@
 # SL5 Explorable — Building Block Quantitative Profiles (Draft)
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. The profile dimensions survive in the block data; v2 adds, per block, the attack vectors it counters (`counters`).
+
 ## Profile Template
 
 Each block scored on:

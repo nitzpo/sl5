@@ -1,5 +1,7 @@
 # SL5 Explorable — Curated Attack Chain Scenarios
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. These chains were v1's scoring backbone. In v2 they are scenarios (`app/public/data/scenarios.json`): each told as one specific attack path through the vectors, to illustrate, never to score.
+
 These are "Option C" narratives showing multi-block failure cascades.
 Each demonstrates defense-in-depth: the adversary needed multiple blocks absent simultaneously.
 

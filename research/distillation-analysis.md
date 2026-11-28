@@ -1,5 +1,7 @@
 # Legitimate Channel Attacks — Full Analysis
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. The reasoning still holds. v2 scores API distillation as the capability-leakage meter, outside the SL ([`scoring-model.md`](scoring-model.md), Part 5).
+
 ## The Problem
 
 The inference/API channel is a TWO-WAY attack surface:

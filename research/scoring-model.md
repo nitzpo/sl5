@@ -1,7 +1,10 @@
 # SL5 Explorable — Scoring Model
 
-This describes the model **as implemented** (Phase 2: the vector backbone and the
-threat-relative security level). It is the reference for `app/src/engine/`:
+This describes the model **as implemented in v2** (`/sl5/v2/`): the vector backbone
+and the threat-relative security level from Phase 2, under the Phase 3 interface. It is
+the reference for `app/src/engine/`. (v1, frozen at `/sl5/v1/`, scored seven attack
+chains with a capability-gated breach probability and a coverage SL; none of that is
+in the engine any more.)
 
 | File | What it does |
 |---|---|
@@ -12,13 +15,16 @@ threat-relative security level). It is the reference for `app/src/engine/`:
 | `scoring.ts` | Block effectiveness (state, sliders, enablement) and programme completeness |
 | `budget.ts`, `dependencies.ts`, `baseline.ts` | What a programme can pay for, prerequisite caps, the starting posture |
 | `ai-curve.ts`, `distillation.ts` | The AI capability curve; the cumulative extraction meter |
-| `catalogue.ts` | Merged block ids (saved-state migration) and the chain-shaped view of scenarios the pre-vector UI still reads |
+| `catalogue.ts` | Merged block ids, so saved postures and share links from before the merges still load |
+| `maturation.ts` | When a story's block reaches each state, from its lead time |
 
 `scorePosture` runs budget → prerequisites → the vector model at every tier →
 the SL, the approaches, the own-model insider, two meters, per-block relevance
-and programme completeness. The Score card, the timeline, the Policy and CISO
-analyses and the introduction's mini-game all call it, and
-`tests/engine/posture.test.ts` asserts they agree exactly.
+and programme completeness. The verdict rail, the catalogue's path and marks, the
+Approaches and Race views, the next-defense ranking and the introduction's demos all
+call it, and `tests/engine/posture.test.ts` asserts the rail, the Race view's
+SL-over-years strip and the next-defense ranking agree exactly. The UI shows its
+numbers as words (Part 6), never as percentages.
 
 **Everything here is a model.** Every constant below is a judgement call made to
 get the relationships right, and the ones that are authored rather than taken
@@ -204,8 +210,9 @@ the rest, best first   × (1 − 0.2·x), × (1 − 0.1·x), × (1 − 0.05·x)
 - **Partials together never beat one strong counter**: three rungs reach at best
   0.8 × 0.9 × 0.95 = 0.684 > 0.3.
 - Fully deployed, un-eroded, the best a vector can do is 0.3 × 0.684 = 0.205 of its
-  feasibility. Against OC5 with hard stops it is ~0.29; with probabilistic counters
-  ~0.67. That is why OC5 is hard to hold with anything but structural controls.
+  feasibility. Against OC5 with hard stops it is ~0.29; with hybrids ~0.44; with
+  probabilistic counters ~0.62. That is why OC5 is hard to hold with anything but
+  structural controls.
 
 ### Residual vectors are always candidates
 
@@ -392,18 +399,21 @@ mirrored dependencies), KEY-01 (encryption at rest with KMS keys — the
 attestation-gated half is not deployed) and AI-09 (agent sandboxes) start partially
 deployed; SC-08 inherits SC-06's partial deployment.
 
-## Part 10 — CISO recommendations
+## Part 10 — Next defense to fund
 
-Each candidate move (a block plus any missing prerequisites, as a bundle) is scored
-through `scorePosture` and ranked by
+The rail's "next defense to fund" (`utils/ciso-recommendations.ts`; v1 showed it in
+its CISO panel). Each candidate move (a block plus any missing prerequisites, as a
+bundle, deployed) is scored through `scorePosture` and ranked by
 
 ```
 ( Δcampaign(adversary OC) + 0.25 × Δcampaign(adversary OC + 1) ) / max($M, 1)
 ```
 
-— the cut against today's adversary, plus a small term for the next tier so that,
-between moves that do the same now, the one that also prepares for the next wins.
-Cost is the budget model's own. Future blocks are offered only in a future world.
+— the cut against today's adversary, plus a small term for the next tier (none
+above OC5) so that, between moves that do the same now, the one that also prepares
+for the next wins. Cost is the budget model's own, and zero for a block the programme
+is already paying for. Moves the remaining budget cannot pay for, and moves that change
+no number, are left out. Future blocks are offered only in a future world.
 
 ---
 
@@ -586,14 +596,41 @@ on the shipped data and compares against the probe's own output
   countered or flagged; residual vectors are not countered by what they assume;
   merged ids are gone; future blocks are flagged, labelled and never prerequisites;
   scenario gaps and stoppers counter the scenario's vectors.
-- **One pipeline** (`posture.test.ts`) — Score card, timeline, Policy and CISO views
-  agree exactly, and the compatibility fields are views of the new numbers.
+- **One pipeline** (`posture.test.ts`) — the verdict rail, the Race view's SL strip
+  and the next-defense ranking agree exactly, and none of the chain-era fields
+  (`overallSl`, `breachProbabilities`, `residualFloors`, `bestChain`, `breach`) is
+  left on the result.
+- **No percentages** (`tests/ui/catalogue.test.tsx`) — no percentage appears in the
+  main UI, its drawers or its hover text; the tiers and the own model are stated in band
+  words, and the level's decimal appears only in its tooltip.
+- **The budget game** (`tests/intro/posture-game.test.ts`) — Part 14.
 - **Stories** (`scripts.test.ts`) — affordable at their own budgets, nothing
   unfunded, nothing stuck, Proactive's half-year curve never rises and its monthly
   curve never loses ground over a year.
 - **Migration** (`tests/store/persistence-migration.test.ts`) — old ids map onto their
   successors (the more advanced state wins; AI-03 lifts both AI-07 and AI-08), the
   funding order keeps first positions, new sliders get defaults, idempotent.
+
+---
+
+## Part 14 — The introduction's budget game
+
+The *Budget* slide of the introduction (`src/intro/posture-game.ts`) is a playable
+slice of the instrument. The reader starts from today's researched baseline in 2026,
+model not served, neutral sliders (0.5) and the standard bar, and has **$150M** for one
+year. Ten present-day defenses are on offer (DET-01, DEC-01, IAM-01, END-01, NET-01,
+PER-01, PER-06, PER-02, CUS-01, PHY-03), spanning all three defense types, with
+three prerequisite links on the list (DEC-01 on DET-01; PER-06 and PER-02 on PER-01).
+Each pick is set to deployed and the reader's pick order is the funding order, so a
+pick past the budget line stays at the lab's baseline and a pick whose prerequisite
+isn't running is capped at implementing, exactly as in the app.
+Every number is `scorePosture`. The headline is which tiers the posture now usually
+stops, in words, and what still gets through. With the shipped data the start is SL1
+(OC2 contested) and the best affordable picks reach SL2.
+`tests/intro/posture-game.test.ts` asserts that the right picks within budget reach the next level and take OC3 off
+*usually succeeds* while most affordable picks don't, that the air gap ($100M of the
+$150M) is tempting but not the best use of the year, that no pick makes anything worse,
+and that nothing on the list reaches SL5.
 
 ---
 
@@ -626,9 +663,6 @@ Everything RAND does not supply is ours. Read these as wide error bars:
 - **V-HUM-1, V-SUP-1, V-PHYS-4 and the own model's V-SELF-7/8** have no strong counter
   in today's catalogue; they are what binds OC4–OC5 and the own model, by design of the
   reviewed map rather than by calibration.
-- **The intro mini-game** builds from nothing at OC4, where the campaign sits near
-  certain success for any $150M posture; its copy still describes the chain-era
-  "worst route" headline (Phase 2B).
-- **The chain-shaped compatibility view** (`scenarioAsChain`, `breachProbabilities`,
-  `bestChain`, `residualFloors`, `overallSl`, `breach`) exists only so the pre-vector
-  UI keeps working until Phase 2B; nothing in the engine scores chains.
+- **Scenarios are illustrations.** A scenario's number is the product over its own
+  vectors, at the adversary tier (the own-model scenario at this year's AC band, times
+  propensity); it never enters the SL or the campaign.

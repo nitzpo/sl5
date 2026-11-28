@@ -71,12 +71,13 @@ node site/capture-thumbnails.mjs --dist dist
 node site/capture-thumbnails.mjs --only v2 --image v2=path/to/mockup.jpg
 ```
 
-**v2's thumbnail is a mockup for now.** It is the approved stage-matrix mockup,
-made with the `--image` form, because the v2 UI hadn't landed when the picker
-was built. Once the redesign is in `app/`, run
-`node site/capture-thumbnails.mjs --only v2`, look at the result, and commit
-`site/thumbs/v2.webp`. If the new main screen looks different from the
-description, update the v2 `alt` text in `index.html` as well.
+Both thumbnails are captures of the real apps: v2's is its default main screen
+(the stage matrix with the verdict rail, SL1 in 2026). After a visible change to
+v2's main screen, run `node site/capture-thumbnails.mjs --only v2`, open
+`site/thumbs/v2.webp` to check it shows the catalogue with no modal over it, and
+commit it. If the screen no longer matches the description, update the v2 `alt`
+text and copy in `index.html` as well. The root README's `assets/screenshot.png`
+is the same screen at full size (1600×1000 PNG).
 
 ## Preview locally
 

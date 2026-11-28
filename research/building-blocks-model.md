@@ -1,5 +1,7 @@
 # SL5 Explorable — Building Blocks Data Model
 
+> **v1-era document.** Written while designing and building the original app (v1, frozen at [`/sl5/v1/`](https://nitzpo.github.io/sl5/v1/)). v2 scores RAND's attack vectors with a threat-relative security level; where this document differs, [`scoring-model.md`](scoring-model.md) and `app/src/engine/` are authoritative. The block dimensions survive in v2's data (`research/schema/building-block.schema.json`); v2 adds the attack vectors each block counters, and scores blocks through those rather than through chains.
+
 ## Each Building Block — Dimensions
 
 | Dimension | Description |
